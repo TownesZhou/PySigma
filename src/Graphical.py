@@ -21,7 +21,7 @@ class Message(torch.Tensor):
     """
     def __init__(self):
         super(Message, self).__init__()
-
+        # TODO
 
 class Node:
     """
@@ -30,6 +30,7 @@ class Node:
             instance will be passed to `NetworkX` methods to instantiate a node.
     """
     def __init__(self):
+        # TODO
         pass
 
 
@@ -42,6 +43,7 @@ class LinkData:
             instantiate an edge.
     """
     def __init__(self):
+        # TODO
         pass
 
 
@@ -53,6 +55,7 @@ class FactorNode(Node):
     """
     def __init__(self):
         super(FactorNode, self).__init__()
+        # TODO
 
 
 class VariableNode(Node):
@@ -61,12 +64,29 @@ class VariableNode(Node):
     """
     def __init__(self):
         super(VariableNode, self).__init__()
+        # TODO
 
 
 class Graph(networkx.DiGraph):
     """
         The actual graph instance representing a compiled graphical architecture. Can be manipulated directly as a
-            `networkx.DiGraph` but store extra bookkeeping information.
+            `networkx.DiGraph` but store extra bookkeeping information. use `networkx.DiGraph` as super class to support
+            directed links.
     """
     def __init__(self):
         super(Graph, self).__init__()
+        # TODO
+
+    def solve(self):
+        """
+            One phase of graph solution of message passing until quiescence is reached.
+        """
+        # TODO
+        pass
+
+    def modify(self):
+        """
+            One phase of graph modification on existing graph memories.
+        """
+        # TODO
+        pass
