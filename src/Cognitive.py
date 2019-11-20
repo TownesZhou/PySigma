@@ -2,7 +2,7 @@
     Cognitive interface to Sigma cognitive architecture, which is the top part of the cognitive hourglass that specifies
         the cognitive language.
 
-    In this Python implementation of Sigma that was originally (and currently) wrote in Lisp, we endeavor to
+    In this Python implementation of Sigma that was originally (and currently) written in Lisp, we endeavor to
         1. take advantage of PyTorch’s autograd functionality, parallelizable features, and GPU support to speed up
            inference and learning.
         2. Enable flexible, generalizable, and customizable declarations of (pattern) variable bindings supported by
