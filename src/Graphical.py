@@ -95,7 +95,7 @@ class Graph(networkx.DiGraph):
             Add a bidrectional link between node 1 and node2. Note that one of the nodes should be a variable node and
                 the other a factor node
         """
-        # TODO: add bidrectional link
+        # TODO: add bidirectional link
         pass
 
     def solve(self):
