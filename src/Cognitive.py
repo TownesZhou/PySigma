@@ -18,7 +18,7 @@
            parameterized distributions.
 
 
-    Author: Jincheng Zhou, University of Southern California
+    Author of this file: Jincheng Zhou, University of Southern California
     Reference: Paul S. Rosenbloom, Abram Demski & Volkan Ustun, 2016, The Sigma Cognitive Architecture and System:
         Toward Functionally Elegant Grand Unification
 """

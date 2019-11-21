@@ -5,7 +5,7 @@
     In this Python implementation of Sigma, the representation and processing of messages are based on PyTorch tensors,
         and the representation and processing of the factor graph are based on NetworkX.
 
-    Author: Jincheng Zhou, University of Southern California
+    Author of this file: Jincheng Zhou, University of Southern California
     Reference: Paul S. Rosenbloom, Abram Demski & Volkan Ustun, 2016, The Sigma Cognitive Architecture and System:
         Toward Functionally Elegant Grand Unification
 """
@@ -44,7 +44,7 @@ class LinkData:
     """
     def __init__(self):
         # TODO
-        pass
+        self.memory = None
 
 
 class FactorNode(Node):
@@ -62,7 +62,12 @@ class VariableNode(Node):
     """
         Specify a **variable node**.
     """
-    def __init__(self):
+    def __init__(self, name, variables):
+        """
+            Decalre a VariableNode
+        :param name:
+        :param variables:
+        """
         super(VariableNode, self).__init__()
         # TODO
 
@@ -76,6 +81,22 @@ class Graph(networkx.DiGraph):
     def __init__(self):
         super(Graph, self).__init__()
         # TODO
+
+    def add_unilink(self, node1, node2):
+        """
+            Add a unidirectional link from node1 to node2. Note that one of the nodes should be a variable node and the
+                other a factor node
+        """
+        # TODO: add unidirectional link
+        pass
+
+    def add_bilink(self, node1, node2):
+        """
+            Add a bidrectional link between node 1 and node2. Note that one of the nodes should be a variable node and
+                the other a factor node
+        """
+        # TODO: add bidrectional link
+        pass
 
     def solve(self):
         """
