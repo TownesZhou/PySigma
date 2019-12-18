@@ -65,11 +65,12 @@ class VariableNode(Node):
     def __init__(self, name, variables):
         """
             Decalre a VariableNode
-        :param name:
-        :param variables:
+        :param name: name of the variable node
+        :param variables: list of symbols representing the variables of this variable nodes
         """
         super(VariableNode, self).__init__()
-        # TODO
+        self.name = name
+        self.variables = variables
 
 
 class Graph(networkx.DiGraph):
