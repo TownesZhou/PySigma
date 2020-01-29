@@ -16,22 +16,12 @@ import networkx
 
 class Message(torch.Tensor):
     """
-        A subclass of pytorch tensor. Stores the actual content as a tensor and can be directly manipulated as a regular
-            tensor, but stores extra bookkeeping information for message processing mechanism in Sigma.
+        A subclass of pytorch tensor. Stores message plm as tensors and can be directly manipulated, but keep extra
+            bookkeeping information for message processing mechanism in Sigma.
     """
     def __init__(self):
         super(Message, self).__init__()
         # TODO
-
-class Node:
-    """
-        The super class of `FactorNode` and `VariableNode`. It declares common attributes between `FactorNode` and
-            `VariableNode`, for example a list of working memory variables. During construction of the graph, its
-            instance will be passed to `NetworkX` methods to instantiate a node.
-    """
-    def __init__(self):
-        # TODO
-        pass
 
 
 class LinkData:
@@ -46,6 +36,28 @@ class LinkData:
         # TODO
         self.memory = None
 
+    def set(self, new, epsilon):
+        """
+            Set the link message memory to the new message arriving at this link. Implement the optimization so that
+                memory content is not changed if new message differs from existing content by less than epsilon
+        :param new:
+        :param epsilon:
+        :return:
+        """
+        # TODO:
+
+
+class Node:
+    """
+        The super class of `FactorNode` and `VariableNode`. It declares common attributes between `FactorNode` and
+            `VariableNode`, for example a list of working memory variables. During construction of the graph, its
+            instance will be passed to `NetworkX` methods to instantiate a node.
+    """
+    def __init__(self):
+        # TODO
+        self._quiescence = False        # Flag indicating whether quiescence reached in current cycle. If so, no 
+                                        #   sum-product local processing needed at this node. 
+
 
 class FactorNode(Node):
     """
@@ -56,6 +68,66 @@ class FactorNode(Node):
     def __init__(self):
         super(FactorNode, self).__init__()
         # TODO
+
+
+class PBFN(FactorNode):
+    """
+        Perception Buffer Factor Node
+    """
+
+    # TODO
+    def __init__(self):
+        super(PBFN, self).__init__()
+
+
+class LTMFN(FactorNode):
+    """
+        Long-Term Memory Factor Node
+    """
+
+    # TODO
+    def __init__(self):
+        super(LTMFN, self).__init__()
+
+
+class WMFN(FactorNode):
+    """
+        Working Memory Factor Node
+    """
+
+    # TODO
+    def __init__(self):
+        super(WMFN, self).__init__()
+
+
+class ACFN(FactorNode):
+    """
+        Action-Combination Factor Node
+    """
+
+    # TODO
+    def __init__(self):
+        super(ACFN, self).__init__()
+        
+        
+class FFN(FactorNode):
+    """
+        Filter Node
+    """
+    
+    # TODO
+    def __init__(self):
+        super(FFN, self).__init__()
+
+
+class ADFN(FactorNode):
+    """
+        Affine Delta Factor Node
+    """
+    
+    # TODO
+    def __init__(self):
+        super(ADFN, self).__init__()
 
 
 class VariableNode(Node):
@@ -71,6 +143,16 @@ class VariableNode(Node):
         super(VariableNode, self).__init__()
         self.name = name
         self.variables = variables
+
+
+class WMVN(VariableNode):
+    """
+        Working Memory Variable Node
+    """
+
+    # TODO
+    def __init__(self):
+        super(WMVN, self).__init__()
 
 
 class Graph(networkx.DiGraph):
