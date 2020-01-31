@@ -111,12 +111,13 @@ class Node:
             will be passed to `NetworkX` methods to instantiate a node.
     """
 
-    def __init__(self, epsilon=10e-5):
-        # TODO
+    def __init__(self, name, epsilon=10e-5):
         # Flag indicating whether quiescence reached in current cycle. If so, no sum-product local processing needed at
         #   this node.
-        self.quiescence = False
+        self.name = name
         self._epsilon = epsilon
+
+        self.quiescence = False
 
 
 class FactorNode(Node):
@@ -141,9 +142,8 @@ class FactorNode(Node):
         :param name:        Name of this factor node
         :param epsilon:     The epsilon no-change criterion used for comparing quiesced message
         """
-        super(FactorNode, self).__init__()
+        super(FactorNode, self).__init__(name)
 
-        self.name = name
         # Factor Node function. Usually specified as a tensor. Default to None, effectively 1 everywhere when broadcast
         #   to full vairable dimension
         self._function = None
@@ -300,8 +300,8 @@ class PBFN(FactorNode):
     """
 
     # TODO
-    def __init__(self):
-        super(PBFN, self).__init__()
+    def __init__(self, name):
+        super(PBFN, self).__init__(name)
 
 
 class LTMFN(FactorNode):
@@ -310,8 +310,8 @@ class LTMFN(FactorNode):
     """
 
     # TODO
-    def __init__(self):
-        super(LTMFN, self).__init__()
+    def __init__(self, name):
+        super(LTMFN, self).__init__(name)
 
 
 class WMFN(FactorNode):
@@ -320,8 +320,8 @@ class WMFN(FactorNode):
     """
 
     # TODO
-    def __init__(self):
-        super(WMFN, self).__init__()
+    def __init__(self, name):
+        super(WMFN, self).__init__(name)
 
 
 class ACFN(FactorNode):
@@ -330,8 +330,8 @@ class ACFN(FactorNode):
     """
 
     # TODO
-    def __init__(self):
-        super(ACFN, self).__init__()
+    def __init__(self, name):
+        super(ACFN, self).__init__(name)
 
 
 class FFN(FactorNode):
@@ -340,8 +340,8 @@ class FFN(FactorNode):
     """
 
     # TODO
-    def __init__(self):
-        super(FFN, self).__init__()
+    def __init__(self, name):
+        super(FFN, self).__init__(name)
 
 
 class ADFN(FactorNode):
@@ -350,8 +350,8 @@ class ADFN(FactorNode):
     """
 
     # TODO
-    def __init__(self):
-        super(ADFN, self).__init__()
+    def __init__(self, name):
+        super(ADFN, self).__init__(name)
 
 
 class VariableNode(Node):
@@ -366,8 +366,7 @@ class VariableNode(Node):
         :param variables:   list of Variables representing the variables of this variable nodes
         :param epsilon:     The epsilon no-change criterion used for comparing quiesced message
         """
-        super(VariableNode, self).__init__()
-        self.name = name
+        super(VariableNode, self).__init__(name)
         self.var_list = var_list
 
         # List of LinkData of those links connecting to this variable nodes, incoming and outgoing ones respectively.
@@ -439,8 +438,8 @@ class WMVN(VariableNode):
     """
 
     # TODO
-    def __init__(self):
-        super(WMVN, self).__init__()
+    def __init__(self, name):
+        super(WMVN, self).__init__(name)
 
 
 class Graph(networkx.DiGraph):
