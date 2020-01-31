@@ -72,8 +72,11 @@ class LinkData:
         # Whether this message is a new one just sent by adjacent node and haven't been read by the other node
         self.new = False
 
+        # Following fields should correspond to the ones in the incident variable node
         self.vn = vn
         self.var_list = var_list
+
+        # Whether this link is pointing toward a factor node
         self.to_fn = to_fn
 
     def set(self, new, epsilon):
@@ -129,9 +132,14 @@ class FactorNode(Node):
                 - Variable dimension alignment for each incoming link message is computed dynamically
     """
 
-    def __init__(self, epsilon=None):
+    def __init__(self, name, epsilon=None):
+        """
+        :param name:        Name of this factor node
+        :param epsilon:     The epsilon no-change criterion used for comparing quiesced message
+        """
         super(FactorNode, self).__init__()
 
+        self.name = name
         # Factor Node function. Usually specified as a tensor. Default to None, effectively 1 everywhere when broadcast
         #   to full vairable dimension
         self._function = None
@@ -146,7 +154,7 @@ class FactorNode(Node):
         self._in_linkdata = []
         self._out_linkdata = []
 
-        # Minimum difference between messages to initiate message passing
+        # set custom epsilon
         if epsilon is not None:
             self._epsilon = epsilon
 
@@ -159,7 +167,7 @@ class FactorNode(Node):
         self._function = function
         self._func_var_list = var_list
 
-    def add_vn(self, linkdata):
+    def add_link(self, linkdata):
         """
             Register the name and variables of a newly added variable node by registering the linkdata that connect to
                 that variable node. New variables, if not already exist in _var_list, will be appended.
@@ -209,8 +217,7 @@ class FactorNode(Node):
     def sp_product(self, msg1, msg2):
         """
             The default implementation of the product part of the sum-product algorithm. Return the product of two
-                message. May be override by special
-                purpose factor node
+                messages. May be override by special purpose factor node
             Note: Assume msg1 and msg2 are properly aligned and already broadcastable
         """
         result = msg1 * msg2
@@ -246,17 +253,15 @@ class FactorNode(Node):
 
             Note: this method should be overriden by special purpose factor node subclass that comes with unique message
                 processing mechanism, such as Affine-Delta factor node
-        :param out_vn:  outgoing variable node name
-        :return:    result of sum-product of
         """
-        # First loop through incoming linkdata once to check whether message from each link is not new to determine
-        #   whether this node has reached quiescence
-        quies = True
+        # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
+        # determine whether this node has reached quiescence
+        quiesced = True
         for in_ld in self._in_linkdata:
             if in_ld.new:
-                quies = False
+                quiesced = False
                 break
-        if quies:
+        if quiesced:
             self.quiescence = True
             return
 
@@ -350,15 +355,78 @@ class VariableNode(Node):
         Specify a **variable node**.
     """
 
-    def __init__(self, name, variables):
+    def __init__(self, name, variables, epsilon=None):
         """
             Decalre a VariableNode
-        :param name: name of the variable node
-        :param variables: list of symbols representing the variables of this variable nodes
+        :param name:        name of the variable node
+        :param variables:   list of Variables representing the variables of this variable nodes
+        :param epsilon:     The epsilon no-change criterion used for comparing quiesced message
         """
         super(VariableNode, self).__init__()
         self.name = name
-        self.variables = variables
+        self._variables = variables
+
+        # List of LinkData of those links connecting to this variable nodes, incoming and outgoing ones respectively.
+        self._in_linkdata = []
+        self._out_linkdata = []
+
+        # set custom epsilon
+        if epsilon is not None:
+            self._epsilon = epsilon
+
+    def add_link(self, linkdata):
+        """
+            Register the LinkData connecting a factor node to this variable node.
+            Note: the 'vn' and 'var_list' fields should conform to the ones as specified in this variable node.
+        """
+        if linkdata in self._in_linkdata or linkdata in self._out_linkdata:
+            return
+
+        if linkdata.to_fn:
+            self._out_linkdata.append(linkdata)
+        else:
+            self._in_linkdata.append(linkdata)
+
+    def sp_product(self, msg1, msg2):
+        """
+            The default implementation of the product part of the sum-product algorithm. Return the product of two
+                messages. May be override by special purpose factor node.
+        """
+        result = msg1 * msg2
+        return result
+
+    def compute(self):
+        """
+            Take the product of the messages from incoming nodes and send the result toward all outgoing nodes.
+            Implement the optimization so that no new meesage is computed and sent if message from all incoming link are
+                not new.
+        """
+        # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
+        #   determine whether this node has reached quiescence
+        quiesced = True
+        for in_ld in self._in_linkdata:
+            if in_ld.new:
+                quiesced = False
+                break
+        if quiesced:
+            self.quiescence = True
+            return
+
+        # If not reached quiescence, compute and send new messages
+        for out_ld in self._out_linkdata:
+            out_vn = out_ld.vn
+            buf = 1
+
+            # Taking products
+            for in_ld in self._in_linkdata:
+                in_vn = in_ld.vn
+                if in_vn is out_vn:     # Here use 'is' operator to test variable node's identity
+                    continue
+                msg = in_ld.read()
+                buf = self.sp_product(buf, msg)
+
+            # Send message
+            out_ld.set(buf, self._epsilon)
 
 
 class WMVN(VariableNode):
