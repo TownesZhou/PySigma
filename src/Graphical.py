@@ -438,8 +438,8 @@ class WMVN(VariableNode):
     """
 
     # TODO
-    def __init__(self, name):
-        super(WMVN, self).__init__(name)
+    def __init__(self, name, var_list):
+        super(WMVN, self).__init__(name, var_list)
 
 
 class Graph(networkx.DiGraph):
