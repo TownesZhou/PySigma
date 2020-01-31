@@ -19,6 +19,7 @@ class Message(torch.Tensor):
         A subclass of pytorch tensor. Stores message plm as tensors and can be directly manipulated, but keep extra
             bookkeeping information for message processing mechanism in Sigma.
     """
+
     def __init__(self):
         super(Message, self).__init__()
         # TODO
@@ -30,6 +31,7 @@ class Variable:
             whether it is unique or universal.
         The equality of variables' identity is determined by the equality of their name
     """
+
     def __init__(self, name, type):
         """
         :param name:    variable name
@@ -57,6 +59,7 @@ class LinkData:
         During construction of the graph, its instance will be passed to `NetworkX` methods as the edge data to
             instantiate an edge.
     """
+
     def __init__(self, vn, var_list, to_fn):
         """
         :param vn:      name of the variable node that this link is incident to
@@ -100,12 +103,14 @@ class Node:
             message shall be sent via adjacent link in curretn cycle. During construction of the graph, its instance
             will be passed to `NetworkX` methods to instantiate a node.
     """
+
     def __init__(self, epsilon=10e-7):
         # TODO
         # Flag indicating whether quiescence reached in current cycle. If so, no sum-product local processing needed at
         #   this node.
-        self._quiescence = False
+        self.quiescence = False
         self._epsilon = epsilon
+
 
 class FactorNode(Node):
     """
@@ -123,6 +128,7 @@ class FactorNode(Node):
             fly. Therefore:
                 - Variable dimension alignment for each incoming link message is computed dynamically
     """
+
     def __init__(self, epsilon=None):
         super(FactorNode, self).__init__()
 
@@ -132,17 +138,11 @@ class FactorNode(Node):
         # List of variables corresponding to the factor function
         self._func_var_list = None
 
-        # List of adjacent variable node names, the ones with incoming links and the ones with outgoing links
-        # self._in_vn_list = []
-        # self._out_vn_list = []
-        # Dictionary of adjacent variable nodes' variable names, indexed by variable nodes' names
-        # self._vn2var = {}
-
         # List of variable names from all adjacent variable nodes. Used for dimension order of this factor node's
         #   sum-product processing. In other words a flattened version of vn_var_dict
         self._var_list = []
-        # List of LinkData of those link connecting to this factor node, from which we retrieve messages
-        # self._linkdata = []
+        # List of LinkData of those link connecting to this factor node, incoming and outgoing ones respectively, from
+        #   which we retrieve messages
         self._in_linkdata = []
         self._out_linkdata = []
 
@@ -194,7 +194,7 @@ class FactorNode(Node):
         # Find indices of the variables in _var_list
         var_id = [self._var_list.index(var) for var in var_list]
         # Compute the permutation
-        perm = [-1] * len(self._var_list)   # -1 is dummy value
+        perm = [-1] * len(self._var_list)  # -1 is dummy value
         for i, id in enumerate(var_id):
             perm[id] = i
         rest = len(var_list)
@@ -241,13 +241,26 @@ class FactorNode(Node):
             Compute messages from incoming nodes and send the message toward all outgoing variable nodes.
             Default behavior is to time together aligned message from all incomming variable nodes except perhaps the
                 target one with the factor function
+            Implement the optimization so that no new message is computed and sent if messages from all incoming link
+                are not new.
 
             Note: this method should be overriden by special purpose factor node subclass that comes with unique message
                 processing mechanism, such as Affine-Delta factor node
         :param out_vn:  outgoing variable node name
         :return:    result of sum-product of
         """
+        # First loop through incoming linkdata once to check whether message from each link is not new to determine
+        #   whether this node has reached quiescence
+        quies = True
+        for in_ld in self._in_linkdata:
+            if in_ld.new:
+                quies = False
+                break
+        if quies:
+            self.quiescence = True
+            return
 
+        # If this node has not reached quiescence, compute and send new messages
         for out_ld in self._out_linkdata:
             out_vn = out_ld.vn
             buf = 1 if self._function is None else self.align(self._function, self._func_var_list)
@@ -255,18 +268,18 @@ class FactorNode(Node):
             # Product
             for in_ld in self._in_linkdata:
                 in_vn = in_ld.vn
-                if in_vn is out_vn:     # Here use 'is' operator to test vn's identity
+                if in_vn is out_vn:  # Here use 'is' operator to test variable node's identity
                     continue
                 msg = self.align(in_ld.read(), in_ld.var_list)
                 buf = self.sp_product(buf, msg)
 
             # Summary
-            unique_reduce = [i for i, var in enumerate(self._var_list)
-                                if var.type == 'unique' or var in out_ld.var_list]
-            universal_reduce = [i for i, var in enumerate(self._var_list)
-                                if var.type == 'universal' or var in out_ld.var_list]
-            buf = self.sp_sum(buf, unique_reduce)
-            buf = self.sp_max(buf, universal_reduce)
+            sum_reduce = [i for i, var in enumerate(self._var_list)
+                             if var.type == 'unique' and var not in out_ld.var_list]
+            max_reduce = [i for i, var in enumerate(self._var_list)
+                                if var.type == 'universal' and var not in out_ld.var_list]
+            buf = self.sp_sum(buf, sum_reduce)
+            buf = self.sp_max(buf, max_reduce)
 
             # Send message
             out_ld.set(buf, self._epsilon)
@@ -310,13 +323,13 @@ class ACFN(FactorNode):
     # TODO
     def __init__(self):
         super(ACFN, self).__init__()
-        
-        
+
+
 class FFN(FactorNode):
     """
         Filter Node
     """
-    
+
     # TODO
     def __init__(self):
         super(FFN, self).__init__()
@@ -326,7 +339,7 @@ class ADFN(FactorNode):
     """
         Affine Delta Factor Node
     """
-    
+
     # TODO
     def __init__(self):
         super(ADFN, self).__init__()
@@ -336,6 +349,7 @@ class VariableNode(Node):
     """
         Specify a **variable node**.
     """
+
     def __init__(self, name, variables):
         """
             Decalre a VariableNode
@@ -363,6 +377,7 @@ class Graph(networkx.DiGraph):
             `networkx.DiGraph` but store extra bookkeeping information. use `networkx.DiGraph` as super class to support
             directed links.
     """
+
     def __init__(self):
         super(Graph, self).__init__()
         # TODO
