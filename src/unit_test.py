@@ -1,6 +1,11 @@
 import torch
 
 
+def run_test(test):
+    print("\n\n########## RUNNING TEST: {} ##########\n".format(test.__name__))
+    test()
+    print("\n####################")
+
 def align(msg, var_list, full_var_list):
     """
         Compute and return the bradcasted message with its dimension properly aligned with the factor node variable
@@ -39,5 +44,16 @@ def align_test_1():
     print("aligned msg dimension: {}".format(aligned_msg.shape))
 
 
-align_test_1()
+def align_test_2():
+    full_var_list = ['a', 'b', 'c', 'd', 'e']
+    var_list = ['d', 'b', 'e', 'a', 'c']
+    # msg = torch.tensor([[1, 1], [2, 2], [3, 3]])
+    msg = torch.ones(1, 2, 3, 4, 5)
+    print("original msg dimension: {}".format(msg.shape))
+    aligned_msg = align(msg, var_list, full_var_list)
+    print("aligned msg dimension: {}".format(aligned_msg.shape))
 
+
+
+run_test(align_test_1)
+run_test(align_test_2)
