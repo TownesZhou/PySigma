@@ -32,14 +32,15 @@ class Variable:
         The equality of variables' identity is determined by the equality of their name
     """
 
-    def __init__(self, name, var_type):
+    def __init__(self, name, size, unique=True):
         """
-        :param name:    variable name
-        :param type:    'unique' or 'universal'
+        :param name:        Variable name
+        :param size:        The size, or maximum number of regions, of this variable dimension
+        :param unique:      True/False indicating whether 'unique' or 'universal'
         """
         self.name = name
-        assert type in ['unique', 'universal'], "Variable type must be either unique or universal"
-        self.type = var_type
+        self.size = size
+        self.unique = unique
 
     def __eq__(self, other):
         # override so '==' operator test the 'name' field
@@ -284,9 +285,9 @@ class FactorNode(Node):
 
             # Summary
             sum_reduce = [i for i, var in enumerate(self._var_list)
-                             if var.type == 'unique' and var not in out_ld.var_list]
+                          if var.unique and var not in out_ld.var_list]
             max_reduce = [i for i, var in enumerate(self._var_list)
-                                if var.type == 'universal' and var not in out_ld.var_list]
+                          if not var.unique and var not in out_ld.var_list]
             buf = self.sp_sum(buf, sum_reduce)
             buf = self.sp_max(buf, max_reduce)
 

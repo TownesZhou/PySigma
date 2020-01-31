@@ -286,6 +286,7 @@ class Predicate:
             self.wm_var_list.append(argument['argument_name'])
             self.wm_var_types.append(argument['type'])
             self.wm_var_unique.append(argument['unique_symbol'])
+        self.world = world
         self.exponential = exponential
         self.no_normalize = no_normalize
         self.perception = perception
