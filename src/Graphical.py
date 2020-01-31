@@ -32,14 +32,14 @@ class Variable:
         The equality of variables' identity is determined by the equality of their name
     """
 
-    def __init__(self, name, type):
+    def __init__(self, name, var_type):
         """
         :param name:    variable name
         :param type:    'unique' or 'universal'
         """
         self.name = name
         assert type in ['unique', 'universal'], "Variable type must be either unique or universal"
-        self.type = type
+        self.type = var_type
 
     def __eq__(self, other):
         # override so '==' operator test the 'name' field
@@ -66,7 +66,6 @@ class LinkData:
         :param var_list:    list of variables of the adjacent variable node
         :param to_fn:   True/False indicating whether this link is pointing toward a factor node
         """
-        # TODO
         # Link message memory
         self.memory = None
         # Whether this message is a new one just sent by adjacent node and haven't been read by the other node
@@ -83,11 +82,16 @@ class LinkData:
         """
             Set the link message memory to the new message arriving at this link. Implement the optimization so that
                 memory content is not changed if new message differs from existing content by less than epsilon
-        :param new:
-        :param epsilon:
-        :return:
+            Default to check the absolute maximum difference between the old and new messages
+        :param new:         new arriving message
+        :param epsilon:     epsilon criterion
         """
-        # TODO:
+        diff = torch.max(torch.abs(self.memory - new))
+        if diff < epsilon:
+            return
+
+        self.memory = new
+        self.new = True
 
     def read(self):
         """
@@ -107,7 +111,7 @@ class Node:
             will be passed to `NetworkX` methods to instantiate a node.
     """
 
-    def __init__(self, epsilon=10e-7):
+    def __init__(self, epsilon=10e-5):
         # TODO
         # Flag indicating whether quiescence reached in current cycle. If so, no sum-product local processing needed at
         #   this node.
