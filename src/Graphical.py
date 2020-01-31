@@ -359,7 +359,7 @@ class VariableNode(Node):
         Specify a **variable node**.
     """
 
-    def __init__(self, name, variables, epsilon=None):
+    def __init__(self, name, var_list, epsilon=None):
         """
             Decalre a VariableNode
         :param name:        name of the variable node
@@ -368,7 +368,7 @@ class VariableNode(Node):
         """
         super(VariableNode, self).__init__()
         self.name = name
-        self._variables = variables
+        self.var_list = var_list
 
         # List of LinkData of those links connecting to this variable nodes, incoming and outgoing ones respectively.
         self._in_linkdata = []
@@ -456,11 +456,25 @@ class Graph(networkx.DiGraph):
 
     def add_unilink(self, node1, node2):
         """
-            Add a unidirectional link from node1 to node2. Note that one of the nodes should be a variable node and the
-                other a factor node
+            Add a unidirectional link FROM node1 TO node2, and create and register corresponding LinkData
+            Note that one of the nodes should be a variable node and the other a factor node
         """
-        # TODO: add unidirectional link
-        pass
+        assert (type(node1) is VariableNode and type(node2) is FactorNode) or \
+               (type(node1) is FactorNode and type(node2) is VariableNode), \
+            "One of the nodes must be a variable node and the other one a factor node"
+
+        # Create a LinkData and set its attributes
+        vn = node1 if type(node1) is VariableNode else node2
+        var_list = vn.var_list
+        to_fn = True if type(node2) is FactorNode else False
+        linkdata = LinkData(vn, var_list, to_fn)
+
+        # Create edge in graph. The LinkData exists in the 'data' field in an edge of the NetworkX graph
+        self.add_edge(node1, node2, data=linkdata)
+
+        # register LinkData in both nodes
+        node1.add_link(linkdata)
+        node2.add_link(linkdata)
 
     def add_bilink(self, node1, node2):
         """
@@ -468,7 +482,12 @@ class Graph(networkx.DiGraph):
                 the other a factor node
         """
         # TODO: add bidirectional link
-        pass
+        assert (type(node1) is VariableNode and type(node2) is FactorNode) or \
+               (type(node1) is FactorNode and type(node2) is VariableNode), \
+            "One of the nodes must be a variable node and the other one a factor node"
+
+        self.add_unilink(node1, node2)
+        self.add_unilink(node2, node1)
 
     def solve(self):
         """

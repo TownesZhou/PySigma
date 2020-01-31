@@ -23,7 +23,7 @@
         Toward Functionally Elegant Grand Unification
 """
 
-from Graphical import Graph
+from Graphical import *
 from collections import namedtuple
 import torch
 
