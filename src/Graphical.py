@@ -452,7 +452,34 @@ class Graph(networkx.DiGraph):
 
     def __init__(self):
         super(Graph, self).__init__()
-        # TODO
+
+        # node type name2type dictionary
+        self._name2type = \
+            {PBFN.__name__: PBFN,
+             LTMFN.__name__: LTMFN,
+             WMFN.__name__: WMFN,
+             ACFN.__name__: ACFN,
+             FFN.__name__: FFN,
+             ADFN.__name__: ADFN,
+             WMVN.__name__:WMVN}
+
+    def new_node(self, node_type, *args, **kwargs):
+        """
+            A node factory method. Generate new node based on node_type, add it to DiGraph, and return it.
+        :param node_type:   str or class. Specifying the node type, such as 'WMVN' or WMVN
+        :return:            the newly generated node instance
+        """
+        assert node_type in self._name2type.keys() or node_type in self._name2type.values(), \
+            "first argument {} not a known node type".format(node_type)
+
+        if node_type in self._name2type.keys():
+            node_type = self._name2type[node_type]
+        node = node_type(*args, **kwargs)
+
+        # Add node to DiGraph
+        self.add_node(node)
+
+        return node
 
     def add_unilink(self, node1, node2):
         """

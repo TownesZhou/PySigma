@@ -110,12 +110,21 @@ class Sigma:
     """
     def __init__(self):
 
+        ### Public bookkeeping data structures ###
+        ## Cognitive level bookkeeping data structure
+        # list of types, predicates, conditionals
         self.type_list = []
         self.predicate_list = []
         self.conditional_list = []
 
-        # mappings between objects and names
+        # mappings from name to structure
         self.name2type, self.name2predicate, self.name2conditional = {}, {}, {}
+
+        ## Graphical level bookkeeping data structure
+        # mappings from predicate to node group
+        self.predicate2group = {}
+        # mappings from conditionals to node group
+        self.conditional2group = {}
 
         # The graphical architecture
         self._G = Graph()
@@ -242,7 +251,7 @@ class Type:
 
 class Predicate:
     def __init__(self, predicate_name, arguments, world='open', exponential=False, no_normalize=True, perception=False,
-                 function=None):
+                 function=None, *args, **kwargs):
         """
             Speficy a Sigma predicate.
         :param predicate_name:  `str` type
@@ -295,7 +304,7 @@ class Predicate:
 
 class Conditional:
     def __init__(self, conditional_name, conditions=None, condacts=None, actions=None, function_default=None,
-                 function_var_names=None, normal=None, function=None):
+                 function_var_names=None, normal=None, function=None, *args, **kwargs):
         """
             Specify a Sigma conditional
         :param conditions:  an iterable of instances of PredicatePatterns
