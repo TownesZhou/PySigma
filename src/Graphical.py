@@ -32,15 +32,17 @@ class Variable:
         The equality of variables' identity is determined by the equality of their name
     """
 
-    def __init__(self, name, size, unique=True):
+    def __init__(self, name, size, unique=True, selection=False):
         """
         :param name:        Variable name
         :param size:        The size, or maximum number of regions, of this variable dimension
         :param unique:      True/False indicating whether 'unique' or 'universal'
+        :param selection:   Selection method
         """
         self.name = name
         self.size = size
         self.unique = unique
+        self.selection = selection
 
     def __eq__(self, other):
         # override so '==' operator test the 'name' field
@@ -138,16 +140,17 @@ class FactorNode(Node):
                 - Variable dimension alignment for each incoming link message is computed dynamically
     """
 
-    def __init__(self, name, epsilon=None):
+    def __init__(self, name, function=None, epsilon=None):
         """
         :param name:        Name of this factor node
+        :param function:    A pytorch tensor, or Message, with dimension ordered by var_list
         :param epsilon:     The epsilon no-change criterion used for comparing quiesced message
         """
         super(FactorNode, self).__init__(name)
 
         # Factor Node function. Usually specified as a tensor. Default to None, effectively 1 everywhere when broadcast
         #   to full vairable dimension
-        self._function = None
+        self._function = function
         # List of variables corresponding to the factor function
         self._func_var_list = None
 
@@ -166,7 +169,7 @@ class FactorNode(Node):
     def set_function(self, function, var_list):
         """
             (Re)set the factor node function.
-        :param func:        A pytorch tensor, or Message, with dimension ordered by var_list
+        :param function:        A pytorch tensor, or Message, with dimension ordered by var_list
         :param var_list:    list of variable names corresponding to dimensions of function
         """
         self._function = function
@@ -301,8 +304,8 @@ class PBFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name):
-        super(PBFN, self).__init__(name)
+    def __init__(self, name, function=None):
+        super(PBFN, self).__init__(name, function)
 
 
 class LTMFN(FactorNode):
@@ -311,8 +314,8 @@ class LTMFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name):
-        super(LTMFN, self).__init__(name)
+    def __init__(self, name, function=None):
+        super(LTMFN, self).__init__(name, function)
 
 
 class WMFN(FactorNode):
@@ -321,8 +324,8 @@ class WMFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name):
-        super(WMFN, self).__init__(name)
+    def __init__(self, name, function=None):
+        super(WMFN, self).__init__(name, function)
 
 
 class ACFN(FactorNode):
@@ -331,8 +334,8 @@ class ACFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name):
-        super(ACFN, self).__init__(name)
+    def __init__(self, name, function=None):
+        super(ACFN, self).__init__(name, function)
 
 
 class FFN(FactorNode):
@@ -341,8 +344,8 @@ class FFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name):
-        super(FFN, self).__init__(name)
+    def __init__(self, name, function=None):
+        super(FFN, self).__init__(name, function)
 
 
 class ADFN(FactorNode):
@@ -351,8 +354,8 @@ class ADFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name):
-        super(ADFN, self).__init__(name)
+    def __init__(self, name, function=None):
+        super(ADFN, self).__init__(name, function)
 
 
 class VariableNode(Node):

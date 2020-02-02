@@ -27,7 +27,6 @@ from Graphical import *
 from collections import namedtuple
 import torch
 
-
 # Define (sub)structures using namedtuple or customized class
 
 # Argument in a Predicate
@@ -99,7 +98,6 @@ PatternVariable = namedtuple('PatternVariable', ['variable_name', 'relation'], d
 Affine = namedtuple('Affine', ['from', 'offset', 'coefficient', 'pad'], defaults=[None, None, None, None])
 
 
-
 class Sigma:
     """
         Sigma's cognitive interface. User should instantiate this class in order to create a Sigma model (or program).
@@ -108,6 +106,7 @@ class Sigma:
             will be compiled and added to the graphical architecture. This is to support structure learning in Sigma in
             the future.
     """
+
     def __init__(self):
 
         ### Public bookkeeping data structures ###
@@ -121,13 +120,11 @@ class Sigma:
         self.name2type, self.name2predicate, self.name2conditional = {}, {}, {}
 
         ## Graphical level bookkeeping data structure
-        # mappings from predicate to node group
-        self.predicate2group = {}
-        # mappings from conditionals to node group
-        self.conditional2group = {}
+        # mappings from predicate, conditional to node group
+        self.predicate2group, self.conditional2group = {}, {}
 
         # The graphical architecture
-        self._G = Graph()
+        self.G = Graph()
 
         # Sigma program global parameters
         # TODO: initialize Sigma
@@ -203,8 +200,79 @@ class Sigma:
         """
             Compile the given predicate to the graphical architecture.
         """
-        # TODO: compile predicate
-        pass
+        # TODO: compile predicate. CHECK WITH DR.VOLKAN ABOUT CASES OF PREDICATE NODE GROUP STRUCTURES
+
+        # Create Variables
+        var_list = []
+        selection = False       # Whether there is any variable that involves selection
+        for (var_name, var_type, var_unique) in \
+                zip(predicate.wm_var_list, predicate.wm_var_types, predicate.wm_var_unique):
+            var_list.append(Variable(var_name, var_type.size, var_unique is not None, var_unique))
+            if var_unique is not None:
+                selection = True
+
+        # Create new nodes and register bookkeeping info
+        nodegroup = {}
+        # basic WMVN, or the incoming WMVN in the case of a predicate with variables that involve selection
+        if selection:
+            wmvn = self.G.new_node(WMVN, predicate.name + "_WMVN_IN", var_list)
+            nodegroup['WMVN_IN'] = wmvn
+        else:
+            wmvn = self.G.new_node(WMVN, predicate.name + "_WMVN", var_list)
+            nodegroup['WMVN'] = wmvn
+
+        # PBFN if this predicate is perceptual
+        if predicate.perception:
+            pbfn = self.G.new_node(PBFN, predicate.name + "_PBFN")
+            nodegroup['PBFN'] = pbfn
+
+            # set up unidirectional link from PBFN to WMVN
+            self.G.add_unilink(pbfn, wmvn)
+
+        # LTMFN if this predicate is memorial, i.e., if the predicate function is specified
+        if predicate.function is not None:
+            ltmfn = self.G.new_node(LTMFN, predicate.name + "_LTMFN")
+            nodegroup['LTMFN'] = ltmfn
+
+            # set up bidirectional link between LTMFN and WMVN
+            self.G.add_bilink(ltmfn, wmvn)
+
+        # WMFN if this predicate is closed-world
+        # TODO: QUESTION: is WMVN - WMFN unidirectional for any closed-world predicate, i.e., isn't for a closed-world
+        #   predicate, its entire distribution is not replaced each cycle?
+        # TODO: here assume it is always such a unidirectional cycle
+        if predicate.world is 'closed':
+            # Create a unidirectional cycle: WMVN -> WMFN -> WMFN_VN -> WMFN_ACFN -> WMVN
+            wmfn = self.G.new_node(WMFN, predicate.name + "_WMFN")
+            wmfn_vn = self.G.new_node(WMVN, predicate.name + "_WMFN_VN", var_list)
+            wmfn_acfn = self.G.new_node(ACFN, predicate.name + "_WMFN_ACFN")
+            nodegroup['WMFN'] = wmfn
+            nodegroup['WMFN_VN'] = wmfn_vn
+            nodegroup['WMFN_ACFN'] = wmfn_acfn
+
+            # Set up cycle unidirectional link
+            self.G.add_unilink(wmvn, wmfn)
+            self.G.add_unilink(wmfn, wmfn_vn)
+            self.G.add_unilink(wmfn_vn, wmfn_acfn)
+            self.G.add_unilink(wmfn_acfn, wmvn)
+
+        # WMVN_OUT if this predicate involves selection
+        # TODO: QUESTION: In the case of a open-world with selection predicate, how is the WMVN_OUT node connected? Does
+        #  it connect from a WMFN even the predicate is open-world?
+        # TODO: here assume when selection is on, always need a WMFN
+        if selection:
+            wmvn_out = self.G.new_node(WMVN, predicate.name + "_WMVN_OUT", var_list)
+
+            # Set up unidirectional link from WMFN to WMVN_OUT. Create a WMFN if not already created
+            if 'WMFN' in nodegroup.keys():
+                wmfn = nodegroup['WMFN']
+            else:
+                wmfn = self.G.new_node(WMFN, predicate.name + "_WMFN")
+                nodegroup['WMFN'] = wmfn
+            self.G.add_unilink(wmfn, wmvn_out)
+
+        # Register node group
+        self.predicate2group[predicate] = nodegroup
 
     def _compile_conditional(self, conditional):
         """
@@ -238,11 +306,12 @@ class Type:
         if value_type == 'discrete' and min >= max:
             raise ValueError("min value must be less than max value")
 
-        self.name = 'TYPE_' + type_name.upper()     # Prepend substring 'TYPE_' and send name to upper case
+        self.name = 'TYPE_' + type_name.upper()  # Prepend substring 'TYPE_' and send name to upper case
         self.value_type = value_type
         self.min = min
         self.max = max
         self.value_list = symbol_list if self.value_type == 'symbolic' else [range(min, max)]
+        self.size = len(self.value_list)
 
         # Set mapping between type values and actual axis values along message tensor's dimension.
         self.value2axis = dict(zip(self.value_list, range(len(self.value_list))))
@@ -285,7 +354,9 @@ class Predicate:
         if function is not None and type(function) not in [int, float, torch.Tensor, str]:
             raise ValueError("function must be one of 'None', 'int', 'float', 'torch.Tensor', or 'str'")
 
-        self.name = 'PRED_' + predicate_name.upper()    # Prepend name with substring 'PRED_' and send to upper case
+        self.name = 'PRED_' + predicate_name.upper()  # Prepend name with substring 'PRED_' and send to upper case
+
+        self.arguments = arguments
         self.wm_var_list, self.wm_var_types, self.wm_var_unique = [], [], []
         for argument in arguments:
             if type(argument) is not PredicateArgument:
@@ -295,6 +366,7 @@ class Predicate:
             self.wm_var_list.append(argument['argument_name'])
             self.wm_var_types.append(argument['type'])
             self.wm_var_unique.append(argument['unique_symbol'])
+
         self.world = world
         self.exponential = exponential
         self.no_normalize = no_normalize
@@ -327,4 +399,3 @@ class Conditional:
         self.function_var_names = [var for var in function_var_names]
         self.normal = normal
         self.function = function
-
