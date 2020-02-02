@@ -20,8 +20,8 @@ class Message(torch.Tensor):
             bookkeeping information for message processing mechanism in Sigma.
     """
 
-    def __init__(self):
-        super(Message, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(Message, self).__init__(*args, **kwargs)
         # TODO
 
 
@@ -140,19 +140,24 @@ class FactorNode(Node):
                 - Variable dimension alignment for each incoming link message is computed dynamically
     """
 
-    def __init__(self, name, function=None, epsilon=None):
+    def __init__(self, name, function=None, func_var_list=None, epsilon=None):
         """
-        :param name:        Name of this factor node
-        :param function:    A pytorch tensor, or Message, with dimension ordered by var_list
-        :param epsilon:     The epsilon no-change criterion used for comparing quiesced message
+        :param name:            Name of this factor node
+        :param function:        An int, float, or torch.tensor. or Message, with dimension ordered by func_var_list. If
+                                None, set to default value (1). If torch.tensor, change type to Message
+        :param func_var_list:   Variables of function
+        :param epsilon:         The epsilon no-change criterion used for comparing quiesced message
         """
         super(FactorNode, self).__init__(name)
 
-        # Factor Node function. Usually specified as a tensor. Default to None, effectively 1 everywhere when broadcast
-        #   to full vairable dimension
-        self._function = function
-        # List of variables corresponding to the factor function
+        # Set function
+        self._function = None
         self._func_var_list = None
+        self.set_function(function, func_var_list)
+
+        # set custom epsilon
+        if epsilon is not None:
+            self._epsilon = epsilon
 
         # List of variable names from all adjacent variable nodes. Used for dimension order of this factor node's
         #   sum-product processing. In other words a flattened version of vn_var_dict
@@ -162,17 +167,19 @@ class FactorNode(Node):
         self._in_linkdata = []
         self._out_linkdata = []
 
-        # set custom epsilon
-        if epsilon is not None:
-            self._epsilon = epsilon
-
     def set_function(self, function, var_list):
         """
             (Re)set the factor node function.
-        :param function:        A pytorch tensor, or Message, with dimension ordered by var_list
+        :param function:    int, float, or a torch.tensor, or Message, with dimension ordered by var_list. If None, set
+                            to default value (1). If torch.tensor, change type to Message
         :param var_list:    list of variable names corresponding to dimensions of function
         """
-        self._function = function
+        if function is None:
+            self._function = 1
+        elif type(function) is torch.Tensor:
+            self._function = Message(function)
+        else:
+            self._function = function
         self._func_var_list = var_list
 
     def add_link(self, linkdata):
@@ -276,7 +283,9 @@ class FactorNode(Node):
         # If this node has not reached quiescence, compute and send new messages
         for out_ld in self._out_linkdata:
             out_vn = out_ld.vn
-            buf = 1 if self._function is None else self.align(self._function, self._func_var_list)
+            # If function is an int or float, keep as a scalar. Otherwise expand to full dim
+            buf = self._function if type(self._function) in [int, float] \
+                else self.align(self._function, self._func_var_list)
 
             # Product
             for in_ld in self._in_linkdata:
@@ -304,8 +313,8 @@ class PBFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name, function=None):
-        super(PBFN, self).__init__(name, function)
+    def __init__(self, name, function=None, func_var_list=None):
+        super(PBFN, self).__init__(name, function, func_var_list)
 
 
 class LTMFN(FactorNode):
@@ -314,8 +323,8 @@ class LTMFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name, function=None):
-        super(LTMFN, self).__init__(name, function)
+    def __init__(self, name, function=None, func_var_list=None):
+        super(LTMFN, self).__init__(name, function, func_var_list)
 
 
 class WMFN(FactorNode):
@@ -324,8 +333,8 @@ class WMFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name, function=None):
-        super(WMFN, self).__init__(name, function)
+    def __init__(self, name, function=None, func_var_list=None):
+        super(WMFN, self).__init__(name, function, func_var_list)
 
 
 class ACFN(FactorNode):
@@ -334,8 +343,8 @@ class ACFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name, function=None):
-        super(ACFN, self).__init__(name, function)
+    def __init__(self, name, function=None, func_var_list=None):
+        super(ACFN, self).__init__(name, function, func_var_list)
 
 
 class FFN(FactorNode):
@@ -344,8 +353,8 @@ class FFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name, function=None):
-        super(FFN, self).__init__(name, function)
+    def __init__(self, name, function=None, func_var_list=None):
+        super(FFN, self).__init__(name, function, func_var_list)
 
 
 class ADFN(FactorNode):
@@ -354,8 +363,8 @@ class ADFN(FactorNode):
     """
 
     # TODO
-    def __init__(self, name, function=None):
-        super(ADFN, self).__init__(name, function)
+    def __init__(self, name, function=None, func_var_list=None):
+        super(ADFN, self).__init__(name, function, func_var_list)
 
 
 class VariableNode(Node):

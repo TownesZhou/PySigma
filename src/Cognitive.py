@@ -231,11 +231,26 @@ class Sigma:
 
         # LTMFN if this predicate is memorial, i.e., if the predicate function is specified
         if predicate.function is not None:
-            ltmfn = self.G.new_node(LTMFN, predicate.name + "_LTMFN")
-            nodegroup['LTMFN'] = ltmfn
+            func = predicate.function
 
-            # set up bidirectional link between LTMFN and WMVN
-            self.G.add_bilink(ltmfn, wmvn)
+            # If function is str, then check if such predicate exists and if it has a ltmfn set up. Set up link
+            if type(func) is str:
+                assert func in self.name2predicate.keys(), "Target predicate {} does not exist".format(func)
+                assert "LTMFN" in self.predicate2group[self.name2predicate[func]].keys(), \
+                    "Target predicate {} exists but it does not have a Long-Term Memory Function (LTMFN)".format(func)
+
+                target_ltmfn = self.predicate2group[self.name2predicate[func]]['LTMFN']
+                # Set up bidirectional link between target LTMFN and own WMVN
+                self.G.add_bilink(target_ltmfn, wmvn)
+
+            # Else, set up own ltmfn
+            else:
+                ltmfn = self.G.new_node(LTMFN, predicate.name + "_LTMFN")
+                ltmfn.set_function(func, var_list)      # for a pred function, var list is simply own var list
+                nodegroup['LTMFN'] = ltmfn
+
+                # set up bidirectional link between LTMFN and WMVN
+                self.G.add_bilink(ltmfn, wmvn)
 
         # WMFN if this predicate is closed-world
         # TODO: QUESTION: is WMVN - WMFN unidirectional for any closed-world predicate, i.e., isn't for a closed-world
