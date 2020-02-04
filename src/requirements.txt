@@ -1,0 +1,5 @@
+### Required Packages ###
+
+torch
+torchvision
+networkx
