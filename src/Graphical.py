@@ -44,6 +44,8 @@ class Variable:
         self.unique = unique
         self.selection = selection
 
+        # TODO: Normalization info
+
     def __eq__(self, other):
         # override so '==' operator test the 'name' field
         return self.name == other.name
@@ -271,6 +273,7 @@ class FactorNode(Node):
         """
         # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
         # determine whether this node has reached quiescence
+        # TODO: Normalization step
         quiesced = True
         for in_ld in self._in_linkdata:
             if in_ld.new:
@@ -419,6 +422,7 @@ class VariableNode(Node):
         """
         # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
         #   determine whether this node has reached quiescence
+        # TODO: Normalization step
         quiesced = True
         for in_ld in self._in_linkdata:
             if in_ld.new:
