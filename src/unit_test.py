@@ -1,6 +1,7 @@
 import torch
 from Cognitive import *
 from Graphical import *
+from Sigmaboard import *
 
 
 def run_test(test):
@@ -61,7 +62,24 @@ def predicate_compile_test_1():
     """
         open-world predicate without selection
     """
-    pass
+    sigma = Sigma()     # init
+
+    # add two types to Sigma
+    type_1 = Type('type_1', 'discrete', min=0, max=5)
+    type_2 = Type('type_2', 'symbolic', symbol_list=['a', 'b', 'c'])
+    sigma.add(type_1)
+    sigma.add(type_2)
+
+    # two predicate arguments, without selection
+    arg_1 = PredicateArgument('arg_1', type_1)
+    arg_2 = PredicateArgument('arg_2', type_2)
+    # Predicate
+    test_pred = Predicate('test_pred', [arg_1, arg_2], world='open')
+    # Add the predicate to the sigma program
+    sigma.add(test_pred)
+
+    # test web-based render
+    render(sigma)
 
 
 def predicate_compile_test_2():
@@ -89,3 +107,4 @@ def predicate_compile_test_4():
 
 run_test(align_test_1)
 run_test(align_test_2)
+run_test(predicate_compile_test_1)

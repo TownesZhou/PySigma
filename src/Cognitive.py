@@ -59,14 +59,14 @@ PredicatePattern = namedtuple('PredicatePattern', ['predicate_name', 'nonlineari
 #       - `argument_name`: `str` type. The name of the formal argument, i.e., working memory variable name, of this
 #               predicate
 #       - `value`:
-#           - A Constant Region, which is:
+#           - A Constant Region, which is:      # TODO: to implement in v1
 #               - An `int` if the variable is discrete, or an object (a symbol) in this variable's symbol list if the
 #                       variable is symbolic.
 #               - A `list` of `int` (if discrete) or symbols (if symbolic) within the value range of this variable. This
 #                       would yield a list of intervals at the specified values in the given list.
 #               - `*`. This would yield the entire scope of the dimension
 #           - A `Filter` or a `list` of `Filter`s.
-#           - A `PatternVariable`.
+#           - A `PatternVariable`.              # TODO: to implement in v1
 PatternElement = namedtuple('PatternElement', ['argument_name', 'value'])
 
 # TODO: Filters NOT TO IMPLEMENT IN SHORT TERM
@@ -82,11 +82,12 @@ Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
 #               in multiple places in a conditional. It's like the distinction between the actual argument and the
 #               formal argument in a procedural programming language.
 #       - `relation`: an optional parameter
-#           - `None`: default value
+#           - `None`: default value                             # TODO: to implement in v1
 #           - an `int`: declaring offset
 #           - an `Affine`: declaring an affine transformation
-#           - a `Filter` or a list of `Filter`s.    # TODO: The `not-equal test` and "highly experimental" `:explicit`
-#                                                       are not included here.
+#           - a `Filter` or a list of `Filter`s.
+#
+#           TODO: The `not-equal test` and "highly experimental" `:explicit` are not included here.
 PatternVariable = namedtuple('PatternVariable', ['variable_name', 'relation'], defaults=[None])
 
 # Affine transformation to be defined alongside a pattern variable
@@ -95,7 +96,7 @@ PatternVariable = namedtuple('PatternVariable', ['variable_name', 'relation'], d
 #       - `offset`: default to 0
 #       - `coefficient`: default to 1
 #       - `pad`: 0 for closed-world predicates and 1 for open-world predicates
-Affine = namedtuple('Affine', ['from', 'offset', 'coefficient', 'pad'], defaults=[None, None, None, None])
+Affine = namedtuple('Affine', ['from_var', 'offset', 'coefficient', 'pad'], defaults=[None, None, None, None])
 
 
 class Sigma:
@@ -144,7 +145,7 @@ class Sigma:
         if isinstance(structure, Predicate):
             # Check if the types in the predicate are already defined, and change str to Type
             for i, argument_type in enumerate(structure.wm_var_types):
-                if argument_type not in self.name2type.keys() or argument_type not in self.type_list:
+                if argument_type not in self.name2type.keys() and argument_type not in self.type_list:
                     raise ValueError("Predicate {} try to include type {} that has not yet been defined in this program"
                                      .format(structure.name, argument_type))
                 # If this type specified in that Predicate is a string, than change it to corresponding Type
@@ -325,7 +326,7 @@ class Type:
         self.value_type = value_type
         self.min = min
         self.max = max
-        self.value_list = symbol_list if self.value_type == 'symbolic' else [range(min, max)]
+        self.value_list = symbol_list if self.value_type == 'symbolic' else [i for i in range(min, max)]
         self.size = len(self.value_list)
 
         # Set mapping between type values and actual axis values along message tensor's dimension.
@@ -376,11 +377,11 @@ class Predicate:
         for argument in arguments:
             if type(argument) is not PredicateArgument:
                 raise ValueError("arguments must be a list of 'PredicateArgument' namedtuples")
-            if argument['argument_name'] in self.wm_var_list:
+            if argument.argument_name in self.wm_var_list:
                 raise ValueError("argument name cannot duplicate. Duplicate name: {}".format(argument['argument_name']))
-            self.wm_var_list.append(argument['argument_name'])
-            self.wm_var_types.append(argument['type'])
-            self.wm_var_unique.append(argument['unique_symbol'])
+            self.wm_var_list.append(argument.argument_name)
+            self.wm_var_types.append(argument.type)
+            self.wm_var_unique.append(argument.unique_symbol)
 
         self.world = world
         self.exponential = exponential
