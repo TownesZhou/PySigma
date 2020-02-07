@@ -378,7 +378,7 @@ class Predicate:
         if function is not None and type(function) not in [int, float, torch.Tensor, str]:
             raise ValueError("function must be one of 'None', 'int', 'float', 'torch.Tensor', or 'str'")
 
-        self.name = 'PRED_' + predicate_name.upper()  # Prepend name with substring 'PRED_' and send to upper case
+        self.name = 'PRED_[' + predicate_name.upper() + ']'  # Prepend name with substring 'PRED_' and send to upper case
 
         self.arguments = arguments
         self.wm_var_list, self.wm_var_types, self.wm_var_unique = [], [], []

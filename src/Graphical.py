@@ -123,8 +123,9 @@ class Node:
         self._epsilon = epsilon
         self.quiescence = False
 
-        # Logging dictionary for display and debug
+        # Global logging info
         self.log = {}
+        self.pretty_log = {}        # Log info to display at the GUI
 
 
 class FactorNode(Node):

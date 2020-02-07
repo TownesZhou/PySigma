@@ -47,6 +47,7 @@ def render(sigma):
     # Compute Graph layout and scatter plot trace
     # Testing with different layouts
 
+    # TODO: Find a better node layout algorithm
     # pos = nx.circular_layout(sigma.G)
     pos = nx.kamada_kawai_layout(sigma.G)
     # pos = nx.planar_layout(sigma.G)
