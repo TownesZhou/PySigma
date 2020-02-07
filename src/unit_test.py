@@ -84,16 +84,52 @@ def predicate_compile_test_1():
 
 def predicate_compile_test_2():
     """
-        open-world predicate with selection
+        closed-world, perceptual, memorial (Long-Term Memory), w/out selection, multiple variables
     """
-    pass
+    # 1 pred, 2 args, without selection
+    sigma = Sigma()  # init
+
+    # add two types to Sigma
+    type_1 = Type('type_1', 'discrete', min=0, max=5)
+    type_2 = Type('type_2', 'symbolic', symbol_list=['a', 'b', 'c'])
+    sigma.add(type_1)
+    sigma.add(type_2)
+
+    # two predicate arguments without selection
+    arg_1 = PredicateArgument('arg_1', type_1)
+    arg_2 = PredicateArgument('arg_2', type_2)
+    # Predicate
+    test_pred = Predicate('test_pred', [arg_1, arg_2], world='closed', perception=True, function=2)
+    # Add the predicate to the sigma program
+    sigma.add(test_pred)
+
+    # test web-based render
+    render(sigma)
 
 
 def predicate_compile_test_3():
     """
-        open-world, perceptual, memorial (Long-Term Memory), w/out selection, multiple variables
+        closed-world, perceptual, memorial, with selection, multiple variables
     """
-    pass
+    # 1 pred, 2 args, without selection
+    sigma = Sigma()  # init
+
+    # add two types to Sigma
+    type_1 = Type('type_1', 'discrete', min=0, max=5)
+    type_2 = Type('type_2', 'symbolic', symbol_list=['a', 'b', 'c'])
+    sigma.add(type_1)
+    sigma.add(type_2)
+
+    # two predicate arguments, arg_1 with best-selection, arg_2 without selection
+    arg_1 = PredicateArgument('arg_1', type_1, '!')
+    arg_2 = PredicateArgument('arg_2', type_2)
+    # Predicate
+    test_pred = Predicate('test_pred', [arg_1, arg_2], world='closed', perception=True, function=2)
+    # Add the predicate to the sigma program
+    sigma.add(test_pred)
+
+    # test web-based render
+    render(sigma)
 
 
 def predicate_compile_test_4():
@@ -107,4 +143,6 @@ def predicate_compile_test_4():
 
 run_test(align_test_1)
 run_test(align_test_2)
-run_test(predicate_compile_test_1)
+# run_test(predicate_compile_test_1)
+# run_test(predicate_compile_test_2)
+run_test(predicate_compile_test_3)

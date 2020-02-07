@@ -12,8 +12,28 @@ from textwrap import dedent as d
 from Cognitive import *
 from Graphical import *
 
-
+# External CSS
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+
+# Node colors for display
+# When finding correct node colors, first find if node type is specified, otherwise refer to parent type color
+def node2color(node):
+    assert isinstance(node, Node), "Argument must be of Node type or one of its children types"
+
+    nodetype2colors = {
+        VariableNode: "Brown",
+        FactorNode: "DarkSlateBlue",
+        WMFN: "Aqua",
+        LTMFN: "DodgerBlue",
+        WMVN: "Crimson",
+        PBFN: "DarkViolet"
+    }
+
+    t = node.__class__
+    while t not in nodetype2colors.keys():
+        t = t.__bases__[0]
+    return nodetype2colors[t]
 
 
 def render(sigma):
@@ -25,7 +45,17 @@ def render(sigma):
     assert type(sigma) is Sigma, "First argument must be a Sigma program"
 
     # Compute Graph layout and scatter plot trace
-    pos = nx.planar_layout(sigma.G)
+    # Testing with different layouts
+
+    # pos = nx.circular_layout(sigma.G)
+    pos = nx.kamada_kawai_layout(sigma.G)
+    # pos = nx.planar_layout(sigma.G)
+    # pos = nx.random_layout(sigma.G)
+    # pos = nx.shell_layout(sigma.G)
+    # pos = nx.spring_layout(sigma.G)
+    # pos = nx.spectral_layout(sigma.G)
+    # pos = nx.spiral_layout(sigma.G)
+
     fig = go.Figure()
 
     # node scatter trace. Factor node is 0, Variable node is 1
@@ -39,7 +69,8 @@ def render(sigma):
             y=[y],
             marker=dict(size=40,
                         line=dict(width=2, color="DarkSlateGrey"),
-                        color="crimson" if node_type == 0 else "LightGreen",
+                        # color="crimson" if node_type == 0 else "LightGreen",
+                        color=node2color(node),
                         symbol="square" if node_type == 0 else "circle"),
             hoverinfo="text",
             hovertext=type(node).__name__,      # Node type name, e.g., WMVN
@@ -86,8 +117,8 @@ def render(sigma):
         ay=(pos[edge[0]][1] + pos[edge[1]][1]) / 2,
         axref='x',
         ayref='y',
-        x=(pos[edge[0]][0] * 5 + pos[edge[1]][0]) / 6,
-        y=(pos[edge[0]][1] * 5 + pos[edge[1]][1]) / 6,
+        x=(pos[edge[0]][0] + pos[edge[1]][0] * 5) / 6,
+        y=(pos[edge[0]][1] + pos[edge[1]][1] * 5) / 6,
         xref='x',
         yref='y',
         showarrow=True,

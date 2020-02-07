@@ -121,8 +121,10 @@ class Node:
         #   this node.
         self.name = name
         self._epsilon = epsilon
-
         self.quiescence = False
+
+        # Logging dictionary for display and debug
+        self.log = {}
 
 
 class FactorNode(Node):
@@ -502,14 +504,14 @@ class Graph(networkx.DiGraph):
             Add a unidirectional link FROM node1 TO node2, and create and register corresponding LinkData
             Note that one of the nodes should be a variable node and the other a factor node
         """
-        assert (type(node1) is VariableNode and type(node2) is FactorNode) or \
-               (type(node1) is FactorNode and type(node2) is VariableNode), \
+        assert (isinstance(node1, VariableNode) and isinstance(node2, FactorNode)) or \
+               (isinstance(node1, FactorNode) and isinstance(node2, VariableNode)), \
             "One of the nodes must be a variable node and the other one a factor node"
 
         # Create a LinkData and set its attributes
-        vn = node1 if type(node1) is VariableNode else node2
+        vn = node1 if isinstance(node1, VariableNode) else node2
         var_list = vn.var_list
-        to_fn = True if type(node2) is FactorNode else False
+        to_fn = True if isinstance(node2, FactorNode) else False
         linkdata = LinkData(vn, var_list, to_fn)
 
         # Create edge in graph. The LinkData exists in the 'data' field in an edge of the NetworkX graph
@@ -524,9 +526,8 @@ class Graph(networkx.DiGraph):
             Add a bidrectional link between node 1 and node2. Note that one of the nodes should be a variable node and
                 the other a factor node
         """
-        # TODO: add bidirectional link
-        assert (type(node1) is VariableNode and type(node2) is FactorNode) or \
-               (type(node1) is FactorNode and type(node2) is VariableNode), \
+        assert (isinstance(node1, VariableNode) and isinstance(node2, FactorNode)) or \
+               (isinstance(node1, FactorNode) and isinstance(node2, VariableNode)), \
             "One of the nodes must be a variable node and the other one a factor node"
 
         self.add_unilink(node1, node2)

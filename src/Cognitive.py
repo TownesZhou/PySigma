@@ -275,17 +275,25 @@ class Sigma:
         # WMVN_OUT if this predicate involves selection
         # TODO: QUESTION: In the case of a open-world with selection predicate, how is the WMVN_OUT node connected? Does
         #  it connect from a WMFN even the predicate is open-world?
-        # TODO: here assume when selection is on, always need a WMFN
-        if selection:
-            wmvn_out = self.G.new_node(WMVN, predicate.name + "_WMVN_OUT", var_list)
+        # if selection:
+        #     wmvn_out = self.G.new_node(WMVN, predicate.name + "_WMVN_OUT", var_list)
+        #     nodegroup['WMVN_OUT'] = wmvn_out
+        #
+        #     # Set up unidirectional link from WMFN to WMVN_OUT. Create a WMFN if not already created
+        #     if 'WMFN' in nodegroup.keys():
+        #         wmfn = nodegroup['WMFN']
+        #     else:
+        #         wmfn = self.G.new_node(WMFN, predicate.name + "_WMFN")
+        #         nodegroup['WMFN'] = wmfn
+        #     self.G.add_unilink(wmfn, wmvn_out)
+        #
+        # TODO: For now assume that whenever a selection is involved, the predicate MUST BE CLOSED_WORLD
+            if selection:
+                wmvn_out = self.G.new_node(WMVN, predicate.name + "_WMVN_OUT", var_list)
+                nodegroup['WMVN_OUT'] = wmvn_out
 
-            # Set up unidirectional link from WMFN to WMVN_OUT. Create a WMFN if not already created
-            if 'WMFN' in nodegroup.keys():
-                wmfn = nodegroup['WMFN']
-            else:
-                wmfn = self.G.new_node(WMFN, predicate.name + "_WMFN")
-                nodegroup['WMFN'] = wmfn
-            self.G.add_unilink(wmfn, wmvn_out)
+                # Add a unidirectional link from wmfn to wmvn_out
+                self.G.add_unilink(wmfn, wmvn_out)
 
         # Register node group
         self.predicate2group[predicate] = nodegroup
@@ -374,6 +382,9 @@ class Predicate:
 
         self.arguments = arguments
         self.wm_var_list, self.wm_var_types, self.wm_var_unique = [], [], []
+
+        # check selection
+        selection = False
         for argument in arguments:
             if type(argument) is not PredicateArgument:
                 raise ValueError("arguments must be a list of 'PredicateArgument' namedtuples")
@@ -382,6 +393,13 @@ class Predicate:
             self.wm_var_list.append(argument.argument_name)
             self.wm_var_types.append(argument.type)
             self.wm_var_unique.append(argument.unique_symbol)
+
+            if argument.unique_symbol is not None:
+                selection = True
+
+        if selection:
+            assert world == 'closed', \
+                "When any of the predicate's variables involves selection, the predicate must be closed-world."
 
         self.world = world
         self.exponential = exponential
