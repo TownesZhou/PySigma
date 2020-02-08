@@ -319,10 +319,9 @@ class Type:
         :param symbol_list: `list` type. A list of symbols. Must specify if type is `"symbol"`.
         """
         # Check validity of input
-        if type(type_name) is not str:
-            raise ValueError("type_name must be of type str")
-        if value_type not in ['symbolic', 'discrete']:
-            raise ValueError("value_type must be either 'symbolic' or 'discrete'")
+        assert type(type_name) is str, "type_name must be of type str"
+        assert value_type in ['symbolic', 'discrete'], "value_type must be either 'symbolic' or 'discrete'"
+
         if value_type == 'symbolic' and symbol_list is None:
             raise ValueError("A symbol list must be specified via symbol_list when value_type is 'symbolic'")
         if value_type == 'discrete' and (min is None or max is None):
@@ -343,7 +342,7 @@ class Type:
 
 
 class Predicate:
-    def __init__(self, predicate_name, arguments, world='open', exponential=False, no_normalize=True, perception=False,
+    def __init__(self, predicate_name, arguments, world='open', exponential=False, normalize=False, perception=False,
                  function=None, *args, **kwargs):
         """
             Speficy a Sigma predicate.
@@ -351,9 +350,20 @@ class Predicate:
         :param arguments:  `list` type. List of **PredicateArgument namedtuples**. This is to specify the **working
             memory variables** (formal arguments) corresponding to this predicate.
         :param world:  `open` or `closed`. Default to `open`.
-        :param exponential:  `bool` type. Whether to exponentiate outgoing messages from Working Memory Variable Node
-                (WMVN). Default to `False`.
-        :param no_normalize:  `bool` type. Whether not to normalize outgoing messages from WMVN. Default to `True`.
+        :param exponential:  `bool` type or a `list` of predicate argument (variable) names.
+            Whether to exponentiate outgoing messages from Working Memory Variable Node (WMVN).
+            If `True`, exponentiate message across all variables. If a `list`, exponentiate only those variable dimensions.
+            Default to `False`.
+        :param normalize:  `bool` type or a `list` of predicate argument (variable) names.
+            Whether to normalize outgoing messages from WMVN.
+            If `Ture`, normalize message across all variables. If a `list`, normalize only those variable dimensions.
+            Default to `False`.
+
+            NOTE: normalization priorities over exponentiation, i.e., a message will be first exponentiated and then
+                normalized, if both operation are requested
+            #TODO: discuss with Volkan whether the option of normalizing only some of the predicate argument makes sense
+            #TODO: to discuss with Volkan, when normalization and/or exponentiation are specified, the messages sending
+                to which factor node are to be normalized and/or normalized.
         :param perception:  `bool` type. Whether this predicate can receive perceptual information.
         :param function:
                 - `None`: no function specified at this predicate
@@ -363,20 +373,14 @@ class Predicate:
                 - `str`: Name of another predicate. In this case they shares the same function.
         """
         # Check validity of input
-        if type(predicate_name) is not str:
-            raise ValueError("predicate_name must be of type str")
-        if type(arguments) is not list:
-            raise ValueError("arguments must be of type list")
-        if world != 'open' and world != 'closed':
-            raise ValueError("world must be either 'open' or 'closed'")
-        if type(exponential) is not bool:
-            raise ValueError("exponential must be of type bool")
-        if type(no_normalize) is not bool:
-            raise ValueError("no_normalize must be of type bool")
-        if type(perception) is not bool:
-            raise ValueError("perception must be of type bool")
-        if function is not None and type(function) not in [int, float, torch.Tensor, str]:
-            raise ValueError("function must be one of 'None', 'int', 'float', 'torch.Tensor', or 'str'")
+        assert type(predicate_name) is str, "predicate_name must be of type str"
+        assert type(arguments) is list, "arguments must be of type list"
+        assert world in ['open', 'closed'], "world must be either 'open' or 'closed'"
+        assert type(exponential) in [bool, list], "exponential must be of type bool or list"
+        assert type(normalize) in [bool, list], "no_normalize must be of type bool or list"
+        assert type(perception) is bool, "perception must be of type bool"
+        assert function is None or type(function) in [int, float, torch.Tensor, str], \
+            "function must be one of 'None', 'int', 'float', 'torch.Tensor', or 'str'"
 
         self.name = 'PRED_[' + predicate_name.upper() + ']'  # Prepend name with substring 'PRED_' and send to upper case
 
@@ -401,9 +405,21 @@ class Predicate:
             assert world == 'closed', \
                 "When any of the predicate's variables involves selection, the predicate must be closed-world."
 
+        # if exponential / normalize specified as a list of variable names, check accordance
+        if type(exponential) is list:
+            for var in exponential:
+                if var not in self.wm_var_list:
+                    raise ValueError("The variable name {} provided in the argument 'exponential' was not specified as "
+                                     "one of the variable of this predicate.".format(var))
+        if type(normalize) is list:
+            for var in normalize:
+                if var not in self.wm_var_list:
+                    raise ValueError("The variable name {} provided in the argument 'normalize' was not specified as "
+                                     "one of the variable of this predicate.".format(var))
+
         self.world = world
         self.exponential = exponential
-        self.no_normalize = no_normalize
+        self.normalize = normalize
         self.perception = perception
         self.function = function
 
@@ -424,6 +440,7 @@ class Conditional:
                     function_var_names
         """
         # TODO: check validity of given arguments
+        assert type(conditions) is PredicatePattern, "Argument 'conditions' must be of type 'PredicatePattern'"
 
         self.name = conditional_name
         self.conditions = conditions

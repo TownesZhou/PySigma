@@ -44,8 +44,6 @@ class Variable:
         self.unique = unique
         self.selection = selection
 
-        # TODO: Normalization info
-
     def __eq__(self, other):
         # override so '==' operator test the 'name' field
         return self.name == other.name
@@ -150,7 +148,7 @@ class FactorNode(Node):
         :param name:            Name of this factor node
         :param function:        An int, float, or torch.tensor. or Message, with dimension ordered by func_var_list. If
                                 None, set to default value (1). If torch.tensor, change type to Message
-        :param func_var_list:   Variables of function
+        :param func_var_list:   Variables of the function
         :param epsilon:         The epsilon no-change criterion used for comparing quiesced message
         """
         super(FactorNode, self).__init__(name)
@@ -172,6 +170,9 @@ class FactorNode(Node):
         self._in_linkdata = []
         self._out_linkdata = []
 
+        # pretty log
+        self.pretty_log["all variables"] = []       # init
+
     def set_function(self, function, var_list):
         """
             (Re)set the factor node function.
@@ -179,13 +180,25 @@ class FactorNode(Node):
                             to default value (1). If torch.tensor, change type to Message
         :param var_list:    list of variable names corresponding to dimensions of function
         """
+        var_size = [var.size for var in var_list] if var_list is not None else None
         if function is None:
             self._function = 1
         elif type(function) is torch.Tensor:
+            # first check if provided tensor's size is correct
+            assert list(function.shape) == var_size, "The dimensions of the function variables (in the specified order)" \
+                                                     " is {}, However, the dimensions of the provided function tensor " \
+                                                     "is {}. Function dimensions must agree with its variables' " \
+                                                     "dimensions".format(var_size, list(function.shape))
             self._function = Message(function)
         else:
             self._function = function
         self._func_var_list = var_list
+
+        # update pretty log
+        self.pretty_log["function type"] = "tensor" if isinstance(function, torch.Tensor) else "constant"
+        self.pretty_log["function variables"] = [var.name for var in self._func_var_list] \
+            if self._func_var_list is not None else None
+        self.pretty_log["function size"] = var_size
 
     def add_link(self, linkdata):
         """
@@ -206,6 +219,9 @@ class FactorNode(Node):
         for v in linkdata.var_list:
             if v not in self._var_list:
                 self._var_list.append(v)
+
+                # update pretty log
+                self.pretty_log["all variables"].append(v.name)
 
     def align(self, msg, var_list):
         """
@@ -321,6 +337,7 @@ class PBFN(FactorNode):
     # TODO
     def __init__(self, name, function=None, func_var_list=None):
         super(PBFN, self).__init__(name, function, func_var_list)
+        self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
 
 class LTMFN(FactorNode):
@@ -331,6 +348,7 @@ class LTMFN(FactorNode):
     # TODO
     def __init__(self, name, function=None, func_var_list=None):
         super(LTMFN, self).__init__(name, function, func_var_list)
+        self.pretty_log["node type"] = "Long-Term Memory Function Node"
 
 
 class WMFN(FactorNode):
@@ -341,6 +359,7 @@ class WMFN(FactorNode):
     # TODO
     def __init__(self, name, function=None, func_var_list=None):
         super(WMFN, self).__init__(name, function, func_var_list)
+        self.pretty_log["node type"] = "Working Memory Function Node"
 
 
 class ACFN(FactorNode):
@@ -348,9 +367,10 @@ class ACFN(FactorNode):
         Action-Combination Factor Node
     """
 
-    # TODO
+    # TODO: Special implementation of sum-product to implement message conjunction
     def __init__(self, name, function=None, func_var_list=None):
         super(ACFN, self).__init__(name, function, func_var_list)
+        self.pretty_log["node type"] = "Action Combination Function Node"
 
 
 class FFN(FactorNode):
@@ -361,6 +381,7 @@ class FFN(FactorNode):
     # TODO
     def __init__(self, name, function=None, func_var_list=None):
         super(FFN, self).__init__(name, function, func_var_list)
+        self.pretty_log["node type"] = "Filter Factor Node"
 
 
 class ADFN(FactorNode):
@@ -371,6 +392,7 @@ class ADFN(FactorNode):
     # TODO
     def __init__(self, name, function=None, func_var_list=None):
         super(ADFN, self).__init__(name, function, func_var_list)
+        self.pretty_log["node type"] = "Affine Delta Factor Node"
 
 
 class VariableNode(Node):
@@ -395,6 +417,12 @@ class VariableNode(Node):
         # set custom epsilon
         if epsilon is not None:
             self._epsilon = epsilon
+
+        # Pretty log
+        self.pretty_log["variable names"] = [var.name for var in self.var_list]
+        self.pretty_log["variable dimensions"] = [var.size for var in self.var_list]
+        self.pretty_log["variable uniqueness"] = [var.unique for var in self.var_list]
+        self.pretty_log["variable selection"] = [var.selection for var in self.var_list]
 
     def add_link(self, linkdata):
         """
@@ -460,6 +488,7 @@ class WMVN(VariableNode):
     # TODO
     def __init__(self, name, var_list):
         super(WMVN, self).__init__(name, var_list)
+        self.pretty_log["node type"] = "Working Memory Variable Node"
 
 
 class Graph(networkx.DiGraph):

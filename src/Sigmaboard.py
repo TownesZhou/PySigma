@@ -9,6 +9,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objects as go
 from textwrap import dedent as d
+import json
 from Cognitive import *
 from Graphical import *
 
@@ -64,6 +65,11 @@ def render(sigma):
         x, y = pos[node]
         node_type = isinstance(node, VariableNode)
 
+        # hover test
+        hovertext = ""
+        for key, value in node.pretty_log.items():
+            hovertext += str(key) + ":  " + str(value) + "<br>"     # "<br>" for line break in hover text
+
         fig.add_trace(go.Scatter(
             mode='markers+text',
             x=[x],
@@ -74,7 +80,7 @@ def render(sigma):
                         color=node2color(node),
                         symbol="square" if node_type == 0 else "circle"),
             hoverinfo="text",
-            hovertext=type(node).__name__,      # Node type name, e.g., WMVN
+            hovertext=hovertext,
             text=[node.name],                   # Node name
             textposition="bottom center"
         ))
