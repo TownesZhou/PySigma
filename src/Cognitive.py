@@ -65,14 +65,9 @@ PredicatePattern = namedtuple('PredicatePattern', ['predicate_name', 'nonlineari
 #               - A `list` of `int` (if discrete) or symbols (if symbolic) within the value range of this variable. This
 #                       would yield a list of intervals at the specified values in the given list.
 #               - `*`. This would yield the entire scope of the dimension
-#           - A `Filter` or a `list` of `Filter`s.
+#           - A `Filter` or a `list` of `Filter`s. # TODO: to implement in future iterations
 #           - A `PatternVariable`.              # TODO: to implement in v1
 PatternElement = namedtuple('PatternElement', ['argument_name', 'value'])
-
-# TODO: Filters NOT TO IMPLEMENT IN SHORT TERM
-# Filter to be defined in a PredicatePattern
-#   Each filter is of the form `(constant_region, constant, coefficient)`
-Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
 
 # Pattern Variable to be defined in a predicate pattern
 #   Each pattern variable is of the form `(variable_name, relation)`
@@ -82,10 +77,15 @@ Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
 #               in multiple places in a conditional. It's like the distinction between the actual argument and the
 #               formal argument in a procedural programming language.
 #       - `relation`: an optional parameter
-#           - `None`: default value                             # TODO: to implement in v1
+#           - `None`: default value
 #           - an `int`: declaring offset
 #           - an `Affine`: declaring an affine transformation
-#           - a `Filter` or a list of `Filter`s.
+#           - a `Filter` or a list of `Filter`s.    # TODO: to implement in future iterations
+#           # TODO: Discuss with Volkan about possible redefinition of Affine and Filter semantics.
+#               E.g. should only allow affine declaration in action predicate patterns to better conform to Horn clause semantics,
+#                   e.g. pred(v) -> pred(v + 5)
+#                   It doesn't make sense to declare an affine transformation to say something like
+#                        pred(v + 5) -> pred(v)
 #
 #           TODO: The `not-equal test` and "highly experimental" `:explicit` are not included here.
 PatternVariable = namedtuple('PatternVariable', ['variable_name', 'relation'], defaults=[None])
@@ -97,6 +97,11 @@ PatternVariable = namedtuple('PatternVariable', ['variable_name', 'relation'], d
 #       - `coefficient`: default to 1
 #       - `pad`: 0 for closed-world predicates and 1 for open-world predicates
 Affine = namedtuple('Affine', ['from_var', 'offset', 'coefficient', 'pad'], defaults=[None, None, None, None])
+
+# TODO: Filters NOT TO IMPLEMENT IN SHORT TERM
+# Filter to be defined in a PredicatePattern
+#   Each filter is of the form `(constant_region, constant, coefficient)`
+Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
 
 
 class Sigma:
@@ -128,7 +133,6 @@ class Sigma:
         self.G = Graph()
 
         # Sigma program global parameters
-        # TODO: initialize Sigma
 
     def add(self, structure):
         """
@@ -161,6 +165,25 @@ class Sigma:
 
         if isinstance(structure, Conditional):
             # TODO: check entries in the Conditional is valid, such as no undefined predicates or mismatch of argument names
+            # Check if predicate patterns align with already registered predicates
+            for pattern in structure.conditions + structure.condacts + structure.actions:
+                # Check if predicate exists
+                if pattern.predicate_name not in self.name2predicate.keys():
+                    raise ValueError("The predicate pattern '{}' includes an unknown predicate '{}'".format(pattern, pattern.predicate_name))
+                # Check if the number of predicate elements is no greater than the number of WM vars of that predicate
+                pred = self.name2predicate[pattern.predicate_name]
+                if len(pattern.elements) > len(pred.wm_var_list):
+                    raise ValueError("The number of predicate elements declared in the predicate pattern '{}', "
+                                     "currently {}, exceeds the number of working memory variable in the predicate "
+                                     "'{}', currently {}".format(pattern, len(pattern.elements), pattern.predicate_name,
+                                                                 len(pred.wm_var_list)))
+                # Check if the 'argument_name' in the 'elements' agree with that predicate's WM vars
+                for element in pattern.elements:
+                    if element.argument_name not in pred.wm_var_list:
+                        raise ValueError("The 'argument_name' '{}' declared in the pattern element '{}' of the "
+                                         "predicate pattern '{}' is not one of the working memory variables of the "
+                                         "predicate '{}'".format(element.argument_name, element, pattern,
+                                                                 pattern.predicate_name))
 
             # Register structure
             self.conditional_list.append(structure)
@@ -425,28 +448,129 @@ class Predicate:
 
 
 class Conditional:
-    def __init__(self, conditional_name, conditions=None, condacts=None, actions=None, function_default=None,
-                 function_var_names=None, normal=None, function=None, *args, **kwargs):
+    def __init__(self, conditional_name, conditions=None, condacts=None, actions=None,
+                 function_var_names=None, function=None, normal=None, *args, **kwargs):
         """
             Specify a Sigma conditional
-        :param conditions:  an iterable of instances of PredicatePatterns
-        :param condacts:  an iterable of instances of PredicatePatterns
-        :param actions:  an iterable of instances of PredicatePatterns
-        :param function_default:  `int` or `float`, the default value for unspecified regions of function
-        :param function_var_names:  an iterable of `str`, specifying the variable names in the function. The dimensions
+        :param conditions:  a list of instances of PredicatePatterns
+        :param condacts:  an list of instances of PredicatePatterns
+        :param actions:  a list of instances of PredicatePatterns
+        :param function_var_names:  a list of `str`, specifying the variable names in the function. The dimensions
                     of the function will be ordered in agreement with the given order of the variable names.
-        :param normal:  an iterable of `str`, specifying which variables to normalize over in gradient descent learning
+                Note: function_var_names must consist of pattern variables already declared in the conditions, actions,
+                    & condacts.
         :param function:  an `int` or `float` or a `torch.tensor`, specifying the conditional function defined over
-                    function_var_names
+                    function_var_names. If None, default to 1 everywhere
+        :param normal:  an list of `str`, specifying which variables to normalize over in gradient descent learning
+            #TODO: leave to implement in future iterations
         """
-        # TODO: check validity of given arguments
-        assert type(conditions) is PredicatePattern, "Argument 'conditions' must be of type 'PredicatePattern'"
+        # Check conditions, actions, & condacts
+        assert type(conditional_name) is str, "Argument 'conditional_name' must be of type str"
+        if conditions is not None:
+            assert type(conditions) is list, "Argument 'conditions' must be a list"
+            assert all(type(p) is PredicatePattern for p in conditions), \
+                "Elements in the argument 'conditions' must all be of type PredicatePattern"
+        if condacts is not None:
+            assert type(condacts) is list, "Argument 'condacts' must be a list"
+            assert all(type(p) is PredicatePattern for p in condacts), \
+                "Elements in the argument 'condacts' must all be of type PredicatePattern"
+        if actions is not None:
+            assert type(actions) is list, "Argument 'actions' must be a list"
+            assert all(type(p) is PredicatePattern for p in actions), \
+                "Elements in the argument 'actions' must all be of type PredicatePattern"
+
+        assert [conditions, actions, condacts] != [None, None, None], "Cannot specify an empty conditional"
+        if conditions is None:
+            assert [actions, condacts] != [None, None], "Cannot specify a conditional that consists of only conditions"
+
+        if function_var_names is not None:
+            assert type(function_var_names) is list, "Argument 'function_var_names' must be a list"
+            assert all(type(s) is str for s in function_var_names), \
+                "Elements in the argument 'function_var_names' must all be of type str"
+        if function is None:
+            function = 1
+        assert type(function) in [int, float, torch.Tensor], \
+            "Argument 'function' must be of type int, float, or torch.Tensor"
+        if normal is not None:
+            assert type(normal) is list, "Argument 'normal' must be a list"
+            assert all(type(v) is str for v in normal), \
+                "Elements in the argument 'normal' must all be of type str"
+
+        # Check Predicate Pattern validity
+        for pattern in conditions + condacts + actions:
+            assert type(pattern.predicate_name) is str, "The 'predicate_name' field in the predicate pattern '{}' must be of type str".format(pattern)
+            # check pattern nonlinearity
+            if pattern.nonlinearity is not None:
+                # TODO: Allow specifying custom functional object as nonlinearity in future iterations
+                assert pattern.nonlinearity in ['negation', '-', 'exponential', '^', 'sigmoid', 's', 'relu', 'r', 'tanh',
+                                                't', 'exp', 'e'], \
+                    "The specified nonlinearity '{}' in predicate pattern {} cannot be recognized".\
+                        format(pattern.nonlinearity, pattern)
+            # check pattern elements
+            assert type(pattern.elements) is list, "The 'elements' field in the predicate pattern '{}' is not of type list".format(pattern)
+            assert all(type(e) is PatternElement for e in pattern.elements), "The 'elements' field in the predicate pattern '{}' should be a list of PatternElement".format(pattern)
+            # check pattern elements' value field
+            for element in pattern.elements:
+                assert type(element.argument_name) is str, "The 'argument_name' field in the pattern element '{}' of predicate pattern '{}' must be of type str".format(element, pattern)
+                # TODO: to allow Filter and Affine transformation declaration in future iterations
+                assert type(element.value) in [int, str, list, PatternVariable], \
+                    "The type of the 'value' field in pattern element '{}' of pattern '{}' is incorrect.".format(element, pattern)
+                if type(element.value) is list:
+                    assert all(type(v) is int for v in pattern.value) or all(type(v) is str for v in pattern.value), \
+                        "When providing a list to the 'value' field in the pattern element '{}' of pattern '{}', it must be a list of all 'int', 'str', or 'Filter'".format(element, pattern)
+                # If value is a PtternVariable, check its validity
+                if type(element.value) is PatternVariable:
+                    assert type(element.value.variable_name) is str, \
+                        "The 'variable_name' field must be of type str in the pattern variable '{}' of pattern element '{}' of the predicate pattern '{}'".format(element.value, element, pattern)
+                    # Variable name should not start with '_', because '_' is reserved for internal naming of unnamed pattern variables
+                    assert element.value.variable_name[0] != '_', \
+                        "The 'variable_name' field cannot start with '_' in the pattern variable '{}' of pattern element '{}' of the predicate pattern '{}'".format(element.value, element, pattern)
+                    if element.value.relation is not None:
+                        assert type(element.value.relation) in [int, Affine, Filter], \
+                            "The 'relation' field must be of type 'int', 'Affine', or 'Filter' in the pattern variable '{}' of pattern element '{}' of the predicate pattern '{}'".format(element.value, element, pattern)
+                    # TODO: Leave checking validity of Affine and Filter in future iterations
+
+        # Set up internal WM var -- pattern var map per predicate pattern for future lookup.
+        #       { pattern :
+        #           { wm_var :
+        #               { "name" : pt_var_name
+        #                 "type" : "var" or "const"
+        #                 "vals" : int/str values if type is const or None otherwise
+        #                 "rel"  : relation, if specified, otherwise None} } }
+        # Set up pattern var list for future lookup
+        #   constant pattern is assigned a unique constant variable name
+        self.ptvar_list = []
+        self.pt_vals = {}
+        const_count = 0
+        for pattern in conditions + condacts + actions:
+            self.pt_vals[pattern] = {}
+            for element in pattern.elements:
+                pt_var_info = {}
+                if type(element.value) is PatternVariable:
+                    pt_var_info["name"] = element.value.variable_name
+                    pt_var_info["type"] = "var"
+                    pt_var_info["vals"] = None
+                    pt_var_info["rel"] = element.value.relation
+                else:
+                    # Assign a unique internal pattern variable name to a pattern w/ constant values
+                    pt_var_info["name"] = "_CONST_" + str(const_count)
+                    pt_var_info["type"] = "const"
+                    pt_var_info["vals"] = element.value
+                    pt_var_info["rel"] = None
+                    const_count += 1
+
+                self.pt_vals[pattern][element.argument_name] = pt_var_info
+                self.ptvar_list.append(pt_var_info["name"])
+
+        # Check that function_var_names agree with pattern variables declared in conditions, actions, & condacts
+        for func_var in function_var_names:
+            assert func_var in self.ptvar_list, \
+                "The function variable '{}' is not one of the pattern variable declared in any predicate pattern".format(func_var)
 
         self.name = conditional_name
         self.conditions = conditions
         self.condacts = condacts
         self.actions = actions
-        self.function_default = function_default
         self.function_var_names = [var for var in function_var_names]
         self.normal = normal
         self.function = function
