@@ -25,8 +25,7 @@
 
 from Structures import *
 from Graphical import *
-from collections import namedtuple
-import torch
+from copy import deepcopy
 
 
 class Sigma:
@@ -250,6 +249,7 @@ class Sigma:
             Compile the given conditional to the graphical architecture.
             A Sigma's implementation of Rete algorithm
         """
+        name_prefix = conditional.name + "_ALPHA_"
         # Step 1: Compile Alpha subnetworks per predicate pattern
         #   Link directions for conditions goes inward toward Beta network
         #   Link directions for actions goes outward toward Working Memory VNs
@@ -276,7 +276,6 @@ class Sigma:
         for ptype, pattern_group in zip(["condition", "condact", "action"],
                                         [conditional.conditions, conditional.condacts, conditional.actions]):
             for pattern in pattern_group:
-                name_prefix = conditional.name + "_ALPHA_"
                 # Initialize the alpha subnet terminal node to be the predicate's WMVN
                 pred = self.name2predicate[pattern.predicate_name]
                 nodegroup = self.predicate2group[pred]
@@ -318,5 +317,69 @@ class Sigma:
                 alpha_terminals[pattern.predicate_name] = terminal
 
         # Step 2: Compile Beta network
+
+        # util inner function for taking the union of pattern variable lists. Define such a custom union operation of
+        #   lists because we may want to maintain variable orders
+        def union_vars(vars_1, vars_2):
+            # Assume both arguments are list of Variables
+            var_list = [var for var in vars_1]     # Make a replicate (deepcopy) of vars_1 list but not the element of it
+            for var in vars_2:
+                if var not in vars_1:
+                    var_list.append(var)
+            return var_list
+
+        # Part 1: Linear growth of conditions Beta subnets
+        terminal = None
+        if len(conditional.conditions) >= 1:
+            terminal = alpha_terminals[conditional.conditions[0]]
+        if len(conditional.conditions) > 1:
+            for i in range(1, len(conditional.conditions)):
+                extra = alpha_terminals[conditional.conditions[i]]
+
+                var_union = union_vars(terminal.var_list, extra.var_list)
+                bjfn = self.G.new_node(BJFN, name_prefix + "BJFN")
+                bjfn_vn = self.G.new_node(WMVN, name_prefix + "BJFN_VN", var_union)
+
+                # Condition Beta subnets link direction going inward
+                self.G.add_unilink(terminal, bjfn)
+                self.G.add_unilink(extra, bjfn)
+                self.G.add_unilink(bjfn, bjfn_vn)
+
+                terminal = bjfn_vn
+
+        # Part 2: Linear growth of condacts Beta subnets
+        if len(conditional.condacts) >= 1:
+            if terminal is None:
+                terminal = alpha_terminals[conditional.condacts[0]]
+            else:
+                # When a condition terminal is joined with a condact terminal, the link between the condition terminal
+                #   and the BJFN is unidirectional
+                extra = alpha_terminals[conditional.condacts[0]]
+
+                var_union = union_vars(terminal.var_list, extra.var_list)
+                bjfn = self.G.new_node(BJFN, name_prefix + "BJFN")
+                bjfn_vn = self.G.new_node(WMVN, name_prefix + "BJFN_VN", var_union)
+
+                self.G.add_unilink(terminal, bjfn)      # uni-link from condition terminal
+                self.G.add_bilink(extra, bjfn)          # bi-link from condact terminal
+                self.G.add_bilink(bjfn, bjfn_vn)        # bi-link from now on
+
+                terminal = bjfn_vn
+        if len(conditional.condacts) > 1:
+            for i in range(1, len(conditional.condacts)):
+                extra = alpha_terminals[conditional.condacts[i]]
+
+                var_union = union_vars(terminal.var_list, extra.var_list)
+                bjfn = self.G.new_node(BJFN, name_prefix + "BJFN")
+                bjfn_vn = self.G.new_node(WMVN, name_prefix + "BJFN_VN", var_union)
+
+                # Bidirectional links in condact Beta subnets
+                self.G.add_bilink(terminal, bjfn)
+                self.G.add_bilink(extra, bjfn)
+                self.G.add_bilink(bjfn, bjfn_vn)
+
+                terminal = bjfn_vn
+
+        # Part 3: Joining of Gamma function nodes
 
 
