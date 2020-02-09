@@ -50,6 +50,7 @@ PredicateArgument = namedtuple('PredicateArgument', ['argument_name', 'type', 'u
 #       - `predicate_name`:  name of the predicate in question
 #       - `nonlinearity`: `None` or one of the following: `'negation'` or `'-'`, `'exponential'` or `'^'`, `'sigmoid'`
 #               or `'s'`, `'relu'` or `'r'`, `'tanh'` or `'t'`, `'exp'` or `'e'` (true exponential),
+#               or customized torch nonlinearity functions
 #       - `elements`: `list` type. A list of `PatternElement` namedtuples.
 # TODO: Finish construction of following substructure and their docs
 PredicatePattern = namedtuple('PredicatePattern', ['predicate_name', 'nonlinearity', 'elements'])
@@ -142,10 +143,12 @@ class Sigma:
         if type(structure) not in [Type, Predicate, Conditional]:
             raise ValueError("structure must be one of Sigma's Type, Predicate, or Conditional")
 
+        # Register new Type
         if isinstance(structure, Type):
             self.type_list.append(structure)
             self.name2type[structure.name] = structure
 
+        # Register new Predicate
         if isinstance(structure, Predicate):
             # Check if the types in the predicate are already defined, and change str to Type
             for i, argument_type in enumerate(structure.wm_var_types):
@@ -156,6 +159,13 @@ class Sigma:
                 if type(argument_type) is str:
                     structure.wm_var_types[i] = self.name2type[argument_type]
 
+            # Create and register Variables
+            for (var_name, var_type, var_unique) in \
+                    zip(structure.wm_var_names, structure.wm_var_types, structure.wm_var_unique):
+                var = Variable(var_name, var_type.size, var_unique is not None, var_unique)
+                structure.var_list.append(var)
+                structure.var_name2var[var_name] = var
+
             # Register structure
             self.predicate_list.append(structure)
             self.name2predicate[structure.name] = structure
@@ -163,8 +173,8 @@ class Sigma:
             # Compile this predicate
             self._compile_predicate(structure)
 
+        # Register new Conditional
         if isinstance(structure, Conditional):
-            # TODO: check entries in the Conditional is valid, such as no undefined predicates or mismatch of argument names
             # Check if predicate patterns align with already registered predicates
             for pattern in structure.conditions + structure.condacts + structure.actions:
                 # Check if predicate exists
@@ -172,14 +182,14 @@ class Sigma:
                     raise ValueError("The predicate pattern '{}' includes an unknown predicate '{}'".format(pattern, pattern.predicate_name))
                 # Check if the number of predicate elements is no greater than the number of WM vars of that predicate
                 pred = self.name2predicate[pattern.predicate_name]
-                if len(pattern.elements) > len(pred.wm_var_list):
+                if len(pattern.elements) > len(pred.wm_var_names):
                     raise ValueError("The number of predicate elements declared in the predicate pattern '{}', "
                                      "currently {}, exceeds the number of working memory variable in the predicate "
                                      "'{}', currently {}".format(pattern, len(pattern.elements), pattern.predicate_name,
-                                                                 len(pred.wm_var_list)))
+                                                                 len(pred.wm_var_names)))
                 # Check if the 'argument_name' in the 'elements' agree with that predicate's WM vars
                 for element in pattern.elements:
-                    if element.argument_name not in pred.wm_var_list:
+                    if element.argument_name not in pred.wm_var_names:
                         raise ValueError("The 'argument_name' '{}' declared in the pattern element '{}' of the "
                                          "predicate pattern '{}' is not one of the working memory variables of the "
                                          "predicate '{}'".format(element.argument_name, element, pattern,
@@ -226,23 +236,14 @@ class Sigma:
         """
         # TODO: compile predicate. CHECK WITH DR.VOLKAN ABOUT CASES OF PREDICATE NODE GROUP STRUCTURES
 
-        # Create Variables
-        var_list = []
-        selection = False       # Whether there is any variable that involves selection
-        for (var_name, var_type, var_unique) in \
-                zip(predicate.wm_var_list, predicate.wm_var_types, predicate.wm_var_unique):
-            var_list.append(Variable(var_name, var_type.size, var_unique is not None, var_unique))
-            if var_unique is not None:
-                selection = True
-
         # Create new nodes and register bookkeeping info
         nodegroup = {}
         # basic WMVN, or the incoming WMVN in the case of a predicate with variables that involve selection
-        if selection:
-            wmvn = self.G.new_node(WMVN, predicate.name + "_WMVN_IN", var_list)
+        if predicate.selection:
+            wmvn = self.G.new_node(WMVN, predicate.name + "_WMVN_IN", predicate.var_list)
             nodegroup['WMVN_IN'] = wmvn
         else:
-            wmvn = self.G.new_node(WMVN, predicate.name + "_WMVN", var_list)
+            wmvn = self.G.new_node(WMVN, predicate.name + "_WMVN", predicate.var_list)
             nodegroup['WMVN'] = wmvn
 
         # PBFN if this predicate is perceptual
@@ -270,7 +271,7 @@ class Sigma:
             # Else, set up own ltmfn
             else:
                 ltmfn = self.G.new_node(LTMFN, predicate.name + "_LTMFN")
-                ltmfn.set_function(func, var_list)      # for a pred function, var list is simply own var list
+                ltmfn.set_function(func, predicate.var_list)      # for a pred function, var list is simply own var list
                 nodegroup['LTMFN'] = ltmfn
 
                 # set up bidirectional link between LTMFN and WMVN
@@ -283,7 +284,7 @@ class Sigma:
         if predicate.world is 'closed':
             # Create a unidirectional cycle: WMVN -> WMFN -> WMFN_VN -> WMFN_ACFN -> WMVN
             wmfn = self.G.new_node(WMFN, predicate.name + "_WMFN")
-            wmfn_vn = self.G.new_node(WMVN, predicate.name + "_WMFN_VN", var_list)
+            wmfn_vn = self.G.new_node(WMVN, predicate.name + "_WMFN_VN", predicate.var_list)
             wmfn_acfn = self.G.new_node(ACFN, predicate.name + "_WMFN_ACFN")
             nodegroup['WMFN'] = wmfn
             nodegroup['WMFN_VN'] = wmfn_vn
@@ -311,8 +312,8 @@ class Sigma:
         #     self.G.add_unilink(wmfn, wmvn_out)
         #
         # TODO: For now assume that whenever a selection is involved, the predicate MUST BE CLOSED_WORLD
-            if selection:
-                wmvn_out = self.G.new_node(WMVN, predicate.name + "_WMVN_OUT", var_list)
+            if predicate.selection:
+                wmvn_out = self.G.new_node(WMVN, predicate.name + "_WMVN_OUT", predicate.var_list)
                 nodegroup['WMVN_OUT'] = wmvn_out
 
                 # Add a unidirectional link from wmfn to wmvn_out
@@ -324,9 +325,76 @@ class Sigma:
     def _compile_conditional(self, conditional):
         """
             Compile the given conditional to the graphical architecture.
+            A Sigma's implementation of Rete algorithm
         """
-        # TODO: compile conditional
-        pass
+        # Step 1: Compile Alpha subnetworks per predicate pattern
+        #   Link directions for conditions goes inward toward Beta network
+        #   Link directions for actions goes outward toward Working Memory VNs
+        #   Link directions for condacts are bidirectional up until Beta join factor node
+        #   The order of the different parts in a Alpha subnet, with direction from WM to Beta join, is:
+        #       [Filter, Nonlinearity, Affine Delta, Affine]
+        # TODO: Discuss with Volkan about this order. E.g. whether Affine should be put BEFORE Affine Delta
+
+        # util inner functions for adding nodes depending on different pattern type. Return the new alpha terminal node
+        def grow_alpha(term, fn, vn, ptype):
+            # grow a subnet: terminal -- fn -- vn, and set vn as the new terminal. Link direction depends on ptype
+            if ptype is "condition":
+                self.G.add_unilink(term, fn)
+                self.G.add_unilink(fn, vn)
+            elif ptype is "action":
+                self.G.add_unilink(fn, term)
+                self.G.add_unilink(vn, fn)
+            else:
+                self.G.add_bilink(term, fn)
+                self.G.add_bilink(fn, vn)
+            return vn
+
+        alpha_terminals = {}    # map from predicate to the terminal variable node of that predicate's alpha subnet
+        for ptype, pattern_group in zip(["condition", "condact", "action"],
+                                        [conditional.conditions, conditional.condacts, conditional.actions]):
+            for pattern in pattern_group:
+                name_prefix = conditional.name + "_ALPHA_"
+                # Initialize the alpha subnet terminal node to be the predicate's WMVN
+                pred = self.name2predicate[pattern.predicate_name]
+                nodegroup = self.predicate2group[pred]
+                terminal = nodegroup['WMVN'] if 'WMVN' in nodegroup.keys() else nodegroup['WMVN_OUT']
+
+                # Set up Filter nodes
+                # TODO: Detailed implementation left for future iterations
+
+                # Set up Nonlinearity nodes
+                if pattern.nonlinearity is not None:
+                    # Create nonlinearity factor nodes and set up links
+                    nlfn = self.G.new_node(NLFN, name_prefix + "NLFN", pattern.nonlinearity)
+                    nlfn_vn = self.G.new_node(WMVN, name_prefix + "NLFN_VN", pred.var_list)
+                    terminal = grow_alpha(terminal, nlfn, nlfn_vn, ptype)
+
+                # Set up Affine Delta nodes
+                # First create Variables for pattern vars. If one pattern vars is associated with multiple wm vars,
+                #   then the size of that pattern var is the max size of all associated wm vars (to leave enough region)
+                # TODO: discuss with Volkan whether the uniqueness of pattern variable should follow that of its associated
+                #       wm variable. If so, what happens if a ptv is associated with multiple wmvs with different uniqueness
+                #       Currently assuming pattern varaibles are all unique, i.e., if needed, perform sum reduce.
+                pt_var_list = []
+                for ptv, wmvs in conditional.ptv2wmv[pattern].items():
+                    if len(wmvs) == 1:
+                        pt_var_list.append(Variable(ptv, wmvs[0].size, unique=True, selection=False))
+                    else:
+                        # one pattern variable associated with multiple wm variables
+                        size = max(var.size for var in wmvs)
+                        pt_var_list.append(Variable(ptv, size, unique=True, selection=False))
+
+                adfn = self.G.new_node(ADFN, name_prefix + "ADFN", pattern.pt_vals)
+                adfn_vb = self.G.new_node(WMVN, name_prefix + "ADFN_VN", pt_var_list)
+                terminal = grow_alpha(terminal, adfn, adfn_vb, ptype)
+
+                # Set up Affine Transformation nodes
+                # TODO: Detailed implementation left for future iterations
+
+                # Alpha subnet construction finished, register terminal node
+                alpha_terminals[pattern.predicate_name] = terminal
+
+        # Step 2: Compile Beta network
 
 
 class Type:
@@ -408,35 +476,40 @@ class Predicate:
         self.name = 'PRED_[' + predicate_name.upper() + ']'  # Prepend name with substring 'PRED_' and send to upper case
 
         self.arguments = arguments
-        self.wm_var_list, self.wm_var_types, self.wm_var_unique = [], [], []
+        self.wm_var_names, self.wm_var_types, self.wm_var_unique = [], [], []
+        self.var_list = []      # List of Variables, will only be set after this structure passed into a Sigma program
+        self.var_name2var = {}  # Map from variable name to actual Variable instance. set after structure passed into a Sigma program
 
         # check selection
-        selection = False
+        self.selection = False  # Whether this predicate performs selection
         for argument in arguments:
-            if type(argument) is not PredicateArgument:
-                raise ValueError("arguments must be a list of 'PredicateArgument' namedtuples")
-            if argument.argument_name in self.wm_var_list:
-                raise ValueError("argument name cannot duplicate. Duplicate name: {}".format(argument['argument_name']))
-            self.wm_var_list.append(argument.argument_name)
+            assert type(argument) is PredicateArgument, "arguments must be a list of 'PredicateArgument' namedtuples"
+            assert argument.argument_name not in self.wm_var_names, \
+                "argument name cannot duplicate. Duplicate name: {}".format(argument['argument_name'])
+            assert type(argument.type) is Type, \
+                "The 'type' field in the predicate argument '{}' must be of type Type".format(argument.type, argument)
+            assert argument.unique_symbol in ['!', '%', '$', '^', '='], \
+                "Unknown unique symbol '{}' in the predicate argument '{}'".format(argument.unique_symbol, argument)
+            self.wm_var_names.append(argument.argument_name)
             self.wm_var_types.append(argument.type)
             self.wm_var_unique.append(argument.unique_symbol)
 
             if argument.unique_symbol is not None:
-                selection = True
+                self.selection = True
 
-        if selection:
+        if self.selection:
             assert world == 'closed', \
                 "When any of the predicate's variables involves selection, the predicate must be closed-world."
 
         # if exponential / normalize specified as a list of variable names, check accordance
         if type(exponential) is list:
             for var in exponential:
-                if var not in self.wm_var_list:
+                if var not in self.wm_var_names:
                     raise ValueError("The variable name {} provided in the argument 'exponential' was not specified as "
                                      "one of the variable of this predicate.".format(var))
         if type(normalize) is list:
             for var in normalize:
-                if var not in self.wm_var_list:
+                if var not in self.wm_var_names:
                     raise ValueError("The variable name {} provided in the argument 'normalize' was not specified as "
                                      "one of the variable of this predicate.".format(var))
 
@@ -530,20 +603,24 @@ class Conditional:
                             "The 'relation' field must be of type 'int', 'Affine', or 'Filter' in the pattern variable '{}' of pattern element '{}' of the predicate pattern '{}'".format(element.value, element, pattern)
                     # TODO: Leave checking validity of Affine and Filter in future iterations
 
-        # Set up internal WM var -- pattern var map per predicate pattern for future lookup.
-        #       { pattern :
-        #           { wm_var :
-        #               { "name" : pt_var_name
-        #                 "type" : "var" or "const"
-        #                 "vals" : int/str values if type is const or None otherwise
-        #                 "rel"  : relation, if specified, otherwise None} } }
         # Set up pattern var list for future lookup
+        # Set up internal WM var -- pattern var map per predicate pattern for future lookup.
+        #       pt_vals = { pattern :
+        #                    { wm_var_name :
+        #                       { "name" : pt_var_name
+        #                         "type" : "var" or "const"
+        #                         "vals" : int/str values if type is const or None otherwise
+        #                         "rel"  : relation, if specified, otherwise None} } }
+        #       ptv2wmv = { pattern :
+        #                    { pt_var_name : list of corresponding wm vars } }
         #   constant pattern is assigned a unique constant variable name
         self.ptvar_list = []
         self.pt_vals = {}
+        self.ptv2wmv = {}
         const_count = 0
         for pattern in conditions + condacts + actions:
             self.pt_vals[pattern] = {}
+            self.ptv2wmv[pattern] = {}
             for element in pattern.elements:
                 pt_var_info = {}
                 if type(element.value) is PatternVariable:
@@ -559,15 +636,19 @@ class Conditional:
                     pt_var_info["rel"] = None
                     const_count += 1
 
-                self.pt_vals[pattern][element.argument_name] = pt_var_info
                 self.ptvar_list.append(pt_var_info["name"])
+                self.pt_vals[pattern][element.argument_name] = pt_var_info
+                if pt_var_info["name"] not in self.ptv2wmv.keys():
+                    self.ptv2wmv[pt_var_info["name"]] = [element.argument_name]
+                else:
+                    self.ptv2wmv[pt_var_info["name"]].append(element.argument_name)
 
         # Check that function_var_names agree with pattern variables declared in conditions, actions, & condacts
         for func_var in function_var_names:
             assert func_var in self.ptvar_list, \
                 "The function variable '{}' is not one of the pattern variable declared in any predicate pattern".format(func_var)
 
-        self.name = conditional_name
+        self.name = "COND_[" + conditional_name + "]"
         self.conditions = conditions
         self.condacts = condacts
         self.actions = actions

@@ -162,7 +162,7 @@ class FactorNode(Node):
         if epsilon is not None:
             self._epsilon = epsilon
 
-        # List of variable names from all adjacent variable nodes. Used for dimension order of this factor node's
+        # List of Variables from all adjacent variable nodes. Used for dimension order of this factor node's
         #   sum-product processing. In other words a flattened version of vn_var_dict
         self._var_list = []
         # List of LinkData of those link connecting to this factor node, incoming and outgoing ones respectively, from
@@ -318,6 +318,7 @@ class FactorNode(Node):
                 buf = self.sp_product(buf, msg)
 
             # Summary
+            # Perform sum reduce if variable is unique, otherwise perform max reduce
             sum_reduce = [i for i, var in enumerate(self._var_list)
                           if var.unique and var not in out_ld.var_list]
             max_reduce = [i for i, var in enumerate(self._var_list)
@@ -368,8 +369,8 @@ class ACFN(FactorNode):
     """
 
     # TODO: Special implementation of sum-product to implement message conjunction
-    def __init__(self, name, function=None, func_var_list=None):
-        super(ACFN, self).__init__(name, function, func_var_list)
+    def __init__(self, name,):
+        super(ACFN, self).__init__(name, function=None, func_var_list=None)
         self.pretty_log["node type"] = "Action Combination Function Node"
 
 
@@ -384,15 +385,75 @@ class FFN(FactorNode):
         self.pretty_log["node type"] = "Filter Factor Node"
 
 
+class NLFN(FactorNode):
+    """
+        Nonlinearity Factor Node. Element-wise nonlinearity "filters"
+    """
+
+    # TODO:
+    def __init__(self, name, nonlinear):
+        """
+        :param name:        Name of the node
+        :param nonlinear:  'str' or function objects, specifying the type of element-wise nonlinearity
+        """
+        super(NLFN, self).__init__(name, function=None, func_var_list=None)
+        self.nonlinear = nonlinear
+        self.pretty_log["node type"] = "Nonlinearity Factor Node"
+        self.pretty_log["nonlinearity"] = str(nonlinear)
+
+
 class ADFN(FactorNode):
     """
-        Affine Delta Factor Node
+        Affine Delta Factor Node, generally for matching between WM variables and Pattern variables
+        Performs delta function masking and variable swapping
+        Essential component of the Rete's Alpha network's within pattern variable matching
+
+        Note: ADFN only admits one incoming link and one outgoing link.
     """
 
     # TODO
-    def __init__(self, name, function=None, func_var_list=None):
-        super(ADFN, self).__init__(name, function, func_var_list)
+    def __init__(self, name, pt_var_info):
+        super(ADFN, self).__init__(name, function=None, func_var_list=None)
         self.pretty_log["node type"] = "Affine Delta Factor Node"
+        self._pt_var_info = pt_var_info
+
+
+class ATFN(FactorNode):
+    """
+        Affine Transformation Factor Node
+    """
+
+    # TODO
+    def __init__(self, name, affine):
+        """
+        :param name:    Name of the node
+        :param affine:  Affine transformation specification
+        """
+        super(ATFN, self).__init__(name, function=None, func_var_list=None)
+        self.affine = affine
+        self.pretty_log["node type"] = "Affine Transformation Factor Node"
+
+
+class BJFN(FactorNode):
+    """
+        Beta-Join Factor Node
+    """
+
+    # TODO
+    def __init__(self, name):
+        super(BJFN, self).__init__(name, function=None, func_var_list=None)
+        self.pretty_log["node type"] = "Beta-Join Factor Node"
+
+
+class GFFN(FactorNode):
+    """
+        Gamma Function Factor Node
+    """
+
+    # TODO
+    def __init__(self, name, function, func_var_list):
+        super(GFFN, self).__init__(name, function=function, func_var_list=func_var_list)
+        self.pretty_log["node type"] = "Gamma Function Factor Node"
 
 
 class VariableNode(Node):
