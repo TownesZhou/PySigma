@@ -37,38 +37,6 @@ PredicateArgument = namedtuple('PredicateArgument', ['argument_name', 'type', 'u
 PredicatePattern = namedtuple('PredicatePattern', ['predicate_name', 'nonlinearity', 'elements'])
 
 # Element in a PredicatePattern
-#   Each element is of the form `(argument_name, `value`)
-#       - `argument_name`: `str` type. The name of the formal argument, i.e., working memory variable name, of this
-#               predicate
-#       - `value`:# Define (sub)structures using namedtuple or customized class
-
-# Argument in a Predicate
-#   Each Argument namedtuple is a tuple of two or three elements of the form `(argument_name, type)` or
-#    `(argument_name, type, unique_symbol)`
-#       - `argument_name`:  `str` type. the name of the working memory variable
-#       - `type`:  `str` or `Type` type. The `Type` of the working memory variable
-#       - `unique_symbol`:  `None` or `str` type. Default to None
-#           - `'!'`: Select best
-#           - `'%'`: Maintain distribution
-#           - `'$'`: Select expected value
-#           - `'^'`: Maintain exponential transform of distribution
-#           - `'='`: Select by probability matching
-#           **NOTE**: `unique_symbol` must be specified if to declare this variable to be unique. Otherwise will
-#                 be treated as a universal variable. You can use `%` to specify that the distribution should not be
-#                 changed during selection phase.
-PredicateArgument = namedtuple('PredicateArgument', ['argument_name', 'type', 'unique_symbol'], defaults=[None])
-
-# Predicate Pattern in a Conditional
-#   Each predicate pattern is of the form `(predicate_name, nonlinearity, 'elements')
-#       - `predicate_name`:  name of the predicate in question
-#       - `nonlinearity`: `None` or one of the following: `'negation'` or `'-'`, `'exponential'` or `'^'`, `'sigmoid'`
-#               or `'s'`, `'relu'` or `'r'`, `'tanh'` or `'t'`, `'exp'` or `'e'` (true exponential),
-#               or customized torch nonlinearity functions
-#       - `elements`: `list` type. A list of `PatternElement` namedtuples.
-# TODO: Finish construction of following substructure and their docs
-PredicatePattern = namedtuple('PredicatePattern', ['predicate_name', 'nonlinearity', 'elements'])
-
-# Element in a PredicatePattern
 #   Each element is of the f
 #           - A Constant Region, which is:      # TODO: to implement in v1
 #               - An `int` if the variable is discrete, or an object (a symbol) in this variable's symbol list if the
