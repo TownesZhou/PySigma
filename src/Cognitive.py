@@ -117,6 +117,12 @@ class Sigma:
                                          "predicate '{}'".format(element.argument_name, element, pattern,
                                                                  pattern.predicate_name))
 
+            # If function specified as a str, check whether there already exists a conditional with that name
+            if type(structure.function) is str:
+                if structure.function not in self.name2conditional.keys():
+                    raise ValueError("Unknown conditional '{}' specified in the function field in the conditional '{}'"
+                                     .format(structure.function, structure.name))
+
             # Register structure
             self.conditional_list.append(structure)
             self.name2conditional[structure.name] = structure
@@ -249,6 +255,37 @@ class Sigma:
             Compile the given conditional to the graphical architecture.
             A Sigma's implementation of Rete algorithm
         """
+        # Conditional nodegroup structure:
+        #       { conditional :
+        #           { "alpha“ ：
+        #               { predicate :
+        #                   { "FFN" : filter factor node,
+        #                     "FFN_VN" : wmvn after FFN,
+        #                     "NLFN" : nonlinearity factor node,
+        #                     "NLFN_VN" : wmvn after NLFN,
+        #                     "ADFN" : affine delta factor node,
+        #                     "ADFN_VN" : wmvn after ADFN,
+        #                     "ATFN" : affine transformation factor node,
+        #                     "ATFN_VN" : wmvn after ATFN,
+        #                     "terminal" : the terminal variable node at the end of the alpha subnet
+        #                   }
+        #               },
+        #             "beta" :
+        #               { predicate :
+        #                   { "BJFN" : beta join factor node,
+        #                     "BJFN_VN" : wmvn after BJFN
+        #                   }
+        #               },
+        #             "gamma" :
+        #               { "GFFN" : gamma function factor node,
+        #                 "GFFN_VN" : wmvn after GFFN,
+        #                 "BJFN" : the ultimate beta-join node that joins GFFN_VN. The peak of the alpha-beta subgraph,
+        #                 "BJFN_VN" : the wmvn after BJFN
+        #               }
+        #           }
+        #       }
+        nodegroup = dict(alpha={}, beta={}, gamma={})
+
         name_prefix = conditional.name + "_ALPHA_"
         # Step 1: Compile Alpha subnetworks per predicate pattern
         #   Link directions for conditions goes inward toward Beta network
@@ -278,8 +315,11 @@ class Sigma:
             for pattern in pattern_group:
                 # Initialize the alpha subnet terminal node to be the predicate's WMVN
                 pred = self.name2predicate[pattern.predicate_name]
-                nodegroup = self.predicate2group[pred]
-                terminal = nodegroup['WMVN'] if 'WMVN' in nodegroup.keys() else nodegroup['WMVN_OUT']
+                pred_nodegroup = self.predicate2group[pred]
+                terminal = pred_nodegroup['WMVN'] if 'WMVN' in pred_nodegroup.keys() else pred_nodegroup['WMVN_OUT']
+
+                # alpha sub nodegroup for this predicate
+                alpha_sub_ng = {}
 
                 # Set up Filter nodes
                 # TODO: Detailed implementation left for future iterations
@@ -291,6 +331,9 @@ class Sigma:
                     nlfn_vn = self.G.new_node(WMVN, name_prefix + "NLFN_VN", pred.var_list)
                     terminal = grow_alpha(terminal, nlfn, nlfn_vn, ptype)
 
+                    alpha_sub_ng["NLFN"] = nlfn
+                    alpha_sub_ng["NLFM_VN"] = nlfn_vn
+
                 # Set up Affine Delta nodes
                 # First create Variables for pattern vars. If one pattern vars is associated with multiple wm vars,
                 #   then the size of that pattern var is the max size of all associated wm vars (to leave enough region)
@@ -298,6 +341,7 @@ class Sigma:
                 #       wm variable. If so, what happens if a ptv is associated with multiple wmvs with different uniqueness
                 #       Currently assuming pattern varaibles are all unique, i.e., if needed, perform sum reduce.
                 pt_var_list = []
+                # TODO: Find a better way to register variables and especially distinguish variable name from Variables
                 for ptv, wmvs in conditional.ptv2wmv[pattern].items():
                     if len(wmvs) == 1:
                         pt_var_list.append(Variable(ptv, wmvs[0].size, unique=True, selection=False))
@@ -307,14 +351,22 @@ class Sigma:
                         pt_var_list.append(Variable(ptv, size, unique=True, selection=False))
 
                 adfn = self.G.new_node(ADFN, name_prefix + "ADFN", pattern.pt_vals)
-                adfn_vb = self.G.new_node(WMVN, name_prefix + "ADFN_VN", pt_var_list)
-                terminal = grow_alpha(terminal, adfn, adfn_vb, ptype)
+                adfn_vn = self.G.new_node(WMVN, name_prefix + "ADFN_VN", pt_var_list)
+                terminal = grow_alpha(terminal, adfn, adfn_vn, ptype)
+
+                alpha_sub_ng["ADFN"] = adfn
+                alpha_sub_ng["ADFN_VN"] = adfn_vn
 
                 # Set up Affine Transformation nodes
                 # TODO: Detailed implementation left for future iterations
 
                 # Alpha subnet construction finished, register terminal node
                 alpha_terminals[pattern.predicate_name] = terminal
+
+                alpha_sub_ng["terminal"] = terminal
+
+                # Register this alpha sub nodegroup in the global nodegroup
+                nodegroup["alpha"][pred] = alpha_sub_ng
 
         # Step 2: Compile Beta network
 
@@ -327,6 +379,9 @@ class Sigma:
                 if var not in vars_1:
                     var_list.append(var)
             return var_list
+
+        # Beta nodegroup
+        beta_ng = {}
 
         # Part 1: Linear growth of conditions Beta subnets
         terminal = None
@@ -345,6 +400,17 @@ class Sigma:
                 self.G.add_unilink(extra, bjfn)
                 self.G.add_unilink(bjfn, bjfn_vn)
 
+                # Register nodes in nodegroup. Note that the first two joining pattern in the linear join beta network
+                #   has same BJFN and BJFN_VN
+                if i == 1:
+                    # First pattern's nodes
+                    beta_ng[self.name2predicate[conditional.conditions[0].predicate_name]] = \
+                        dict(BJFN=bjfn, BJFN_VN=bjfn_vn)
+                # All other patterns' nodes
+                beta_ng[self.name2predicate[conditional.conditions[i].predicate_name]] = \
+                    dict(BJFN=bjfn, BJFN_VN=bjfn_vn)
+
+                # Update terminal node
                 terminal = bjfn_vn
 
         # Part 2: Linear growth of condacts Beta subnets
@@ -364,6 +430,9 @@ class Sigma:
                 self.G.add_bilink(extra, bjfn)          # bi-link from condact terminal
                 self.G.add_bilink(bjfn, bjfn_vn)        # bi-link from now on
 
+                # In this case there are conditions, so only care about this first condact's nodegroup
+                beta_ng[self.name2predicate[conditional.condacts[0].predicate_name]] = dict(BJFN=bjfn, BJFN_VN=bjfn_vn)
+
                 terminal = bjfn_vn
         if len(conditional.condacts) > 1:
             for i in range(1, len(conditional.condacts)):
@@ -378,8 +447,32 @@ class Sigma:
                 self.G.add_bilink(extra, bjfn)
                 self.G.add_bilink(bjfn, bjfn_vn)
 
+                # if there are no conditions, and now we have two condacts, then both the first two condacts have same
+                #   BJFN and BJFN_VN
+                if i == 1 and len(conditional.conditions) == 0:
+                    beta_ng[self.name2predicate[conditional.condacts[0].predicate_name]] = \
+                        dict(BJFN=bjfn, BJFN_VN=bjfn_vn)
+                # All other condact (including the second one) have normal nodegroup
+                beta_ng[self.name2predicate[conditional.condacts[i].predicate_name]] = dict(BJFN=bjfn, BJFN_VN=bjfn_vn)
+
                 terminal = bjfn_vn
 
+        # Register Beta subnet nodegroup
+        nodegroup["beta"] = beta_ng
+
         # Part 3: Joining of Gamma function nodes
+        gffn, gffn_vn = None, None
+        # If function is specified as a str, find that conditional's gamma function nodes
+        if type(conditional.function) is str:
+            alien_cond = self.name2conditional[conditional.function]
+            gffn = self.conditional2group[alien_cond]["gamma"]["GFFN"]
+            _, func_var_list = gffn.get_function()
+            gffn_vn = self.G.new_node(WMVN, name_prefix + "GFFN_VN", func_var_list)
+        # Otherwise, set gamma function normally
+        else:
+            # Create function variable list
+
+            # TODO: finish this part
+            pass
 
 

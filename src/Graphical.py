@@ -200,6 +200,9 @@ class FactorNode(Node):
             if self._func_var_list is not None else None
         self.pretty_log["function size"] = var_size
 
+    def get_function(self):
+        return self._function, self._func_var_list
+
     def add_link(self, linkdata):
         """
             Register the name and variables of a newly added variable node by registering the linkdata that connect to

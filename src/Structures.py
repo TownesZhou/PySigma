@@ -218,8 +218,10 @@ class Conditional:
                     of the function will be ordered in agreement with the given order of the variable names.
                 Note: function_var_names must consist of pattern variables already declared in the conditions, actions,
                     & condacts.
-        :param function:  an `int` or `float` or a `torch.tensor`, specifying the conditional function defined over
-                    function_var_names. If None, default to 1 everywhere
+        :param function:  an `int` or `float` or a `torch.tensor` or 'str', specifying the conditional function defined
+                    over function_var_names.
+                If None, default to 1 everywhere.
+                If 'str', should be the name of another conditional, linking that conditional's function
         :param normal:  an list of `str`, specifying which variables to normalize over in gradient descent learning
             #TODO: leave to implement in future iterations
         """
@@ -248,8 +250,8 @@ class Conditional:
                 "Elements in the argument 'function_var_names' must all be of type str"
         if function is None:
             function = 1
-        assert type(function) in [int, float, torch.Tensor], \
-            "Argument 'function' must be of type int, float, or torch.Tensor"
+        assert type(function) in [int, float, torch.Tensor, str], \
+            "Argument 'function' must be of type int, float, torch.Tensor, or str"
         if normal is not None:
             assert type(normal) is list, "Argument 'normal' must be a list"
             assert all(type(v) is str for v in normal), \
