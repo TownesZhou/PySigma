@@ -123,6 +123,26 @@ class Sigma:
                     raise ValueError("Unknown conditional '{}' specified in the function field in the conditional '{}'"
                                      .format(structure.function, structure.name))
 
+            # Set up lookup tables
+            for pattern, pattern_ptv in structure.pattern_pt_vals.items():
+                for wmv, ptv_val in pattern_ptv.items():
+                    ptv_name = ptv_val["name"]
+                    if ptv_val["type"] is "const":
+                        structure.global_pt_vals[ptv_name] = {
+                            "type": "const",
+                            "size": len(ptv_val["vals"]) if type(ptv_val["vals"]) is list else 1,
+                        }
+                    else:
+                        ptv_size = self.name2predicate[pattern.predicate_name].var_name2var[ptv_name]
+                        if ptv_name in structure.global_pt_vals.keys():
+                            structure.global_pt_vals[ptv_name]["size"] = max(structure.global_pt_vals[ptv_name]["size"],
+                                                                             ptv_size)
+                        else:
+                            structure.global_pt_vals[ptv_name] = {
+                                "type": "var",
+                                "size": ptv_size
+                            }
+
             # Register structure
             self.conditional_list.append(structure)
             self.name2conditional[structure.name] = structure
@@ -350,7 +370,7 @@ class Sigma:
                         size = max(var.size for var in wmvs)
                         pt_var_list.append(Variable(ptv, size, unique=True, selection=False))
 
-                adfn = self.G.new_node(ADFN, name_prefix + "ADFN", pattern.pt_vals)
+                adfn = self.G.new_node(ADFN, name_prefix + "ADFN", pattern.pattern_pt_vals)
                 adfn_vn = self.G.new_node(WMVN, name_prefix + "ADFN_VN", pt_var_list)
                 terminal = grow_alpha(terminal, adfn, adfn_vn, ptype)
 

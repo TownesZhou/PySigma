@@ -4,7 +4,7 @@
     Author of this file: Jincheng Zhou, University of Southern California
 """
 
-from Cognitive import *
+import torch
 from collections import namedtuple
 
 
@@ -174,7 +174,7 @@ class Predicate:
                 "argument name cannot duplicate. Duplicate name: {}".format(argument['argument_name'])
             assert type(argument.type) is Type, \
                 "The 'type' field in the predicate argument '{}' must be of type Type".format(argument.type, argument)
-            assert argument.unique_symbol in ['!', '%', '$', '^', '='], \
+            assert argument.unique_symbol in [None, '!', '%', '$', '^', '='], \
                 "Unknown unique symbol '{}' in the predicate argument '{}'".format(argument.unique_symbol, argument)
             self.wm_var_names.append(argument.argument_name)
             self.wm_var_types.append(argument.type)
@@ -293,21 +293,30 @@ class Conditional:
 
         # Set up pattern var list for future lookup
         # Set up internal WM var -- pattern var map per predicate pattern for future lookup.
-        #       pt_vals = { pattern :
-        #                    { wm_var_name :
-        #                       { "name" : pt_var_name
-        #                         "type" : "var" or "const"
-        #                         "vals" : int/str values if type is const or None otherwise
-        #                         "rel"  : relation, if specified, otherwise None} } }
+        #       pattern_pt_vals = { pattern :
+        #                            { wm_var_name :
+        #                               { "name" : pt_var_name
+        #                                 "type" : "var" or "const"
+        #                                 "vals" : int/str values if type is const or None otherwise
+        #                                 "rel"  : relation, if specified, otherwise None} } }
+        # Map from pattern variable to wm variables that is associated with it
         #       ptv2wmv = { pattern :
         #                    { pt_var_name : list of corresponding wm vars } }
-        #   constant pattern is assigned a unique constant variable name
+        # Global dictionary of pattern variable info. To be registered once passed into a Sigma program (because need to
+        #   look up various Type sizes
+        #   For the size field, take the max over the size of all wm vars associated with it if it is of 'var' type.
+        #       Else if 'const' type, take the number of elements / values in 'vals' field.
+        #       global_pt_vals = { pt_var_name :
+        #                           { "type" : "var" or "const",
+        #                             "size" : max size over associated wm vars } }
+        # constant pattern is assigned a unique constant variable name
         self.ptvar_list = []
-        self.pt_vals = {}
+        self.pattern_pt_vals = {}
+        self.global_pt_vals = {}
         self.ptv2wmv = {}
         const_count = 0
         for pattern in conditions + condacts + actions:
-            self.pt_vals[pattern] = {}
+            self.pattern_pt_vals[pattern] = {}
             self.ptv2wmv[pattern] = {}
             for element in pattern.elements:
                 pt_var_info = {}
@@ -325,7 +334,7 @@ class Conditional:
                     const_count += 1
 
                 self.ptvar_list.append(pt_var_info["name"])
-                self.pt_vals[pattern][element.argument_name] = pt_var_info
+                self.pattern_pt_vals[pattern][element.argument_name] = pt_var_info
                 if pt_var_info["name"] not in self.ptv2wmv.keys():
                     self.ptv2wmv[pt_var_info["name"]] = [element.argument_name]
                 else:

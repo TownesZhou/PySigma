@@ -1,12 +1,13 @@
 import torch
+from Structures import *
 from Cognitive import *
 from Graphical import *
 from Sigmaboard import *
 
 
-def run_test(test):
+def run_test(test, *args, **kwargs):
     print("\n\n########## RUNNING TEST: {} ##########\n".format(test.__name__))
-    test()
+    test(*args, **kwargs)
     print("\n####################")
 
 
@@ -58,7 +59,7 @@ def align_test_2():
     print("aligned msg dimension: {}".format(aligned_msg.shape))
 
 
-def predicate_compile_test_1():
+def predicate_compile_test_1(to_render=False):
     """
         open-world predicate without selection
     """
@@ -79,10 +80,11 @@ def predicate_compile_test_1():
     sigma.add(test_pred)
 
     # test web-based render
-    render(sigma)
+    if to_render:
+        render(sigma)
 
 
-def predicate_compile_test_2():
+def predicate_compile_test_2(to_render=False):
     """
         closed-world, perceptual, memorial (Long-Term Memory), w/out selection, multiple variables
     """
@@ -104,10 +106,11 @@ def predicate_compile_test_2():
     sigma.add(test_pred)
 
     # test web-based render
-    render(sigma)
+    if to_render:
+        render(sigma)
 
 
-def predicate_compile_test_3():
+def predicate_compile_test_3(to_render=False):
     """
         closed-world, perceptual, memorial, with selection, multiple variables
     """
@@ -129,10 +132,11 @@ def predicate_compile_test_3():
     sigma.add(test_pred)
 
     # test web-based render
-    render(sigma)
+    if to_render:
+        render(sigma)
 
 
-def predicate_compile_test_4():
+def predicate_compile_test_4(to_render=False):
     """
         closed-world, perceptual, memorial (Long-Term Memory), w/ selection
     :return:
@@ -140,9 +144,46 @@ def predicate_compile_test_4():
     pass
 
 
+def conditional_compile_test_1():
+    """
+        transitivity rule
+    """
+    sigma = Sigma()
+
+    # add one type
+    type_1 = Type("type_1", 'discrete', min=0, max=3)
+    sigma.add(type_1)
+
+    # one arity-2 predicate
+    arg_1 = PredicateArgument("arg_1", type_1)
+    arg_2 = PredicateArgument("arg_2", type_1)
+    pred = Predicate("test_pred", [arg_1, arg_2], world="closed")
+    sigma.add(pred)
+
+    # transitivity conditional
+    cond_1 = Conditional("cond_1",
+                         conditions=[
+                             PredicatePattern("test_pred", None,
+                                              [PatternElement("arg_1", PatternVariable("a")),
+                                               PatternElement("arg_2", PatternVariable("b"))]),
+                             PredicatePattern("test_pred", None,
+                                              [PatternElement("arg_1", PatternVariable("b")),
+                                               PatternElement("arg_2", PatternVariable("c"))])
+
+                         ],
+                         actions=[
+                             PredicatePattern("test_pred", None,
+                                              [PatternElement("arg_1", PatternVariable("a")),
+                                               PatternElement("arg_2", PatternVariable("c"))])
+                         ]
+                         )
+    sigma.add(cond_1)
+    # TODO: Test this case, especially how conditional's lookup tables are properly set up
+
 
 run_test(align_test_1)
 run_test(align_test_2)
 # run_test(predicate_compile_test_1)
 # run_test(predicate_compile_test_2)
-run_test(predicate_compile_test_3)
+run_test(predicate_compile_test_3, to_render=False)
+run_test(conditional_compile_test_1)
