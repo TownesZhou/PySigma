@@ -258,6 +258,9 @@ class Conditional:
                 "Elements in the argument 'normal' must all be of type str"
 
         # Check Predicate Pattern validity
+        conditions = [] if conditions is None else conditions
+        condacts = [] if condacts is None else condacts
+        actions = [] if actions is None else actions
         for pattern in conditions + condacts + actions:
             assert type(pattern.predicate_name) is str, "The 'predicate_name' field in the predicate pattern '{}' must be of type str".format(pattern)
             # check pattern nonlinearity
@@ -290,6 +293,12 @@ class Conditional:
                         assert type(element.value.relation) in [int, Affine, Filter], \
                             "The 'relation' field must be of type 'int', 'Affine', or 'Filter' in the pattern variable '{}' of pattern element '{}' of the predicate pattern '{}'".format(element.value, element, pattern)
                     # TODO: Leave checking validity of Affine and Filter in future iterations
+
+        # Name the predicate patterns for indexing various lookup tables
+        self.name2pattern = {"pattern_"+str(i): pattern for i, pattern in enumerate(conditions + condacts + actions)}
+        self.name2condition_pattern = {"pattern_"+str(i): pattern for i, pattern in enumerate(conditions)}
+        self.name2condact_pattern = {"pattern_"+str(i + len(conditions)): pattern for i, pattern in enumerate(condacts)}
+        self.name2action_pattern = {"pattern_"+str(i + len(conditions) + len(condacts)): pattern for i, pattern in enumerate(actions)}
 
         # Set up pattern var list for future lookup
         # Set up internal WM var -- pattern var map per predicate pattern for future lookup.

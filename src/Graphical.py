@@ -572,8 +572,13 @@ class Graph(networkx.DiGraph):
              WMFN.__name__: WMFN,
              ACFN.__name__: ACFN,
              FFN.__name__: FFN,
+             NLFN.__name__: NLFN,
              ADFN.__name__: ADFN,
-             WMVN.__name__:WMVN}
+             ATFN.__name__: ATFN,
+             BJFN.__name__: BJFN,
+             GFFN.__name__: GFFN,
+             WMVN.__name__:WMVN,
+             }
 
     def new_node(self, node_type, *args, **kwargs):
         """

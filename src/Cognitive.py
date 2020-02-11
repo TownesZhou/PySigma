@@ -67,87 +67,16 @@ class Sigma:
 
         # Register new Type
         if isinstance(structure, Type):
-            self.type_list.append(structure)
-            self.name2type[structure.name] = structure
+            self._register_type(structure)
 
         # Register new Predicate
         if isinstance(structure, Predicate):
-            # Check if the types in the predicate are already defined, and change str to Type
-            for i, argument_type in enumerate(structure.wm_var_types):
-                if argument_type not in self.name2type.keys() and argument_type not in self.type_list:
-                    raise ValueError("Predicate {} try to include type {} that has not yet been defined in this program"
-                                     .format(structure.name, argument_type))
-                # If this type specified in that Predicate is a string, than change it to corresponding Type
-                if type(argument_type) is str:
-                    structure.wm_var_types[i] = self.name2type[argument_type]
-
-            # Create and register Variables
-            for (var_name, var_type, var_unique) in \
-                    zip(structure.wm_var_names, structure.wm_var_types, structure.wm_var_unique):
-                var = Variable(var_name, var_type.size, var_unique is not None, var_unique)
-                structure.var_list.append(var)
-                structure.var_name2var[var_name] = var
-
-            # Register structure
-            self.predicate_list.append(structure)
-            self.name2predicate[structure.name] = structure
-
-            # Compile this predicate
+            self._register_predicate(structure)
             self._compile_predicate(structure)
 
         # Register new Conditional
         if isinstance(structure, Conditional):
-            # Check if predicate patterns align with already registered predicates
-            for pattern in structure.conditions + structure.condacts + structure.actions:
-                # Check if predicate exists
-                if pattern.predicate_name not in self.name2predicate.keys():
-                    raise ValueError("The predicate pattern '{}' includes an unknown predicate '{}'".format(pattern, pattern.predicate_name))
-                # Check if the number of predicate elements is no greater than the number of WM vars of that predicate
-                pred = self.name2predicate[pattern.predicate_name]
-                if len(pattern.elements) > len(pred.wm_var_names):
-                    raise ValueError("The number of predicate elements declared in the predicate pattern '{}', "
-                                     "currently {}, exceeds the number of working memory variable in the predicate "
-                                     "'{}', currently {}".format(pattern, len(pattern.elements), pattern.predicate_name,
-                                                                 len(pred.wm_var_names)))
-                # Check if the 'argument_name' in the 'elements' agree with that predicate's WM vars
-                for element in pattern.elements:
-                    if element.argument_name not in pred.wm_var_names:
-                        raise ValueError("The 'argument_name' '{}' declared in the pattern element '{}' of the "
-                                         "predicate pattern '{}' is not one of the working memory variables of the "
-                                         "predicate '{}'".format(element.argument_name, element, pattern,
-                                                                 pattern.predicate_name))
-
-            # If function specified as a str, check whether there already exists a conditional with that name
-            if type(structure.function) is str:
-                if structure.function not in self.name2conditional.keys():
-                    raise ValueError("Unknown conditional '{}' specified in the function field in the conditional '{}'"
-                                     .format(structure.function, structure.name))
-
-            # Set up lookup tables
-            for pattern, pattern_ptv in structure.pattern_pt_vals.items():
-                for wmv, ptv_val in pattern_ptv.items():
-                    ptv_name = ptv_val["name"]
-                    if ptv_val["type"] is "const":
-                        structure.global_pt_vals[ptv_name] = {
-                            "type": "const",
-                            "size": len(ptv_val["vals"]) if type(ptv_val["vals"]) is list else 1,
-                        }
-                    else:
-                        ptv_size = self.name2predicate[pattern.predicate_name].var_name2var[ptv_name]
-                        if ptv_name in structure.global_pt_vals.keys():
-                            structure.global_pt_vals[ptv_name]["size"] = max(structure.global_pt_vals[ptv_name]["size"],
-                                                                             ptv_size)
-                        else:
-                            structure.global_pt_vals[ptv_name] = {
-                                "type": "var",
-                                "size": ptv_size
-                            }
-
-            # Register structure
-            self.conditional_list.append(structure)
-            self.name2conditional[structure.name] = structure
-
-            # Compile this conditional
+            self._register_conditional(structure)
             self._compile_conditional(structure)
 
     def add_type(self, *args, **kwargs):
@@ -177,6 +106,94 @@ class Sigma:
         """
         # TODO: run Sigma program
         pass
+
+    def _register_type(self, sigma_type):
+        """
+            Register a new type in this sigma program
+        """
+        self.type_list.append(sigma_type)
+        self.name2type[sigma_type.name] = sigma_type
+
+    def _register_predicate(self, predicate):
+        """
+            Register a new predicate in this sigma program. Check against existing type entries and fill up relevant
+                lookup tables
+        """
+        # Check if the types in the predicate are already defined, and change str to Type
+        for i, argument_type in enumerate(predicate.wm_var_types):
+            if argument_type not in self.name2type.keys() and argument_type not in self.type_list:
+                raise ValueError("Predicate {} try to include type {} that has not yet been defined in this program"
+                                 .format(predicate.name, argument_type))
+            # If this type specified in that Predicate is a string, than change it to corresponding Type
+            if type(argument_type) is str:
+                predicate.wm_var_types[i] = self.name2type[argument_type]
+
+        # Create and register Variables
+        for (var_name, var_type, var_unique) in \
+                zip(predicate.wm_var_names, predicate.wm_var_types, predicate.wm_var_unique):
+            var = Variable(var_name, var_type.size, var_unique is not None, var_unique)
+            predicate.var_list.append(var)
+            predicate.var_name2var[var_name] = var
+
+        # Register predicate
+        self.predicate_list.append(predicate)
+        self.name2predicate[predicate.name] = predicate
+
+    def _register_conditional(self, conditional):
+        """
+            Register a new conditional in this sigma program. Check against existing type and predicate entries.
+                Fill up relevant lookup tables.
+        """
+        # Check if predicate patterns align with already registered predicates
+        for pattern in conditional.conditions + conditional.condacts + conditional.actions:
+            # Check if predicate exists
+            if pattern.predicate_name not in self.name2predicate.keys():
+                raise ValueError("The predicate pattern '{}' includes an unknown predicate '{}'".format(pattern,
+                                                                                                        pattern.predicate_name))
+            # Check if the number of predicate elements is no greater than the number of WM vars of that predicate
+            pred = self.name2predicate[pattern.predicate_name]
+            if len(pattern.elements) > len(pred.wm_var_names):
+                raise ValueError("The number of predicate elements declared in the predicate pattern '{}', "
+                                 "currently {}, exceeds the number of working memory variable in the predicate "
+                                 "'{}', currently {}".format(pattern, len(pattern.elements), pattern.predicate_name,
+                                                             len(pred.wm_var_names)))
+            # Check if the 'argument_name' in the 'elements' agree with that predicate's WM vars
+            for element in pattern.elements:
+                if element.argument_name not in pred.wm_var_names:
+                    raise ValueError("The 'argument_name' '{}' declared in the pattern element '{}' of the "
+                                     "predicate pattern '{}' is not one of the working memory variables of the "
+                                     "predicate '{}'".format(element.argument_name, element, pattern,
+                                                             pattern.predicate_name))
+
+        # If function specified as a str, check whether there already exists a conditional with that name
+        if type(conditional.function) is str:
+            if conditional.function not in self.name2conditional.keys():
+                raise ValueError("Unknown conditional '{}' specified in the function field in the conditional '{}'"
+                                 .format(conditional.function, conditional.name))
+
+        # Set up lookup tables
+        for pattern, pattern_ptv in conditional.pattern_pt_vals.items():
+            for wmv, ptv_val in pattern_ptv.items():
+                ptv_name = ptv_val["name"]
+                if ptv_val["type"] is "const":
+                    conditional.global_pt_vals[ptv_name] = {
+                        "type": "const",
+                        "size": len(ptv_val["vals"]) if type(ptv_val["vals"]) is list else 1,
+                    }
+                else:
+                    ptv_size = self.name2predicate[pattern.predicate_name].var_name2var[ptv_name]
+                    if ptv_name in conditional.global_pt_vals.keys():
+                        conditional.global_pt_vals[ptv_name]["size"] = max(conditional.global_pt_vals[ptv_name]["size"],
+                                                                         ptv_size)
+                    else:
+                        conditional.global_pt_vals[ptv_name] = {
+                            "type": "var",
+                            "size": ptv_size
+                        }
+
+        # Register conditional
+        self.conditional_list.append(conditional)
+        self.name2conditional[conditional.name] = conditional
 
     def _compile_predicate(self, predicate):
         """
