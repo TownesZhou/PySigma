@@ -29,7 +29,8 @@ class Variable:
     """
         Variable as in variable nodes in the graphical architecture. Store information about this variable such as
             whether it is unique or universal.
-        The equality of variables' identity is determined by the equality of their name
+        Note: The equality of variables' identity is determined by the equality of their name, regardless of the values
+            of other fields
     """
 
     def __init__(self, name, size, unique=True, selection=False):
@@ -51,6 +52,10 @@ class Variable:
     def __ne__(self, other):
         # override so '!=' operator test the 'name' field
         return self.name != other.name
+
+    def __str__(self):
+        # override to provide the name as the string representation
+        return self.name
 
 
 class LinkData:
@@ -81,6 +86,9 @@ class LinkData:
         # Whether this link is pointing toward a factor node
         self.to_fn = to_fn
 
+        # Record the dimensions of link message. Use to check potential dimension mismatch
+        self._dims = [var.size for var in self.var_list]
+
     def set(self, new, epsilon):
         """
             Set the link message memory to the new message arriving at this link. Implement the optimization so that
@@ -89,6 +97,13 @@ class LinkData:
         :param new:         new arriving message
         :param epsilon:     epsilon criterion
         """
+        # Check dimension mismatch
+        size = list(new.shape)
+        if size != self._dims:
+            raise ValueError("The new message's dimension '{}' does not match the link memory's preset dimension '{}'. "
+                             "Target variable node: '{}', link direction: toward factor node = '{}'"
+                             .format(size, self._dims, str(self.vn), self.to_fn))
+
         diff = torch.max(torch.abs(self.memory - new))
         if diff < epsilon:
             return
@@ -125,6 +140,10 @@ class Node:
         self.log = {}
         self.pretty_log = {}        # Log info to display at the GUI
 
+    def __str__(self):
+        # override to provide the node's name as its string representation
+        return self.name
+
 
 class FactorNode(Node):
     """
@@ -148,7 +167,7 @@ class FactorNode(Node):
         :param name:            Name of this factor node
         :param function:        An int, float, or torch.tensor. or Message, with dimension ordered by func_var_list. If
                                 None, set to default value (1). If torch.tensor, change type to Message
-        :param func_var_list:   Variables of the function
+        :param func_var_list:   Variables of the function. Default to None
         :param epsilon:         The epsilon no-change criterion used for comparing quiesced message
         """
         super(FactorNode, self).__init__(name)
@@ -207,12 +226,25 @@ class FactorNode(Node):
         """
             Register the name and variables of a newly added variable node by registering the linkdata that connect to
                 that variable node. New variables, if not already exist in _var_list, will be appended.
+            If a variable from the linkdata already exists in _var_list, check that their size agrees, otherwise raise
+                an error.
+
             Note: if the link between the variable node and this factor node is bidirectional, then this method should
                 be called twice, once with linkdata of each direction.
         :param linkdata:    the linkdata of the link that connects to the newly added variable node
         """
         if linkdata in self._in_linkdata or linkdata in self._out_linkdata:
             return
+
+        # Check variable size agrees
+        for var in linkdata.var_list:
+            for old_var in self._var_list:
+                if var == old_var:
+                    assert var.size == old_var.size, "The variable '{}' from the variable node '{}' that attempts to " \
+                                                     "link to this factor node has size '{}', which does not match the " \
+                                                     "size '{}' of the variable with the same name already present in " \
+                                                     "the variable lists of this factor node."\
+                        .format(str(var), str(linkdata.vn), var.size, old_var.size)
 
         if linkdata.to_fn:
             self._in_linkdata.append(linkdata)
@@ -412,6 +444,9 @@ class ADFN(FactorNode):
         Essential component of the Rete's Alpha network's within pattern variable matching
 
         Note: ADFN only admits one incoming link and one outgoing link.
+
+        Note: Special implementation needed for resolving potential conflicts between pattern variables and wm variables,
+                especially mismatch in sizes.
     """
 
     # TODO
