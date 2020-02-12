@@ -302,14 +302,14 @@ class Conditional:
 
         # Set up pattern var list for future lookup
         # Set up internal WM var -- pattern var map per predicate pattern for future lookup.
-        #       pattern_pt_vals = { pattern :
+        #       pattern_pt_vals = { pattern_name :
         #                            { wm_var_name :
         #                               { "name" : pt_var_name
         #                                 "type" : "var" or "const"
         #                                 "vals" : int/str values if type is const or None otherwise
         #                                 "rel"  : relation, if specified, otherwise None} } }
         # Map from pattern variable to wm variables that is associated with it
-        #       ptv2wmv = { pattern :
+        #       ptv2wmv = { pattern_name :
         #                    { pt_var_name : list of corresponding wm vars } }
         # Global dictionary of pattern variable info. To be registered once passed into a Sigma program (because need to
         #   look up various Type sizes
@@ -317,16 +317,18 @@ class Conditional:
         #       Else if 'const' type, take the number of elements / values in 'vals' field.
         #       global_pt_vals = { pt_var_name :
         #                           { "type" : "var" or "const",
-        #                             "size" : max size over associated wm vars } }
+        #                             "size" : max size over associated wm vars,
+        #                             "unique" : True or False } }
         # constant pattern is assigned a unique constant variable name
         self.ptvar_list = []
         self.pattern_pt_vals = {}
-        self.global_pt_vals = {}
+        self.global_pt_vals = {}        # To be filled after passed into a Sigma program
         self.ptv2wmv = {}
         const_count = 0
-        for pattern in conditions + condacts + actions:
-            self.pattern_pt_vals[pattern] = {}
-            self.ptv2wmv[pattern] = {}
+
+        for pt_name, pattern in self.name2pattern.items():
+            self.pattern_pt_vals[pt_name] = {}
+            self.ptv2wmv[pt_name] = {}
             for element in pattern.elements:
                 pt_var_info = {}
                 if type(element.value) is PatternVariable:
@@ -343,7 +345,7 @@ class Conditional:
                     const_count += 1
 
                 self.ptvar_list.append(pt_var_info["name"])
-                self.pattern_pt_vals[pattern][element.argument_name] = pt_var_info
+                self.pattern_pt_vals[pt_name][element.argument_name] = pt_var_info
                 if pt_var_info["name"] not in self.ptv2wmv.keys():
                     self.ptv2wmv[pt_var_info["name"]] = [element.argument_name]
                 else:

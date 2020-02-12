@@ -165,31 +165,58 @@ class Sigma:
                                      "predicate '{}'".format(element.argument_name, element, pattern,
                                                              pattern.predicate_name))
 
-        # If function specified as a str, check whether there already exists a conditional with that name
-        if type(conditional.function) is str:
-            if conditional.function not in self.name2conditional.keys():
-                raise ValueError("Unknown conditional '{}' specified in the function field in the conditional '{}'"
-                                 .format(conditional.function, conditional.name))
-
         # Set up lookup tables
-        for pattern, pattern_ptv in conditional.pattern_pt_vals.items():
-            for wmv, ptv_val in pattern_ptv.items():
+        # TODO: Also add a check to make sure that user does not declare a pattern variable associated with multiple
+        #       working memory variables with different uniqueness.
+        for pt_name, ptv_vals in conditional.pattern_pt_vals.items():
+            for wmv, ptv_val in ptv_vals.items():
                 ptv_name = ptv_val["name"]
+                # Get corresponding wmv's uniqueness
+                pred = self.name2predicate[conditional.name2pattern[pt_name].predicate_name]
+                unique = pred.var_name2var[wmv].unique
                 if ptv_val["type"] is "const":
                     conditional.global_pt_vals[ptv_name] = {
                         "type": "const",
                         "size": len(ptv_val["vals"]) if type(ptv_val["vals"]) is list else 1,
+                        "unique": unique
                     }
                 else:
-                    ptv_size = self.name2predicate[pattern.predicate_name].var_name2var[ptv_name]
-                    if ptv_name in conditional.global_pt_vals.keys():
-                        conditional.global_pt_vals[ptv_name]["size"] = max(conditional.global_pt_vals[ptv_name]["size"],
-                                                                         ptv_size)
-                    else:
+                    ptv_size = pred.var_name2var[ptv_name].size
+                    # If variable not already exists, insert entry
+                    if ptv_name not in conditional.global_pt_vals.keys():
                         conditional.global_pt_vals[ptv_name] = {
                             "type": "var",
-                            "size": ptv_size
+                            "size": ptv_size,
+                            "unique": unique
                         }
+                    # Otherwise if already present, check whether uniqueness agree, and if so, take max size
+                    else:
+                        assert conditional.global_pt_vals[ptv_name]["unique"] == unique, \
+                            "Found conflict of uniqueness among working memory variables that is associated with the " \
+                            "pattern variable '{}'".format(ptv_name)
+                        # Take max size
+                        conditional.global_pt_vals[ptv_name]["size"] = \
+                            max(conditional.global_pt_vals[ptv_name]["size"], ptv_size)
+
+        # If function specified as a str, check whether there already exists a conditional with that name.
+        # If so, check if there variable dimensions match
+        if type(conditional.function) is str:
+            if conditional.function not in self.name2conditional.keys():
+                raise ValueError(
+                    "Unknown conditional '{}' specified in the function field in the conditional '{}'"
+                    .format(conditional.function, conditional.name))
+            else:
+                alien_cond = self.name2conditional[conditional.function]
+                for func_var_name in alien_cond.function_var_names:
+                    this_attri = conditional.global_pt_vals[func_var_name]
+                    alien_attri = alien_cond.global_pt_vals[func_var_name]
+                    if this_attri != alien_attri:
+                        raise ValueError("The attributes of the function variable '{}' does not match when attempting"
+                                         "to share function between conditional '{}' and '{}'.\n The attributes "
+                                         "determined in conditional '{}' is: '{}'.\n The attributes determined in "
+                                         "conditional '{}' is: '{}'.\n"
+                                         .format(func_var_name, conditional.name, alien_cond.name,
+                                                 conditional.name, this_attri, alien_cond.name, alien_attri))
 
         # Register conditional
         self.conditional_list.append(conditional)
@@ -199,7 +226,6 @@ class Sigma:
         """
             Compile the given predicate to the graphical architecture.
         """
-        # TODO: compile predicate. CHECK WITH DR.VOLKAN ABOUT CASES OF PREDICATE NODE GROUP STRUCTURES
 
         # Create new nodes and register bookkeeping info
         nodegroup = {}
@@ -262,21 +288,7 @@ class Sigma:
             self.G.add_unilink(wmfn_acfn, wmvn)
 
         # WMVN_OUT if this predicate involves selection
-        # TODO: QUESTION: In the case of a open-world with selection predicate, how is the WMVN_OUT node connected? Does
-        #  it connect from a WMFN even the predicate is open-world?
-        # if selection:
-        #     wmvn_out = self.G.new_node(WMVN, predicate.name + "_WMVN_OUT", var_list)
-        #     nodegroup['WMVN_OUT'] = wmvn_out
-        #
-        #     # Set up unidirectional link from WMFN to WMVN_OUT. Create a WMFN if not already created
-        #     if 'WMFN' in nodegroup.keys():
-        #         wmfn = nodegroup['WMFN']
-        #     else:
-        #         wmfn = self.G.new_node(WMFN, predicate.name + "_WMFN")
-        #         nodegroup['WMFN'] = wmfn
-        #     self.G.add_unilink(wmfn, wmvn_out)
-        #
-        # TODO: For now assume that whenever a selection is involved, the predicate MUST BE CLOSED_WORLD
+        # For now assume that whenever a selection is involved, the predicate MUST BE CLOSED_WORLD
             if predicate.selection:
                 wmvn_out = self.G.new_node(WMVN, predicate.name + "_WMVN_OUT", predicate.var_list)
                 nodegroup['WMVN_OUT'] = wmvn_out
@@ -348,8 +360,10 @@ class Sigma:
 
         alpha_terminals = {}    # map from predicate to the terminal variable node of that predicate's alpha subnet
         for ptype, pattern_group in zip(["condition", "condact", "action"],
-                                        [conditional.conditions, conditional.condacts, conditional.actions]):
-            for pattern in pattern_group:
+                                        [conditional.name2condition_pattern,
+                                         conditional.name2condact_pattern,
+                                         conditional.name2action_pattern]):
+            for pt_name, pattern in pattern_group.items():
                 # Initialize the alpha subnet terminal node to be the predicate's WMVN
                 pred = self.name2predicate[pattern.predicate_name]
                 pred_nodegroup = self.predicate2group[pred]
@@ -374,18 +388,15 @@ class Sigma:
                 # Set up Affine Delta nodes
                 # First create Variables for pattern vars. If one pattern vars is associated with multiple wm vars,
                 #   then the size of that pattern var is the max size of all associated wm vars (to leave enough region)
-                # TODO: discuss with Volkan whether the uniqueness of pattern variable should follow that of its associated
-                #       wm variable. If so, what happens if a ptv is associated with multiple wmvs with different uniqueness
-                #       Currently assuming pattern varaibles are all unique, i.e., if needed, perform sum reduce.
+                # TODO: Assume now that the uniqueness of a pattern variable follows that of the wm variables associated
+                #       with the pattern variable. Assume already check that there is no conflict of uniquesness among
+                #       these wm variables.
                 pt_var_list = []
-                # TODO: Find a better way to register variables and especially distinguish variable name from Variables
-                for ptv, wmvs in conditional.ptv2wmv[pattern].items():
-                    if len(wmvs) == 1:
-                        pt_var_list.append(Variable(ptv, wmvs[0].size, unique=True, selection=False))
-                    else:
-                        # one pattern variable associated with multiple wm variables
-                        size = max(var.size for var in wmvs)
-                        pt_var_list.append(Variable(ptv, size, unique=True, selection=False))
+                for ptv_name in conditional.ptv2wmv[pt_name].keys():
+                    ptv_type = conditional.global_pt_vals[ptv_name]["type"]
+                    ptv_size = conditional.global_pt_vals[ptv_name]["size"]
+                    ptv_unique = conditional.global_pt_vals[ptv_name]["unique"]
+                    pt_var_list.append(Variable(ptv_name, ptv_size, ptv_unique, selection=False))
 
                 adfn = self.G.new_node(ADFN, name_prefix + "ADFN", pattern.pattern_pt_vals)
                 adfn_vn = self.G.new_node(WMVN, name_prefix + "ADFN_VN", pt_var_list)
@@ -406,6 +417,8 @@ class Sigma:
                 nodegroup["alpha"][pred] = alpha_sub_ng
 
         # Step 2: Compile Beta network
+
+        name_prefix = conditional.name + "_ALPHA_"
 
         # util inner function for taking the union of pattern variable lists. Define such a custom union operation of
         #   lists because we may want to maintain variable orders
