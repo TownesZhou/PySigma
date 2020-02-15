@@ -30,16 +30,19 @@ from copy import deepcopy
 
 class Sigma:
     """
-        Sigma's cognitive interface. User should instantiate this class in order to create a Sigma model (or program).
+        Sigma's cognitive interface. User should instantiate this class to create a Sigma model (program).
 
         Graph compilation is eager, i.e., as soon as a predicate or a conditional is added, the corresponding subgraph
-            will be compiled and added to the graphical architecture. This is to support structure learning in Sigma in
-            the future.
+            will be compiled and added to the graphical architecture. This is in support of future research on structure
+            learning.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        """
+            Register global parameters. Create an empty Sigma program.
+        """
         ### Public bookkeeping data structures ###
-        ## Cognitive level bookkeeping data structure
+        ## Cognitive level lookup tables
         # list of types, predicates, conditionals
         self.type_list = []
         self.predicate_list = []
