@@ -32,6 +32,8 @@ class Sigma:
     """
         Sigma's cognitive interface. User should instantiate this class to create a Sigma model (program).
 
+        Implements Sigma compiler that translates cognitive languages into underlying factor graph representations.
+
         Graph compilation is eager, i.e., as soon as a predicate or a conditional is added, the corresponding subgraph
             will be compiled and added to the graphical architecture. This is in support of future research on structure
             learning.
@@ -40,6 +42,8 @@ class Sigma:
     def __init__(self, *args, **kwargs):
         """
             Register global parameters. Create an empty Sigma program.
+
+            "Lay down your pieces, and let's begin OBJECT CREATION."
         """
         ### Public bookkeeping data structures ###
         ## Cognitive level lookup tables
@@ -63,6 +67,8 @@ class Sigma:
     def add(self, structure):
         """
             Add a Sigma structure, one of Type, Predicate, or Conditional
+
+            "Fill in my data parameters INITIALIZATION."
         """
         # Check validity of argument
         if type(structure) not in [Type, Predicate, Conditional]:
@@ -106,6 +112,8 @@ class Sigma:
     def run(self, num_cycles):
         """
             Run the Sigma program for the given number of cycles.
+
+            "Set up our new world, and let's begin the SIMULATION."
         """
         # TODO: run Sigma program
         pass
