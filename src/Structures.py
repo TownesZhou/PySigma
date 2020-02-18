@@ -6,6 +6,7 @@
 
 import torch
 from collections import namedtuple
+from utils import *
 
 
 # Define (sub)structures using namedtuple or customized class
@@ -106,7 +107,7 @@ class Type:
         if value_type == 'discrete' and min >= max:
             raise ValueError("min value must be less than max value")
 
-        self.name = 'TYPE_' + type_name.upper()  # Prepend substring 'TYPE_' and send name to upper case
+        self.name = intern_name(type_name, "type")  # Prepend substring 'TYPE_' and send name to upper case
         self.value_type = value_type
         self.min = min
         self.max = max
@@ -159,7 +160,7 @@ class Predicate:
         assert function is None or type(function) in [int, float, torch.Tensor, str], \
             "function must be one of 'None', 'int', 'float', 'torch.Tensor', or 'str'"
 
-        self.name = 'PRED_[' + predicate_name.upper() + ']'  # Prepend name with substring 'PRED_' and send to upper case
+        self.name = intern_name(predicate_name, "predicate")  # Prepend name with substring 'PRED_' and send to upper case
 
         self.arguments = arguments
         self.wm_var_names, self.wm_var_types, self.wm_var_unique = [], [], []
@@ -294,6 +295,15 @@ class Conditional:
                             "The 'relation' field must be of type 'int', 'Affine', or 'Filter' in the pattern variable '{}' of pattern element '{}' of the predicate pattern '{}'".format(element.value, element, pattern)
                     # TODO: Leave checking validity of Affine and Filter in future iterations
 
+        # Transform pattern's predicate names into internal names
+        #   Note that since Python's namedtuple is immutable, need to recreate namedtuple here. Maybe better way to do this?
+        for i, pt in enumerate(conditions):
+            conditions[i] = PredicatePattern(intern_name(pt.predicate_name, "predicate"), pt.nonlinearity, pt.elements)
+        for i, pt in enumerate(condacts):
+            condacts[i] = PredicatePattern(intern_name(pt.predicate_name, "predicate"), pt.nonlinearity, pt.elements)
+        for i, pt in enumerate(actions):
+            actions[i] = PredicatePattern(intern_name(pt.predicate_name, "predicate"), pt.nonlinearity, pt.elements)
+
         # Name the predicate patterns for indexing various lookup tables
         self.name2pattern = {"pattern_"+str(i): pattern for i, pattern in enumerate(conditions + condacts + actions)}
         self.name2condition_pattern = {"pattern_"+str(i): pattern for i, pattern in enumerate(conditions)}
@@ -344,22 +354,24 @@ class Conditional:
                     pt_var_info["rel"] = None
                     const_count += 1
 
-                self.ptvar_list.append(pt_var_info["name"])
+                if pt_var_info["name"] not in self.ptvar_list:
+                    self.ptvar_list.append(pt_var_info["name"])
                 self.pattern_pt_vals[pt_name][element.argument_name] = pt_var_info
                 if pt_var_info["name"] not in self.ptv2wmv.keys():
-                    self.ptv2wmv[pt_var_info["name"]] = [element.argument_name]
+                    self.ptv2wmv[pt_name][pt_var_info["name"]] = [element.argument_name]
                 else:
-                    self.ptv2wmv[pt_var_info["name"]].append(element.argument_name)
+                    self.ptv2wmv[pt_name][pt_var_info["name"]].append(element.argument_name)
 
         # Check that function_var_names agree with pattern variables declared in conditions, actions, & condacts
-        for func_var in function_var_names:
-            assert func_var in self.ptvar_list, \
-                "The function variable '{}' is not one of the pattern variable declared in any predicate pattern".format(func_var)
+        if function_var_names is not None:
+            for func_var in function_var_names:
+                assert func_var in self.ptvar_list, \
+                    "The function variable '{}' is not one of the pattern variable declared in any predicate pattern".format(func_var)
 
-        self.name = "COND_[" + conditional_name + "]"
+        self.name = intern_name(conditional_name, "conditional")
         self.conditions = conditions
         self.condacts = condacts
         self.actions = actions
-        self.function_var_names = [var for var in function_var_names]
+        self.function_var_names = [var for var in function_var_names] if function_var_names is not None else None
         self.normal = normal
         self.function = function
