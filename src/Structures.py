@@ -249,10 +249,9 @@ class Conditional:
             assert type(function_var_names) is list, "Argument 'function_var_names' must be a list"
             assert all(type(s) is str for s in function_var_names), \
                 "Elements in the argument 'function_var_names' must all be of type str"
-        if function is None:
-            function = 1
-        assert type(function) in [int, float, torch.Tensor, str], \
-            "Argument 'function' must be of type int, float, torch.Tensor, or str"
+        if function is not None:
+            assert type(function) in [int, float, torch.Tensor, str], \
+                "Argument 'function' must be of type int, float, torch.Tensor, or str"
         if normal is not None:
             assert type(normal) is list, "Argument 'normal' must be a list"
             assert all(type(v) is str for v in normal), \
@@ -309,6 +308,10 @@ class Conditional:
         self.name2condition_pattern = {"pattern_"+str(i): pattern for i, pattern in enumerate(conditions)}
         self.name2condact_pattern = {"pattern_"+str(i + len(conditions)): pattern for i, pattern in enumerate(condacts)}
         self.name2action_pattern = {"pattern_"+str(i + len(conditions) + len(condacts)): pattern for i, pattern in enumerate(actions)}
+        self.pt_names = list(self.name2pattern.keys())
+        self.condition_pt_names = list(self.name2condition_pattern.keys())
+        self.condact_pt_names = list(self.name2condact_pattern.keys())
+        self.action_pt_names = list(self.name2action_pattern.keys())
 
         # Set up pattern var list for future lookup
         # Set up internal WM var -- pattern var map per predicate pattern for future lookup.
