@@ -43,6 +43,8 @@ class Sigma:
         """
             Register global parameters. Create an empty Sigma program.
 
+            All lookup tables use structure name to index
+
             "Lay down your pieces, and let's begin OBJECT CREATION."
         """
         ### Public bookkeeping data structures ###
@@ -57,6 +59,7 @@ class Sigma:
 
         ## Graphical level bookkeeping data structure
         # mappings from predicate, conditional to node group
+        #   use structure name to index
         self.predicate2group, self.conditional2group = {}, {}
 
         # The graphical architecture
@@ -263,10 +266,10 @@ class Sigma:
             # If function is str, then check if such predicate exists and if it has a ltmfn set up. Set up link
             if type(func) is str:
                 assert func in self.name2predicate.keys(), "Target predicate {} does not exist".format(func)
-                assert "LTMFN" in self.predicate2group[self.name2predicate[func]].keys(), \
+                assert "LTMFN" in self.predicate2group[func].keys(), \
                     "Target predicate {} exists but it does not have a Long-Term Memory Function (LTMFN)".format(func)
 
-                target_ltmfn = self.predicate2group[self.name2predicate[func]]['LTMFN']
+                target_ltmfn = self.predicate2group[func]['LTMFN']
                 # Set up bidirectional link between target LTMFN and own WMVN
                 self.G.add_bilink(target_ltmfn, wmvn)
 
@@ -307,8 +310,8 @@ class Sigma:
                 # Add a unidirectional link from wmfn to wmvn_out
                 self.G.add_unilink(wmfn, wmvn_out)
 
-        # Register node group
-        self.predicate2group[predicate] = nodegroup
+        # Register node group. Use predicate name to index
+        self.predicate2group[predicate.name] = nodegroup
 
     def _compile_conditional(self, conditional):
         """
@@ -379,7 +382,7 @@ class Sigma:
 
                 # Initialize the alpha subnet terminal node to be the predicate's WMVN
                 pred = self.name2predicate[pattern.predicate_name]
-                pred_nodegroup = self.predicate2group[pred]
+                pred_nodegroup = self.predicate2group[pattern.predicate_name]
                 terminal = pred_nodegroup['WMVN'] if 'WMVN' in pred_nodegroup.keys() else pred_nodegroup['WMVN_OUT']
 
                 # alpha sub nodegroup for this predicate
@@ -543,8 +546,7 @@ class Sigma:
             name_prefix = conditional.name + "_GAMMA_"
 
             if type(conditional.function) is str:
-                alien_cond = self.name2conditional[conditional.function]
-                gffn = self.conditional2group[alien_cond]["gamma"]["GFFN"]
+                gffn = self.conditional2group[conditional.function]["gamma"]["GFFN"]
                 _, func_var_list = gffn.get_function()
                 gffn_vn = self.G.new_node(WMVN, name_prefix + "GFFN_VN", func_var_list)
             # Otherwise, set gamma function normally
@@ -591,8 +593,8 @@ class Sigma:
             # Register. Note: we register the ultimate Beta join variable node as actions' beta subnet's BJFN_VN here
             nodegroup["beta"][pt_name] = dict(BJFN=bjfn, BJFN_VN=terminal)
 
-        # Regiser nodegroup
-        self.conditional2group[conditional] = nodegroup
+        # Regiser nodegroup. Use conditional's name to index
+        self.conditional2group[conditional.name] = nodegroup
 
         # Debug
         pass
