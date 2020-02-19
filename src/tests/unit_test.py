@@ -73,7 +73,8 @@ def order_test_1(to_render=False):
     # one arity-2 predicate
     arg_1 = PredicateArgument("arg_1", type_1)
     arg_2 = PredicateArgument("arg_2", type_1)
-    pred = Predicate("test_pred", [arg_1, arg_2], world="closed")
+    pred = Predicate("test_pred", [arg_1, arg_2], world="closed",
+                     function=torch.tensor([[1, 1, 0], [0, 1, 1], [0, 0, 1]]))
     sigma.add(pred)
 
     # transitivity conditional
