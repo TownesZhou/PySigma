@@ -120,16 +120,16 @@ class Sigma:
         conditional = Conditional(*args, **kwargs)
         self.add(conditional)
 
-    def run(self, num_cycles):
+    def decide(self, num_cycles):
         """
-            Run the Sigma program for the given number of cycles.
+            Run the Sigma program for the given number of decision cycles.
 
             "Set up our new world, and let's begin the SIMULATION."
         """
         # TODO: run Sigma program
         pass
 
-    def order_nodes(self):
+    def _order_nodes(self):
         """
             Calculate the node ordering used for message passing in graph solution phase, based on ascending order of
                 the link depths, starting from PBFN, WMFN & LTMFN as source nodes.

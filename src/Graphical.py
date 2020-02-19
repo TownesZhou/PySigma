@@ -12,6 +12,7 @@
 
 import torch
 import networkx
+from abc import ABC, abstractmethod
 
 
 class Message(torch.Tensor):
@@ -124,7 +125,7 @@ class LinkData:
         return self.memory
 
 
-class Node:
+class Node(ABC):
     """
         The super class of `FactorNode` and `VariableNode`. It declares common attributes between `FactorNode` and
             `VariableNode`, for example a flag indicating whether this node has reach quiescence, i.e., whether no new
@@ -147,8 +148,12 @@ class Node:
         # override to provide the node's name as its string representation
         return self.name
 
+    @abstractmethod
+    def compute(self):
+        pass
 
-class FactorNode(Node):
+
+class FactorNode(Node, ABC):
     """
         Specify a **factor node**, with pytorch tensor as optional factor node function (default to a constant function 
             of 1 everywhere effectively). It is the super class of factor nodes of various subtypes, such as alpha, 
@@ -497,7 +502,7 @@ class GFFN(FactorNode):
         self.pretty_log["node type"] = "Gamma Function Factor Node"
 
 
-class VariableNode(Node):
+class VariableNode(Node, ABC):
     """
         Specify a **variable node**.
     """
@@ -670,12 +675,21 @@ class Graph(networkx.DiGraph):
         self.add_unilink(node1, node2)
         self.add_unilink(node2, node1)
 
-    def solve(self):
+    def solve(self, node_order):
         """
             One phase of graph solution of message passing until quiescence is reached.
+
+            :param node_order: An iterator of nodes. The node will be traversed in this order
         """
-        # TODO
-        pass
+        # TODO: A LOT of logging may be needed here
+        quiesced = False
+
+        while not quiesced:
+            quiesced = True
+            for node in node_order:
+                if not node.quiescence:
+                    quiesced = False
+                    node.compute()
 
     def modify(self):
         """

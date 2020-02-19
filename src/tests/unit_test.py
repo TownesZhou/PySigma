@@ -96,7 +96,7 @@ def order_test_1(to_render=False):
     sigma.add(cond_1)
 
     # Calculate node order
-    sigma.order_nodes()
+    sigma._order_nodes()
 
     # Render
     if to_render:
