@@ -25,6 +25,7 @@
 
 from Structures import *
 from Graphical import *
+import networkx as nx
 from copy import deepcopy
 
 
@@ -65,7 +66,12 @@ class Sigma:
         # The graphical architecture
         self.G = Graph()
 
-        # Sigma program global parameters
+        ### Private data members ###
+        # Field that contains node order and Flag indicating whether node ordering has been calculated
+        self._node_order = None
+        self._order_set = False
+
+        ### Sigma program global parameters ###
 
     def add(self, structure):
         """
@@ -85,11 +91,13 @@ class Sigma:
         if isinstance(structure, Predicate):
             self._register_predicate(structure)
             self._compile_predicate(structure)
+            self._order_set = False     # Need new node ordering
 
         # Register new Conditional
         if isinstance(structure, Conditional):
             self._register_conditional(structure)
             self._compile_conditional(structure)
+            self._order_set = False     # Need new node ordering
 
     def add_type(self, *args, **kwargs):
         """
@@ -120,6 +128,49 @@ class Sigma:
         """
         # TODO: run Sigma program
         pass
+
+    def order_nodes(self):
+        """
+            Calculate the node ordering used for message passing in graph solution phase, based on ascending order of
+                the link depths, starting from PBFN, WMFN & LTMFN as source nodes.
+            Set the self._node_order field
+
+            Note that the calculation is lazy. If no new structures were added and node ordered has been calculated
+                previously, then return directly
+            # TODO: Discuss with Volkan about proper node ordering
+        """
+        if self._order_set:
+            return
+
+        # Add a temporary source node to graph connecting PBFN, WMFN & LTMFN
+        source = "source"
+        self.G.add_node(source)
+
+        # Collect all PBFN and LTMFNs and connect to source
+        first_nodes = []
+        for ng in self.predicate2group.values():
+            if "PBFN" in ng.keys():
+                first_nodes.append(ng["PBFN"])
+            if "WMFN" in ng.keys():
+                first_nodes.append(ng["WMFN"])
+            if "LTMFN" in ng.keys():
+                first_nodes.append(ng["LTMFN"])
+        for node in first_nodes:
+            self.G.add_edge(source, node)
+
+        # Obtain a bfs order
+        edges = nx.bfs_edges(self.G, source)
+        self._node_order = [v for u, v in edges]
+
+        # Set node's pretty log
+        for i, node in enumerate(self._node_order):
+            node.pretty_log["node order"] = i
+
+        # Remove temporary source node
+        self.G.remove_node(source)
+
+        # Set flag
+        self._order_set = True
 
     def _register_type(self, sigma_type):
         """
@@ -239,6 +290,18 @@ class Sigma:
     def _compile_predicate(self, predicate):
         """
             Compile the given predicate to the graphical architecture.
+
+            Predicate nodegroup schema:
+                { predicate_name:
+                    { "WMVN": working memory variable node (if no selection),
+                      "WMVN_IN": working memory variable node that receives incoming messages (if selection is on),
+                      "WMVN_OUT": working memory variable node that receives outgoing messages (if selection is on),
+                      "PBFN": perceptual buffer function node (if perception is on),
+                      "LTMFN": long-term memory factor node (if memorial),
+                      "WMFN": working memory function node (if closed world),
+                      "WMFN_VN": vn in the loop that precedes the ACFN (if closed world),
+                      "ACFN": action combination factor node (if closed world)
+                    }
         """
 
         # Create new nodes and register bookkeeping info
@@ -317,36 +380,38 @@ class Sigma:
         """
             Compile the given conditional to the graphical architecture.
             A Sigma's implementation of Rete algorithm
+
+            Conditional nodegroup schema:
+              { conditional_name :
+                  { "alpha“ ：
+                      { pattern_name :
+                          { "FFN" : filter factor node,
+                            "FFN_VN" : wmvn after FFN,
+                            "NLFN" : nonlinearity factor node,
+                            "NLFN_VN" : wmvn after NLFN,
+                            "ADFN" : affine delta factor node,
+                            "ADFN_VN" : wmvn after ADFN,
+                            "ATFN" : affine transformation factor node,
+                            "ATFN_VN" : wmvn after ATFN,
+                            "terminal" : the terminal variable node at the end of the alpha subnet
+                          }
+                      },
+                    "beta" :
+                      { pattern_name :
+                          { "BJFN" : beta join factor node,
+                            "BJFN_VN" : wmvn after BJFN
+                          }
+                      },
+                    "gamma" :
+                      { "GFFN" : gamma function factor node,
+                        "GFFN_VN" : wmvn after GFFN,
+                        "BJFN" : the ultimate beta-join node that joins GFFN_VN. The peak of the alpha-beta subgraph,
+                        "BJFN_VN" : the wmvn after BJFN
+                      }
+                  }
+              }
         """
-        # Conditional nodegroup schema:
-        #       { conditional :
-        #           { "alpha“ ：
-        #               { pattern_name :
-        #                   { "FFN" : filter factor node,
-        #                     "FFN_VN" : wmvn after FFN,
-        #                     "NLFN" : nonlinearity factor node,
-        #                     "NLFN_VN" : wmvn after NLFN,
-        #                     "ADFN" : affine delta factor node,
-        #                     "ADFN_VN" : wmvn after ADFN,
-        #                     "ATFN" : affine transformation factor node,
-        #                     "ATFN_VN" : wmvn after ATFN,
-        #                     "terminal" : the terminal variable node at the end of the alpha subnet
-        #                   }
-        #               },
-        #             "beta" :
-        #               { pattern_name :
-        #                   { "BJFN" : beta join factor node,
-        #                     "BJFN_VN" : wmvn after BJFN
-        #                   }
-        #               },
-        #             "gamma" :
-        #               { "GFFN" : gamma function factor node,
-        #                 "GFFN_VN" : wmvn after GFFN,
-        #                 "BJFN" : the ultimate beta-join node that joins GFFN_VN. The peak of the alpha-beta subgraph,
-        #                 "BJFN_VN" : the wmvn after BJFN
-        #               }
-        #           }
-        #       }
+
         nodegroup = dict(alpha={}, beta={}, gamma={})
 
         # Step 1: Compile Alpha subnetworks per predicate pattern

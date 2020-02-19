@@ -89,6 +89,9 @@ class LinkData:
         # Record the dimensions of link message. Use to check potential dimension mismatch
         self._dims = [var.size for var in self.var_list]
 
+        # Pretty log for GUI display
+        self._pretty_log = {}
+
     def set(self, new, epsilon):
         """
             Set the link message memory to the new message arriving at this link. Implement the optimization so that

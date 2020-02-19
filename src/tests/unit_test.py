@@ -59,7 +59,52 @@ def align_test_2():
     print("aligned msg dimension: {}".format(aligned_msg.shape))
 
 
+def order_test_1(to_render=False):
+    """
+        Test node ordering
+    """
+    # Build a sample progrm
+    sigma = Sigma()
+
+    # add one type
+    type_1 = Type("type_1", 'discrete', min=0, max=3)
+    sigma.add(type_1)
+
+    # one arity-2 predicate
+    arg_1 = PredicateArgument("arg_1", type_1)
+    arg_2 = PredicateArgument("arg_2", type_1)
+    pred = Predicate("test_pred", [arg_1, arg_2], world="closed")
+    sigma.add(pred)
+
+    # transitivity conditional
+    cond_1 = Conditional("cond_1",
+                         conditions=[
+                             PredicatePattern("test_pred", None,
+                                              [PatternElement("arg_1", PatternVariable("a")),
+                                               PatternElement("arg_2", PatternVariable("b"))]),
+                             PredicatePattern("test_pred", None,
+                                              [PatternElement("arg_1", PatternVariable("b")),
+                                               PatternElement("arg_2", PatternVariable("c"))])
+
+                         ],
+                         actions=[
+                             PredicatePattern("test_pred", None,
+                                              [PatternElement("arg_1", PatternVariable("a")),
+                                               PatternElement("arg_2", PatternVariable("c"))])
+                         ]
+                         )
+    sigma.add(cond_1)
+
+    # Calculate node order
+    sigma.order_nodes()
+
+    # Render
+    if to_render:
+        render(sigma)
+
+
 if __name__=="__main__":
 
     run_test(align_test_1)
     run_test(align_test_2)
+    run_test(order_test_1, to_render=True)
