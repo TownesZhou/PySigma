@@ -1,8 +1,7 @@
 import torch
-from Structures import *
-from Cognitive import *
-from Graphical import *
-from Sigmaboard import render
+from pysigma.sigmaboard import render
+from pysigma import Sigma
+from pysigma.structures import *
 
 
 def run_test(test, *args, **kwargs):

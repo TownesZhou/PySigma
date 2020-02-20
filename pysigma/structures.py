@@ -6,7 +6,7 @@
 
 import torch
 from collections import namedtuple
-from utils import *
+from .utils import *
 
 
 # Define (sub)structures using namedtuple or customized class
