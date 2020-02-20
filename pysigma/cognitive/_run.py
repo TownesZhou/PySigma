@@ -16,6 +16,9 @@ def _order_nodes(self):
             previously, then return directly
         # TODO: Discuss with Volkan about proper node ordering
     """
+    from .. import Sigma
+    assert isinstance(self, Sigma)
+
     if self._order_set:
         return
 
@@ -56,6 +59,7 @@ def decide(self, num_cycles):
 
         "Set up our new world, and let's begin the SIMULATION."
     """
-    # TODO: run Sigma program
-    pass
+    from .. import Sigma
+    assert isinstance(self, Sigma)
 
+    # TODO: run Sigma program

@@ -23,6 +23,8 @@ def _compile_predicate(self, predicate):
                   "ACFN": action combination factor node (if closed world)
                 }
     """
+    from .. import Sigma
+    assert isinstance(self, Sigma)
 
     # Create new nodes and register bookkeeping info
     nodegroup = {}
@@ -132,6 +134,8 @@ def _compile_conditional(self, conditional):
               }
           }
     """
+    from .. import Sigma
+    assert isinstance(self, Sigma)
 
     nodegroup = dict(alpha={}, beta={}, gamma={})
 

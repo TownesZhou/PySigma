@@ -7,6 +7,7 @@ import networkx as nx
 from copy import deepcopy
 from .structures import *
 from .graphical import *
+from .cognitive import _add_structure, _compiler, _run
 
 
 class Sigma:
@@ -20,10 +21,12 @@ class Sigma:
             learning.
     """
     # Import class methods
-    from .cognitive._add_structure import add, add_type, add_predicate, add_conditional, \
-        _register_type, _register_predicate, _register_conditional
-    from .cognitive._compiler import _compile_predicate, _compile_conditional
-    from .cognitive._run import _order_nodes, decide
+    # from .cognitive._add_structure import add, add_type, add_predicate, add_conditional, \
+    #     _register_type, _register_predicate, _register_conditional
+    # from .cognitive._compiler import _compile_predicate, _compile_conditional
+    # from .cognitive._run import _order_nodes, decide
+
+
 
     def __init__(self, *args, **kwargs):
         """
@@ -57,3 +60,48 @@ class Sigma:
         self._order_set = False
 
         ### Sigma program global parameters ###
+
+
+    # Methods for adding Sigma structures #
+
+    def add(self, structure):
+        _add_structure.add(self, structure)
+
+    def add_type(self, *args, **kwargs):
+        _add_structure.add_type(self, *args, **kwargs)
+
+    def add_predicate(self, *args, **kwargs):
+        _add_structure.add_predicate(self, *args, **kwargs)
+
+    def add_conditional(self, *args, **kwargs):
+        _add_structure.add_conditional(self, *args, **kwargs)
+
+    def _register_type(self, sigma_type):
+        _add_structure._register_type(self, sigma_type)
+
+    def _register_predicate(self, predicate):
+        _add_structure._register_predicate(self, predicate)
+
+    def _register_conditional(self, conditional):
+        _add_structure._register_conditional(self, conditional)
+
+
+    # Methods for Sigma structure compilation #
+
+    def _compile_predicate(self, predicate):
+        _compiler._compile_predicate(self, predicate)
+
+    def _compile_conditional(self, conditional):
+        _compiler._compile_conditional(self, conditional)
+
+
+    # Methods for running Sigma program #
+
+    def _order_nodes(self):
+        _run._order_nodes(self)
+
+    def decide(self, num_cycles):
+        _run.decide(self, num_cycles)
+
+
+
