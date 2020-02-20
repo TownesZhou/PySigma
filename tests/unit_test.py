@@ -1,8 +1,7 @@
 import torch
-from Structures import *
-from Cognitive import *
-from Graphical import *
-from Sigmaboard import *
+from pysigma.sigmaboard import render
+from pysigma import Sigma
+from pysigma.structures import *
 
 
 def run_test(test, *args, **kwargs):
@@ -59,95 +58,11 @@ def align_test_2():
     print("aligned msg dimension: {}".format(aligned_msg.shape))
 
 
-def predicate_compile_test_1(to_render=False):
+def order_test_1(to_render=False):
     """
-        open-world predicate without selection
+        Test node ordering
     """
-    sigma = Sigma()     # init
-
-    # add two types to Sigma
-    type_1 = Type('type_1', 'discrete', min=0, max=5)
-    type_2 = Type('type_2', 'symbolic', symbol_list=['a', 'b', 'c'])
-    sigma.add(type_1)
-    sigma.add(type_2)
-
-    # two predicate arguments, without selection
-    arg_1 = PredicateArgument('arg_1', type_1)
-    arg_2 = PredicateArgument('arg_2', type_2)
-    # Predicate
-    test_pred = Predicate('test_pred', [arg_1, arg_2], world='open')
-    # Add the predicate to the sigma program
-    sigma.add(test_pred)
-
-    # test web-based render
-    if to_render:
-        render(sigma)
-
-
-def predicate_compile_test_2(to_render=False):
-    """
-        closed-world, perceptual, memorial (Long-Term Memory), w/out selection, multiple variables
-    """
-    # 1 pred, 2 args, without selection
-    sigma = Sigma()  # init
-
-    # add two types to Sigma
-    type_1 = Type('type_1', 'discrete', min=0, max=5)
-    type_2 = Type('type_2', 'symbolic', symbol_list=['a', 'b', 'c'])
-    sigma.add(type_1)
-    sigma.add(type_2)
-
-    # two predicate arguments without selection
-    arg_1 = PredicateArgument('arg_1', type_1)
-    arg_2 = PredicateArgument('arg_2', type_2)
-    # Predicate
-    test_pred = Predicate('test_pred', [arg_1, arg_2], world='closed', perception=True, function=2)
-    # Add the predicate to the sigma program
-    sigma.add(test_pred)
-
-    # test web-based render
-    if to_render:
-        render(sigma)
-
-
-def predicate_compile_test_3(to_render=False):
-    """
-        closed-world, perceptual, memorial, with selection, multiple variables
-    """
-    # 1 pred, 2 args, without selection
-    sigma = Sigma()  # init
-
-    # add two types to Sigma
-    type_1 = Type('type_1', 'discrete', min=0, max=5)
-    type_2 = Type('type_2', 'symbolic', symbol_list=['a', 'b', 'c'])
-    sigma.add(type_1)
-    sigma.add(type_2)
-
-    # two predicate arguments, arg_1 with best-selection, arg_2 without selection
-    arg_1 = PredicateArgument('arg_1', type_1, '!')
-    arg_2 = PredicateArgument('arg_2', type_2)
-    # Predicate
-    test_pred = Predicate('test_pred', [arg_1, arg_2], world='closed', perception=True, function=2)
-    # Add the predicate to the sigma program
-    sigma.add(test_pred)
-
-    # test web-based render
-    if to_render:
-        render(sigma)
-
-
-def predicate_compile_test_4(to_render=False):
-    """
-        closed-world, perceptual, memorial (Long-Term Memory), w/ selection
-    :return:
-    """
-    pass
-
-
-def conditional_compile_test_1():
-    """
-        transitivity rule
-    """
+    # Build a sample progrm
     sigma = Sigma()
 
     # add one type
@@ -157,7 +72,8 @@ def conditional_compile_test_1():
     # one arity-2 predicate
     arg_1 = PredicateArgument("arg_1", type_1)
     arg_2 = PredicateArgument("arg_2", type_1)
-    pred = Predicate("test_pred", [arg_1, arg_2], world="closed")
+    pred = Predicate("test_pred", [arg_1, arg_2], world="closed",
+                     function=torch.tensor([[1., 1., 0.], [0., 1., 1.], [0., 0., 1.]]))
     sigma.add(pred)
 
     # transitivity conditional
@@ -178,12 +94,17 @@ def conditional_compile_test_1():
                          ]
                          )
     sigma.add(cond_1)
-    # TODO: Test this case, especially how conditional's lookup tables are properly set up
+
+    # Calculate node order
+    sigma._order_nodes()
+
+    # Render
+    if to_render:
+        render(sigma)
 
 
-run_test(align_test_1)
-run_test(align_test_2)
-# run_test(predicate_compile_test_1)
-# run_test(predicate_compile_test_2)
-run_test(predicate_compile_test_3, to_render=False)
-run_test(conditional_compile_test_1)
+if __name__=="__main__":
+
+    run_test(align_test_1)
+    run_test(align_test_2)
+    run_test(order_test_1, to_render=True)

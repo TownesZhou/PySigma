@@ -10,8 +10,8 @@ import dash_html_components as html
 import plotly.graph_objects as go
 from textwrap import dedent as d
 import json
-from Cognitive import *
-from Graphical import *
+from . import Sigma
+from .graphical._nodes import *
 
 from dash.dependencies import Input, Output
 
