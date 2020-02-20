@@ -13,6 +13,8 @@ import json
 from Cognitive import *
 from Graphical import *
 
+from dash.dependencies import Input, Output
+
 # External CSS
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -131,8 +133,8 @@ def render(sigma):
         showarrow=True,
         arrowhead=3,
         arrowsize=4,
-        arrowwidth=1,
-        opacity=1
+        arrowwidth=1
+        # opacity=1,
     ) for edge in sigma.G.edges]
 
     # Set scatter plot layout. Use annotation to display arrowhead
@@ -142,62 +144,112 @@ def render(sigma):
         margin={'b': 40, 'l': 40, 'r': 40, 't': 40},
         xaxis={'showgrid': False, 'zeroline': False, 'showticklabels': False},
         yaxis={'showgrid': False, 'zeroline': False, 'showticklabels': False},
-        height=600,
+        height=800,
         clickmode='event+select',
         annotations=edge_arrow
     ))
 
     # Dash init
-    app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+    app = dash.Dash(__name__,
+                    external_stylesheets=external_stylesheets)
+
+    app.title = "SigmaBoard"
 
     # Global style
-    styles = {
-        'title': {
-            'textAlign': 'center',
-        },
-        'pre': {
-            'border': 'thin lightgrey solid',
-            'overflowX': 'scroll'
-        }
-    }
+    # styles = {
+    #     'pre': {
+    #         'border': 'thin lightgrey solid',
+    #         'overflowX': 'scroll'
+    #     }
+    # }
 
     # HTML elements and layout
     app.layout = html.Div(children=[
         # Title
-        html.H1('Sigmaboard',
-                style=styles['title']),
+        html.Div(id="header", children=[
+            html.H1('Sigmaboard')
+        ]),
+
 
         # Main Div
         html.Div(className="row", children=[
 
             # Left side console section
-            html.Div(className="three columns", children=[
+            html.Div(className="four columns", children=[
                 # Top left search and filter section
-                html.Div(className="twelve columns", children=[
-
+                html.Div(className="sections", id='search-section',children=[
+                    dcc.Markdown(d("""
+                            ### Search Node
+                    """)),
+                    dcc.Input(type="text", id="search-term", placeholder="search...", value=""),
+                    dcc.Checklist(id="node-type",
+                        options=[
+                            {'label': 'Variable Node', 'value': 'VN'},
+                            {'label': 'Function Node', 'value': 'FN'}
+                        ],
+                        value=['VN', 'FN']
+                    )
                 ]),
-                # Bottom left console display section
-                html.Div(className="twelve columns", children=[
+                # Middle left console display section
+                html.Div(className="sections", id="display-section", children=[
                     dcc.Markdown(d("""
                             ### Click nodes to display attributes
                         """)),
-                    html.Pre(id='click-data', style=styles['pre'], children="None")
+                    html.Pre(id='click-data', className="pop_up", children="None")
+                ]),
+                # Bottom left link message memory
+                html.Div(className="sections", id='message-section', children=[
+                    dcc.Markdown(d("""
+                            ### link message memory
+                        """))
                 ])
             ]),
 
             # Main canvas for displaying factor graph
-            html.Div(className="nine columns", children=[
+            html.Div(className="eight columns", children=[
                 dcc.Graph(
                     className="col-9",
                     id='graph',
                     figure=fig,
-                    style={"height": '80vh'}
+                    # style={"height": '80vh'}
 
                 )
             ])
         ])
 
     ])
+
+    @app.callback(
+        Output('click-data', 'children'),
+        [Input('graph', 'clickData')])
+    def display_click_data(clickData):
+        if clickData is not None and 'text' in clickData['points'][0]:
+            node_name = clickData["points"][0]["text"]
+            info = ""
+            for node in sigma.G.nodes:
+                if str(node) == node_name:
+                    # hover test
+                    for key, value in node.pretty_log.items():
+                        info += str(key) + ":  " + str(value) + "\n"
+            return info
+
+
+    @app.callback(
+        Output('graph', 'figure'),
+        [Input('search-term', 'value'),
+         Input('node-type', 'value')])
+    def update_figure(node_name, node_type):
+        if node_name is not None:
+            for n in fig['data']:
+                if n.text is None: continue
+                # Here to define the search
+                node_type_graph = 'FN' if n['marker']['symbol'] == 'square' else 'VN'
+                if node_name in n.text[0] and node_type_graph in node_type:
+                    n['opacity'] = 1
+                else:
+                    n['opacity'] = 0.2
+            return fig
+        return fig
 
     app.run_server(debug=True)
 
