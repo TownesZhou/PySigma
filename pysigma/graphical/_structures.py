@@ -3,16 +3,23 @@
 """
 import torch
 
+# For now will use torch.Tensor directly. Not really necessary to make a subclass of Tensor, which may have side effects
+#   to the underlying computation graphs if we do so.
 
-class Message(torch.Tensor):
-    """
-        A subclass of pytorch tensor. Stores message plm as tensors and can be directly manipulated, but keep extra
-            bookkeeping information for message processing mechanism in Sigma.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super(Message, self).__init__(*args, **kwargs)
-        # TODO
+# class Message(torch.Tensor):
+#     """
+#         A subclass of pytorch tensor. Stores message plm as tensors and can be directly manipulated, but keep extra
+#             bookkeeping information for message processing mechanism in Sigma.
+#     """
+#
+#     # Override __new__ so we can use Message() to create new tensors the same way as we use torch.Tensor()
+#     @staticmethod
+#     def __new__(cls, *args, **kwargs):
+#         return super().__new__(cls, *args, **kwargs)
+#
+#     def __init__(self, x, *args, **kwargs):
+#         super().__init__()
+#
 
 
 class Variable:
