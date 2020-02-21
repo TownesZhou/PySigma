@@ -2,9 +2,6 @@
     PySigma package init file. Include definition of the Sigma class, the top-level interface to Sigma cognitive
         architecture.
 """
-
-import networkx as nx
-from copy import deepcopy
 from .structures import *
 from .graphical import *
 from .cognitive import _add_structure, _compiler, _run
@@ -20,14 +17,6 @@ class Sigma:
             will be compiled and added to the graphical architecture. This is in support of future research on structure
             learning.
     """
-    # Import class methods
-    # from .cognitive._add_structure import add, add_type, add_predicate, add_conditional, \
-    #     _register_type, _register_predicate, _register_conditional
-    # from .cognitive._compiler import _compile_predicate, _compile_conditional
-    # from .cognitive._run import _order_nodes, decide
-
-
-
     def __init__(self, *args, **kwargs):
         """
             Register global parameters. Create an empty Sigma program.
