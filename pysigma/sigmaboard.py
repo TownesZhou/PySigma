@@ -64,7 +64,6 @@ def render(sigma):
 
     # node scatter trace. Factor node is 0, Variable node is 1
     for node in sigma.G.nodes:
-        print(node)
         x, y = pos[node]
         node_type = isinstance(node, VariableNode)
 
