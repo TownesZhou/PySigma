@@ -3,7 +3,7 @@
 """
 import torch
 from abc import ABC, abstractmethod
-from ._structures import Message
+# from ._structures import Message
 
 
 class Node(ABC):
@@ -89,17 +89,13 @@ class FactorNode(Node, ABC):
         :param var_list:    list of variable names corresponding to dimensions of function
         """
         var_size = [var.size for var in var_list] if var_list is not None else None
-        if function is None:
-            self._function = 1
-        elif type(function) is torch.Tensor:
-            # first check if provided tensor's size is correct
+
+        self._function = 1 if function is None else function
+        if isinstance(function, torch.Tensor):
             assert list(function.shape) == var_size, "The dimensions of the function variables (in the specified order)" \
                                                      " is {}, However, the dimensions of the provided function tensor " \
                                                      "is {}. Function dimensions must agree with its variables' " \
                                                      "dimensions".format(var_size, list(function.shape))
-            self._function = Message(function)
-        else:
-            self._function = function
         self._func_var_list = var_list
 
         # update pretty log
