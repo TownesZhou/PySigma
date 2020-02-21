@@ -31,7 +31,7 @@ body {
     margin: 25px 0px 10px 25px;
 }
 
-#search-term {
+.search-term {
     width: 55%;
 }
 

@@ -177,17 +177,20 @@ def render(sigma):
             # Left side console section
             html.Div(className="four columns", children=[
                 # Top left search and filter section
-                html.Div(className="sections", id='search-section',children=[
+                html.Div(className="sections", id='search-section', children=[
                     dcc.Markdown(d("""
                             ### Search Node
                     """)),
-                    dcc.Input(type="text", id="search-term", placeholder="search...", value=""),
+                    dcc.Input(type="text", className="search-term", id="node_name_search", placeholder="Node Name Contains... (eg ALPHA)", value=""),
+                    dcc.Input(type="text", className="search-term", id="variable_search", placeholder="Contains Variable Name... (eg arg_1)", value=""),
                     dcc.Checklist(id="node-type",
                         options=[
                             {'label': 'Variable Node', 'value': 'VN'},
-                            {'label': 'Function Node', 'value': 'FN'}
+                            {'label': 'Function Node', 'value': 'FN'},
+                            {'label': 'Predicate', 'value': 'PRED'},
+                            {'label': 'Conditional', 'value': 'COND'},
                         ],
-                        value=['VN', 'FN']
+                        value=['VN', 'FN', 'PRED', 'COND']
                     )
                 ]),
                 # Middle left console display section
@@ -212,7 +215,6 @@ def render(sigma):
                     id='graph',
                     figure=fig,
                     # style={"height": '80vh'}
-
                 )
             ])
         ])
@@ -226,8 +228,8 @@ def render(sigma):
         if clickData is not None and 'text' in clickData['points'][0]:
             node_name = clickData["points"][0]["text"]
             info = ""
-            for node in sigma.G.nodes:
-                if str(node) == node_name:
+            for n in sigma.G.nodes:
+                if str(n) == node_name:
                     # hover test
                     for key, value in node.pretty_log.items():
                         info += str(key) + ":  " + str(value) + "\n"
@@ -236,15 +238,30 @@ def render(sigma):
 
     @app.callback(
         Output('graph', 'figure'),
-        [Input('search-term', 'value'),
+        [Input('node_name_search', 'value'),
+         Input('variable_search', 'value'),
          Input('node-type', 'value')])
-    def update_figure(node_name, node_type):
-        if node_name is not None:
+    def update_figure(node_name, variables, node_type):
+        if node_name is not None and variables is not None:
             for n in fig['data']:
-                if n.text is None: continue
+                if n.text is None:
+                    continue
                 # Here to define the search
                 node_type_graph = 'FN' if n['marker']['symbol'] == 'square' else 'VN'
-                if node_name in n.text[0] and node_type_graph in node_type:
+                pred_or_cond = n.text[0][:4]
+
+                v_list = variables.split(',')
+
+                node_info = n.hovertext.split('<br>')
+                for attri in node_info:
+                    a = attri.split("  ")
+                    if 'variable names' in a[0] or 'all variables' in a[0]:
+                        variable_name_list = eval(a[1])
+
+                if node_name.upper() in n.text[0].upper() and \
+                        v_list[0] == '' or any(v in variable_name_list for v in v_list) and \
+                        node_type_graph in node_type and \
+                        pred_or_cond in node_type:
                     n['opacity'] = 1
                 else:
                     n['opacity'] = 0.2
@@ -252,4 +269,3 @@ def render(sigma):
         return fig
 
     app.run_server(debug=True)
-
