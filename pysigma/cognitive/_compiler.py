@@ -234,6 +234,7 @@ def _compile_conditional(self, conditional):
 
     # Beta nodegroup
     beta_ng = {}
+    name_prefix = conditional.name + "_BETA_"
 
     # Part 1: Linear growth of conditions Beta subnets
     terminal = None
@@ -242,9 +243,9 @@ def _compile_conditional(self, conditional):
     if len(conditional.conditions) > 1:
         for i in range(1, len(conditional.conditions)):
             # name prefix for the join node
-            name_prefix = conditional.name + "_BETA_{" \
-                          + conditional.condition_pt_names[i - 1] + "}*{" \
-                          + conditional.condition_pt_names[i] + "}_"
+            # name_prefix = conditional.name + "_BETA_{" \
+            #               + conditional.condition_pt_names[i - 1] + "}*{" \
+            #               + conditional.condition_pt_names[i] + "}_"
 
             extra = alpha_terminals[conditional.condition_pt_names[i]]
 
@@ -276,9 +277,9 @@ def _compile_conditional(self, conditional):
             terminal = alpha_terminals[conditional.condact_pt_names[0]]
         else:
             # name prefix for the join node
-            name_prefix = conditional.name + "_BETA_{" \
-                          + conditional.condition_pt_names[i - 1] + "}*{" \
-                          + conditional.condition_pt_names[i] + "}_"
+            # name_prefix = conditional.name + "_BETA_{" \
+            #               + conditional.condition_pt_names[i - 1] + "}*{" \
+            #               + conditional.condition_pt_names[i] + "}_"
 
             # When a condition terminal is joined with a condact terminal, the link between the condition terminal
             #   and the BJFN is unidirectional
@@ -299,9 +300,9 @@ def _compile_conditional(self, conditional):
     if len(conditional.condacts) > 1:
         for i in range(1, len(conditional.condacts)):
             # name prefix for the join node
-            name_prefix = conditional.name + "_BETA_{" \
-                          + conditional.condition_pt_names[i - 1] + "}*{" \
-                          + conditional.condition_pt_names[i] + "}_"
+            # name_prefix = conditional.name + "_BETA_{" \
+            #               + conditional.condition_pt_names[i - 1] + "}*{" \
+            #               + conditional.condition_pt_names[i] + "}_"
 
             extra = alpha_terminals[conditional.condact_pt_names[i]]
 
