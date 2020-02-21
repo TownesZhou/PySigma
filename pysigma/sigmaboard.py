@@ -181,17 +181,24 @@ def render(sigma):
                     dcc.Markdown(d("""
                             ### Search Node
                     """)),
-                    dcc.Input(type="text", className="search-term", id="node_name_search", placeholder="Node Name Contains... (eg ALPHA)", value=""),
-                    dcc.Input(type="text", className="search-term", id="variable_search", placeholder="Contains Variable Name... (eg arg_1)", value=""),
-                    dcc.Checklist(id="node-type",
-                        options=[
-                            {'label': 'Variable Node', 'value': 'VN'},
-                            {'label': 'Function Node', 'value': 'FN'},
-                            {'label': 'Predicate', 'value': 'PRED'},
-                            {'label': 'Conditional', 'value': 'COND'},
-                        ],
-                        value=['VN', 'FN', 'PRED', 'COND']
-                    )
+                    html.Div(className="wrap-search", children=[
+                        html.Div(className="wrap-search-bar", children=[
+                            dcc.Input(type="text", className="search-term", id="node_name_search", placeholder="Node Name Contains... (eg ALPHA)", value=""),
+                            dcc.Input(type="text", className="search-term", id="variable_search", placeholder="Contains Variable Name... (eg arg_1)", value=""),
+                        ]),
+                        html.Div(className="wrap-checklist", children=[
+                            dcc.Checklist(id="node-type",
+                                options=[
+                                    {'label': 'Variable Node', 'value': 'VN'},
+                                    {'label': 'Function Node', 'value': 'FN'},
+                                    {'label': 'Predicate', 'value': 'PRED'},
+                                    {'label': 'Conditional', 'value': 'COND'},
+                                ],
+                                value=['VN', 'FN', 'PRED', 'COND']
+                            )
+                        ]),
+                    ]),
+                    html.Div(className="clear-float")
                 ]),
                 # Middle left console display section
                 html.Div(className="sections", id="display-section", children=[
@@ -227,13 +234,13 @@ def render(sigma):
     def display_click_data(clickData):
         if clickData is not None and 'text' in clickData['points'][0]:
             node_name = clickData["points"][0]["text"]
+            print(node_name)
             info = ""
             for n in sigma.G.nodes:
                 if str(n) == node_name:
-                    # hover test
-                    for key, value in node.pretty_log.items():
+                    for key, value in n.pretty_log.items():
                         info += str(key) + ":  " + str(value) + "\n"
-            return info
+                    return info
 
 
     @app.callback(
@@ -259,7 +266,7 @@ def render(sigma):
                         variable_name_list = eval(a[1])
 
                 if node_name.upper() in n.text[0].upper() and \
-                        v_list[0] == '' or any(v in variable_name_list for v in v_list) and \
+                        (v_list[0] == '' or any(v in variable_name_list for v in v_list)) and \
                         node_type_graph in node_type and \
                         pred_or_cond in node_type:
                     n['opacity'] = 1

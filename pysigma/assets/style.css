@@ -26,13 +26,24 @@ body {
 
 /* Top left search and filter section */
 #search-section {
-    height: 25vh;
+    height: 20vh;
     background: pink;
     margin: 25px 0px 10px 25px;
 }
 
 .search-term {
-    width: 55%;
+    width: 100%;
+}
+
+.wrap-search-bar {
+    display: inline-block;
+    margin-top: 7px;
+    width: 70%;
+}
+
+.wrap-checklist {
+    display: inline-block;
+    float: right;
 }
 
 
@@ -51,7 +62,7 @@ pre {
 
 /* Bottom left link message memory section*/
 #message-section {
-    height: 25vh;
+    height: 30vh;
     background: mediumaquamarine;
     margin: 10px 0px 10px 25px;
 }
@@ -59,4 +70,10 @@ pre {
 /* Right side Graph */
 #graph {
     margin-top: 30px;
+}
+
+
+/* Clear float*/
+.clear-float {
+    clear: both;
 }
