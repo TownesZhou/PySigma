@@ -79,16 +79,16 @@ def order_test_1(to_render=False):
     # transitivity conditional
     cond_1 = Conditional("cond_1",
                          conditions=[
-                             PredicatePattern("test_pred", None,
+                             PredicatePattern("test_pred",
                                               [PatternElement("arg_1", PatternVariable("a")),
                                                PatternElement("arg_2", PatternVariable("b"))]),
-                             PredicatePattern("test_pred", None,
+                             PredicatePattern("test_pred",
                                               [PatternElement("arg_1", PatternVariable("b")),
                                                PatternElement("arg_2", PatternVariable("c"))])
 
                          ],
                          actions=[
-                             PredicatePattern("test_pred", None,
+                             PredicatePattern("test_pred",
                                               [PatternElement("arg_1", PatternVariable("a")),
                                                PatternElement("arg_2", PatternVariable("c"))])
                          ]

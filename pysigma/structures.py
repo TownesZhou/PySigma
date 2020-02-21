@@ -92,9 +92,9 @@ class PatternElement:
             raise ValueError("If not None, 2nd argument 'value' of a PatternElement must be an 'int', 'str', "
                              "an iterable of 'int' or 'str', a 'Filter', or a 'PatternVariable'")
         if isinstance(value, Iterable) and \
-            not (all(isinstance(v, int) for v in value) or
-                 all(isinstance(v, str) for v in value) or
-                 all(isinstance(v, Filter) for v in value)):
+                not (all(isinstance(v, int) for v in value) or
+                     all(isinstance(v, str) for v in value) or
+                     all(isinstance(v, Filter) for v in value)):
             raise ValueError("If an iterable, the 2nd argument 'value' of a PatternElement must be an iterable "
                              "of 'int', 'str', or 'Filter's")
 
@@ -243,11 +243,11 @@ class Predicate:
         if world not in ['open', 'closed']:
             raise ValueError("The 3rd argument 'world' of a Predicate must be either 'open' or 'closed'")
         if not isinstance(exponential, (bool, Iterable)) or \
-            (isinstance(exponential, Iterable) and not all(isinstance(var, str) for var in exponential)):
+                (isinstance(exponential, Iterable) and not all(isinstance(var, str) for var in exponential)):
             raise ValueError("The 4th argument 'exponential' of a Predicate must be either 'bool' or an iterable of "
                              "'str's")
         if not isinstance(normalize, (bool, Iterable)) or \
-            (isinstance(normalize, Iterable) and not all(isinstance(var, str) for var in normalize)):
+                (isinstance(normalize, Iterable) and not all(isinstance(var, str) for var in normalize)):
             raise ValueError("The 5th argument 'normalize' of a Predicate must be either 'bool' or an iterable of "
                              "'str's")
         if not isinstance(perception, bool):
@@ -256,11 +256,12 @@ class Predicate:
             raise ValueError("If not None, the 7th argument 'function' of a predicate must be 'int', 'float', "
                              "'torch.Tensor', or 'str'")
 
-        self.name = intern_name(predicate_name, "predicate")  # Prepend name with substring 'PRED_' and send to upper case
+        self.name = intern_name(predicate_name,
+                                "predicate")  # Prepend name with substring 'PRED_' and send to upper case
 
         self.arguments = list(arguments)
         self.wm_var_names, self.wm_var_types, self.wm_var_unique = [], [], []
-        self.var_list = []      # List of Variables, will only be set after this structure passed into a Sigma program
+        self.var_list = []  # List of Variables, will only be set after this structure passed into a Sigma program
         self.var_name2var = {}  # Map from variable name to actual Variable instance. set after structure passed into a Sigma program
 
         # check selection
@@ -268,8 +269,8 @@ class Predicate:
         for argument in arguments:
             # Check duplicate argument names
             if argument.argument_name in self.wm_var_names:
-                raise ValueError( "argument names in a Predicate cannot duplicate. Duplicate name: {}"
-                                  .format(argument['argument_name']))
+                raise ValueError("argument names in a Predicate cannot duplicate. Duplicate name: {}"
+                                 .format(argument['argument_name']))
 
             self.wm_var_names.append(argument.argument_name)
             self.wm_var_types.append(argument.type)
@@ -325,15 +326,15 @@ class Conditional:
         if not isinstance(conditional_name, str):
             raise ValueError("1st argument 'conditional_name' of a Conditional must be a 'str'")
         if conditions is not None and \
-            (not isinstance(conditions, Iterable) or not all(isinstance(p, PredicatePattern) for p in conditions)):
+                (not isinstance(conditions, Iterable) or not all(isinstance(p, PredicatePattern) for p in conditions)):
             raise ValueError("If not None, 2nd argument 'conditions' of a Conditional must be an iterable of "
                              "'PredicatePattern's")
         if condacts is not None and \
-            (not isinstance(condacts, Iterable) or not all(isinstance(p, PredicatePattern) for p in condacts)):
+                (not isinstance(condacts, Iterable) or not all(isinstance(p, PredicatePattern) for p in condacts)):
             raise ValueError("If not None, 3rd argument 'condacts' of a Conditional must be an iterable of "
                              "'PredicatePattern's")
         if actions is not None and \
-            (not isinstance(actions, Iterable) or not all(isinstance(p, PredicatePattern) for p in actions)):
+                (not isinstance(actions, Iterable) or not all(isinstance(p, PredicatePattern) for p in actions)):
             raise ValueError("If not None, 4th argument 'actions' of a Conditional must be an iterable of "
                              "'PredicatePattern's")
 
@@ -346,14 +347,16 @@ class Conditional:
 
         # Check rest of the arguments
         if function_var_names is not None and \
-            (not isinstance(function_var_names, Iterable) or not all(isinstance(v, str) for v in function_var_names)):
-            raise ValueError("If not None, argument 'function_var_names' of a Conditional must be an iterable of 'str's")
+                (not isinstance(function_var_names, Iterable) or not all(
+                    isinstance(v, str) for v in function_var_names)):
+            raise ValueError(
+                "If not None, argument 'function_var_names' of a Conditional must be an iterable of 'str's")
 
         if function is not None and not isinstance(function, (int, float, torch.Tensor, str)):
             raise ValueError("If not None, argument 'function' of a Conditional must be 'int', 'float', 'torch.Tensor',"
                              " or 'str'")
         if normal is not None and \
-            (not isinstance(normal, Iterable) or not all(isinstance(v, str) for v in normal)):
+                (not isinstance(normal, Iterable) or not all(isinstance(v, str) for v in normal)):
             raise ValueError("If not None, argument 'normal' of a Conditional must be an iterable of 'str's")
 
         conditions = [] if conditions is None else list(conditions)
@@ -366,10 +369,12 @@ class Conditional:
             pt.predicate_name = intern_name(pt.predicate_name, "predicate")
 
         # Name the predicate patterns for indexing various lookup tables
-        self.name2pattern = {"pattern_"+str(i): pattern for i, pattern in enumerate(conditions + condacts + actions)}
-        self.name2condition_pattern = {"pattern_"+str(i): pattern for i, pattern in enumerate(conditions)}
-        self.name2condact_pattern = {"pattern_"+str(i + len(conditions)): pattern for i, pattern in enumerate(condacts)}
-        self.name2action_pattern = {"pattern_"+str(i + len(conditions) + len(condacts)): pattern for i, pattern in enumerate(actions)}
+        self.name2pattern = {"pattern_" + str(i): pattern for i, pattern in enumerate(conditions + condacts + actions)}
+        self.name2condition_pattern = {"pattern_" + str(i): pattern for i, pattern in enumerate(conditions)}
+        self.name2condact_pattern = {"pattern_" + str(i + len(conditions)): pattern for i, pattern in
+                                     enumerate(condacts)}
+        self.name2action_pattern = {"pattern_" + str(i + len(conditions) + len(condacts)): pattern for i, pattern in
+                                    enumerate(actions)}
         self.pt_names = list(self.name2pattern.keys())
         self.condition_pt_names = list(self.name2condition_pattern.keys())
         self.condact_pt_names = list(self.name2condact_pattern.keys())
@@ -397,7 +402,7 @@ class Conditional:
         # constant pattern is assigned a unique constant variable name
         self.ptvar_list = []
         self.pattern_pt_vals = {}
-        self.global_pt_vals = {}        # To be filled after passed into a Sigma program
+        self.global_pt_vals = {}  # To be filled after passed into a Sigma program
         self.ptv2wmv = {}
         const_count = 0
 
