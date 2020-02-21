@@ -64,6 +64,7 @@ def render(sigma):
 
     # node scatter trace. Factor node is 0, Variable node is 1
     for node in sigma.G.nodes:
+        print(node)
         x, y = pos[node]
         node_type = isinstance(node, VariableNode)
 
@@ -234,7 +235,6 @@ def render(sigma):
     def display_click_data(clickData):
         if clickData is not None and 'text' in clickData['points'][0]:
             node_name = clickData["points"][0]["text"]
-            print(node_name)
             info = ""
             for n in sigma.G.nodes:
                 if str(n) == node_name:
