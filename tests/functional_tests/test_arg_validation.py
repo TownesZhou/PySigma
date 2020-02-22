@@ -422,14 +422,4 @@ class TestStructureArgValidation:
                         function_var_names=["str_1", "str_2"],
                         function=torch.tensor([[1., -1.], [1., -1.]]),
                         normal=["str_1", "str_2"])
-
-
-
-
-
-
-
-
-
-
-
+        
