@@ -456,7 +456,7 @@ class ADFN(FactorNode):
                     - If message goes outward, split into slices and put in place. Put 0 everywhere else
                 2. If associated pattern var is a variable but is distinct, then simply swap variable.
 
-            In all cases, need to account for mismatch in variable dimension sizes when swapping variables:
+            In cases 1 and 3, need to account for mismatch in variable dimension sizes when swapping variables:
                 - If message goes inward, append necessary slices of 0's at the tail of that dimension
                 - If message goes outward, truncate necessary slices at the tail of that dimension
         """
