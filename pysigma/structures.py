@@ -348,7 +348,7 @@ class Conditional:
         if [conditions, actions, condacts] == [None, None, None]:
             raise ValueError("Cannot specify an empty conditional")
 
-        if conditions is None:
+        if conditions is not None:
             if [actions, condacts] == [None, None]:
                 raise ValueError("Cannot specify a conditional that consists of only conditions")
 
