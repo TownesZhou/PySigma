@@ -422,4 +422,22 @@ class TestStructureArgValidation:
                         function_var_names=["str_1", "str_2"],
                         function=torch.tensor([[1., -1.], [1., -1.]]),
                         normal=["str_1", "str_2"])
-        
+
+if __name__ == "__main__":
+    t = TestStructureArgValidation()
+    # t.test_predicate_argument_1()
+    # t.test_predicate_argument_2()
+    t.test_predicate_pattern_1()
+    # t.test_predicate_pattern_2()
+    t.test_pattern_element_1()
+    # t.test_pattern_element_2()
+    # t.test_pattern_variable_1()
+    # t.test_pattern_variable_2()
+    t.test_affine_1()
+    # t.test_affine_2()
+    t.test_type_1()
+    # t.test_type_2()
+    t.test_predicate_1()
+    t.test_predicate_2()
+    t.test_conditional_1()
+    t.test_conditional_2()
