@@ -565,7 +565,7 @@ class ADFN(FactorNode):
                         if pt_size > wm_size:
                             msg = torch.split(msg, wm_size, dim=dim)[0]     # Only take the first chunk
 
-            # TODO: Finish case 2
+            # TODO: Finish case 1
 
 
 
