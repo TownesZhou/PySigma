@@ -178,13 +178,20 @@ class Type:
         :param value_type: `str` type. `"symbolic"` or `"discrete"`.
         :param min: `int` type. The lowest value of a discrete type. Must specify if type is `"discrete"`.
         :param max: `int` type. The highest value + 1 of a discrete type. Must specify if type is `"discrete"`.
-        :param symbol_list: `list` type. A list of symbols. Must specify if type is `"symbol"`.
+        :param symbol_list: An iterable of 'str' representing symbols. Must specify if type is `"symbol"`.
         """
         # Argument validation
         if not isinstance(type_name, str):
             raise ValueError("The 1st argument 'type_name' of a Type must be a 'str'")
         if value_type not in ['symbolic', 'discrete']:
             raise ValueError("The 2nd argument 'value_type' of a Type must be either 'symbolic' or 'discrete'")
+        if min is not None and (not isinstance(min, int) or min < 0):
+            raise ValueError("The argument 'min' of a Type must be a nonnegative integer")
+        if max is not None and (not isinstance(max, int) or max < 0):
+            raise ValueError("The argument 'max' of a Type must be a nonnegative integer")
+        if symbol_list is not None and \
+                (not isinstance(symbol_list, Iterable) or not all(isinstance(s, str) for s in symbol_list)):
+            raise ValueError("If not None, the argument 'symbol_list' of a Type must be an iterable of 'str's")
         if value_type == 'symbolic' and symbol_list is None:
             raise ValueError("A symbol list must be specified via symbol_list when value_type is 'symbolic'")
         if value_type == 'discrete' and (min is None or max is None):
@@ -341,7 +348,7 @@ class Conditional:
         if [conditions, actions, condacts] == [None, None, None]:
             raise ValueError("Cannot specify an empty conditional")
 
-        if conditions is None:
+        if conditions is not None:
             if [actions, condacts] == [None, None]:
                 raise ValueError("Cannot specify a conditional that consists of only conditions")
 

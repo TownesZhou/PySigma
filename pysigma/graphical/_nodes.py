@@ -3,6 +3,8 @@
 """
 import torch
 from abc import ABC, abstractmethod
+
+
 # from ._structures import Message
 
 
@@ -23,7 +25,7 @@ class Node(ABC):
 
         # Global logging info
         self.log = {}
-        self.pretty_log = {}        # Log info to display at the GUI
+        self.pretty_log = {}  # Log info to display at the GUI
 
     def __str__(self):
         # override to provide the node's name as its string representation
@@ -79,7 +81,7 @@ class FactorNode(Node, ABC):
         self._out_linkdata = []
 
         # pretty log
-        self.pretty_log["all variables"] = []       # init
+        self.pretty_log["all variables"] = []  # init
 
     def set_function(self, function, var_list):
         """
@@ -128,7 +130,7 @@ class FactorNode(Node, ABC):
                     assert var.size == old_var.size, "The variable '{}' from the variable node '{}' that attempts to " \
                                                      "link to this factor node has size '{}', which does not match the " \
                                                      "size '{}' of the variable with the same name already present in " \
-                                                     "the variable lists of this factor node."\
+                                                     "the variable lists of this factor node." \
                         .format(str(var), str(linkdata.vn), var.size, old_var.size)
 
         if linkdata.to_fn:
@@ -145,8 +147,10 @@ class FactorNode(Node, ABC):
 
     def align(self, msg, var_list):
         """
-            Compute and return the bradcasted message with its dimension properly aligned with the factor node variable
-                order.
+            Compute and return the bradcasted message with its dimension AND shape properly aligned with the factor node
+                variable order. This means the variable dimensions of the message will be first permuted, and then the
+                message will be manually broadcasted to full shape.
+            Manual broadcast is enforced here to prevent dimension misalignment.
 
             Note: MAY BE REPLACED LATER WITH PYTORCH'S BUILT-IN DIMENSION REARRANGEMENT FOR NAMED TENSORS.
         :param msg:  unbroadcasted message from a linkdata
@@ -166,9 +170,12 @@ class FactorNode(Node, ABC):
             if i not in var_id:
                 perm[i] = rest
                 rest += 1
-        # Permute message dimension and return
+        # Permute message dimension
         aligned_msg = msg.view(view_dim).permute(perm)
-        return aligned_msg
+        # Manual broadcast by expanding dimension
+        full_shape = (var.size for var in self._var_list)
+        expanded_msg = aligned_msg.expand(full_shape)
+        return expanded_msg
 
     def sp_product(self, msg1, msg2):
         """
@@ -259,7 +266,7 @@ class VariableNode(Node, ABC):
         """
             Decalre a VariableNode
         :param name:        name of the variable node
-        :param variables:   list of Variables representing the variables of this variable nodes
+        :param var_list:   list of Variables representing the variables of this variable nodes
         :param epsilon:     The epsilon no-change criterion used for comparing quiesced message
         """
         super(VariableNode, self).__init__(name)
@@ -326,7 +333,7 @@ class VariableNode(Node, ABC):
             # Taking products
             for in_ld in self._in_linkdata:
                 in_vn = in_ld.vn
-                if in_vn is out_vn:     # Here use 'is' operator to test variable node's identity
+                if in_vn is out_vn:  # Here use 'is' operator to test variable node's identity
                     continue
                 msg = in_ld.read()
                 buf = self.sp_product(buf, msg)
@@ -374,7 +381,7 @@ class ACFN(FactorNode):
     """
 
     # TODO: Special implementation of sum-product to implement message conjunction
-    def __init__(self, name,):
+    def __init__(self, name, ):
         super(ACFN, self).__init__(name, function=None, func_var_list=None)
         self.pretty_log["node type"] = "Action Combination Function Node"
 
@@ -413,17 +420,51 @@ class ADFN(FactorNode):
         Performs delta function masking and variable swapping
         Essential component of the Rete's Alpha network's within pattern variable matching
 
-        Note: ADFN only admits one incoming link and one outgoing link.
+        Note: ADFN only admits at most two pairs of incoming / outgoing links. (one pair in condition / action pattern,
+            two pairs in condact pattern)
 
         Note: Special implementation needed for resolving potential conflicts between pattern variables and wm variables,
                 especially mismatch in sizes.
-    """
 
-    # TODO
+        pt_var_info schema:
+            { wm_var_name :
+                  { "name" : pt_var_name
+                    "type" : "var" or "const"
+                    "vals" : int/str values if type is const or None otherwisea
+                    "rel"  : relation, if specified, otherwise None } }
+    """
     def __init__(self, name, pt_var_info):
         super(ADFN, self).__init__(name, function=None, func_var_list=None)
         self.pretty_log["node type"] = "Affine Delta Factor Node"
         self._pt_var_info = pt_var_info
+
+    # Override to make sure only admit at most two pairs of incoming / outgoing links
+    def add_link(self, linkdata):
+        assert (not linkdata.to_fn or len(self._in_linkdata) <= 1), "Attempting to add more than two incoming links"
+        assert (linkdata.to_fn or len(self._out_linkdata) <= 1), "Attempting to add more than two outgoing links"
+        super(ADFN, self).add_link(linkdata)
+
+    # Override compute() to implement tensor manipulation
+    def compute(self):
+        """
+            Three cases for each variable dimension:
+                1. If associated pattern var shared among multiple wm var:
+                    - If message goes inward, take diagonal values and shrink dimension
+                    - If message goes outward, expand dimensions, put values on diagonals and put 0 everywhere else
+                1. If associated pattern var is constant,
+                    - If message goes inward, take the slices and concatenate, slices taken in the order specified by 'vals'
+                    - If message goes outward, split into slices and put in place. Put 0 everywhere else
+                2. If associated pattern var is a variable but is distinct, then simply swap variable.
+
+            In cases 1 and 3, need to account for mismatch in variable dimension sizes when swapping variables:
+                - If message goes inward, append necessary slices of 0's at the tail of that dimension
+                - If message goes outward, truncate necessary slices at the tail of that dimension
+        """
+        # Check that there are equal number of incoming links and outgoing links
+        assert len(self._in_linkdata) == len(self._out_linkdata), \
+            "The number of of incoming links ({}) do not match the number of outgoing links ({}). " \
+                .format(len(self._in_linkdata), len(self._out_linkdata))
+        pass
 
 
 class ATFN(FactorNode):
