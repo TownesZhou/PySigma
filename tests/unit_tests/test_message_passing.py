@@ -419,9 +419,8 @@ class TestADFN:
         out_msg = run_outward(wm_var_list, pt_var_list, pt_var_info, init_msg)
 
         # Check
-        assert all(torch.equal(init_msg[:, i], out_msg[i, i, :, i, :]) for i in range(2))
-        assert all(torch.equal(init_msg[j, :], out_msg[:, :, j, :, j]) for j in range(6))
+        assert all(torch.equal(init_msg[j, i], out_msg[i, i, j, i, j]) for i in range(2) for j in range(6))
 
-        assert all(torch.equal(torch.tensor(0), out_msg[a, b, c, d, e])
+        assert all(torch.equal(torch.tensor(0.), out_msg[a, b, c, d, e])
                    for a in range(3) for b in range(2) for c in range(8) for d in range(5) for e in range(6)
                    if a != b or a != d or b != d or c != e)
