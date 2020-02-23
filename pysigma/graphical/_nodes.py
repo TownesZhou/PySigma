@@ -4,7 +4,6 @@
 import torch
 from abc import ABC, abstractmethod
 
-
 # from ._structures import Message
 
 
@@ -565,16 +564,65 @@ class ADFN(FactorNode):
                         if pt_size > wm_size:
                             msg = torch.split(msg, wm_size, dim=dim)[0]     # Only take the first chunk
 
-            # TODO: Finish case 1
+            # Finally case 1, where variable order may be changed due to taking the diagonal
+            for pt_varname, wm_varname_list in ptvar2wmvar.items():
+                if len(wm_varname_list) > 1:
+                    # If message goes inward, take diagonal values and shrink dimension
+                    if inward:
+                        # Diagonalize first pair
+                        wm_varname1 = wm_varname_list[0]
+                        wm_varname2 = wm_varname_list[1]
+                        dim1 = trace_varnames.index(wm_varname1)    # use trace_varnames because var order may have
+                        dim2 = trace_varnames.index(wm_varname2)    # changed
+                        msg = torch.diagonal(msg, dim1=dim1, dim2=dim2)
+                        trace_varnames.remove(wm_varname1)
+                        trace_varnames.remove(wm_varname2)
+                        trace_varnames.append(pt_varname)       # Diagonalized dimension is appended as the last dim
 
+                        # If there are more than two wm vars sharing the same pt vars
+                        for i in range(2, len(wm_varname_list)):
+                            wm_varname = wm_varname_list[i]
+                            dim1 = trace_varnames.index(wm_varname)     # use trace_varnames because var order changed
+                            msg = torch.diagonal(msg, dim1=dim1, dim2=-1)
+                            trace_varnames.remove(wm_varname)
 
+                        # Accomodate for mismatch in pt var dimension size
+                        tar_dim = out_dim[out_varname_list.index(pt_varname)]
+                        cur_dim = msg.shape[-1]
+                        if tar_dim > cur_dim:
+                            extra_shape = list(msg.shape)
+                            extra_shape[-1] = tar_dim - cur_dim
+                            msg = torch.cat((msg, torch.zeros(size=extra_shape)), dim=-1)
 
+                    # If message goes outward, expand dimensions, put values on diagonals and put 0 everywhere else
+                    else:
+                        # Will permute the working dimension to the front for easy indexing
+                        dim = trace_varnames.index(pt_varname)
+                        perm = (dim,) + tuple(i for i in range(msg.dim()) if i is not dim)  # index permutation for msg
+                        perm_msg = msg.permute(perm)        # working pt var dimension now put at front
+                        wm_dim_sizes = tuple(out_dim[out_varname_list.index(wm_varname)]
+                                             for wm_varname in wm_varname_list)
+                        tar_shape = wm_dim_sizes + tuple(perm_msg.size())[1:]
+                        buf = torch.zeros(tar_shape)        # zero tensor where diag val will be put on first two dim
 
+                        # Account for mismatch in size
+                        for i in range(min(wm_dim_sizes)):
+                            buf[(i,) * len(wm_dim_sizes)] += perm_msg[i]
+                        msg = buf
 
+                        # bookkeeping stuff
+                        trace_varnames.remove(pt_varname)
+                        trace_varnames = wm_varname_list + trace_varnames
 
+            # Final step: permute variable dimension to align with out_varname_list and check dim against out_dim
+            assert all(var in out_varname_list for var in trace_varnames)
+            assert all(var in trace_varnames for var in out_varname_list)
 
-        # First check for shared pattern variables
+            perm = tuple(trace_varnames.index(var) for var in out_varname_list)
+            msg = msg.permute(perm)
+            assert list(msg.size()) == out_dim
 
+            out_ld.set(msg, self._epsilon)
 
 
 class ATFN(FactorNode):
