@@ -84,6 +84,12 @@ class Graph(networkx.DiGraph):
         self.add_unilink(node1, node2)
         self.add_unilink(node2, node1)
 
+    def get_linkdata(self, node1, node2):
+        """
+            Return the linkdata on the edge from node1 to node2
+        """
+        return self[node1][node2]["data"]
+
     def solve(self, node_order):
         """
             One phase of graph solution of message passing until quiescence is reached.

@@ -104,9 +104,10 @@ class LinkData:
                              "Target variable node: '{}', link direction: toward factor node = '{}'"
                              .format(size, self._dims, str(self.vn), self.to_fn))
 
-        diff = torch.max(torch.abs(self.memory - new))
-        if diff < epsilon:
-            return
+        if self.memory is not None:
+            diff = torch.max(torch.abs(self.memory - new))
+            if diff < epsilon:
+                return
 
         self.memory = new
         self.new = True

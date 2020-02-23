@@ -482,7 +482,7 @@ class ADFN(FactorNode):
             # Compare var_list against pt_var_info and determin wm vars and pt vars
             # Use set to discard orders for comparison
             in_ld_varnames, out_ld_varnames = set(var.name for var in in_ld.var_list), set(var.name for var in out_ld.var_list)
-            wm_varnames, pt_varnames = set(self._pt_var_info.keys()), set(v["names"] for v in self._pt_var_info.values())
+            wm_varnames, pt_varnames = set(self._pt_var_info.keys()), set(v["name"] for v in self._pt_var_info.values())
             assert (in_ld_varnames == wm_varnames and out_ld_varnames == pt_varnames) or \
                    (in_ld_varnames == pt_varnames and out_ld_varnames == wm_varnames), \
                 "wm vars and pattern vars provided by pt_var_info does not match that as specified in the linkdata. " \
