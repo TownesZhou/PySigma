@@ -4,7 +4,6 @@
 import torch
 from abc import ABC, abstractmethod
 
-
 # from ._structures import Message
 
 
@@ -120,8 +119,14 @@ class FactorNode(Node, ABC):
                 be called twice, once with linkdata of each direction.
         :param linkdata:    the linkdata of the link that connects to the newly added variable node
         """
-        if linkdata in self._in_linkdata or linkdata in self._out_linkdata:
-            return
+        assert linkdata not in self._in_linkdata and linkdata not in self._out_linkdata, "Adding duplicate link"
+        if linkdata.to_fn:
+            assert linkdata.vn not in [ld.vn for ld in self._in_linkdata], \
+                "Adding duplicate link away from the variable node '{}'".format(linkdata.vn)
+        else:
+            assert linkdata.vn not in [ld.vn for ld in self._out_linkdata], \
+                "Adding duplicate link to the variable node '{}'".format(linkdata.vn)
+
 
         # Check variable size agrees
         for var in linkdata.var_list:
@@ -451,20 +456,173 @@ class ADFN(FactorNode):
                 1. If associated pattern var shared among multiple wm var:
                     - If message goes inward, take diagonal values and shrink dimension
                     - If message goes outward, expand dimensions, put values on diagonals and put 0 everywhere else
-                1. If associated pattern var is constant,
+                2. If associated pattern var is constant,
                     - If message goes inward, take the slices and concatenate, slices taken in the order specified by 'vals'
                     - If message goes outward, split into slices and put in place. Put 0 everywhere else
-                2. If associated pattern var is a variable but is distinct, then simply swap variable.
+                3. If associated pattern var is a variable but is distinct, then simply swap variable.
 
             In cases 1 and 3, need to account for mismatch in variable dimension sizes when swapping variables:
-                - If message goes inward, append necessary slices of 0's at the tail of that dimension
-                - If message goes outward, truncate necessary slices at the tail of that dimension
+                - If need to enlarge dimension size, append necessary slices of 0's at the tail of that dimension
+                - If need to shrink dimension size, truncate necessary slices at the tail of that dimension
+
+            # TODO: Accomodate for within-pattern variable relations in future iterations
+                        E.g.  pred[ (arg1 v) (arg2 (v + 3)) ]
+                    Or more generally,
+                        E.g.  pred[ (arg1 v) (arg2 f(v)) ]
+                    Where f(v) is a custom mapping embodying the relation
         """
         # Check that there are equal number of incoming links and outgoing links
         assert len(self._in_linkdata) == len(self._out_linkdata), \
             "The number of of incoming links ({}) do not match the number of outgoing links ({}). " \
                 .format(len(self._in_linkdata), len(self._out_linkdata))
-        pass
+
+        for in_ld in self._in_linkdata:
+            out_ld = [ld for ld in self._out_linkdata if ld.vn is not in_ld.vn][0]
+
+            # Compare var_list against pt_var_info and determin wm vars and pt vars
+            # Use set to discard orders for comparison
+            in_ld_varnames, out_ld_varnames = set(var.name for var in in_ld.var_list), set(var.name for var in out_ld.var_list)
+            wm_varnames, pt_varnames = set(self._pt_var_info.keys()), set(v["name"] for v in self._pt_var_info.values())
+            assert (in_ld_varnames == wm_varnames and out_ld_varnames == pt_varnames) or \
+                   (in_ld_varnames == pt_varnames and out_ld_varnames == wm_varnames), \
+                "wm vars and pattern vars provided by pt_var_info does not match that as specified in the linkdata. " \
+                "In pt_var_info: wm vars - '{}', pattern vars - '{}'. " \
+                "In linkdata: incoming link vars - '{}', outgoing link vars - '{}'." \
+                .format(wm_varnames, pt_varnames, in_ld_varnames, out_ld_varnames)
+
+            # Determine direction of this pair of links. Inward or outward, w.r.t. beta network
+            inward = True if in_ld_varnames == wm_varnames else False
+
+            in_varname_list = list(var.name for var in in_ld.var_list)
+            out_varname_list = list(var.name for var in out_ld.var_list)
+            # in_var2dim = {v.name: k for k, v in enumerate(in_ld.var_list)}
+            # out_var2dim = {v.name: k for k, v in enumerate(out_ld.var_list)}
+            in_dim = [var.size for var in in_ld.var_list]
+            out_dim = [var.size for var in out_ld.var_list]
+
+            msg = in_ld.read()      # read message
+            assert isinstance(msg, torch.Tensor)
+            trace_varnames = list(var.name for var in in_ld.var_list)  # Trace the change of variable dimensions of msg
+
+            # Build ptvar -> wmvar lookup table to distinguish shared pt vars from distinct ones
+            ptvar2wmvar = {}
+            for wm_varname, v in self._pt_var_info.items():
+                pt_varname = v['name']
+                if pt_varname not in ptvar2wmvar.keys():
+                    ptvar2wmvar[pt_varname] = [wm_varname]
+                else:
+                    ptvar2wmvar[pt_varname].append(wm_varname)
+
+            for wm_varname, v in self._pt_var_info.items():
+                pt_varname = v['name']
+                # First do case 2, constant variables. Throughout this step, variable order should not be altered
+                if v['type'] == "const":
+                    vals = v['vals']
+                    # If inward, simply index select
+                    if inward:
+                        dim = in_varname_list.index(wm_varname)
+                        msg = msg.index_select(dim=dim, index=torch.LongTensor(vals))
+                        trace_varnames[dim] = pt_varname
+                    # If outward, then need to take slice separately, create empty slices, and concatenate
+                    else:
+                        dim = in_varname_list.index(pt_varname)
+                        assert in_dim[dim] == len(vals)     # This should always be correct since size of const pt vars are determined by len of vals
+                        slice_shape = list(msg.shape)
+                        slice_shape[dim] = 1
+                        dim_target_size = out_dim[out_varname_list.index(wm_varname)]
+                        # Slice messages
+                        sliced_msg = msg.split(1, dim=dim)      # Split into tuple of tensors with shape slice_shape
+                        assert all(list(t.shape) == slice_shape for t in sliced_msg)
+                        # Create target message
+                        target_slices = list(torch.zeros(size=slice_shape)
+                                             if i not in vals else sliced_msg[vals.index(i)]
+                                             for i in range(dim_target_size))
+                        # Concatenate to form new message
+                        msg = torch.cat(target_slices, dim=dim)
+                        trace_varnames[dim] = wm_varname
+
+                # Second do case 3, swap distinct pt vars and account for mismatch in size
+                elif len(ptvar2wmvar[pt_varname]) == 1:
+                    if inward:      # inward should be enlarging size, if any
+                        dim = in_varname_list.index(wm_varname)
+                        wm_size = in_dim[dim]
+                        pt_size = out_dim[out_varname_list.index(pt_varname)]
+                        assert wm_size <= pt_size
+                        trace_varnames[dim] = pt_varname
+                        # Enlarge dimension size with zero tensor if needed
+                        if pt_size > wm_size:
+                            extra_shape = list(msg.shape)
+                            extra_shape[dim] = pt_size - wm_size
+                            msg = torch.cat((msg, torch.zeros(size=extra_shape)), dim=dim)
+                    else:           # outward should be shrinking size, if any
+                        dim = in_varname_list.index(pt_varname)
+                        pt_size = in_dim[dim]
+                        wm_size = out_dim[out_varname_list.index(wm_varname)]
+                        assert wm_size <= pt_size
+                        trace_varnames[dim] = wm_varname
+                        # Shrink dimension size by truncating tail is needed
+                        if pt_size > wm_size:
+                            msg = torch.split(msg, wm_size, dim=dim)[0]     # Only take the first chunk
+
+            # Finally case 1, where variable order may be changed due to taking the diagonal
+            for pt_varname, wm_varname_list in ptvar2wmvar.items():
+                if len(wm_varname_list) > 1:
+                    # If message goes inward, take diagonal values and shrink dimension
+                    if inward:
+                        # Diagonalize first pair
+                        wm_varname1 = wm_varname_list[0]
+                        wm_varname2 = wm_varname_list[1]
+                        dim1 = trace_varnames.index(wm_varname1)    # use trace_varnames because var order may have
+                        dim2 = trace_varnames.index(wm_varname2)    # changed
+                        msg = torch.diagonal(msg, dim1=dim1, dim2=dim2)
+                        trace_varnames.remove(wm_varname1)
+                        trace_varnames.remove(wm_varname2)
+                        trace_varnames.append(pt_varname)       # Diagonalized dimension is appended as the last dim
+
+                        # If there are more than two wm vars sharing the same pt vars
+                        for i in range(2, len(wm_varname_list)):
+                            wm_varname = wm_varname_list[i]
+                            dim1 = trace_varnames.index(wm_varname)     # use trace_varnames because var order changed
+                            msg = torch.diagonal(msg, dim1=dim1, dim2=-1)
+                            trace_varnames.remove(wm_varname)
+
+                        # Accomodate for mismatch in pt var dimension size
+                        tar_dim = out_dim[out_varname_list.index(pt_varname)]
+                        cur_dim = msg.shape[-1]
+                        if tar_dim > cur_dim:
+                            extra_shape = list(msg.shape)
+                            extra_shape[-1] = tar_dim - cur_dim
+                            msg = torch.cat((msg, torch.zeros(size=extra_shape)), dim=-1)
+
+                    # If message goes outward, expand dimensions, put values on diagonals and put 0 everywhere else
+                    else:
+                        # Will permute the working dimension to the front for easy indexing
+                        dim = trace_varnames.index(pt_varname)
+                        perm = (dim,) + tuple(i for i in range(msg.dim()) if i is not dim)  # index permutation for msg
+                        perm_msg = msg.permute(perm)        # working pt var dimension now put at front
+                        wm_dim_sizes = tuple(out_dim[out_varname_list.index(wm_varname)]
+                                             for wm_varname in wm_varname_list)
+                        tar_shape = wm_dim_sizes + tuple(perm_msg.size())[1:]
+                        buf = torch.zeros(tar_shape)        # zero tensor where diag val will be put on first two dim
+
+                        # Account for mismatch in size
+                        for i in range(min(wm_dim_sizes)):
+                            buf[(i,) * len(wm_dim_sizes)] += perm_msg[i]
+                        msg = buf
+
+                        # bookkeeping stuff
+                        trace_varnames.remove(pt_varname)
+                        trace_varnames = wm_varname_list + trace_varnames
+
+            # Final step: permute variable dimension to align with out_varname_list and check dim against out_dim
+            assert all(var in out_varname_list for var in trace_varnames)
+            assert all(var in trace_varnames for var in out_varname_list)
+
+            perm = tuple(trace_varnames.index(var) for var in out_varname_list)
+            msg = msg.permute(perm)
+            assert list(msg.size()) == out_dim
+
+            out_ld.set(msg, self._epsilon)
 
 
 class ATFN(FactorNode):
