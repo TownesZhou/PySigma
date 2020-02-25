@@ -424,3 +424,41 @@ class TestADFN:
         assert all(torch.equal(torch.tensor(0.), out_msg[a, b, c, d, e])
                    for a in range(3) for b in range(2) for c in range(8) for d in range(5) for e in range(6)
                    if a != b or a != d or b != d or c != e)
+
+    def test_const_outward_1(self):
+        """
+            Variable binding with unmatched size. Outward direction
+                pt vars:    x     y   [1, 2, 3]
+                pt size:    5     5       3
+                wm vars:  arg1  arg2    arg3
+                wm size:    3     2       8
+        """
+        wm_var_list = generate_var_list(['arg1', 'arg2', 'arg3'], [3, 2, 8])
+        pt_var_list = generate_var_list(['x', 'y', 'CONST_0'], [5, 5, 3])
+        pt_var_info = generate_pt_var_info(['arg1', 'arg2', 'arg3'], ['x', 'y', [1, 2, 3]])
+
+        init_msg = torch.rand(5, 5, 3)
+        out_msg = run_outward(wm_var_list, pt_var_list, pt_var_info, init_msg)
+
+        # Check
+        assert torch.equal(init_msg[:3, :2, :3], out_msg[:, :, 1:4])
+        assert all(torch.equal(torch.zeros(3, 2), out_msg[:, :, i]) for i in range(8) if i not in [1, 2, 3])
+
+    def test_const_outward_2(self):
+        """
+            Variable binding with unmatched size. Outward direction
+                pt vars:    x     y   [3, 5, 2]
+                pt size:    5     5       3
+                wm vars:  arg1  arg2    arg3
+                wm size:    3     2       8
+        """
+        wm_var_list = generate_var_list(['arg1', 'arg2', 'arg3'], [3, 2, 8])
+        pt_var_list = generate_var_list(['x', 'y', 'CONST_0'], [5, 5, 3])
+        pt_var_info = generate_pt_var_info(['arg1', 'arg2', 'arg3'], ['x', 'y', [3, 5, 2]])
+
+        init_msg = torch.rand(5, 5, 3)
+        out_msg = run_outward(wm_var_list, pt_var_list, pt_var_info, init_msg)
+
+        # Check
+        assert all(torch.equal(init_msg[:3, :2, i], out_msg[:, :, j]) for i, j in enumerate([3, 5, 2]))
+        assert all(torch.equal(torch.zeros(3, 2), out_msg[:, :, i]) for i in range(8) if i not in [3, 5, 2])
