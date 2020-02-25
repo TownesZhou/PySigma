@@ -13,6 +13,8 @@ import json
 from . import Sigma
 from .graphical._nodes import *
 
+from dash.dependencies import Input, Output
+
 # External CSS
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -131,8 +133,8 @@ def render(sigma):
         showarrow=True,
         arrowhead=3,
         arrowsize=4,
-        arrowwidth=1,
-        opacity=1
+        arrowwidth=1
+        # opacity=1,
     ) for edge in sigma.G.edges]
 
     # Set scatter plot layout. Use annotation to display arrowhead
@@ -142,62 +144,134 @@ def render(sigma):
         margin={'b': 40, 'l': 40, 'r': 40, 't': 40},
         xaxis={'showgrid': False, 'zeroline': False, 'showticklabels': False},
         yaxis={'showgrid': False, 'zeroline': False, 'showticklabels': False},
-        height=600,
+        height=800,
         clickmode='event+select',
         annotations=edge_arrow
     ))
 
     # Dash init
-    app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+    app = dash.Dash(__name__,
+                    external_stylesheets=external_stylesheets)
+
+    app.title = "SigmaBoard"
 
     # Global style
-    styles = {
-        'title': {
-            'textAlign': 'center',
-        },
-        'pre': {
-            'border': 'thin lightgrey solid',
-            'overflowX': 'scroll'
-        }
-    }
+    # styles = {
+    #     'pre': {
+    #         'border': 'thin lightgrey solid',
+    #         'overflowX': 'scroll'
+    #     }
+    # }
 
     # HTML elements and layout
     app.layout = html.Div(children=[
         # Title
-        html.H1('Sigmaboard',
-                style=styles['title']),
+        html.Div(id="header", children=[
+            html.H1('Sigmaboard')
+        ]),
+
 
         # Main Div
         html.Div(className="row", children=[
 
             # Left side console section
-            html.Div(className="three columns", children=[
+            html.Div(className="four columns", children=[
                 # Top left search and filter section
-                html.Div(className="twelve columns", children=[
-
+                html.Div(className="sections", id='search-section', children=[
+                    dcc.Markdown(d("""
+                            ### Search Node
+                    """)),
+                    html.Div(className="wrap-search", children=[
+                        html.Div(className="wrap-search-bar", children=[
+                            dcc.Input(type="text", className="search-term", id="node_name_search", placeholder="Node Name Contains... (eg ALPHA)", value=""),
+                            dcc.Input(type="text", className="search-term", id="variable_search", placeholder="Contains Variable Name... (eg arg_1)", value=""),
+                        ]),
+                        html.Div(className="wrap-checklist", children=[
+                            dcc.Checklist(id="node-type",
+                                options=[
+                                    {'label': 'Variable Node', 'value': 'VN'},
+                                    {'label': 'Function Node', 'value': 'FN'},
+                                    {'label': 'Predicate', 'value': 'PRED'},
+                                    {'label': 'Conditional', 'value': 'COND'},
+                                ],
+                                value=['VN', 'FN', 'PRED', 'COND']
+                            )
+                        ]),
+                    ]),
+                    html.Div(className="clear-float")
                 ]),
-                # Bottom left console display section
-                html.Div(className="twelve columns", children=[
+                # Middle left console display section
+                html.Div(className="sections", id="display-section", children=[
                     dcc.Markdown(d("""
                             ### Click nodes to display attributes
                         """)),
-                    html.Pre(id='click-data', style=styles['pre'], children="None")
+                    html.Pre(id='click-data', className="pop_up", children="None")
+                ]),
+                # Bottom left link message memory
+                html.Div(className="sections", id='message-section', children=[
+                    dcc.Markdown(d("""
+                            ### link message memory
+                        """))
                 ])
             ]),
 
             # Main canvas for displaying factor graph
-            html.Div(className="nine columns", children=[
+            html.Div(className="eight columns", children=[
                 dcc.Graph(
                     className="col-9",
                     id='graph',
                     figure=fig,
-                    style={"height": '80vh'}
-
+                    # style={"height": '80vh'}
                 )
             ])
         ])
 
     ])
 
-    app.run_server(debug=True)
+    @app.callback(
+        Output('click-data', 'children'),
+        [Input('graph', 'clickData')])
+    def display_click_data(clickData):
+        if clickData is not None and 'text' in clickData['points'][0]:
+            node_name = clickData["points"][0]["text"]
+            info = ""
+            for n in sigma.G.nodes:
+                if str(n) == node_name:
+                    for key, value in n.pretty_log.items():
+                        info += str(key) + ":  " + str(value) + "\n"
+                    return info
 
+
+    @app.callback(
+        Output('graph', 'figure'),
+        [Input('node_name_search', 'value'),
+         Input('variable_search', 'value'),
+         Input('node-type', 'value')])
+    def update_figure(node_name, variables, node_type):
+        if node_name is not None and variables is not None:
+            for n in fig['data']:
+                if n.text is None:
+                    continue
+                # Here to define the search
+                node_type_graph = 'FN' if n['marker']['symbol'] == 'square' else 'VN'
+                pred_or_cond = n.text[0][:4]
+
+                v_list = variables.split(',')
+
+                node_info = n.hovertext.split('<br>')
+                for attri in node_info:
+                    a = attri.split("  ")
+                    if 'variable names' in a[0] or 'all variables' in a[0]:
+                        variable_name_list = eval(a[1])
+
+                if node_name.upper() in n.text[0].upper() and \
+                        (v_list[0] == '' or any(v in variable_name_list for v in v_list)) and \
+                        node_type_graph in node_type and \
+                        pred_or_cond in node_type:
+                    n['opacity'] = 1
+                else:
+                    n['opacity'] = 0.2
+            return fig
+        return fig
+
+    app.run_server(debug=True)
