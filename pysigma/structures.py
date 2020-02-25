@@ -99,7 +99,7 @@ class PatternElement:
                              "of 'int', 'str', or 'Filter's")
 
         self.argument_name = argument_name
-        self.value = list(value) if isinstance(value, Iterable) else [value]    # Turn into a list anyway
+        self.value = list(value) if isinstance(value, Iterable) else value
 
 
 class PatternVariable:
