@@ -521,11 +521,15 @@ class ADFN(FactorNode):
                     # If inward, simply index select
                     if inward:
                         dim = in_varname_list.index(wm_varname)
-                        msg = msg.index_select(dim=dim, index=torch.LongTensor(vals))
+                        # If value is None, then simply take the full span
+                        if vals is not None:
+                            msg = msg.index_select(dim=dim, index=torch.LongTensor(vals))
                         trace_varnames[dim] = pt_varname
                     # If outward, then need to take slice separately, create empty slices, and concatenate
                     else:
                         dim = in_varname_list.index(pt_varname)
+                        # If vals is None, then treat it as full span
+                        vals = list(range(in_dim[dim])) if vals is None else vals
                         assert in_dim[dim] == len(vals)     # This should always be correct since size of const pt vars are determined by len of vals
                         slice_shape = list(msg.shape)
                         slice_shape[dim] = 1
