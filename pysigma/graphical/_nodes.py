@@ -22,6 +22,11 @@ class Node(ABC):
         self._epsilon = epsilon
         self.quiescence = False
 
+        # List of LinkData of those link connecting to this factor node, incoming and outgoing ones respectively, from
+        #   which we retrieve messages
+        self._in_linkdata = []
+        self._out_linkdata = []
+
         # Global logging info
         self.log = {}
         self.pretty_log = {}  # Log info to display at the GUI
@@ -29,6 +34,21 @@ class Node(ABC):
     def __str__(self):
         # override to provide the node's name as its string representation
         return self.name
+
+    def check_quiesce(self):
+        """
+            Check quiescence of incoming linkdata to determine whether this node has reached quiescence
+            Return True if reached quiescence, False otherwise
+            Will update self.quiescence accordingly
+            Must be called at the start of compute()!
+        """
+        quiesced = True
+        for in_ld in self._in_linkdata:
+            if in_ld.new:
+                quiesced = False
+                break
+        self.quiescence = quiesced
+        return quiesced
 
     @abstractmethod
     def compute(self):
@@ -74,10 +94,6 @@ class FactorNode(Node, ABC):
         # List of Variables from all adjacent variable nodes. Used for dimension order of this factor node's
         #   sum-product processing. In other words a flattened version of vn_var_dict
         self._var_list = []
-        # List of LinkData of those link connecting to this factor node, incoming and outgoing ones respectively, from
-        #   which we retrieve messages
-        self._in_linkdata = []
-        self._out_linkdata = []
 
         # pretty log
         self.pretty_log["all variables"] = []  # init
@@ -225,13 +241,9 @@ class FactorNode(Node, ABC):
         # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
         # determine whether this node has reached quiescence
         # TODO: Normalization step
-        quiesced = True
-        for in_ld in self._in_linkdata:
-            if in_ld.new:
-                quiesced = False
-                break
-        if quiesced:
-            self.quiescence = True
+
+        # Check quiescence
+        if self.check_quiesce():
             return
 
         # If this node has not reached quiescence, compute and send new messages
@@ -277,10 +289,6 @@ class VariableNode(Node, ABC):
         super(VariableNode, self).__init__(name)
         self.var_list = var_list
 
-        # List of LinkData of those links connecting to this variable nodes, incoming and outgoing ones respectively.
-        self._in_linkdata = []
-        self._out_linkdata = []
-
         # set custom epsilon
         if epsilon is not None:
             self._epsilon = epsilon
@@ -321,13 +329,9 @@ class VariableNode(Node, ABC):
         # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
         #   determine whether this node has reached quiescence
         # TODO: Normalization step
-        quiesced = True
-        for in_ld in self._in_linkdata:
-            if in_ld.new:
-                quiesced = False
-                break
-        if quiesced:
-            self.quiescence = True
+
+        # Check quiescence
+        if self.check_quiesce():
             return
 
         # If not reached quiescence, compute and send new messages
@@ -471,6 +475,10 @@ class ADFN(FactorNode):
                         E.g.  pred[ (arg1 v) (arg2 f(v)) ]
                     Where f(v) is a custom mapping embodying the relation
         """
+        # Check quiescence
+        if self.check_quiesce():
+            return
+
         # Check that there are equal number of incoming links and outgoing links
         assert len(self._in_linkdata) == len(self._out_linkdata), \
             "The number of of incoming links ({}) do not match the number of outgoing links ({}). " \
