@@ -57,7 +57,7 @@ class PredicateArgument:
         self.normalize = normalize
 
         # Create working memory variable
-        self.wmvar = Variable(argument_name, argument_type.size, probabilistic, unique_symbol is None, normalize)
+        self.wmvar = Variable(argument_name, argument_type.size, probabilistic, unique_symbol is not None, normalize)
 
 
 class PredicatePattern:
@@ -309,6 +309,8 @@ class Conditional:
                 If 'str', should be the name of another conditional, linking that conditional's function
         :param normal:  an iterable of `str`, specifying which variables to normalize over in gradient descent learning
             #TODO: leave to implement in future iterations
+
+            #TODO: Allow user to define customized summarization step for pattern variables
         """
         # Check conditions, actions, & condacts
         if not isinstance(conditional_name, str):
@@ -385,7 +387,11 @@ class Conditional:
         #       Else if 'const' type, take the number of elements / values in 'vals' field.
         #       global_pt_vals = { pt_var_name :
         #                           { "type" : "var" or "const",
-        #                             "size" : max size over associated wm vars} }
+        #                             "size" : max size over associated wm vars
+        #                             "sum_op": Which summarization operation to take in beta branching subnet
+        #                                       currently support "sum" and "max"
+        #                             # TODO: extend this to support more summarization operations
+        #                             } }
         # constant pattern is assigned a unique constant variable name
         self.ptvar_list = []
         self.pattern_pt_vals = {}

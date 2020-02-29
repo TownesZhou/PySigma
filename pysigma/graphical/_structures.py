@@ -30,19 +30,26 @@ class Variable:
             of other fields
     """
 
-    def __init__(self, name, size, probabilistic=False, unique=False, normalize=False):
+    def __init__(self, name, size, probabilistic=False, unique=False, normalize=False, sum_op=None):
         """
         :param name:            Variable name
         :param size:            The size, or maximum number of regions, of this variable dimension
         :param probabilistic:   True/False, whether this variable is probabilistic
         :param unique:          True/False, whether this variable is unique or universal
         :param normalize:       True/False, whether this variable is to be normalized
+        :param sum_op:          Summarization operation. If none, then default to "max" if var is universal or "sum"
+                                    if var is unique.
         """
         self.name = name
         self.size = size
         self.probabilistic = probabilistic
         self.unique = unique
         self.normalize = normalize
+
+        if sum_op is None:
+            self.sum_op = "sum" if self.unique else "max"
+        else:
+            self.sum_op = sum_op
 
     def __eq__(self, other):
         # override so '==' operator test the 'name' field
@@ -126,5 +133,3 @@ class LinkData:
         """
         self.new = False
         return self.memory
-
-

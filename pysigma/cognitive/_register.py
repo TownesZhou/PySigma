@@ -92,7 +92,7 @@ def _register_predicate(self, predicate):
     assert isinstance(predicate, Predicate)
     # Check if the types in the predicate are already defined, and change str to Type
     for i, argument_type in enumerate(predicate.wm_var_types):
-        if argument_type not in self.name2type.keys() or argument_type not in self.type_list:
+        if argument_type not in self.name2type.keys() and argument_type not in self.type_list:
             raise ValueError("Predicate {} try to include type {} that has not yet been defined in this program"
                              .format(predicate.name, argument_type))
 
@@ -118,14 +118,14 @@ def _register_conditional(self, conditional):
                                                                                                     pattern.predicate_name))
         # Check if the number of predicate elements is no greater than the number of WM vars of that predicate
         pred = self.name2predicate[pattern.predicate_name]
-        if len(pattern.elements) > len(pred.wm_var_names):
+        if len(pattern.elements) > len(pred.var_list):
             raise ValueError("The number of predicate elements declared in the predicate pattern '{}', "
                              "currently {}, exceeds the number of working memory variable in the predicate "
                              "'{}', currently {}".format(pattern, len(pattern.elements), pattern.predicate_name,
                                                          len(pred.wm_var_names)))
         # Check if the 'argument_name' in the 'elements' agree with that predicate's WM vars
         for element in pattern.elements:
-            if element.argument_name not in pred.wm_var_names:
+            if element.argument_name not in pred.var_name2var.keys():
                 raise ValueError("The 'argument_name' '{}' declared in the pattern element '{}' of the "
                                  "predicate pattern '{}' is not one of the working memory variables of the "
                                  "predicate '{}'".format(element.argument_name, element, pattern,
@@ -137,12 +137,16 @@ def _register_conditional(self, conditional):
     for pt_name, ptv_vals in conditional.pattern_pt_vals.items():
         for wmv, ptv_val in ptv_vals.items():
             ptv_name = ptv_val["name"]
-            # Get corresponding wmv's uniqueness
+            # By default, pt var's sum op is determined by its corresponding wm vars' uniqueness
+            # TODO: discuss this and extend to support custom sum ops
             pred = self.name2predicate[conditional.name2pattern[pt_name].predicate_name]
+            # get associated wm var's summarization op
+            wmvar_sum_op = pred.var_name2var[wmv].sum_op
             if ptv_val["type"] is "const":
                 conditional.global_pt_vals[ptv_name] = {
                     "type": "const",
                     "size": len(ptv_val["vals"]) if type(ptv_val["vals"]) is list else 1,
+                    "sum_op": wmvar_sum_op
                 }
             else:
                 ptv_size = pred.var_name2var[wmv].size
@@ -151,10 +155,12 @@ def _register_conditional(self, conditional):
                     conditional.global_pt_vals[ptv_name] = {
                         "type": "var",
                         "size": ptv_size,
+                        "sum_op": wmvar_sum_op
                     }
                 # Otherwise if already present, check whether uniqueness agree, and if so, take max size
                 else:
-                    assert conditional.global_pt_vals[ptv_name]["unique"] == unique, \
+
+                    assert conditional.global_pt_vals[ptv_name]["sum_op"] == wmvar_sum_op, \
                         "Found conflict of uniqueness among working memory variables that is associated with the " \
                         "pattern variable '{}'".format(ptv_name)
                     # Take max size

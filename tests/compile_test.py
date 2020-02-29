@@ -75,7 +75,7 @@ def predicate_compile_test_3(to_render=False):
     sigma.add(type_2)
 
     # two predicate arguments, arg_1 with best-selection, arg_2 without selection
-    arg_1 = PredicateArgument('arg_1', type_1, '!')
+    arg_1 = PredicateArgument('arg_1', type_1, unique_symbol='!')
     arg_2 = PredicateArgument('arg_2', type_2)
     # Predicate
     test_pred = Predicate('test_pred', [arg_1, arg_2], world='closed', perception=True, function=2)

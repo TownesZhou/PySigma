@@ -92,7 +92,6 @@ def _compile_predicate(self, predicate):
         self.G.add_unilink(wmvn, wmfn)
         self.G.add_unilink(wmfn, wmfn_vn)
         self.G.add_unilink(wmfn_vn, acfn)
-        self.G.add_unilink(acfn, wmvn)
 
         # WMVN_OUT if this predicate involves selection
         # For now assume that whenever a selection is involved, the predicate MUST BE CLOSED_WORLD
@@ -191,7 +190,7 @@ def _compile_conditional(self, conditional):
             # Initialize the alpha subnet terminal node. Different cases to consider
             wmvn_out = pred_nodegroup['WMVN'] if 'WMVN' in pred_nodegroup.keys() else pred_nodegroup['WMVN_OUT']
             acfn = pred_nodegroup['ACFN']
-            if ptype is "conditional":
+            if ptype is "condition":
                 # If pattern is a condition, simply treat WMVN_OUT as the initial terminal
                 terminal = wmvn_out
             else:
@@ -232,9 +231,10 @@ def _compile_conditional(self, conditional):
             pt_var_list = []
             for ptv_name in conditional.ptv2wmv[pt_name].keys():
                 ptv_size = conditional.global_pt_vals[ptv_name]["size"]
+                ptv_sum_op = conditional.global_pt_vals[ptv_name]["sum_op"]
                 # For pt vars, all variable attributes are set to default values because they should not be needed in
-                #   subsequent alpha and beta computation
-                pt_var_list.append(Variable(ptv_name, ptv_size))
+                #   subsequent alpha and beta computation, except for sum_op attributes
+                pt_var_list.append(Variable(ptv_name, ptv_size, sum_op=ptv_sum_op))
 
             adfn = self.G.new_node(ADFN, name_prefix + "ADFN", conditional.pattern_pt_vals[pt_name])
             adfn_vn = self.G.new_node(DVN, name_prefix + "ADFN_VN", pt_var_list)
@@ -379,8 +379,8 @@ def _compile_conditional(self, conditional):
             func_var_list = []
             for var_name in conditional.function_var_names:
                 var_size = conditional.global_pt_vals[var_name]["size"]
-                var_unique = conditional.global_pt_vals[var_name]["unique"]
-                func_var_list.append(Variable(var_name, var_size, var_unique, selection=False))
+                var_sum_op = conditional.global_pt_vals[var_name]["sum_op"]
+                func_var_list.append(Variable(var_name, var_size, sum_op=var_sum_op))
 
             gffn = self.G.new_node(GFFN, name_prefix + "GFFN", conditional.function, func_var_list)
             gffn_vn = self.G.new_node(DVN, name_prefix + "GFFN_VN", func_var_list)

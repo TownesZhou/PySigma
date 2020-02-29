@@ -262,10 +262,11 @@ class FactorNode(Node, ABC):
 
             # Summary
             # Perform sum reduce if variable is unique, otherwise perform max reduce
+            # TODO: extend to allow other types of summarizations
             sum_reduce = [i for i, var in enumerate(self._var_list)
-                          if var.unique and var not in out_ld.var_list]
+                          if var.sum_op is "sum" and var not in out_ld.var_list]
             max_reduce = [i for i, var in enumerate(self._var_list)
-                          if not var.unique and var not in out_ld.var_list]
+                          if var.sum_op is "max" and var not in out_ld.var_list]
             buf = self.sp_sum(buf, sum_reduce)
             buf = self.sp_max(buf, max_reduce)
 
@@ -295,8 +296,10 @@ class VariableNode(Node, ABC):
         # Pretty log
         self.pretty_log["variable names"] = [var.name for var in self.var_list]
         self.pretty_log["variable dimensions"] = [var.size for var in self.var_list]
+        self.pretty_log["variable probabilistic"] = [var.probabilistic for var in self.var_list]
         self.pretty_log["variable uniqueness"] = [var.unique for var in self.var_list]
-        self.pretty_log["variable selection"] = [var.selection for var in self.var_list]
+        self.pretty_log["variable normalization"] = [var.normalize for var in self.var_list]
+        self.pretty_log["variable sum op"] = [var.sum_op for var in self.var_list]
 
     def add_link(self, linkdata):
         """
