@@ -176,10 +176,54 @@ def conditional_compile_test_2(to_render=True):
         render(sigma)
 
 
+def conditional_compile_test_3(to_render=True):
+    """
+        transitivity rule:
+            2 conditions, 1 action, with function
+
+        Check if pattern variable's sum_op is correctly detected
+    """
+    sigma = Sigma()
+
+    # add one type
+    type_1 = Type("type_1", 'discrete', min=0, max=3)
+    sigma.add(type_1)
+
+    # one arity-2 predicate
+    arg_1 = PredicateArgument("arg_1", type_1, probabilistic=True, unique_symbol='!', normalize=True)
+    arg_2 = PredicateArgument("arg_2", type_1, probabilistic=True, unique_symbol='!', normalize=True)
+    pred = Predicate("test_pred", [arg_1, arg_2], world="closed")
+    sigma.add(pred)
+
+    # transitivity conditional
+    cond_1 = Conditional("cond_1",
+                         conditions=[
+                             PredicatePattern("test_pred",
+                                              [PatternElement("arg_1", PatternVariable("a")),
+                                               PatternElement("arg_2", PatternVariable("b"))]),
+                             PredicatePattern("test_pred",
+                                              [PatternElement("arg_1", PatternVariable("b")),
+                                               PatternElement("arg_2", PatternVariable("c"))])
+
+                         ],
+                         actions=[
+                             PredicatePattern("test_pred",
+                                              [PatternElement("arg_1", PatternVariable("a")),
+                                               PatternElement("arg_2", PatternVariable("c"))])
+                         ],
+                         function=2, function_var_names=["a", "b", "c"]
+                         )
+    sigma.add(cond_1)
+
+    if to_render:
+        render(sigma)
+
+
 if __name__=="__main__":
 
     run_test(predicate_compile_test_1)
     run_test(predicate_compile_test_2)
     run_test(predicate_compile_test_3, to_render=False)
     run_test(conditional_compile_test_1, to_render=False)
-    run_test(conditional_compile_test_2, to_render=True)
+    run_test(conditional_compile_test_2, to_render=False)
+    run_test(conditional_compile_test_3, to_render=True)
