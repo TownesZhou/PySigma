@@ -30,17 +30,19 @@ class Variable:
             of other fields
     """
 
-    def __init__(self, name, size, unique=True, selection=False):
+    def __init__(self, name, size, probabilistic=False, unique=False, normalize=False):
         """
-        :param name:        Variable name
-        :param size:        The size, or maximum number of regions, of this variable dimension
-        :param unique:      True/False indicating whether 'unique' or 'universal'
-        :param selection:   Selection method
+        :param name:            Variable name
+        :param size:            The size, or maximum number of regions, of this variable dimension
+        :param probabilistic:   True/False, whether this variable is probabilistic
+        :param unique:          True/False, whether this variable is unique or universal
+        :param normalize:       True/False, whether this variable is to be normalized
         """
         self.name = name
         self.size = size
+        self.probabilistic = probabilistic
         self.unique = unique
-        self.selection = selection
+        self.normalize = normalize
 
     def __eq__(self, other):
         # override so '==' operator test the 'name' field
@@ -53,6 +55,10 @@ class Variable:
     def __str__(self):
         # override to provide the name as the string representation
         return self.name
+
+    def __hash__(self):
+        # override so that hash value is that of the Variable's name (which is treated as identity)
+        return hash(self.name)
 
 
 class LinkData:

@@ -19,7 +19,9 @@ class Graph(networkx.DiGraph):
 
         # node type name2type dictionary
         self._name2type = \
-            {PBFN.__name__: PBFN,
+            {
+             DFN.__name__: DVN,
+             PBFN.__name__: PBFN,
              LTMFN.__name__: LTMFN,
              WMFN.__name__: WMFN,
              ACFN.__name__: ACFN,
@@ -29,6 +31,7 @@ class Graph(networkx.DiGraph):
              ATFN.__name__: ATFN,
              BJFN.__name__: BJFN,
              GFFN.__name__: GFFN,
+             DVN.__name__: DVN,
              WMVN.__name__:WMVN,
              }
 

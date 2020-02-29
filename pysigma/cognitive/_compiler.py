@@ -20,11 +20,14 @@ def _compile_predicate(self, predicate):
                   "LTMFN": long-term memory factor node (if memorial),
                   "WMFN": working memory function node (if closed world),
                   "WMFN_VN": vn in the loop that precedes the ACFN (if closed world),
-                  "ACFN": action combination factor node (if closed world)
+                  "ACFN": action combination factor node that connects to WMVN if no selection, or WMVN_IN is selection
+                            is on.
                 }
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
+    from ..structures import Predicate
+    assert isinstance(predicate, Predicate)
 
     # Create new nodes and register bookkeeping info
     nodegroup = {}
@@ -35,6 +38,12 @@ def _compile_predicate(self, predicate):
     else:
         wmvn = self.G.new_node(WMVN, predicate.name + "_WMVN", predicate.var_list)
         nodegroup['WMVN'] = wmvn
+
+    # Create a ACFN that connects to WMVN / WMVN_IN
+    # The link from ACFN to WMVN/WMVN_IN is always unidirectional
+    acfn = self.G.new_node(ACFN, predicate.name + "_ACFN")
+    self.G.add_unilink(acfn, wmvn)
+    nodegroup['ACFN'] = acfn
 
     # PBFN if this predicate is perceptual
     if predicate.perception:
@@ -69,22 +78,21 @@ def _compile_predicate(self, predicate):
 
     # WMFN if this predicate is closed-world
     # TODO: QUESTION: is WMVN - WMFN unidirectional for any closed-world predicate, i.e., isn't for a closed-world
-    #   predicate, its entire distribution is not replaced each cycle?
+    #   predicate, its entire distribution is always not replaced each cycle?
     # TODO: here assume it is always such a unidirectional cycle
     if predicate.world is 'closed':
-        # Create a unidirectional cycle: WMVN -> WMFN -> WMFN_VN -> WMFN_ACFN -> WMVN
+        # Create a unidirectional cycle: WMVN -> WMFN -> WMFN_VN -> ACFN -> WMVN
+        # Note that the ACFN here is the ACFN created above.
         wmfn = self.G.new_node(WMFN, predicate.name + "_WMFN")
-        wmfn_vn = self.G.new_node(WMVN, predicate.name + "_WMFN_VN", predicate.var_list)
-        wmfn_acfn = self.G.new_node(ACFN, predicate.name + "_WMFN_ACFN")
+        wmfn_vn = self.G.new_node(DVN, predicate.name + "_WMFN_VN", predicate.var_list)
         nodegroup['WMFN'] = wmfn
         nodegroup['WMFN_VN'] = wmfn_vn
-        nodegroup['WMFN_ACFN'] = wmfn_acfn
 
         # Set up cycle unidirectional link
         self.G.add_unilink(wmvn, wmfn)
         self.G.add_unilink(wmfn, wmfn_vn)
-        self.G.add_unilink(wmfn_vn, wmfn_acfn)
-        self.G.add_unilink(wmfn_acfn, wmvn)
+        self.G.add_unilink(wmfn_vn, acfn)
+        self.G.add_unilink(acfn, wmvn)
 
         # WMVN_OUT if this predicate involves selection
         # For now assume that whenever a selection is involved, the predicate MUST BE CLOSED_WORLD
@@ -108,7 +116,10 @@ def _compile_conditional(self, conditional):
           { conditional_name :
               { "alpha“ ：
                   { pattern_name :
-                      { "FFN" : filter factor node,
+                      { "Gate_VN": the gate dvn connecting to predicate ACFN, if pattern is action or condact.
+                        "Gate_FN": the gate factor node connecting from predicate WMVN_OUT and to Gate_VN, if pattern is
+                                    a condact
+                        "FFN" : filter factor node,
                         "FFN_VN" : wmvn after FFN,
                         "NLFN" : nonlinearity factor node,
                         "NLFN_VN" : wmvn after NLFN,
@@ -136,6 +147,8 @@ def _compile_conditional(self, conditional):
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
+    from ..structures import Conditional
+    assert isinstance(conditional, Conditional)
 
     nodegroup = dict(alpha={}, beta={}, gamma={})
 
@@ -169,29 +182,48 @@ def _compile_conditional(self, conditional):
         for pt_name, pattern in pattern_group.items():
             # name prefix for each predicate pattern's alpha subnet
             name_prefix = conditional.name + "_ALPHA_{" + pt_name + "}_"
-
-            # Initialize the alpha subnet terminal node to be the predicate's WMVN
-            pred = self.name2predicate[pattern.predicate_name]
-            pred_nodegroup = self.predicate2group[pattern.predicate_name]
-            terminal = pred_nodegroup['WMVN'] if 'WMVN' in pred_nodegroup.keys() else pred_nodegroup['WMVN_OUT']
-
             # alpha sub nodegroup for this predicate
             alpha_sub_ng = {}
 
-            # Set up Filter nodes
+            pred = self.name2predicate[pattern.predicate_name]
+            pred_nodegroup = self.predicate2group[pattern.predicate_name]
+
+            # Initialize the alpha subnet terminal node. Different cases to consider
+            wmvn_out = pred_nodegroup['WMVN'] if 'WMVN' in pred_nodegroup.keys() else pred_nodegroup['WMVN_OUT']
+            acfn = pred_nodegroup['ACFN']
+            if ptype is "conditional":
+                # If pattern is a condition, simply treat WMVN_OUT as the initial terminal
+                terminal = wmvn_out
+            else:
+                # If pattern is an action or a condact, Create a dummy variable node as the initial terminal, and
+                #   connects it to ACFN
+                gate_vn = self.G.new_node(DVN, name_prefix + "Gate_VN", pred.var_list)
+                self.G.add_unilink(gate_vn, acfn)
+                alpha_sub_ng["Gate_VN"] = gate_vn
+                terminal = gate_vn
+
+                if ptype is "condact":
+                    # If pattern is an condact, other than all above, need to create a dummy factor node that connects
+                    #   from WM_OUT and to the dummy variable node
+                    gate_fn = self.G.new_node(DFN, name_prefix + "Gate_FN")
+                    self.G.add_unilink(wmvn_out, gate_fn)
+                    self.G.add_unilink(gate_fn, gate_vn)
+                    alpha_sub_ng["Gate_FN"] = gate_fn
+
+            # Step 1: Set up Filter nodes
             # TODO: Detailed implementation left for future iterations
 
-            # Set up Nonlinearity nodes
+            # Step 2: Set up Nonlinearity nodes
             if pattern.nonlinearity is not None:
                 # Create nonlinearity factor nodes and set up links
                 nlfn = self.G.new_node(NLFN, name_prefix + "NLFN", pattern.nonlinearity)
-                nlfn_vn = self.G.new_node(WMVN, name_prefix + "NLFN_VN", pred.var_list)
+                nlfn_vn = self.G.new_node(DVN, name_prefix + "NLFN_VN", pred.var_list)
                 terminal = grow_alpha(terminal, nlfn, nlfn_vn, ptype)
 
                 alpha_sub_ng["NLFN"] = nlfn
                 alpha_sub_ng["NLFM_VN"] = nlfn_vn
 
-            # Set up Affine Delta nodes
+            # Step 3: Set up Affine Delta nodes
             # First create Variables for pattern vars. If one pattern vars is associated with multiple wm vars,
             #   then the size of that pattern var is the max size of all associated wm vars (to leave enough region)
             # TODO: Assume now that the uniqueness of a pattern variable follows that of the wm variables associated
@@ -200,17 +232,18 @@ def _compile_conditional(self, conditional):
             pt_var_list = []
             for ptv_name in conditional.ptv2wmv[pt_name].keys():
                 ptv_size = conditional.global_pt_vals[ptv_name]["size"]
-                ptv_unique = conditional.global_pt_vals[ptv_name]["unique"]
-                pt_var_list.append(Variable(ptv_name, ptv_size, ptv_unique, selection=False))
+                # For pt vars, all variable attributes are set to default values because they should not be needed in
+                #   subsequent alpha and beta computation
+                pt_var_list.append(Variable(ptv_name, ptv_size))
 
             adfn = self.G.new_node(ADFN, name_prefix + "ADFN", conditional.pattern_pt_vals[pt_name])
-            adfn_vn = self.G.new_node(WMVN, name_prefix + "ADFN_VN", pt_var_list)
+            adfn_vn = self.G.new_node(DVN, name_prefix + "ADFN_VN", pt_var_list)
             terminal = grow_alpha(terminal, adfn, adfn_vn, ptype)
 
             alpha_sub_ng["ADFN"] = adfn
             alpha_sub_ng["ADFN_VN"] = adfn_vn
 
-            # Set up Affine Transformation nodes
+            # Step 4: Set up Affine Transformation nodes
             # TODO: Detailed implementation left for future iterations
 
             # Alpha subnet construction finished, register terminal node
@@ -251,7 +284,7 @@ def _compile_conditional(self, conditional):
 
             var_union = union_vars(terminal.var_list, extra.var_list)
             bjfn = self.G.new_node(BJFN, name_prefix + "BJFN")
-            bjfn_vn = self.G.new_node(WMVN, name_prefix + "BJFN_VN", var_union)
+            bjfn_vn = self.G.new_node(DVN, name_prefix + "BJFN_VN", var_union)
 
             # Condition Beta subnets link direction going inward
             self.G.add_unilink(terminal, bjfn)
@@ -287,7 +320,7 @@ def _compile_conditional(self, conditional):
 
             var_union = union_vars(terminal.var_list, extra.var_list)
             bjfn = self.G.new_node(BJFN, name_prefix + "BJFN")
-            bjfn_vn = self.G.new_node(WMVN, name_prefix + "BJFN_VN", var_union)
+            bjfn_vn = self.G.new_node(DVN, name_prefix + "BJFN_VN", var_union)
 
             self.G.add_unilink(terminal, bjfn)  # uni-link from condition terminal
             self.G.add_bilink(extra, bjfn)  # bi-link from condact terminal
@@ -308,7 +341,7 @@ def _compile_conditional(self, conditional):
 
             var_union = union_vars(terminal.var_list, extra.var_list)
             bjfn = self.G.new_node(BJFN, name_prefix + "BJFN")
-            bjfn_vn = self.G.new_node(WMVN, name_prefix + "BJFN_VN", var_union)
+            bjfn_vn = self.G.new_node(DVN, name_prefix + "BJFN_VN", var_union)
 
             # Bidirectional links in condact Beta subnets
             self.G.add_bilink(terminal, bjfn)
@@ -339,7 +372,7 @@ def _compile_conditional(self, conditional):
         if type(conditional.function) is str:
             gffn = self.conditional2group[conditional.function]["gamma"]["GFFN"]
             _, func_var_list = gffn.get_function()
-            gffn_vn = self.G.new_node(WMVN, name_prefix + "GFFN_VN", func_var_list)
+            gffn_vn = self.G.new_node(DVN, name_prefix + "GFFN_VN", func_var_list)
         # Otherwise, set gamma function normally
         else:
             # Create function variable list
@@ -350,11 +383,11 @@ def _compile_conditional(self, conditional):
                 func_var_list.append(Variable(var_name, var_size, var_unique, selection=False))
 
             gffn = self.G.new_node(GFFN, name_prefix + "GFFN", conditional.function, func_var_list)
-            gffn_vn = self.G.new_node(WMVN, name_prefix + "GFFN_VN", func_var_list)
+            gffn_vn = self.G.new_node(DVN, name_prefix + "GFFN_VN", func_var_list)
 
         # Gamma Beta join nodes
         gbjn = self.G.new_node(BJFN, name_prefix + "GammaBetaJoin")
-        gbjn_vn = self.G.new_node(WMVN, name_prefix + "GammaBetaJoin_VN", terminal.var_list)
+        gbjn_vn = self.G.new_node(DVN, name_prefix + "GammaBetaJoin_VN", terminal.var_list)
 
         # Connect
         self.G.add_bilink(gffn, gffn_vn)

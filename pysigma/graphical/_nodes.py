@@ -240,7 +240,6 @@ class FactorNode(Node, ABC):
         """
         # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
         # determine whether this node has reached quiescence
-        # TODO: Normalization step
 
         # Check quiescence
         if self.check_quiesce():
@@ -328,7 +327,6 @@ class VariableNode(Node, ABC):
         """
         # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
         #   determine whether this node has reached quiescence
-        # TODO: Normalization step
 
         # Check quiescence
         if self.check_quiesce():
@@ -349,6 +347,15 @@ class VariableNode(Node, ABC):
 
             # Send message
             out_ld.set(buf, self._epsilon)
+
+
+class DFN(FactorNode):
+    """
+        Default (Dummy) Factor Node. No special computation
+    """
+    def __init__(self, name, function=None, func_var_list=None):
+        super(DFN, self).__init__(name, function, func_var_list)
+        self.pretty_log["node type"] = "Default Function Node"
 
 
 class PBFN(FactorNode):
@@ -655,10 +662,8 @@ class ATFN(FactorNode):
 
 class BJFN(FactorNode):
     """
-        Beta-Join Factor Node
+        Beta-Join Factor Node. Serve as structural juncture at Beta subnet in a conditional. No special computation
     """
-
-    # TODO
     def __init__(self, name):
         super(BJFN, self).__init__(name, function=None, func_var_list=None)
         self.pretty_log["node type"] = "Beta-Join Factor Node"
@@ -675,12 +680,22 @@ class GFFN(FactorNode):
         self.pretty_log["node type"] = "Gamma Function Factor Node"
 
 
+class DVN(VariableNode):
+    """
+        Default (Dummy) Variable Node. Used to serve as structural juncture connecting factor nodes. No special computation
+    """
+    def __init__(self, name, var_list):
+        super(DVN, self).__init__(name, var_list)
+        self.pretty_log["node type"] = "Default Variable Node"
+
+
 class WMVN(VariableNode):
     """
-        Working Memory Variable Node
+        Working Memory Variable Node. Gate node connecting predicate memories to conditionals.
+        Special computation of normalization if one of the predicate's wm variable node need normalization.
     """
 
-    # TODO
+    # TODO: implement normalization
     def __init__(self, name, var_list):
         super(WMVN, self).__init__(name, var_list)
         self.pretty_log["node type"] = "Working Memory Variable Node"

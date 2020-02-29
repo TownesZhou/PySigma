@@ -4,7 +4,7 @@
 """
 from .structures import *
 from .graphical import *
-from .cognitive import _add_structure, _compiler, _run
+from .cognitive import _register, _compiler, _runner
 
 
 class Sigma:
@@ -54,25 +54,25 @@ class Sigma:
     # Methods for adding Sigma structures #
 
     def add(self, structure):
-        _add_structure.add(self, structure)
+        _register.add(self, structure)
 
     def add_type(self, *args, **kwargs):
-        _add_structure.add_type(self, *args, **kwargs)
+        _register.add_type(self, *args, **kwargs)
 
     def add_predicate(self, *args, **kwargs):
-        _add_structure.add_predicate(self, *args, **kwargs)
+        _register.add_predicate(self, *args, **kwargs)
 
     def add_conditional(self, *args, **kwargs):
-        _add_structure.add_conditional(self, *args, **kwargs)
+        _register.add_conditional(self, *args, **kwargs)
 
     def _register_type(self, sigma_type):
-        _add_structure._register_type(self, sigma_type)
+        _register._register_type(self, sigma_type)
 
     def _register_predicate(self, predicate):
-        _add_structure._register_predicate(self, predicate)
+        _register._register_predicate(self, predicate)
 
     def _register_conditional(self, conditional):
-        _add_structure._register_conditional(self, conditional)
+        _register._register_conditional(self, conditional)
 
 
     # Methods for Sigma structure compilation #
@@ -87,10 +87,10 @@ class Sigma:
     # Methods for running Sigma program #
 
     def _order_nodes(self):
-        _run._order_nodes(self)
+        _runner._order_nodes(self)
 
     def decide(self, num_cycles):
-        _run.decide(self, num_cycles)
+        _runner.decide(self, num_cycles)
 
 
 

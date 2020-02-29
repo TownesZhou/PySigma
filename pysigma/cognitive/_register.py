@@ -89,21 +89,12 @@ def _register_predicate(self, predicate):
     from .. import Sigma
     assert isinstance(self, Sigma)
 
+    assert isinstance(predicate, Predicate)
     # Check if the types in the predicate are already defined, and change str to Type
     for i, argument_type in enumerate(predicate.wm_var_types):
-        if argument_type not in self.name2type.keys() and argument_type not in self.type_list:
+        if argument_type not in self.name2type.keys() or argument_type not in self.type_list:
             raise ValueError("Predicate {} try to include type {} that has not yet been defined in this program"
                              .format(predicate.name, argument_type))
-        # If this type specified in that Predicate is a string, than change it to corresponding Type
-        if type(argument_type) is str:
-            predicate.wm_var_types[i] = self.name2type[argument_type]
-
-    # Create and register Variables
-    for (var_name, var_type, var_unique) in \
-            zip(predicate.wm_var_names, predicate.wm_var_types, predicate.wm_var_unique):
-        var = Variable(var_name, var_type.size, var_unique is not None, var_unique)
-        predicate.var_list.append(var)
-        predicate.var_name2var[var_name] = var
 
     # Register predicate
     self.predicate_list.append(predicate)
@@ -118,6 +109,7 @@ def _register_conditional(self, conditional):
     from .. import Sigma
     assert isinstance(self, Sigma)
 
+    assert isinstance(conditional, Conditional)
     # Check if predicate patterns align with already registered predicates
     for pattern in conditional.conditions + conditional.condacts + conditional.actions:
         # Check if predicate exists
@@ -147,12 +139,10 @@ def _register_conditional(self, conditional):
             ptv_name = ptv_val["name"]
             # Get corresponding wmv's uniqueness
             pred = self.name2predicate[conditional.name2pattern[pt_name].predicate_name]
-            unique = pred.var_name2var[wmv].unique
             if ptv_val["type"] is "const":
                 conditional.global_pt_vals[ptv_name] = {
                     "type": "const",
                     "size": len(ptv_val["vals"]) if type(ptv_val["vals"]) is list else 1,
-                    "unique": unique
                 }
             else:
                 ptv_size = pred.var_name2var[wmv].size
@@ -161,7 +151,6 @@ def _register_conditional(self, conditional):
                     conditional.global_pt_vals[ptv_name] = {
                         "type": "var",
                         "size": ptv_size,
-                        "unique": unique
                     }
                 # Otherwise if already present, check whether uniqueness agree, and if so, take max size
                 else:
