@@ -4,7 +4,7 @@
 """
 from .structures import *
 from .graphical import *
-from .cognitive import _register, _compiler, _runner
+from .cognitive import _register, _compiler, _runner, _perception, _learning
 
 
 class Sigma:
@@ -48,6 +48,9 @@ class Sigma:
         self._node_order = None
         self._order_set = False
 
+        # Perception Callables
+        self._perception_callable = None
+
         ### Sigma program global parameters ###
 
 
@@ -86,7 +89,14 @@ class Sigma:
 
     # Methods for Setting Perceptions and Prior Knowledge #
 
-    # def _perceive
+    def perceive(self, predicates, messages):
+        _perception.perceive(self, predicates, messages)
+
+    def set_perception(self, predicates, perceive_funcs):
+        _perception.set_perception(self, predicates, perceive_funcs)
+
+    def set_assumption(self, predicates, priors):
+        _perception.set_assumption(self, predicates, priors)
 
 
     # Methods for running Sigma program #
