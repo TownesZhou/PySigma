@@ -378,6 +378,10 @@ class PBFN(FactorNode):
         super(PBFN, self).check_quiesce()
         return False        # Always return False so that compute() will still proceed
 
+    def get_shape(self):
+        # For use when checking perception content shape
+        return [var.size for var in self._var_list]
+
 
 class LTMFN(FactorNode):
     """
@@ -394,6 +398,10 @@ class LTMFN(FactorNode):
     def check_quiesce(self):
         super(LTMFN, self).check_quiesce()
         return False  # Always return False so that compute() will still proceed
+
+    def get_shape(self):
+        # For use when checking perception content shape
+        return [var.size for var in self._var_list]
 
 
 class WMFN(FactorNode):

@@ -37,15 +37,16 @@ def perceive(self, predicates, contents):
             if 'PBFN' not in self.predicate2group[pred].keys():
                 raise ValueError("Predicate '{}' is not perceptual. Cannot perceive on this predicate.")
 
-            # Check content shape
-            var_list = pred.var_list
-            var_sizes = [var.size for var in var_list]
+            pbfn = self.predicate2group[pred]["PBFN"]
+            # Check content shape. Use pbfn's get_shape() method instead of checking against predicate wmvn's var list
+            #   because we may want to extend predicates in the future where PBFN's vars is different from WMVN's vars
+            #   E.g. Reparameterization
+            var_sizes = pbfn.get_shape()
             if var_sizes != list(contents[i].shape):
                 raise ValueError("The shape of {}th content does not agree with the corresponding predicate's variable "
                                  "sizes. Expect: {}, got: {}.".format(i, var_sizes, list(contents[i].shape)))
 
             # Set PBFN's function
-            pbfn = self.predicate2group[pred]["PBFN"]
             pbfn.set_function(contents[i], var_sizes)
 
 
@@ -97,13 +98,14 @@ def set_assumption(self, predicates, priors):
             if 'LTMFN' not in self.predicate2group[pred].keys():
                 raise ValueError("Predicate '{}' is not memorial. Cannot set assumption on this predicate.")
 
-            # Check content shape
-            var_list = pred.var_list
-            var_sizes = [var.size for var in var_list]
+            ltmfn = self.predicate2group[pred]["LTMFN"]
+            # # Check content shape. Use pbfn's get_shape() method instead of checking against predicate wmvn's var list
+            #   because we may want to extend predicates in the future where PBFN's vars is different from WMVN's vars
+            #   E.g. Reparameterization
+            var_sizes = ltmfn.get_shape()
             if var_sizes != list(priors[i].shape):
                 raise ValueError("The shape of {}th priors does not agree with the corresponding predicate's variable "
                                  "sizes. Expect: {}, got: {}.".format(i, var_sizes, list(priors[i].shape)))
 
             # Set PBFN's function
-            ltmfn = self.predicate2group[pred]["LTMFN"]
             ltmfn.set_function(priors[i], var_sizes)
