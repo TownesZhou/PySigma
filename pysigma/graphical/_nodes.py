@@ -396,10 +396,27 @@ class WMFN(FactorNode):
 
 class ACFN(FactorNode):
     """
-        Action-Combination Factor Node
+        Action-Combination Factor Node.
+
+        Regarding combination operation:
+            - If predicate is a vector predicate (all wm vars are vector vars), then operations are vector summation
+            without normalization.
+            - If predicate is a probabilistic predicate, will adopt probabilistic logical operations:
+                1. Calculate a "positive combined action" message by taking the probabilistic OR of all incoming
+                    messages
+                        i.e. For all incoming messages M_i, The PA (positive combined action) is calculated by
+                            PA = 1 - (1 - M_1)*(1 - M_2)* ... *(1 - M_n)
+                2. Calculate a "negative combined action" message by taking the probabilistic OR of all NEGATED incoming
+                    messages
+                        i.e. For all incoming messages M_i, The NA (negative combined action) is calculated by
+                            NA = 1 - M_1 * M_2 * ... * M_n
+
+
+        For probabilistic messages (ones that involve any probabilistic variable), we adopt probabilistic logical
+            semantic, i.e.,
     """
 
-    # TODO: Special implementation of sum-product to implement message conjunction
+    # TODO: Special implementation of sum-product to implement message disjunction
     def __init__(self, name, ):
         super(ACFN, self).__init__(name, function=None, func_var_list=None)
         self.pretty_log["node type"] = "Action Combination Function Node"
@@ -414,6 +431,61 @@ class FFN(FactorNode):
     def __init__(self, name, function=None, func_var_list=None):
         super(FFN, self).__init__(name, function, func_var_list)
         self.pretty_log["node type"] = "Filter Factor Node"
+
+
+class NFN(FactorNode):
+    """
+        Negation Factor Node.
+
+        For vector predicate (all variables are vector), simply take arithmetic negation
+        For probabilistic predicate (have probabilistic variable), take probabilistic negation: neg = 1 - p
+            Note: assume arriving messages are properly normalized (individual value in range [0, 1])
+
+        Note: NFN admits at most two pairs of incoming / outgoing links (one pair in condition / action pattern,
+            two pairs in condact pattern)
+    """
+
+    # TODO: Special computation for negation
+    def __init__(self, name):
+        """
+        :param name:        Name of the node
+        :param nonlinear:  'str' or function objects, specifying the type of element-wise nonlinearity
+        """
+        super(NFN, self).__init__(name, function=None, func_var_list=None)
+        self.pretty_log["node type"] = "Negation Factor Node"
+
+    # Override to make sure only admit at most two pairs of incoming / outgoing links
+    def add_link(self, linkdata):
+        assert (not linkdata.to_fn or len(self._in_linkdata) <= 1), "Attempting to add more than two incoming links"
+        assert (linkdata.to_fn or len(self._out_linkdata) <= 1), "Attempting to add more than two outgoing links"
+        super(NFN, self).add_link(linkdata)
+
+    def compute(self):
+        # Check quiescence
+        if self.check_quiesce():
+            return
+
+        # Check that there are equal number of incoming links and outgoing links
+        assert len(self._in_linkdata) == len(self._out_linkdata), \
+            "The number of of incoming links ({}) do not match the number of outgoing links ({}). " \
+                .format(len(self._in_linkdata), len(self._out_linkdata))
+
+        for in_ld in self._in_linkdata:
+            out_ld = [ld for ld in self._out_linkdata if ld.vn is not in_ld.vn][0]
+
+            # Determine if to use arithmetic negation or probabilistic negation
+            probabilistic = any(var.probabilistic for var in self._var_list)
+
+            msg = in_ld.read()
+            if probabilistic:
+                assert torch.all(msg > 0) and torch.all(msg < 1), \
+                    "Though declared probabilistic, the incoming message at this Negation Factor Node does not lie " \
+                    "within range [0, 1]. Max val: {}, Min val: {}".format(torch.max(msg), torch.min(msg))
+                msg = 1 - msg       # Take probabilistic negation
+            else:
+                msg = -msg          # Otherwise, take arithmetic negation
+
+            out_ld.set(msg, self._epsilon)
 
 
 class NLFN(FactorNode):

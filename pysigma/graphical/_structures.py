@@ -78,7 +78,7 @@ class LinkData:
             instantiate an edge.
     """
 
-    def __init__(self, vn, var_list, to_fn):
+    def __init__(self, vn, var_list, to_fn, **kwargs):
         """
         :param vn:      name of the variable node that this link is incident to
         :param var_list:    list of variables of the adjacent variable node
@@ -95,6 +95,10 @@ class LinkData:
 
         # Whether this link is pointing toward a factor node
         self.to_fn = to_fn
+
+        # Register additional attributes, if there are any. For example, a flag indicating whether this linkdata
+        #   contains negated message in an action conditional pattern.
+        self.attri = kwargs
 
         # Record the dimensions of link message. Use to check potential dimension mismatch
         self._dims = [var.size for var in self.var_list]

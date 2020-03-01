@@ -119,27 +119,29 @@ def _compile_conditional(self, conditional):
                         "Gate_FN": the gate factor node connecting from predicate WMVN_OUT and to Gate_VN, if pattern is
                                     a condact
                         "FFN" : filter factor node,
-                        "FFN_VN" : wmvn after FFN,
+                        "FFN_VN" : dvn after FFN,
+                        "NFN": negation factor node,
+                        "NFN_VN": dvn after NFN
                         "NLFN" : nonlinearity factor node,
-                        "NLFN_VN" : wmvn after NLFN,
+                        "NLFN_VN" : dvn after NLFN,
                         "ADFN" : affine delta factor node,
-                        "ADFN_VN" : wmvn after ADFN,
+                        "ADFN_VN" : dvn after ADFN,
                         "ATFN" : affine transformation factor node,
-                        "ATFN_VN" : wmvn after ATFN,
+                        "ATFN_VN" : dvn after ATFN,
                         "terminal" : the terminal variable node at the end of the alpha subnet
                       }
                   },
                 "beta" :
                   { pattern_name :
                       { "BJFN" : beta join factor node,
-                        "BJFN_VN" : wmvn after BJFN
+                        "BJFN_VN" : dvn after BJFN
                       }
                   },
                 "gamma" :
                   { "GFFN" : gamma function factor node,
-                    "GFFN_VN" : wmvn after GFFN,
+                    "GFFN_VN" : dvn after GFFN,
                     "BJFN" : the ultimate beta-join node that joins GFFN_VN. The peak of the alpha-beta subgraph,
-                    "BJFN_VN" : the wmvn after BJFN
+                    "BJFN_VN" : the dvn after BJFN
                   }
               }
           }
@@ -156,8 +158,9 @@ def _compile_conditional(self, conditional):
     #   Link directions for actions goes outward toward Working Memory VNs
     #   Link directions for condacts are bidirectional up until Beta join factor node
     #   The order of the different parts in a Alpha subnet, with direction from WM to Beta join, is:
-    #       [Filter, Nonlinearity, Affine Delta, Affine]
+    #       [Filter, Negation, Nonlinearity, Affine Delta, Affine]
     # TODO: Discuss with Volkan about this order. E.g. whether Affine should be put BEFORE Affine Delta
+    # TODO: Disentangle Negation from Nonlinearity
 
     # util inner functions for adding nodes depending on different pattern type. Return the new alpha terminal node
     def grow_alpha(term, fn, vn, ptype):
@@ -196,8 +199,11 @@ def _compile_conditional(self, conditional):
             else:
                 # If pattern is an action or a condact, Create a dummy variable node as the initial terminal, and
                 #   connects it to ACFN
+                # Provide special attribute "negation" at the linkdata
+                #   connecting gate_vn to acfn so that the ACFN can recognize that the message arriving there is a
+                #   negated action.
                 gate_vn = self.G.new_node(DVN, name_prefix + "Gate_VN", pred.var_list)
-                self.G.add_unilink(gate_vn, acfn)
+                self.G.add_unilink(gate_vn, acfn, negation=pattern.negation)    # Special linkdata attribute
                 alpha_sub_ng["Gate_VN"] = gate_vn
                 terminal = gate_vn
 
@@ -212,7 +218,16 @@ def _compile_conditional(self, conditional):
             # Step 1: Set up Filter nodes
             # TODO: Detailed implementation left for future iterations
 
-            # Step 2: Set up Nonlinearity nodes
+            # Step 2: Set up Negation nodes
+            if pattern.negation:
+                nfn = self.G.new_node(NFN, name_prefix + "NFN")
+                nfn_vn = self.G.new_node(DVN, name_prefix + "NFN_VN", pred.var_list)
+                terminal = grow_alpha(terminal, nfn, nfn_vn, ptype)
+
+                alpha_sub_ng["NFN"] = nfn
+                alpha_sub_ng["NFN_VN"] = nfn_vn
+
+            # Step 3: Set up Nonlinearity nodes
             if pattern.nonlinearity is not None:
                 # Create nonlinearity factor nodes and set up links
                 nlfn = self.G.new_node(NLFN, name_prefix + "NLFN", pattern.nonlinearity)
@@ -222,7 +237,7 @@ def _compile_conditional(self, conditional):
                 alpha_sub_ng["NLFN"] = nlfn
                 alpha_sub_ng["NLFM_VN"] = nlfn_vn
 
-            # Step 3: Set up Affine Delta nodes
+            # Step 4: Set up Affine Delta nodes
             # First create Variables for pattern vars. If one pattern vars is associated with multiple wm vars,
             #   then the size of that pattern var is the max size of all associated wm vars (to leave enough region)
             # TODO: Assume now that the uniqueness of a pattern variable follows that of the wm variables associated
@@ -243,7 +258,7 @@ def _compile_conditional(self, conditional):
             alpha_sub_ng["ADFN"] = adfn
             alpha_sub_ng["ADFN_VN"] = adfn_vn
 
-            # Step 4: Set up Affine Transformation nodes
+            # Step 5: Set up Affine Transformation nodes
             # TODO: Detailed implementation left for future iterations
 
             # Alpha subnet construction finished, register terminal node

@@ -26,6 +26,7 @@ class Graph(networkx.DiGraph):
              WMFN.__name__: WMFN,
              ACFN.__name__: ACFN,
              FFN.__name__: FFN,
+             NFN.__name__: NFN,
              NLFN.__name__: NLFN,
              ADFN.__name__: ADFN,
              ATFN.__name__: ATFN,
@@ -53,10 +54,12 @@ class Graph(networkx.DiGraph):
 
         return node
 
-    def add_unilink(self, node1, node2):
+    def add_unilink(self, node1, node2, **kwargs):
         """
             Add a unidirectional link FROM node1 TO node2, and create and register corresponding LinkData
             Note that one of the nodes should be a variable node and the other a factor node
+
+            Additional attributes in kwargs will be set in the linkdata
         """
         assert (isinstance(node1, VariableNode) and isinstance(node2, FactorNode)) or \
                (isinstance(node1, FactorNode) and isinstance(node2, VariableNode)), \
@@ -66,7 +69,7 @@ class Graph(networkx.DiGraph):
         vn = node1 if isinstance(node1, VariableNode) else node2
         var_list = vn.var_list
         to_fn = True if isinstance(node2, FactorNode) else False
-        linkdata = LinkData(vn, var_list, to_fn)
+        linkdata = LinkData(vn, var_list, to_fn, **kwargs)
 
         # Create edge in graph. The LinkData exists in the 'data' field in an edge of the NetworkX graph
         self.add_edge(node1, node2, data=linkdata)
@@ -75,17 +78,19 @@ class Graph(networkx.DiGraph):
         node1.add_link(linkdata)
         node2.add_link(linkdata)
 
-    def add_bilink(self, node1, node2):
+    def add_bilink(self, node1, node2, **kwargs):
         """
             Add a bidrectional link between node 1 and node2. Note that one of the nodes should be a variable node and
                 the other a factor node
+
+            Additional attributes in kwargs will be set in the linkdata
         """
         assert (isinstance(node1, VariableNode) and isinstance(node2, FactorNode)) or \
                (isinstance(node1, FactorNode) and isinstance(node2, VariableNode)), \
             "One of the nodes must be a variable node and the other one a factor node"
 
-        self.add_unilink(node1, node2)
-        self.add_unilink(node2, node1)
+        self.add_unilink(node1, node2, **kwargs)
+        self.add_unilink(node2, node1, **kwargs)
 
     def get_linkdata(self, node1, node2):
         """

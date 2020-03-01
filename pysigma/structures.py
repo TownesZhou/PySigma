@@ -7,7 +7,6 @@
 import torch
 from collections import namedtuple
 from collections.abc import Iterable
-from typing import Union
 from .utils import *
 from .graphical._structures import Variable
 
@@ -19,7 +18,7 @@ class PredicateArgument:
 
     def __init__(self, argument_name, argument_type, probabilistic=False, unique_symbol=None, normalize=False, **kwargs):
         """
-
+            Declare an Argument in a Predicate
         :param argument_name:   'str'. Name of the predicate argument (working memory variable)
         :param argument_type:   'Type'. The "type" of the working memory variable
         :param probabilistic:   True or False. Whether this working memory variable is probabilistic, i.e., semantically
@@ -63,19 +62,27 @@ class PredicateArgument:
 class PredicatePattern:
     """
         Predicate Pattern in a Conditional
-          Each predicate pattern is of the form `(predicate_name, nonlinearity, 'elements')
-              - `predicate_name`:  name of the predicate in question
-              - `elements`: A python iterable of `PatternElement` namedtuples.
-              - `nonlinearity`: `None` or one of the following: `'negation'` or `'-'`, `'exponential'` or `'^'`, `'sigmoid'`
-                      or `'s'`, `'relu'` or `'r'`, `'tanh'` or `'t'`, `'exp'` or `'e'` (true exponential),
-                      or customized torch nonlinearity functions
     """
 
-    def __init__(self, predicate_name, elements, nonlinearity=None):
+    def __init__(self, predicate_name, elements, negation=False, nonlinearity=None):
+        """
+            Declare a Predicate Pattern in a Conditional
+        :param predicate_name:      'str'. name of the predicate in question
+        :param elements:            Iterable of 'PatternElement'.
+        :param negation:            True or False. Whether message for this pattern will be negated. Negation semantic
+                                        depends on whether the corresponding predicate is probabilistic. If so, will
+                                        take probabilistic negation, otherwise take arithmetic negation.
+                                    Default to False.
+        :param nonlinearity:        None or one of the following: `'negation'` or `'-'`, `'exponential'` or `'^'`,
+                                        `'sigmoid'` or `'s'`, `'relu'` or `'r'`, `'tanh'` or `'t'`, `'exp'` or `'e'`
+                                        (true exponential), or customized torch nonlinearity functions
+        """
         if not isinstance(predicate_name, str):
             raise ValueError("1st argument 'predicate_name' of a PredicatePattern must be a 'str'")
         if not isinstance(elements, Iterable) or not all(isinstance(e, PatternElement) for e in elements):
             raise ValueError("2nd argument 'elements' of a PredicatePattern must be an iterable of 'PatternElement's")
+        if not isinstance(negation, bool):
+            raise ValueError("the argument 'negation' of a PredicatePattern must be a 'bool'")
         if nonlinearity is not None and nonlinearity not in ['negation', '-', 'exponential', '^', 'sigmoid', 's',
                                                              'relu', 'r', 'tanh', 't', 'exp', 'e']:
             raise ValueError("Unknown nonlinearity: '{}'".format(nonlinearity))
@@ -83,6 +90,7 @@ class PredicatePattern:
 
         self.predicate_name = predicate_name
         self.elements = list(elements)
+        self.negation = negation
         self.nonlinearity = nonlinearity
 
 
