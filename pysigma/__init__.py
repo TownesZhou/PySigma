@@ -84,6 +84,11 @@ class Sigma:
         _compiler._compile_conditional(self, conditional)
 
 
+    # Methods for Setting Perceptions and Prior Knowledge #
+
+    # def _perceive
+
+
     # Methods for running Sigma program #
 
     def _order_nodes(self):

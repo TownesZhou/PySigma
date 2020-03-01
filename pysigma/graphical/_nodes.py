@@ -365,13 +365,18 @@ class DFN(FactorNode):
 
 class PBFN(FactorNode):
     """
-        Perception Buffer Factor Node
+        Perception Buffer Factor Node. No special implementation needed. FactorNode original methods should suffice.
+            Except for quiescence checking - Need to make sure compute() always proceed regardless of quiescence
     """
-
-    # TODO
     def __init__(self, name, function=None, func_var_list=None):
         super(PBFN, self).__init__(name, function, func_var_list)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
+
+    # Override check_quiesce() so that although self.quiescence is always set to True once called, compute() will still
+    #   proceed
+    def check_quiesce(self):
+        super(PBFN, self).check_quiesce()
+        return False        # Always return False so that compute() will still proceed
 
 
 class LTMFN(FactorNode):
@@ -383,6 +388,12 @@ class LTMFN(FactorNode):
     def __init__(self, name, function=None, func_var_list=None):
         super(LTMFN, self).__init__(name, function, func_var_list)
         self.pretty_log["node type"] = "Long-Term Memory Function Node"
+
+    # Override check_quiesce() so that although self.quiescence is always set to True once called, compute() will still
+    #   proceed
+    def check_quiesce(self):
+        super(LTMFN, self).check_quiesce()
+        return False  # Always return False so that compute() will still proceed
 
 
 class WMFN(FactorNode):
@@ -835,6 +846,12 @@ class GFFN(FactorNode):
     def __init__(self, name, function, func_var_list):
         super(GFFN, self).__init__(name, function=function, func_var_list=func_var_list)
         self.pretty_log["node type"] = "Gamma Function Factor Node"
+
+    # Override check_quiesce() so that although self.quiescence is always set to True once called, compute() will still
+    #   proceed
+    def check_quiesce(self):
+        super(GFFN, self).check_quiesce()
+        return False  # Always return False so that compute() will still proceed
 
 
 class DVN(VariableNode):
