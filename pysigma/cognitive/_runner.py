@@ -61,5 +61,13 @@ def decide(self, num_cycles):
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
+    assert isinstance(num_cycles, int)
 
-    # TODO: run Sigma program
+    # TODO: Logging
+    for i in range(num_cycles):
+        # Compute node order
+        self._order_nodes()
+        # Solution Phase
+        self.G.solve(self._node_order)
+        # TODO: Modification phase
+
