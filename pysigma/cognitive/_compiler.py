@@ -89,9 +89,11 @@ def _compile_predicate(self, predicate):
         nodegroup['WMFN_VN'] = wmfn_vn
 
         # Set up cycle unidirectional link
+        # Will set up a special attribute 'negation = False' at linkdata connecting wmfn_vn to acfn, indicating that
+        #   the latched memory behave as a positive action at next graph solution phase
         self.G.add_unilink(wmvn, wmfn)
         self.G.add_unilink(wmfn, wmfn_vn)
-        self.G.add_unilink(wmfn_vn, acfn)
+        self.G.add_unilink(wmfn_vn, acfn, negation=False)    # Special attribute 'negation' at this linkdata
 
         # WMVN_OUT if this predicate involves selection
         # For now assume that whenever a selection is involved, the predicate MUST BE CLOSED_WORLD

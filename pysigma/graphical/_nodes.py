@@ -421,6 +421,23 @@ class ACFN(FactorNode):
         super(ACFN, self).__init__(name, function=None, func_var_list=None)
         self.pretty_log["node type"] = "Action Combination Function Node"
 
+        # Record message from which linkdata is positive action and which is negative action
+        self._pos_in_ld = []
+        self._neg_in_ld = []
+        self.pretty_log["positive actions from"] = []
+        self.pretty_log["negative actions from"] = []
+
+    def add_link(self, linkdata):
+        super(ACFN, self).add_link(linkdata)
+
+        if linkdata.to_fn:
+            if linkdata.attri['negation']:
+                self._neg_in_ld.append(linkdata)
+                self.pretty_log["negative actions from"].append(linkdata.vn.name)
+            else:
+                self._pos_in_ld.append(linkdata)
+                self.pretty_log["positive actions from"].append(linkdata.vn.name)
+
 
 class FFN(FactorNode):
     """
@@ -444,8 +461,6 @@ class NFN(FactorNode):
         Note: NFN admits at most two pairs of incoming / outgoing links (one pair in condition / action pattern,
             two pairs in condact pattern)
     """
-
-    # TODO: Special computation for negation
     def __init__(self, name):
         """
         :param name:        Name of the node
