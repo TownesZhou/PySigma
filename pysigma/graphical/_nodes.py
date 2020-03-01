@@ -402,18 +402,23 @@ class ACFN(FactorNode):
             - If predicate is a vector predicate (all wm vars are vector vars), then operations are vector summation
             without normalization.
             - If predicate is a probabilistic predicate, will adopt probabilistic logical operations:
-                1. Calculate a "positive combined action" message by taking the probabilistic OR of all incoming
-                    messages
-                        i.e. For all incoming messages M_i, The PA (positive combined action) is calculated by
+                1. Calculate a "positive combined action" message by taking the probabilistic OR of messages of all
+                    incoming positive actions
+                2. Calculate a "negative combined action" message by taking the probabilistic OR of messages of all
+                    incoming negative actions. Note that the incoming messages should already been negated by NFN
+                        E.g. For all incoming messages M_i, The PA (positive combined action) is calculated by
                             PA = 1 - (1 - M_1)*(1 - M_2)* ... *(1 - M_n)
-                2. Calculate a "negative combined action" message by taking the probabilistic OR of all NEGATED incoming
-                    messages
-                        i.e. For all incoming messages M_i, The NA (negative combined action) is calculated by
-                            NA = 1 - M_1 * M_2 * ... * M_n
+                             Similarly for NA (negative combined action)
+                3. Final message is calculated by linear normalized PA w.r.t. NA:
+                            msg = PA / (PA + NA)
+                        i.e. assumption is that PA + NA should be 1
 
-
-        For probabilistic messages (ones that involve any probabilistic variable), we adopt probabilistic logical
-            semantic, i.e.,
+        Regarding message pre-normalization before taking the above computation:
+            - For probabilistic message without normalization (not a discrete distribution), simply scale it so that
+                individual values fall in range [0, 1]
+            - For ones with normalization (representing a discrete distribution), linearly normalize over the
+                distribution variable dimension, so that not only do individual values fall in range [0, 1], but values
+                sum up to 1 across those variable dimensions
 
         Note: ACFN admits only one outgoing linkdata, which connects to corresponding predicate group's WMVN_IN
     """
@@ -430,9 +435,14 @@ class ACFN(FactorNode):
         self.pretty_log["negative actions from"] = []
 
     def add_link(self, linkdata):
+        # Make sure only add one outgoing link
         assert linkdata.to_fn or len(self._out_linkdata) == 0, "Attempting to add more than one outgoing link"
-        super(ACFN, self).add_link(linkdata)
+        # Make sure every linkdata's var list agree with each other
+        if len(self._var_list) > 0:
+            assert self._var_list == linkdata.var_list, \
+                "linkdata var list mismatch in ACFN. Expects: {}, found: {}".format(self._var_list, linkdata.var_list)
 
+        super(ACFN, self).add_link(linkdata)
         if linkdata.to_fn:
             if linkdata.attri['negation']:
                 self._neg_in_ld.append(linkdata)
@@ -440,6 +450,56 @@ class ACFN(FactorNode):
             else:
                 self._pos_in_ld.append(linkdata)
                 self.pretty_log["positive actions from"].append(linkdata.vn.name)
+
+    def compute(self):
+        # Check quiescence
+        if self.check_quiesce():
+            return
+
+        assert len(self._out_linkdata) == 1
+        assert len(self._in_linkdata) > 0
+        out_ld = self._out_linkdata[0]
+
+        # Determine whether to take probabilistic operation, whether any variable dimension represents distribution
+        probabilistic = any(var.probabilistic for var in self._var_list)
+        normal = any(var.normalize for var in self._var_list)
+        normal_dim = list(self._var_list.index(var) for var in self._var_list if var.normalize)
+
+        # util function to normalize msg
+        def normalize(msg):
+            # First clamp the msg tensor so individual values lie in range [0, 1]
+            msg = msg.clamp(min=0., max=1.)
+            # If the msg represents distribution, normalize over those dimensions
+            if normal:
+                msg = msg / msg.sum(dim=normal_dim, keepdim=True)   # linear scale
+            return msg
+
+        if probabilistic:
+            # Calculate positive combined action PA
+            pa = 1
+            for ld in self._pos_in_ld:
+                msg = ld.read()
+                msg = normalize(msg)    # pre-normalize
+                pa *= 1 - msg
+            pa = 1 - pa
+            # Calculate negative combined action NA
+            na = 1
+            for ld in self._neg_in_ld:
+                msg = ld.read()
+                msg = normalize(msg)    # pre-normalize
+                na *= 1 - msg
+            na = 1 - na
+
+            # Take linear scaled pa
+            msg = pa / (pa + na + self._epsilon)        # add epsilon to avoid divide by 0
+            out_ld.set(msg)
+
+        else:
+            # Simply take vector summation
+            msg = 0
+            for ld in self._in_linkdata:
+                msg += ld.read()
+            out_ld.set(msg)
 
 
 class FFN(FactorNode):
@@ -467,7 +527,6 @@ class NFN(FactorNode):
     def __init__(self, name):
         """
         :param name:        Name of the node
-        :param nonlinear:  'str' or function objects, specifying the type of element-wise nonlinearity
         """
         super(NFN, self).__init__(name, function=None, func_var_list=None)
         self.pretty_log["node type"] = "Negation Factor Node"
