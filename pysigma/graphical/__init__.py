@@ -105,8 +105,11 @@ class Graph(networkx.DiGraph):
             :param node_order: An iterator of nodes. The node will be traversed in this order
         """
         # TODO: A LOT of logging may be needed here
-        quiesced = False
+        # Set all nodes' quiescence to False before perform message passing
+        for node in self.nodes:
+            node.quiescence = False
 
+        quiesced = False
         while not quiesced:
             quiesced = True
             for node in node_order:
