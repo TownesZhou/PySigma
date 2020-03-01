@@ -233,8 +233,8 @@ def conditional_compile_test_4(to_render=True):
     sigma.add(type_1)
 
     # one arity-2 predicate
-    arg_1 = PredicateArgument("arg_1", type_1, probabilistic=True, unique_symbol='!', normalize=True)
-    arg_2 = PredicateArgument("arg_2", type_1, probabilistic=True, unique_symbol='!', normalize=True)
+    arg_1 = PredicateArgument("arg_1", type_1, probabilistic=False, unique_symbol=None, normalize=False)
+    arg_2 = PredicateArgument("arg_2", type_1, probabilistic=False, unique_symbol=None, normalize=False)
     pred = Predicate("test_pred", [arg_1, arg_2], world="closed")
     sigma.add(pred)
 

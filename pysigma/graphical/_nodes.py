@@ -414,6 +414,8 @@ class ACFN(FactorNode):
 
         For probabilistic messages (ones that involve any probabilistic variable), we adopt probabilistic logical
             semantic, i.e.,
+
+        Note: ACFN admits only one outgoing linkdata, which connects to corresponding predicate group's WMVN_IN
     """
 
     # TODO: Special implementation of sum-product to implement message disjunction
@@ -428,6 +430,7 @@ class ACFN(FactorNode):
         self.pretty_log["negative actions from"] = []
 
     def add_link(self, linkdata):
+        assert linkdata.to_fn or len(self._out_linkdata) == 0, "Attempting to add more than one outgoing link"
         super(ACFN, self).add_link(linkdata)
 
         if linkdata.to_fn:
@@ -474,6 +477,9 @@ class NFN(FactorNode):
         assert (not linkdata.to_fn or len(self._in_linkdata) <= 1), "Attempting to add more than two incoming links"
         assert (linkdata.to_fn or len(self._out_linkdata) <= 1), "Attempting to add more than two outgoing links"
         super(NFN, self).add_link(linkdata)
+
+        self.pretty_log["negation type"] = "probabilistic" if any(var.probabilistic for var in self._var_list) else \
+                                           "vector"
 
     def compute(self):
         # Check quiescence
