@@ -267,8 +267,10 @@ class FactorNode(Node, ABC):
                           if var.sum_op is "sum" and var not in out_ld.var_list]
             max_reduce = [i for i, var in enumerate(self._var_list)
                           if var.sum_op is "max" and var not in out_ld.var_list]
-            buf = self.sp_sum(buf, sum_reduce)
-            buf = self.sp_max(buf, max_reduce)
+            if len(sum_reduce) > 0:
+                buf = self.sp_sum(buf, sum_reduce)
+            if len(max_reduce) > 0:
+                buf = self.sp_max(buf, max_reduce)
 
             # Send message
             out_ld.set(buf, self._epsilon)

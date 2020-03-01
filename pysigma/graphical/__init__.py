@@ -33,7 +33,7 @@ class Graph(networkx.DiGraph):
              BJFN.__name__: BJFN,
              GFFN.__name__: GFFN,
              DVN.__name__: DVN,
-             WMVN.__name__:WMVN,
+             WMVN.__name__: WMVN,
              }
 
     def new_node(self, node_type, *args, **kwargs):
