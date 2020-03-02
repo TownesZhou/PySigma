@@ -194,7 +194,7 @@ class FactorNode(Node, ABC):
         # Permute message dimension
         aligned_msg = msg.view(view_dim).permute(perm)
         # Manual broadcast by expanding dimension
-        full_shape = (var.size for var in self._var_list)
+        full_shape = tuple(var.size for var in self._var_list)
         expanded_msg = aligned_msg.expand(full_shape)
         return expanded_msg
 
@@ -224,7 +224,12 @@ class FactorNode(Node, ABC):
         :param msg:     tensor or Message whose selected variable dimensions to be maxed
         :param dims:    a list of index specifying the dimension to be maxed over
         """
-        result = torch.max(msg, dims)
+        # torch.max() (min() as well) does not support operation over multiple dimensions, so we will iterate
+        # Assume dims is properly sorted, iterate over descending order
+        result = msg
+        for dim in reversed(dims):
+            result = torch.max(msg, dim=dim)[0]     # Take 1st result. 2nd is the indices
+
         return result
 
     def compute(self):
@@ -339,16 +344,17 @@ class VariableNode(Node, ABC):
 
         # If not reached quiescence, compute and send new messages
         for out_ld in self._out_linkdata:
-            out_vn = out_ld.vn
+            out_fn = out_ld.fn
             buf = 1
 
             # Taking products
             for in_ld in self._in_linkdata:
-                in_vn = in_ld.vn
-                if in_vn is out_vn:  # Here use 'is' operator to test variable node's identity
+                in_fn = in_ld.fn
+                if in_fn is out_fn:  # Here use 'is' operator to test factor node's identity
                     continue
                 msg = in_ld.read()
-                buf = self.sp_product(buf, msg)
+                if msg is not None:     # If msg is None, simply skip
+                    buf = self.sp_product(buf, msg)
 
             # Send message
             out_ld.set(buf, self._epsilon)

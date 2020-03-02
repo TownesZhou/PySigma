@@ -67,9 +67,10 @@ class Graph(networkx.DiGraph):
 
         # Create a LinkData and set its attributes
         vn = node1 if isinstance(node1, VariableNode) else node2
+        fn = node2 if isinstance(node1, VariableNode) else node1
         var_list = vn.var_list
         to_fn = True if isinstance(node2, FactorNode) else False
-        linkdata = LinkData(vn, var_list, to_fn, **kwargs)
+        linkdata = LinkData(vn, fn, var_list, to_fn, **kwargs)
 
         # Create edge in graph. The LinkData exists in the 'data' field in an edge of the NetworkX graph
         self.add_edge(node1, node2, data=linkdata)

@@ -78,7 +78,7 @@ class LinkData:
             instantiate an edge.
     """
 
-    def __init__(self, vn, var_list, to_fn, **kwargs):
+    def __init__(self, vn, fn, var_list, to_fn, **kwargs):
         """
         :param vn:      name of the variable node that this link is incident to
         :param var_list:    list of variables of the adjacent variable node
@@ -91,6 +91,7 @@ class LinkData:
 
         # Following fields should correspond to the ones in the incident variable node
         self.vn = vn
+        self.fn = fn
         self.var_list = var_list
 
         # Whether this link is pointing toward a factor node
@@ -105,6 +106,15 @@ class LinkData:
 
         # Pretty log for GUI display
         self._pretty_log = {}
+
+    def __str__(self):
+        # Override for pretty debugging and printing
+        fn_name = self.fn.name
+        vn_name = self.vn.name
+        if self.to_fn:
+            return vn_name + " --> " + fn_name
+        else:
+            return fn_name + " --> " + vn_name
 
     def set(self, new, epsilon):
         """
