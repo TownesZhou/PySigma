@@ -74,7 +74,8 @@ def _solve(self, verbose):
         quiesced = True
 
         # Code for computation on each node
-        def compute(node):
+        def compute():
+            nonlocal node, quiesced       # Declare those as outer variables
             if not node.quiescence:
                 quiesced = False
                 node.compute()
@@ -84,10 +85,10 @@ def _solve(self, verbose):
             print("Decision cycle {}:".format(iter))
             iter += 1
             for node in tqdm(self._node_order):
-                compute(node)
+                compute()
         else:
             for node in self._node_order:
-                compute(node)
+                compute()
 
 
 def _modify(self):
