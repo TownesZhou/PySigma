@@ -4,7 +4,7 @@
 """
 from .structures import *
 from .graphical import *
-from .cognitive import _register, _compiler, _runner, _perception, _learning
+from .cognitive import _register, _compiler, _runner, _perception, _learning, _inspector
 
 
 class Sigma:
@@ -50,6 +50,10 @@ class Sigma:
 
         # Perception Callables
         self._perception_callable = None
+
+        # Printing lists
+        self._print_pred_mem_list = []       # List of predicate's names whose memories (WMFN, LTMFN) to be printed
+        self._print_pred_action_list = []    # List of predicate's names. Actions arriving at these to be printed
 
         ### Sigma program global parameters ###
 
@@ -114,4 +118,17 @@ class Sigma:
         _runner.decide(self, num_cycles, verbose)
 
 
+    # Methods for printing stuff
+
+    def print_predicate_memory(self, predicates):
+        _inspector.print_predicate_memory(self, predicates)
+
+    def _print_pred_mem(self):
+        _inspector._print_pred_mem(self)
+
+    def print_combined_action(self, predicates):
+        _inspector.print_combined_action(self, predicates)
+
+    def _print_pred_action(self):
+        _inspector._print_pred_action(self)
 

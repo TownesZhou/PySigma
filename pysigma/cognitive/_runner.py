@@ -5,6 +5,7 @@
 """
 import networkx as nx
 from tqdm import tqdm        # progress bar
+from ..cognitive._inspector import *
 
 
 def _order_nodes(self):
@@ -81,8 +82,8 @@ def _solve(self, verbose):
                 node.compute()
 
         # Seperate main for loop so that we can display statistics such as progress bar
+        # TODO: make pretty display
         if verbose == 2:
-            print("Decision cycle {}:".format(iter))
             iter += 1
             for node in tqdm(self._node_order):
                 compute()
@@ -127,3 +128,7 @@ def decide(self, num_cycles, verbose=0):
         self._solve(verbose)
         # TODO: Modification phase
         self._modify()
+
+        # Print stuff
+        self._print_pred_mem()          # Print predicate memories (WMFN and LTMFN if any)
+        self._print_pred_action()       # Print combined actions arriving at certain predicates

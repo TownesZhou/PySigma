@@ -52,6 +52,10 @@ class TestTransitivity:
 
         sigma.add(cond1)
 
+        # Register print
+        sigma.print_predicate_memory([pred1])
+        sigma.print_combined_action([pred1])
+
         # Run
-        sigma.decide(num_cycles=1, verbose=2)
+        sigma.decide(num_cycles=1, verbose=0)
 
