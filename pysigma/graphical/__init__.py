@@ -98,30 +98,3 @@ class Graph(networkx.DiGraph):
             Return the linkdata on the edge from node1 to node2
         """
         return self[node1][node2]["data"]
-
-    def solve(self, node_order):
-        """
-            One phase of graph solution of message passing until quiescence is reached.
-
-            :param node_order: An iterator of nodes. The node will be traversed in this order
-        """
-        # TODO: A LOT of logging may be needed here
-        # Set all nodes' quiescence to False before perform message passing
-        for node in self.nodes:
-            node.quiescence = False
-
-        quiesced = False
-        while not quiesced:
-            quiesced = True
-            for node in node_order:
-                if not node.quiescence:
-                    quiesced = False
-                    node.compute()
-
-    def modify(self):
-        """
-            One phase of graph modification on existing graph memories.
-        """
-        # TODO
-        pass
-

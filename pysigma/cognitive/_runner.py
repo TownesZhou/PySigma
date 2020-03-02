@@ -53,6 +53,40 @@ def _order_nodes(self):
     self._order_set = True
 
 
+def _solve(self):
+    """
+        One phase of graph solution of message passing until quiescence is reached.
+
+        :param node_order: An iterator of nodes. The node will be traversed in this order
+    """
+    from .. import Sigma
+    assert isinstance(self, Sigma)
+
+    # TODO: A LOT of logging may be needed here
+    # Set all nodes' quiescence to False before perform message passing
+    for node in self.G.nodes:
+        node.quiescence = False
+
+    quiesced = False
+    while not quiesced:
+        quiesced = True
+        for node in self._node_order:
+            if not node.quiescence:
+                quiesced = False
+                node.compute()
+
+
+def _modify(self):
+    """
+        One phase of graph modification on existing graph memories.
+    """
+    from .. import Sigma
+    assert isinstance(self, Sigma)
+
+    # TODO
+    pass
+
+
 def decide(self, num_cycles):
     """
         Run the Sigma program for the given number of decision cycles.
@@ -68,6 +102,6 @@ def decide(self, num_cycles):
         # Compute node order
         self._order_nodes()
         # Solution Phase
-        self.G.solve(self._node_order)
+        self._solve()
         # TODO: Modification phase
-
+        self._modify()
