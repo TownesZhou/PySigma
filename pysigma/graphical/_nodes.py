@@ -40,7 +40,6 @@ class Node(ABC):
             Check quiescence of incoming linkdata to determine whether this node has reached quiescence
             Return True if reached quiescence, False otherwise
             Will update self.quiescence accordingly
-            Must be called at the start of compute()!
         """
         quiesced = True
         for in_ld in self._in_linkdata:
@@ -246,10 +245,6 @@ class FactorNode(Node, ABC):
         # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
         # determine whether this node has reached quiescence
 
-        # Check quiescence
-        if self.check_quiesce():
-            return
-
         # If this node has not reached quiescence, compute and send new messages
         for out_ld in self._out_linkdata:
             out_vn = out_ld.vn
@@ -338,10 +333,6 @@ class VariableNode(Node, ABC):
         # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
         #   determine whether this node has reached quiescence
 
-        # Check quiescence
-        if self.check_quiesce():
-            return
-
         # If not reached quiescence, compute and send new messages
         for out_ld in self._out_linkdata:
             out_fn = out_ld.fn
@@ -368,6 +359,12 @@ class DFN(FactorNode):
         super(DFN, self).__init__(name, function, func_var_list)
         self.pretty_log["node type"] = "Default Function Node"
 
+    # Override check_quiesce() so that compute() will should always proceed. However this would not jeopardize
+    # computation because message sent to ld is same as old, so ld.new would not be set to true under epsilon condition
+    def check_quiesce(self):
+        super(DFN, self).check_quiesce()
+        return False  # Always return False so that compute() will still proceed
+
 
 class PBFN(FactorNode):
     """
@@ -378,15 +375,15 @@ class PBFN(FactorNode):
         super(PBFN, self).__init__(name, function, func_var_list)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
-    # Override check_quiesce() so that although self.quiescence is always set to True once called, compute() will still
-    #   proceed
-    def check_quiesce(self):
-        super(PBFN, self).check_quiesce()
-        return False        # Always return False so that compute() will still proceed
-
     def get_shape(self):
         # For use when checking perception content shape
         return [var.size for var in self._var_list]
+
+    # Override check_quiesce() so that compute() will should always proceed. However this would not jeopardize
+    # computation because message sent to ld is same as old, so ld.new would not be set to true under epsilon condition
+    def check_quiesce(self):
+        super(PBFN, self).check_quiesce()
+        return False  # Always return False so that compute() will still proceed
 
 
 class LTMFN(FactorNode):
@@ -398,12 +395,6 @@ class LTMFN(FactorNode):
     def __init__(self, name, function=None, func_var_list=None):
         super(LTMFN, self).__init__(name, function, func_var_list)
         self.pretty_log["node type"] = "Long-Term Memory Function Node"
-
-    # Override check_quiesce() so that although self.quiescence is always set to True once called, compute() will still
-    #   proceed
-    def check_quiesce(self):
-        super(LTMFN, self).check_quiesce()
-        return False  # Always return False so that compute() will still proceed
 
     def get_shape(self):
         # For use when checking perception content shape
@@ -479,9 +470,6 @@ class ACFN(FactorNode):
                 self.pretty_log["positive actions from"].append(linkdata.vn.name)
 
     def compute(self):
-        # Check quiescence
-        if self.check_quiesce():
-            return
 
         assert len(self._out_linkdata) == 1
         assert len(self._in_linkdata) > 0
@@ -519,7 +507,7 @@ class ACFN(FactorNode):
 
             # Take linear scaled pa
             msg = pa / (pa + na + self._epsilon)        # add epsilon to avoid divide by 0
-            out_ld.set(msg)
+            out_ld.set(msg, self._epsilon)
 
         else:
             # Simply take vector summation
@@ -568,9 +556,6 @@ class NFN(FactorNode):
                                            "vector"
 
     def compute(self):
-        # Check quiescence
-        if self.check_quiesce():
-            return
 
         # Check that there are equal number of incoming links and outgoing links
         assert len(self._in_linkdata) == len(self._out_linkdata), \
@@ -664,9 +649,6 @@ class ADFN(FactorNode):
                         E.g.  pred[ (arg1 v) (arg2 f(v)) ]
                     Where f(v) is a custom mapping embodying the relation
         """
-        # Check quiescence
-        if self.check_quiesce():
-            return
 
         # Check that there are equal number of incoming links and outgoing links
         assert len(self._in_linkdata) == len(self._out_linkdata), \
@@ -861,8 +843,8 @@ class GFFN(FactorNode):
         super(GFFN, self).__init__(name, function=function, func_var_list=func_var_list)
         self.pretty_log["node type"] = "Gamma Function Factor Node"
 
-    # Override check_quiesce() so that although self.quiescence is always set to True once called, compute() will still
-    #   proceed
+    # Override check_quiesce() so that compute() will should always proceed. However this would not jeopardize
+    # computation because message sent to ld is same as old, so ld.new would not be set to true under epsilon condition
     def check_quiesce(self):
         super(GFFN, self).check_quiesce()
         return False  # Always return False so that compute() will still proceed

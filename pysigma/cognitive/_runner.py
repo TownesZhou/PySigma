@@ -6,6 +6,7 @@
 import networkx as nx
 from tqdm import tqdm        # progress bar
 from ..cognitive._inspector import *
+from ..graphical._nodes import PBFN, LTMFN, GFFN
 
 
 def _order_nodes(self):
@@ -70,26 +71,39 @@ def _solve(self, verbose):
         node.quiescence = False
 
     quiesced = False
-    iter = 1
+    iter = 0
     while not quiesced:
+        iter += 1
         quiesced = True
+
+        inspect_list = []  # Print which node was inspected during this iteration
 
         # Code for computation on each node
         def compute():
-            nonlocal node, quiesced       # Declare those as outer variables
-            if not node.quiescence:
-                quiesced = False
+            nonlocal node, quiesced, self, inspect_list       # Declare those as outer variables
+            order = self._node_order            # Only for debugging display
+
+            # Quiescence of node is defined by quiescence of links. So check links every time
+            if not node.check_quiesce():
+                # PBFN, LTMFN, and GFFN node should always try sending its messages, so its execution does not count
+                #   toward breaking quiescence
+                if not isinstance(node, (PBFN, LTMFN, GFFN)):
+                    quiesced = False
+                inspect_list.append(str(node))
                 node.compute()
 
         # Seperate main for loop so that we can display statistics such as progress bar
         # TODO: make pretty display
         if verbose == 2:
-            iter += 1
             for node in tqdm(self._node_order):
                 compute()
         else:
+            if verbose == 1:
+                print("### Iteration {} ###".format(iter))
             for node in self._node_order:
                 compute()
+            if verbose == 1:
+                print("Node inspected (not quiesced): {}\n".format(inspect_list))
 
 
 def _modify(self):

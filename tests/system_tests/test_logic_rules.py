@@ -2,6 +2,7 @@ import pytest
 import torch
 from pysigma import Sigma
 from pysigma.structures import *
+from pysigma.sigmaboard import render
 
 
 class TestTransitivity:
@@ -58,4 +59,7 @@ class TestTransitivity:
 
         # Run
         sigma.decide(num_cycles=1, verbose=0)
+
+        # Render (optional, only for debugging)
+        render(sigma)
 
