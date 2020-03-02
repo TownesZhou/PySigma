@@ -114,15 +114,24 @@ class LinkData:
         :param new:         new arriving message
         :param epsilon:     epsilon criterion
         """
+        # Allow message to be a singleton constant, i.e., an int or a float, in which case we only check epsilon
+        #   condition but not size mismatch
         # Check dimension mismatch
-        size = list(new.shape)
-        if size != self._dims:
-            raise ValueError("The new message's dimension '{}' does not match the link memory's preset dimension '{}'. "
-                             "Target variable node: '{}', link direction: toward factor node = '{}'"
-                             .format(size, self._dims, str(self.vn), self.to_fn))
+        assert isinstance(new, (int, float, torch.Tensor))
+        if isinstance(new, torch.Tensor):
+            size = list(new.shape)
+            if size != self._dims:
+                raise ValueError("The new message's dimension '{}' does not match the link memory's preset dimension '{}'. "
+                                 "Target variable node: '{}', link direction: toward factor node = '{}'"
+                                 .format(size, self._dims, str(self.vn), self.to_fn))
 
+        # Check epsilon condition: maximal absolute difference < epsilon
+        #   TODO: allow other types of epsilon condition
         if self.memory is not None:
-            diff = torch.max(torch.abs(self.memory - new))
+            if isinstance(self.memory, torch.Tensor) or isinstance(new, torch.Tensor):
+                diff = torch.max(torch.abs(self.memory - new))
+            else:
+                diff = abs(self.memory - new)
             if diff < epsilon:
                 return
 

@@ -44,7 +44,7 @@ class TestTransitivity:
                                 ])
                             ],
                             actions=[
-                                PredicatePattern('arg1', [
+                                PredicatePattern('pred1', [
                                     PatternElement('arg1', PatternVariable('a')),
                                     PatternElement('arg2', PatternVariable('c'))
                                 ])
@@ -53,5 +53,5 @@ class TestTransitivity:
         sigma.add(cond1)
 
         # Run
-
+        sigma.decide(num_cycles=1)
 
