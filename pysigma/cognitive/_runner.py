@@ -4,6 +4,7 @@
     Methods associated with running a Sigma program
 """
 import networkx as nx
+from tqdm import tqdm        # progress bar
 
 
 def _order_nodes(self):
@@ -53,7 +54,7 @@ def _order_nodes(self):
     self._order_set = True
 
 
-def _solve(self):
+def _solve(self, verbose):
     """
         One phase of graph solution of message passing until quiescence is reached.
 
@@ -68,12 +69,25 @@ def _solve(self):
         node.quiescence = False
 
     quiesced = False
+    iter = 1
     while not quiesced:
         quiesced = True
-        for node in self._node_order:
+
+        # Code for computation on each node
+        def compute(node):
             if not node.quiescence:
                 quiesced = False
                 node.compute()
+
+        # Seperate main for loop so that we can display statistics such as progress bar
+        if verbose == 2:
+            print("Decision cycle {}:".format(iter))
+            iter += 1
+            for node in tqdm(self._node_order):
+                compute(node)
+        else:
+            for node in self._node_order:
+                compute(node)
 
 
 def _modify(self):
@@ -87,21 +101,28 @@ def _modify(self):
     pass
 
 
-def decide(self, num_cycles):
+def decide(self, num_cycles, verbose=0):
     """
         Run the Sigma program for the given number of decision cycles.
 
         "Set up our new world, and let's begin the SIMULATION."
+
+        :param num_cycles:      int. Number of decision cycles
+        :param verbose:         int. Verbose level
+                                    0 = print nothing
+                                    1 = display general performance statistics regarding message passing
+                                    2 = verbose 1 and display progress bar
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
     assert isinstance(num_cycles, int)
+    assert isinstance(verbose, int)
 
     # TODO: Logging
     for i in range(num_cycles):
         # Compute node order
         self._order_nodes()
         # Solution Phase
-        self._solve()
+        self._solve(verbose)
         # TODO: Modification phase
         self._modify()

@@ -104,14 +104,14 @@ class Sigma:
     def _order_nodes(self):
         _runner._order_nodes(self)
 
-    def _solve(self):
-        _runner._solve(self)
+    def _solve(self, verbose):
+        _runner._solve(self, verbose)
 
     def _modify(self):
         _runner._modify(self)
 
-    def decide(self, num_cycles):
-        _runner.decide(self, num_cycles)
+    def decide(self, num_cycles, verbose=0):
+        _runner.decide(self, num_cycles, verbose)
 
 
 

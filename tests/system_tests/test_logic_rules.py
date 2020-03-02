@@ -53,5 +53,5 @@ class TestTransitivity:
         sigma.add(cond1)
 
         # Run
-        sigma.decide(num_cycles=1)
+        sigma.decide(num_cycles=1, verbose=2)
 
