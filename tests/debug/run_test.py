@@ -4,28 +4,25 @@ from pysigma.structures import *
 from pysigma.sigmaboard import render
 
 
-def run_test(test, *args, **kwargs):
-    print("\n\n########## RUNNING TEST: {} ##########\n".format(test.__name__))
-    test(*args, **kwargs)
-    print("\n####################")
+def run_test(test):
+
+    def inner(*args, **kwargs):
+        print("\n\n########## RUNNING TEST: {} ##########\n".format(test.__name__))
+        returned_val = test(*args, **kwargs)
+        print("\n####################")
+        return returned_val
+
+    return inner
 
 
-def simple_1(to_render=False):
-    """
-        Test simple transitivity rule.
-
-        Three objects: {o1, o2, o3}
-    """
-    sigma = Sigma()     # Empty program
+def build_transitivity_1(init_state, num_objects, to_render):
+    sigma = Sigma()  # Empty program
 
     # One discrete type with span 3
-    type1 = Type("type1", 'discrete', min=0, max=3)
+    type1 = Type("type1", 'discrete', min=0, max=num_objects)
     sigma.add(type1)
 
     # One arity-2 predicate
-    init_state = torch.tensor([[1., 1., 0.],
-                               [0., 1., 1.],
-                               [0., 0., 1.]])
     arg1 = PredicateArgument('arg1', type1, probabilistic=True, unique_symbol=None, normalize=False)
     arg2 = PredicateArgument('arg2', type1, probabilistic=True, unique_symbol=None, normalize=False)
     pred1 = Predicate('pred1', [arg1, arg2], world='closed', perception=True, function=init_state)
@@ -64,5 +61,43 @@ def simple_1(to_render=False):
         render(sigma)
 
 
+@run_test
+def simple_1(to_render=False):
+    """
+        Test simple transitivity rule.
+
+        Three objects: {o1, o2, o3}
+    """
+    init_state = torch.tensor([[1., 1., 0.],
+                               [0., 1., 1.],
+                               [0., 0., 1.]])
+    build_transitivity_1(init_state, 3, to_render)
+
+
+@run_test
+def large_1(N=1000, to_render=False):
+    """
+        Test large transitivity rule, with large number of objects.
+    """
+    init_state = torch.zeros((N, N))
+    for i in range(N-1):
+        init_state[i, i] = 1
+        init_state[i, i+1] = 1
+    init_state[N-1, N-1] = 1
+
+    build_transitivity_1(init_state, N, to_render)
+
+
+@run_test
+def probabilistic_1(to_render=False):
+    init_state = torch.tensor([[1., 0.9, 0., 0.],
+                               [0., 1., 0.8, 0],
+                               [0., 0., 1., 0.7],
+                               [0., 0., 0., 1.]])
+    build_transitivity_1(init_state, 4, to_render)
+
+
 if __name__=="__main__":
-    run_test(simple_1, to_render=False)
+    # simple_1(to_render=True)
+    # large_1(N=5, to_render=True)
+    probabilistic_1(to_render=False)

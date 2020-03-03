@@ -34,6 +34,9 @@ def _print_pred_mem(self):
     from .. import Sigma
     assert isinstance(self, Sigma)
 
+    if len(self._print_pred_mem_list) == 0:
+        return
+
     print("\n### Printing Predicate Memories ###\n")
     for i, name in enumerate(self._print_pred_mem_list):
         nodegroup = self.predicate2group[name]
@@ -75,6 +78,9 @@ def _print_pred_action(self):
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
+
+    if len(self._print_pred_action_list) == 0:
+        return
 
     print("\n### Printing Predicate Combined Actions ###\n")
     for i, name in enumerate(self._print_pred_action_list):
