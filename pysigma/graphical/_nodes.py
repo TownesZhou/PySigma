@@ -427,9 +427,9 @@ class ACFN(FactorNode):
                         E.g. For all incoming messages M_i, The PA (positive combined action) is calculated by
                             PA = 1 - (1 - M_1)*(1 - M_2)* ... *(1 - M_n)
                              Similarly for NA (negative combined action)
-                3. Final message is calculated by linear normalized PA w.r.t. NA:
-                            msg = PA / (PA + NA)
-                        i.e. assumption is that PA + NA should be 1
+                3. Final message is calculated by taking the probabilistic AND of PA and (1 - NA). Semantically, this
+                    may be interpreted as enforcing what these two combined actions propose should agree with each other
+                            msg = PA * (1 - NA)
 
         Regarding message pre-normalization before taking the above computation:
             - For probabilistic message without normalization (not a discrete distribution), simply scale it so that
@@ -497,16 +497,17 @@ class ACFN(FactorNode):
                 msg = normalize(msg)    # pre-normalize
                 pa *= 1 - msg
             pa = 1 - pa
-            # Calculate negative combined action NA
+            # Calculate negative combined action NA. To save computation, na here is actually the "negated" NA
             na = 1
             for ld in self._neg_in_ld:
                 msg = ld.read()
                 msg = normalize(msg)    # pre-normalize
                 na *= 1 - msg
-            na = 1 - na
+            # na = 1 - na
 
-            # Take linear scaled pa
-            msg = pa / (pa + na + self._epsilon)        # add epsilon to avoid divide by 0
+            # Combining PA with NA.
+            # msg = pa * (1 - na)
+            msg = pa * na
             out_ld.set(msg, self._epsilon)
 
         else:
