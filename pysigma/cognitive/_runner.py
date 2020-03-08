@@ -5,6 +5,8 @@
 """
 import networkx as nx
 from tqdm import tqdm        # progress bar
+import time
+from prettytable import PrettyTable         # For printing performance statistics in tables
 from ..cognitive._inspector import *
 from ..graphical._nodes import PBFN, LTMFN, GFFN
 
@@ -70,6 +72,10 @@ def _solve(self, verbose):
     for node in self.G.nodes:
         node.quiescence = False
 
+    # Performance statistics
+    num_acess = [0] * len(self._node_order)
+    time_access = [[] for i in range(len(self._node_order))]
+
     quiesced = False
     iter = 0
     while not quiesced:
@@ -78,9 +84,10 @@ def _solve(self, verbose):
 
         inspect_list = []  # Print which node was inspected during this iteration
 
+
         # Code for computation on each node
         def compute():
-            nonlocal node, quiesced, self, inspect_list       # Declare those as outer variables
+            nonlocal node, quiesced, self, inspect_list, num_acess, time_access, i   # Declare those as outer variables
             order = self._node_order            # Only for debugging display
 
             # Quiescence of node is defined by quiescence of links. So check links every time
@@ -90,20 +97,44 @@ def _solve(self, verbose):
                 if not isinstance(node, (PBFN, LTMFN, GFFN)):
                     quiesced = False
                 inspect_list.append(str(node))
+
+                # Recore compute time
+                tic = time.perf_counter()
                 node.compute()
+                toc = time.perf_counter()
+                num_acess[i] += 1
+                time_access[i].append(toc - tic)
 
         # Seperate main for loop so that we can display statistics such as progress bar
         # TODO: make pretty display
         if verbose == 2:
-            for node in tqdm(self._node_order):
+            for i, node in enumerate(tqdm(self._node_order)):
                 compute()
         else:
             if verbose == 1:
                 print("### Iteration {} ###".format(iter))
-            for node in self._node_order:
+            for i, node in enumerate(self._node_order):
                 compute()
             if verbose == 1:
                 print("Node inspected (not quiesced): {}\n".format(inspect_list))
+
+    # Print performance statistics
+    if verbose == 1:
+        col_text = ["Node name", "Number of visits", "Total compute time", "Average compute time", "Min compute time", "Max compute time"]
+        t = PrettyTable(col_text)
+        for i, node in enumerate(self._node_order):
+            text_format = "{:.5f}"
+            row_text = [str(node),
+                        num_acess[i],
+                        sum(time_access[i]),
+                        sum(time_access[i]) / num_acess[i],
+                        min(time_access[i]),
+                        max(time_access[i])]
+            row_text = [text_format.format(t) if isinstance(t, float) else t for t in row_text]
+            t.add_row(row_text)
+        print(t)
+        total_time = sum(sum(time_access[i]) for i in range(len(self._node_order)))
+        print("Total time: {:.5f}".format(total_time))
 
 
 def _modify(self):

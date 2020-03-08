@@ -50,11 +50,11 @@ def build_transitivity_1(init_state, num_objects, to_render):
     sigma.add(cond1)
 
     # Register print
-    sigma.print_predicate_memory([pred1])
-    sigma.print_combined_action([pred1])
+    # sigma.print_predicate_memory([pred1])
+    # sigma.print_combined_action([pred1])
 
     # Run
-    sigma.decide(num_cycles=1, verbose=2)
+    sigma.decide(num_cycles=1, verbose=1)
 
     # Render (optional, only for debugging)
     if to_render:
@@ -99,5 +99,5 @@ def probabilistic_1(to_render=False):
 
 if __name__=="__main__":
     # simple_1(to_render=True)
-    # large_1(N=5, to_render=True)
-    probabilistic_1(to_render=True)
+    large_1(N=200, to_render=True)
+    # probabilistic_1(to_render=True)
