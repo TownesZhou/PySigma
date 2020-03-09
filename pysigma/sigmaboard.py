@@ -178,6 +178,7 @@ class SigmaBoard:
             annotations=edge_arrow
         ))
 
+<<<<<<< HEAD
         self.fig = fig
 
     def __init_html_layout(self):
@@ -201,6 +202,111 @@ class SigmaBoard:
                     html.Div(className="portlet sections", id='search-section', children=[
                         html.Div(className="portlet-header", children=[
                             html.H3("Search Node")
+=======
+    # edge scatter trace, with invincible middle points
+    edge_x, edge_y = [], []
+    mid_x, mid_y = [], []
+    hovertexts = []                 # Hovertext to display for each edge
+    for edge in sigma.G.edges:
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.append(x0)
+        edge_x.append(x1)
+        edge_x.append(None)
+        edge_y.append(y0)
+        edge_y.append(y1)
+        edge_y.append(None)
+
+        # invincible middle point for each edge to enable hover effect on edge
+        xi = (x0 + x1) / 2
+        yi = (y0 + y1) / 2
+        mid_x.append(xi)
+        mid_y.append(yi)
+
+        # Display linkmemory for each linkdata at this stage
+        mem = sigma.G[edge[0]][edge[1]]['data'].memory
+        hovertexts.append("link memory: <br>{}".format(mem))
+
+    edge_trace = go.Scatter(x=edge_x, y=edge_y,
+                            line=dict(width=0.5, color='black'),
+                            hoverinfo='none',
+                            mode='lines')
+    mid_trace = go.Scatter(x=mid_x, y=mid_y,
+                           mode='markers',
+                           hoverinfo='text',
+                           hovertext=hovertexts,
+                           marker=dict(size=200, color="LightSkyBlue"),  # invincible marker
+                           opacity=0)
+
+    fig.add_trace(edge_trace)
+    fig.add_trace(mid_trace)
+
+    # Arrows indicating edge direction to be insert in layout's annotation
+    edge_arrow = [dict(
+        ax=(pos[edge[0]][0] + pos[edge[1]][0]) / 2,
+        ay=(pos[edge[0]][1] + pos[edge[1]][1]) / 2,
+        axref='x',
+        ayref='y',
+        x=(pos[edge[0]][0] + pos[edge[1]][0] * 5) / 6,
+        y=(pos[edge[0]][1] + pos[edge[1]][1] * 5) / 6,
+        xref='x',
+        yref='y',
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=4,
+        arrowwidth=1
+        # opacity=1,
+    ) for edge in sigma.G.edges]
+
+    # Set scatter plot layout. Use annotation to display arrowhead
+    fig.update_layout(go.Layout(
+        showlegend=False,
+        hovermode='closest',
+        margin={'b': 40, 'l': 40, 'r': 40, 't': 40},
+        xaxis={'showgrid': False, 'zeroline': False, 'showticklabels': False},
+        yaxis={'showgrid': False, 'zeroline': False, 'showticklabels': False},
+        height=800,
+        clickmode='event+select',
+        annotations=edge_arrow
+    ))
+
+    # Dash init
+    app = dash.Dash(__name__,
+                    external_stylesheets=external_stylesheets)
+
+    app.title = "SigmaBoard"
+
+    # Global style
+    # styles = {
+    #     'pre': {
+    #         'border': 'thin lightgrey solid',
+    #         'overflowX': 'scroll'
+    #     }
+    # }
+
+    # HTML elements and layout
+    app.layout = html.Div(children=[
+        # Title
+        html.Div(id="header", children=[
+            html.H1('Sigmaboard')
+        ]),
+
+
+        # Main Div
+        html.Div(className="row", children=[
+
+            # Left side console section
+            html.Div(className="four columns", children=[
+                # Top left search and filter section
+                html.Div(className="sections", id='search-section', children=[
+                    dcc.Markdown(d("""
+                            ### Search Node
+                    """)),
+                    html.Div(className="wrap-search", children=[
+                        html.Div(className="wrap-search-bar", children=[
+                            dcc.Input(type="text", className="search-term", id="node_name_search", placeholder="Node Name Contains... (eg ALPHA)", value=""),
+                            dcc.Input(type="text", className="search-term", id="variable_search", placeholder="Contains Variable Name... (eg arg_1)", value=""),
+>>>>>>> 6398b1281424b6453f20fe7164add1bd759baa53
                         ]),
                         # dcc.Markdown(d("""
                         #         ### Search Node
