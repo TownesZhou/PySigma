@@ -1,5 +1,5 @@
 import torch
-from pysigma.sigmaboard import render
+from pysigma.sigmaboard import SigmaBoard
 from pysigma import Sigma
 from pysigma.structures import *
 
@@ -100,11 +100,11 @@ def order_test_1(to_render=False):
 
     # Render
     if to_render:
-        render(sigma)
+        SigmaBoard(sigma).render()
 
 
 if __name__=="__main__":
 
-    run_test(align_test_1)
-    run_test(align_test_2)
+    # run_test(align_test_1)
+    # run_test(align_test_2)
     run_test(order_test_1, to_render=True)

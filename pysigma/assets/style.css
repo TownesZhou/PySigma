@@ -20,15 +20,52 @@ body {
 
 /* Left Three Sections*/
 .sections {
-    padding: 5px 20px 0px 20px;
+    width: 100%
+}
+
+/* Portlet */
+.column {
+    float: left;
+    padding: 30px;
+}
+
+.ui-widget-header {
+    border: none;
+    background: none;
+}
+
+.portlet {
+    margin: 0 1em 1em 0;
+    padding: 0.3em;
+}
+
+.portlet-header {
+    padding: 0.2em 0.3em;
+    margin-bottom: 0.5em;
+    position: relative;
+}
+
+.portlet-toggle {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    margin-top: -8px;
+}
+
+.portlet-content {
+    padding: 0.4em;
+}
+
+.portlet-placeholder {
+    border: 1px dotted black;
+    margin: 0 1em 1em 0;
+    height: 50px;
 }
 
 
 /* Top left search and filter section */
 #search-section {
-    height: 20vh;
     background: pink;
-    margin: 25px 0px 10px 25px;
 }
 
 .search-term {
@@ -49,16 +86,18 @@ body {
 
 /* Middle left console display section */
 #display-section {
-    height: 22vh;
     background: antiquewhite;
-    margin: 10px 0px 10px 25px;
 }
 
-pre {
+#click-data-wrap {
+    height: 70%;
+    overflow: auto;
     border: 1px solid #CCCCCC;
-    border-radius: 16px;
-    padding: 8px;
+    border-radius: 16px 0px 0px 16px;
+    padding: 3px 10px 0px 14px;
+    max-height: 30vh;
 }
+
 
 /* Bottom left link message memory section*/
 #message-section {
