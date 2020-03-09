@@ -264,14 +264,6 @@ def conditional_compile_test_4(to_render=True):
 
 
 if __name__=="__main__":
-
-<<<<<<< HEAD:tests/compile_test.py
-    # run_test(predicate_compile_test_1)
-    # run_test(predicate_compile_test_2)
-    # run_test(predicate_compile_test_3, to_render=False)
-    # run_test(conditional_compile_test_1, to_render=False)
-    run_test(conditional_compile_test_2, to_render=True)
-=======
     run_test(predicate_compile_test_1)
     run_test(predicate_compile_test_2)
     run_test(predicate_compile_test_3, to_render=False)
@@ -280,4 +272,3 @@ if __name__=="__main__":
     run_test(conditional_compile_test_3, to_render=False)
     run_test(conditional_compile_test_4, to_render=True)
 
->>>>>>> 6398b1281424b6453f20fe7164add1bd759baa53:tests/debug/compile_test.py
