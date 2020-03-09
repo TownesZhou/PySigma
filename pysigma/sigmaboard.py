@@ -90,6 +90,7 @@ def render(sigma):
     # edge scatter trace, with invincible middle points
     edge_x, edge_y = [], []
     mid_x, mid_y = [], []
+    hovertexts = []                 # Hovertext to display for each edge
     for edge in sigma.G.edges:
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
@@ -106,6 +107,10 @@ def render(sigma):
         mid_x.append(xi)
         mid_y.append(yi)
 
+        # Display linkmemory for each linkdata at this stage
+        mem = sigma.G[edge[0]][edge[1]]['data'].memory
+        hovertexts.append("link memory: <br>{}".format(mem))
+
     edge_trace = go.Scatter(x=edge_x, y=edge_y,
                             line=dict(width=0.5, color='black'),
                             hoverinfo='none',
@@ -113,7 +118,7 @@ def render(sigma):
     mid_trace = go.Scatter(x=mid_x, y=mid_y,
                            mode='markers',
                            hoverinfo='text',
-                           hovertext='edge',
+                           hovertext=hovertexts,
                            marker=dict(size=200, color="LightSkyBlue"),  # invincible marker
                            opacity=0)
 

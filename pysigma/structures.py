@@ -8,59 +8,81 @@ import torch
 from collections import namedtuple
 from collections.abc import Iterable
 from .utils import *
+from .graphical._structures import Variable
 
-
-# Define (sub)structures with customized class
 
 class PredicateArgument:
     """
         Argument in a Predicate
-        Each Argument is a tuple of two or three elements of the form `(argument_name, type)` or
-        `(argument_name, type, unique_symbol)`
-          - `argument_name`:  `str` type. the name of the working memory variable
-          - `type`:  `str` or `Type` type. The `Type` of the working memory variable
-          - `unique_symbol`:  `None` or `str` type. Default to None
-              - `'!'`: Select best
-              - `'%'`: Maintain distribution
-              - `'$'`: Select expected value
-              - `'^'`: Maintain exponential transform of distribution
-              - `'='`: Select by probability matching
-              **NOTE**: `unique_symbol` must be specified if to declare this variable to be unique. Otherwise will
-                    be treated as a universal variable. You can use `%` to specify that the distribution should not be
-                    changed during selection phase.
     """
 
-    def __init__(self, argument_name, argument_type, unique_symbol=None):
+    def __init__(self, argument_name, argument_type, probabilistic=False, unique_symbol=None, normalize=False, **kwargs):
+        """
+            Declare an Argument in a Predicate
+        :param argument_name:   'str'. Name of the predicate argument (working memory variable)
+        :param argument_type:   'Type'. The "type" of the working memory variable
+        :param probabilistic:   True or False. Whether this working memory variable is probabilistic, i.e., semantically
+                                    its individual values represent probabilistic scores within the interval [0, 1].
+                                If False, this variable will be treated as a vector variable.
+                                Note that if normalize is True, then probabilistic must be True
+        :param unique_symbol:   'str' or None. If None, this variable will be treated as universal.
+                                  - `'!'`: Select best
+                                  - `'$'`: Select expected value
+                                  - `'^'`: Maintain exponential transform of distribution
+                                  - `'='`: Select by probability matching
+        :param normalize:       True or False. Whether this variable represents a discrete distribution and to normalize
+                                    messages over this variable dimension.
+        """
         if not isinstance(argument_name, str):
             raise ValueError("1st argument 'argument_name' of a PredicateArgument must be a 'str'")
-        if not isinstance(argument_type, (str, Type)):
-            raise ValueError("2nd argument 'argument_type' of a PredicateArgument must be a 'str' or a 'Type'")
+        if not isinstance(argument_type, Type):
+            raise ValueError("2nd argument 'argument_type' of a PredicateArgument must be a 'Type'")
+        if not isinstance(probabilistic, bool):
+            raise ValueError("argument 'probabilistic' of a PredicateArgument bust be a 'bool'")
         if unique_symbol is not None and not isinstance(unique_symbol, str):
-            raise ValueError("3rd argument 'unique_symbol' of a PredicateArgument must be a 'str'")
-        if unique_symbol is not None and unique_symbol not in ['!', '%', '$', '^', '=']:
+            raise ValueError("argument 'unique_symbol' of a PredicateArgument must be a 'str'")
+        if unique_symbol is not None and unique_symbol not in ['!', '$', '^', '=']:
             raise ValueError("Unknown unique symbol: '{}'".format(unique_symbol))
+        if not isinstance(normalize, bool):
+            raise ValueError("argument 'normalize' or a PredicateArgument must be a 'bool'")
+        # Check that if normalize is True, then probabilistic is also true
+        if normalize and not probabilistic:
+            raise ValueError("If 'normalize' is True for a PredicateArgument, then it must also be probabilistic.")
 
         self.argument_name = argument_name
         self.type = argument_type
+        self.probabilistic = probabilistic
         self.unique_symbol = unique_symbol
+        self.normalize = normalize
+
+        # Create working memory variable
+        self.wmvar = Variable(argument_name, argument_type.size, probabilistic, unique_symbol is not None, normalize)
 
 
 class PredicatePattern:
     """
         Predicate Pattern in a Conditional
-          Each predicate pattern is of the form `(predicate_name, nonlinearity, 'elements')
-              - `predicate_name`:  name of the predicate in question
-              - `elements`: A python iterable of `PatternElement` namedtuples.
-              - `nonlinearity`: `None` or one of the following: `'negation'` or `'-'`, `'exponential'` or `'^'`, `'sigmoid'`
-                      or `'s'`, `'relu'` or `'r'`, `'tanh'` or `'t'`, `'exp'` or `'e'` (true exponential),
-                      or customized torch nonlinearity functions
     """
 
-    def __init__(self, predicate_name, elements, nonlinearity=None):
+    def __init__(self, predicate_name, elements, negation=False, nonlinearity=None):
+        """
+            Declare a Predicate Pattern in a Conditional
+        :param predicate_name:      'str'. name of the predicate in question
+        :param elements:            Iterable of 'PatternElement'.
+        :param negation:            True or False. Whether message for this pattern will be negated. Negation semantic
+                                        depends on whether the corresponding predicate is probabilistic. If so, will
+                                        take probabilistic negation, otherwise take arithmetic negation.
+                                    Default to False.
+        :param nonlinearity:        None or one of the following: `'negation'` or `'-'`, `'exponential'` or `'^'`,
+                                        `'sigmoid'` or `'s'`, `'relu'` or `'r'`, `'tanh'` or `'t'`, `'exp'` or `'e'`
+                                        (true exponential), or customized torch nonlinearity functions
+        """
         if not isinstance(predicate_name, str):
             raise ValueError("1st argument 'predicate_name' of a PredicatePattern must be a 'str'")
         if not isinstance(elements, Iterable) or not all(isinstance(e, PatternElement) for e in elements):
             raise ValueError("2nd argument 'elements' of a PredicatePattern must be an iterable of 'PatternElement's")
+        if not isinstance(negation, bool):
+            raise ValueError("the argument 'negation' of a PredicatePattern must be a 'bool'")
         if nonlinearity is not None and nonlinearity not in ['negation', '-', 'exponential', '^', 'sigmoid', 's',
                                                              'relu', 'r', 'tanh', 't', 'exp', 'e']:
             raise ValueError("Unknown nonlinearity: '{}'".format(nonlinearity))
@@ -68,6 +90,7 @@ class PredicatePattern:
 
         self.predicate_name = predicate_name
         self.elements = list(elements)
+        self.negation = negation
         self.nonlinearity = nonlinearity
 
 
@@ -99,7 +122,10 @@ class PatternElement:
                              "of 'int', 'str', or 'Filter's")
 
         self.argument_name = argument_name
-        self.value = list(value) if isinstance(value, Iterable) else [value]    # Turn into a list anyway
+        if isinstance(value, PatternVariable):
+            self.value = value
+        else:
+            self.value = list(value) if isinstance(value, Iterable) else [value]    # turn into list anyway
 
 
 class PatternVariable:
@@ -212,28 +238,13 @@ class Type:
 
 
 class Predicate:
-    def __init__(self, predicate_name, arguments, world='open', exponential=False, normalize=False, perception=False,
-                 function=None, *args, **kwargs):
+    def __init__(self, predicate_name, arguments, world='open', perception=False, function=None, *args, **kwargs):
         """
             Speficy a Sigma predicate.
         :param predicate_name:  `str` type
         :param arguments:  An python iterable of 'PredicateArgument's. This is to specify the **working
             memory variables** (formal arguments) corresponding to this predicate.
         :param world:  `open` or `closed`. Default to `open`.
-        :param exponential:  `bool` type or an iterable of predicate argument (variable) names.
-            Whether to exponentiate outgoing messages from Working Memory Variable Node (WMVN).
-            If `True`, exponentiate message across all variables. If an iterable, exponentiate only those variable dimensions.
-            Default to `False`.
-        :param normalize:  `bool` type or an iterable of predicate argument (variable) names.
-            Whether to normalize outgoing messages from WMVN.
-            If `Ture`, normalize message across all variables. If an iterable, normalize only those variable dimensions.
-            Default to `False`.
-
-            NOTE: normalization priorities over exponentiation, i.e., a message will be first exponentiated and then
-                normalized, if both operation are requested
-            #TODO: discuss with Volkan whether the option of normalizing only some of the predicate argument makes sense
-            #TODO: to discuss with Volkan, when normalization and/or exponentiation are specified, the messages sending
-                to which factor node are to be normalized and/or normalized.
         :param perception:  `bool` type. Whether this predicate can receive perceptual information.
         :param function:
                 - `None`: no function specified at this predicate
@@ -249,39 +260,28 @@ class Predicate:
             raise ValueError("The 2nd argument 'arguments' of a Predicate must be an iterable of 'PredicateArgument's")
         if world not in ['open', 'closed']:
             raise ValueError("The 3rd argument 'world' of a Predicate must be either 'open' or 'closed'")
-        if not isinstance(exponential, (bool, Iterable)) or \
-                (isinstance(exponential, Iterable) and not all(isinstance(var, str) for var in exponential)):
-            raise ValueError("The 4th argument 'exponential' of a Predicate must be either 'bool' or an iterable of "
-                             "'str's")
-        if not isinstance(normalize, (bool, Iterable)) or \
-                (isinstance(normalize, Iterable) and not all(isinstance(var, str) for var in normalize)):
-            raise ValueError("The 5th argument 'normalize' of a Predicate must be either 'bool' or an iterable of "
-                             "'str's")
         if not isinstance(perception, bool):
             raise ValueError("The 6th argument 'perception' must be either 'True' or 'False'")
         if function is not None and not isinstance(function, (int, float, torch.Tensor, str)):
             raise ValueError("If not None, the 7th argument 'function' of a predicate must be 'int', 'float', "
                              "'torch.Tensor', or 'str'")
 
-        self.name = intern_name(predicate_name,
-                                "predicate")  # Prepend name with substring 'PRED_' and send to upper case
-
-        self.arguments = list(arguments)
-        self.wm_var_names, self.wm_var_types, self.wm_var_unique = [], [], []
-        self.var_list = []  # List of Variables, will only be set after this structure passed into a Sigma program
-        self.var_name2var = {}  # Map from variable name to actual Variable instance. set after structure passed into a Sigma program
+        self.var_list = []  # List of Variables
+        self.var_name2var = {}  # Map from variable name to actual Variable instance
+        self.wm_var_types = []
 
         # check selection
         self.selection = False  # Whether this predicate performs selection
         for argument in arguments:
+            assert isinstance(argument, PredicateArgument)
             # Check duplicate argument names
-            if argument.argument_name in self.wm_var_names:
-                raise ValueError("argument names in a Predicate cannot duplicate. Duplicate name: {}"
-                                 .format(argument['argument_name']))
+            if argument.wmvar in self.var_list:
+                raise ValueError("arguments in a Predicate cannot duplicate. Duplicate name: {}"
+                                 .format(argument.argument_name))
 
-            self.wm_var_names.append(argument.argument_name)
+            self.var_list.append(argument.wmvar)
+            self.var_name2var[argument.argument_name] = argument.wmvar
             self.wm_var_types.append(argument.type)
-            self.wm_var_unique.append(argument.unique_symbol)
 
             if argument.unique_symbol is not None:
                 self.selection = True
@@ -291,21 +291,10 @@ class Predicate:
                 raise ValueError("When any of the predicate's variables involves selection, the predicate must be "
                                  "closed-world.")
 
-        # if exponential / normalize specified as a list of variable names, check accordance
-        if isinstance(exponential, Iterable):
-            for var in exponential:
-                if var not in self.wm_var_names:
-                    raise ValueError("The variable name {} provided in the argument 'exponential' was not specified as "
-                                     "one of the variable of this predicate.".format(var))
-        if isinstance(normalize, Iterable):
-            for var in normalize:
-                if var not in self.wm_var_names:
-                    raise ValueError("The variable name {} provided in the argument 'normalize' was not specified as "
-                                     "one of the variable of this predicate.".format(var))
-
+        self.name = intern_name(predicate_name,
+                                "predicate")  # Prepend name with substring 'PRED_' and send to upper case
+        self.arguments = list(arguments)
         self.world = world
-        self.exponential = list(exponential) if isinstance(exponential, Iterable) else exponential
-        self.normalize = list(normalize) if isinstance(normalize, Iterable) else normalize
         self.perception = perception
         self.function = function
 
@@ -328,6 +317,8 @@ class Conditional:
                 If 'str', should be the name of another conditional, linking that conditional's function
         :param normal:  an iterable of `str`, specifying which variables to normalize over in gradient descent learning
             #TODO: leave to implement in future iterations
+
+            #TODO: Allow user to define customized summarization step for pattern variables
         """
         # Check conditions, actions, & condacts
         if not isinstance(conditional_name, str):
@@ -404,8 +395,11 @@ class Conditional:
         #       Else if 'const' type, take the number of elements / values in 'vals' field.
         #       global_pt_vals = { pt_var_name :
         #                           { "type" : "var" or "const",
-        #                             "size" : max size over associated wm vars,
-        #                             "unique" : True or False } }
+        #                             "size" : max size over associated wm vars
+        #                             "sum_op": Which summarization operation to take in beta branching subnet
+        #                                       currently support "sum" and "max"
+        #                             # TODO: extend this to support more summarization operations
+        #                             } }
         # constant pattern is assigned a unique constant variable name
         self.ptvar_list = []
         self.pattern_pt_vals = {}

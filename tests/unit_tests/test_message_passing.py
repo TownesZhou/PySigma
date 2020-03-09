@@ -28,7 +28,7 @@ def generate_pt_var_info(wm_var_names, pt_vals):
                 "rel": None
             }
         else:
-            assert isinstance(pt_val, list) and all(isinstance(val, int) for val in pt_val)
+            assert (pt_val is None) or (isinstance(pt_val, list) and all(isinstance(val, int) for val in pt_val))
             pt_var_info[wm_var_name] = {
                 "name": "CONST_" + str(const_count),
                 "type": "const",
@@ -291,6 +291,24 @@ class TestADFN:
         # Check
         assert all(torch.equal(init_msg[:, :, i], out_msg[:, :, j]) for i, j in zip(const_vals, range(3)))
 
+    def test_const_inward_3(self):
+        """
+            Constant values, mixing None const with valued const
+                wm vars: arg1  arg2  arg3
+                wm size:     3     4     5
+                pt vars:  [0, 2]  None  None
+                pt size:     2     4     5
+        """
+        wm_var_list = generate_var_list(['arg1', 'arg2', 'arg3'], [3, 4, 5])
+        pt_var_list = generate_var_list(['CONST_0', 'CONST_1', 'CONST_2'], [2, 4, 5])
+        pt_var_info = generate_pt_var_info(['arg1', 'arg2', 'arg3'], [[0, 2], None, None])
+
+        init_msg = torch.rand(3, 4, 5)
+        out_msg = run_inward(wm_var_list, pt_var_list, pt_var_info, init_msg)
+
+        # Check
+        assert all(torch.equal(init_msg[i, :, :], out_msg[j, :, :]) for j, i in enumerate([0, 2]))
+
     def test_simple_outward_1(self):
         """
             Simple variable swapping with matching size. Outward direction
@@ -462,3 +480,22 @@ class TestADFN:
         # Check
         assert all(torch.equal(init_msg[:3, :2, i], out_msg[:, :, j]) for i, j in enumerate([3, 5, 2]))
         assert all(torch.equal(torch.zeros(3, 2), out_msg[:, :, i]) for i in range(8) if i not in [3, 5, 2])
+
+    def test_const_outward_3(self):
+        """
+            Variable binding with unmatched size. Outward direction
+                pt vars:    x     y   None
+                pt size:    5     5     3
+                wm vars:  arg1  arg2  arg3
+                wm size:    3     2     8
+        """
+        wm_var_list = generate_var_list(['arg1', 'arg2', 'arg3'], [3, 2, 8])
+        pt_var_list = generate_var_list(['x', 'y', 'CONST_0'], [5, 5, 3])
+        pt_var_info = generate_pt_var_info(['arg1', 'arg2', 'arg3'], ['x', 'y', None])
+
+        init_msg = torch.rand(5, 5, 3)
+        out_msg = run_outward(wm_var_list, pt_var_list, pt_var_info, init_msg)
+
+        # Check
+        assert torch.equal(init_msg[:3, :2, :], out_msg[:, :, :3])
+        assert all(torch.equal(torch.zeros(3, 2), out_msg[:, :, i]) for i in range(3, 8))

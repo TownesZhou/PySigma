@@ -30,17 +30,26 @@ class Variable:
             of other fields
     """
 
-    def __init__(self, name, size, unique=True, selection=False):
+    def __init__(self, name, size, probabilistic=False, unique=False, normalize=False, sum_op=None):
         """
-        :param name:        Variable name
-        :param size:        The size, or maximum number of regions, of this variable dimension
-        :param unique:      True/False indicating whether 'unique' or 'universal'
-        :param selection:   Selection method
+        :param name:            Variable name
+        :param size:            The size, or maximum number of regions, of this variable dimension
+        :param probabilistic:   True/False, whether this variable is probabilistic
+        :param unique:          True/False, whether this variable is unique or universal
+        :param normalize:       True/False, whether this variable is to be normalized
+        :param sum_op:          Summarization operation. If none, then default to "max" if var is universal or "sum"
+                                    if var is unique.
         """
         self.name = name
         self.size = size
+        self.probabilistic = probabilistic
         self.unique = unique
-        self.selection = selection
+        self.normalize = normalize
+
+        if sum_op is None:
+            self.sum_op = "sum" if self.unique else "max"
+        else:
+            self.sum_op = sum_op
 
     def __eq__(self, other):
         # override so '==' operator test the 'name' field
@@ -54,6 +63,10 @@ class Variable:
         # override to provide the name as the string representation
         return self.name
 
+    def __hash__(self):
+        # override so that hash value is that of the Variable's name (which is treated as identity)
+        return hash(self.name)
+
 
 class LinkData:
     """
@@ -65,7 +78,7 @@ class LinkData:
             instantiate an edge.
     """
 
-    def __init__(self, vn, var_list, to_fn):
+    def __init__(self, vn, fn, var_list, to_fn, **kwargs):
         """
         :param vn:      name of the variable node that this link is incident to
         :param var_list:    list of variables of the adjacent variable node
@@ -78,16 +91,30 @@ class LinkData:
 
         # Following fields should correspond to the ones in the incident variable node
         self.vn = vn
+        self.fn = fn
         self.var_list = var_list
 
         # Whether this link is pointing toward a factor node
         self.to_fn = to_fn
+
+        # Register additional attributes, if there are any. For example, a flag indicating whether this linkdata
+        #   contains negated message in an action conditional pattern.
+        self.attri = kwargs
 
         # Record the dimensions of link message. Use to check potential dimension mismatch
         self._dims = [var.size for var in self.var_list]
 
         # Pretty log for GUI display
         self._pretty_log = {}
+
+    def __str__(self):
+        # Override for pretty debugging and printing
+        fn_name = self.fn.name
+        vn_name = self.vn.name
+        if self.to_fn:
+            return vn_name + " --> " + fn_name
+        else:
+            return fn_name + " --> " + vn_name
 
     def set(self, new, epsilon):
         """
@@ -97,13 +124,20 @@ class LinkData:
         :param new:         new arriving message
         :param epsilon:     epsilon criterion
         """
-        # Check dimension mismatch
-        size = list(new.shape)
-        if size != self._dims:
-            raise ValueError("The new message's dimension '{}' does not match the link memory's preset dimension '{}'. "
-                             "Target variable node: '{}', link direction: toward factor node = '{}'"
-                             .format(size, self._dims, str(self.vn), self.to_fn))
+        # Check message type and size. In message is constant (int or float), CHANGE TO TENSOR
+        assert isinstance(new, (int, float, torch.Tensor))
+        if isinstance(new, (int, float)):
+            new = new * torch.ones(self._dims)
+        else:
+            size = list(new.shape)
+            if size != self._dims:
+                raise ValueError(
+                    "The new message's dimension '{}' does not match the link memory's preset dimension '{}'. "
+                    "Target variable node: '{}', link direction: toward factor node = '{}'"
+                    .format(size, self._dims, str(self.vn), self.to_fn))
 
+        # Check epsilon condition: maximal absolute difference < epsilon
+        #   TODO: allow other types of epsilon condition
         if self.memory is not None:
             diff = torch.max(torch.abs(self.memory - new))
             if diff < epsilon:
@@ -120,5 +154,3 @@ class LinkData:
         """
         self.new = False
         return self.memory
-
-

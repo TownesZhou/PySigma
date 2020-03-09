@@ -4,7 +4,7 @@
 """
 from .structures import *
 from .graphical import *
-from .cognitive import _add_structure, _compiler, _run
+from .cognitive import _register, _compiler, _runner, _perception, _learning, _inspector
 
 
 class Sigma:
@@ -48,31 +48,38 @@ class Sigma:
         self._node_order = None
         self._order_set = False
 
+        # Perception Callables
+        self._perception_callable = None
+
+        # Printing lists
+        self._print_pred_mem_list = []       # List of predicate's names whose memories (WMFN, LTMFN) to be printed
+        self._print_pred_action_list = []    # List of predicate's names. Actions arriving at these to be printed
+
         ### Sigma program global parameters ###
 
 
     # Methods for adding Sigma structures #
 
     def add(self, structure):
-        _add_structure.add(self, structure)
+        _register.add(self, structure)
 
     def add_type(self, *args, **kwargs):
-        _add_structure.add_type(self, *args, **kwargs)
+        _register.add_type(self, *args, **kwargs)
 
     def add_predicate(self, *args, **kwargs):
-        _add_structure.add_predicate(self, *args, **kwargs)
+        _register.add_predicate(self, *args, **kwargs)
 
     def add_conditional(self, *args, **kwargs):
-        _add_structure.add_conditional(self, *args, **kwargs)
+        _register.add_conditional(self, *args, **kwargs)
 
     def _register_type(self, sigma_type):
-        _add_structure._register_type(self, sigma_type)
+        _register._register_type(self, sigma_type)
 
     def _register_predicate(self, predicate):
-        _add_structure._register_predicate(self, predicate)
+        _register._register_predicate(self, predicate)
 
     def _register_conditional(self, conditional):
-        _add_structure._register_conditional(self, conditional)
+        _register._register_conditional(self, conditional)
 
 
     # Methods for Sigma structure compilation #
@@ -84,13 +91,44 @@ class Sigma:
         _compiler._compile_conditional(self, conditional)
 
 
+    # Methods for Setting Perceptions and Prior Knowledge #
+
+    def perceive(self, predicates, messages):
+        _perception.perceive(self, predicates, messages)
+
+    def set_perception(self, predicates, perceive_funcs):
+        _perception.set_perception(self, predicates, perceive_funcs)
+
+    def set_assumption(self, predicates, priors):
+        _perception.set_assumption(self, predicates, priors)
+
+
     # Methods for running Sigma program #
 
     def _order_nodes(self):
-        _run._order_nodes(self)
+        _runner._order_nodes(self)
 
-    def decide(self, num_cycles):
-        _run.decide(self, num_cycles)
+    def _solve(self, verbose):
+        _runner._solve(self, verbose)
+
+    def _modify(self):
+        _runner._modify(self)
+
+    def decide(self, num_cycles, verbose=0):
+        _runner.decide(self, num_cycles, verbose)
 
 
+    # Methods for printing stuff
+
+    def print_predicate_memory(self, predicates):
+        _inspector.print_predicate_memory(self, predicates)
+
+    def _print_pred_mem(self):
+        _inspector._print_pred_mem(self)
+
+    def print_combined_action(self, predicates):
+        _inspector.print_combined_action(self, predicates)
+
+    def _print_pred_action(self):
+        _inspector._print_pred_action(self)
 
