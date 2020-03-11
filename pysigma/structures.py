@@ -26,10 +26,11 @@ class PredicateArgument:
                                 If False, this variable will be treated as a vector variable.
                                 Note that if normalize is True, then probabilistic must be True
         :param unique_symbol:   'str' or None. If None, this variable will be treated as universal.
-                                  - `'!'`: Select best
-                                  - `'$'`: Select expected value
-                                  - `'^'`: Maintain exponential transform of distribution
-                                  - `'='`: Select by probability matching
+                                  - '!'` Select best
+                                  - '$': Select expected value
+                                  - '^': Maintain exponential transform of distribution
+                                  - '=': Select by probability matching
+                                  = '%': Maintain distribution
         :param normalize:       True or False. Whether this variable represents a discrete distribution and to normalize
                                     messages over this variable dimension.
         """
@@ -41,7 +42,7 @@ class PredicateArgument:
             raise ValueError("argument 'probabilistic' of a PredicateArgument bust be a 'bool'")
         if unique_symbol is not None and not isinstance(unique_symbol, str):
             raise ValueError("argument 'unique_symbol' of a PredicateArgument must be a 'str'")
-        if unique_symbol is not None and unique_symbol not in ['!', '$', '^', '=']:
+        if unique_symbol is not None and unique_symbol not in ['!', '$', '^', '=', '%']:
             raise ValueError("Unknown unique symbol: '{}'".format(unique_symbol))
         if not isinstance(normalize, bool):
             raise ValueError("argument 'normalize' or a PredicateArgument must be a 'bool'")

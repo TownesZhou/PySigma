@@ -23,8 +23,8 @@ def build_transitivity_1(init_state, num_objects, to_render):
     sigma.add(type1)
 
     # One arity-2 predicate
-    arg1 = PredicateArgument('arg1', type1, probabilistic=True, unique_symbol=None, normalize=False)
-    arg2 = PredicateArgument('arg2', type1, probabilistic=True, unique_symbol=None, normalize=False)
+    arg1 = PredicateArgument('arg1', type1, probabilistic=True, unique_symbol="%", normalize=False)
+    arg2 = PredicateArgument('arg2', type1, probabilistic=True, unique_symbol="%", normalize=False)
     pred1 = Predicate('pred1', [arg1, arg2], world='closed', perception=False)
     sigma.add(pred1)
 

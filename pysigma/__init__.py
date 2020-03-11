@@ -32,6 +32,8 @@ class Sigma:
         self.predicate_list = []
         self.conditional_list = []
 
+
+
         # mappings from name to structure
         self.name2type, self.name2predicate, self.name2conditional = {}, {}, {}
 
@@ -104,6 +106,12 @@ class Sigma:
 
     def set_evidence(self, predicate, evidence):
         _perception.set_evidence(self, predicate, evidence)
+
+
+    # Methods for adaption phase #
+
+    def _select(self):
+        _adaption._select(self)
 
 
     # Methods for running Sigma program #

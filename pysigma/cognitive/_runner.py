@@ -8,6 +8,7 @@ from tqdm import tqdm        # progress bar
 import time
 from prettytable import PrettyTable         # For printing performance statistics in tables
 from ..cognitive._inspector import *
+from ..cognitive._adaption import *
 from ..graphical._nodes import PBFN, LTMFN, GFFN
 
 
@@ -170,7 +171,7 @@ def decide(self, num_cycles, verbose=0):
         self._order_nodes()
         # Solution Phase
         self._solve(verbose)
-        # TODO: Modification phase
+        # Modification phase
         self._modify()
 
         # Print stuff
