@@ -109,7 +109,8 @@ def render(sigma):
 
         # Display linkmemory for each linkdata at this stage
         mem = sigma.G[edge[0]][edge[1]]['data'].memory
-        hovertexts.append("link memory: <br>{}".format(mem))
+        hovertexts.append("Link: <b> {} -- {} </b><br>"
+                          "Link memory: <br>{}".format(edge[0].name, edge[1].name, mem))
 
     edge_trace = go.Scatter(x=edge_x, y=edge_y,
                             line=dict(width=0.5, color='black'),
