@@ -4,7 +4,7 @@
 """
 from .structures import *
 from .graphical import *
-from .cognitive import _register, _compiler, _runner, _perception, _learning, _inspector
+from .cognitive import _register, _compiler, _runner, _perception, _adaption, _inspector
 
 
 class Sigma:
@@ -101,6 +101,9 @@ class Sigma:
 
     def set_assumption(self, predicates, priors):
         _perception.set_assumption(self, predicates, priors)
+
+    def set_evidence(self, predicate, evidence):
+        _perception.set_evidence(self, predicate, evidence)
 
 
     # Methods for running Sigma program #

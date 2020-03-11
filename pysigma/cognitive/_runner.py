@@ -19,7 +19,6 @@ def _order_nodes(self):
 
         Note that the calculation is lazy. If no new structures were added and node ordered has been calculated
             previously, then return directly
-        # TODO: Discuss with Volkan about proper node ordering
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
@@ -67,7 +66,7 @@ def _solve(self, verbose):
     from .. import Sigma
     assert isinstance(self, Sigma)
 
-    # TODO: A LOT of logging may be needed here
+    # TODO: Clean up the code. Seperate logging from core functions.
     # Set all nodes' quiescence to False before perform message passing
     for node in self.G.nodes:
         node.quiescence = False
@@ -127,7 +126,7 @@ def _solve(self, verbose):
             row_text = [str(node),
                         num_acess[i],
                         sum(time_access[i]),
-                        sum(time_access[i]) / num_acess[i],
+                        sum(time_access[i]) / num_acess[i] if num_acess[i] != 0 else 0,
                         min(time_access[i]),
                         max(time_access[i])]
             row_text = [text_format.format(t) if isinstance(t, float) else t for t in row_text]

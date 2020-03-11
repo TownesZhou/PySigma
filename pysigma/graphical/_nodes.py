@@ -375,6 +375,8 @@ class PBFN(FactorNode):
         super(PBFN, self).__init__(name, function, func_var_list)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
+        # TODO: What should be the default function value for a PBFN ?
+
     def get_shape(self):
         # For use when checking perception content shape
         return [var.size for var in self._var_list]
@@ -404,12 +406,35 @@ class LTMFN(FactorNode):
 class WMFN(FactorNode):
     """
         Working Memory Factor Node
-    """
 
-    # TODO
+        Special implementation for compute(): to ensure that messages coming out from WMFN is the WMFN content it self
+            and stays unchanged through the graph solution phase, we do not let messages on incoming link take part in
+            the computation of the outgoing message. They are only used during modification phase to modify the WMFN
+            content by performing selection (for unique predicates) or directly replace the WMFN content (for universal
+            predicates)
+    """
     def __init__(self, name, function=None, func_var_list=None):
         super(WMFN, self).__init__(name, function, func_var_list)
         self.pretty_log["node type"] = "Working Memory Function Node"
+
+    # Override so that only allow one incoming link, and that must be WMVN
+    def add_link(self, linkdata):
+        if linkdata.to_fn:
+            assert isinstance(linkdata.vn, WMVN), "WMFN only admits an incoming link from WMVN"
+            assert len(self._in_linkdata) == 0, "WMFN only admits one incoming link"
+        super(WMFN, self).add_link(linkdata)
+
+    # Override so that WMFN ignores messages on incoming link, and only send its own function outwards
+    def compute(self):
+        for out_ld in self._out_linkdata:
+            out_ld.set(self._function, self._epsilon)
+
+        # Set quiescence state
+        self.quiescence = True
+
+    # Also override get_quiesce() so that quiescence state is not determined by incoming links but rather compute()
+    def check_quiesce(self):
+        return self.quiescence
 
 
 class ACFN(FactorNode):
@@ -475,6 +500,12 @@ class ACFN(FactorNode):
         assert len(self._in_linkdata) > 0
         out_ld = self._out_linkdata[0]
 
+        # Delay computation until all messages on incoming links are valid, i.e., not None
+        # for ld in self._in_linkdata:
+        #     # DO NOT USE read() HERE because we don't want to alter ld.new state
+        #     if ld.memory is None:
+        #         return
+
         # Determine whether to take probabilistic operation, whether any variable dimension represents distribution
         probabilistic = any(var.probabilistic for var in self._var_list)
         normal = any(var.normalize for var in self._var_list)
@@ -494,19 +525,24 @@ class ACFN(FactorNode):
             pa = 1
             for ld in self._pos_in_ld:
                 msg = ld.read()
-                msg = normalize(msg)    # pre-normalize
-                pa *= 1 - msg
+                # If msg is None, simply skip it
+                if msg is not None:
+                    msg = normalize(msg)    # pre-normalize
+                    pa *= 1 - msg
             pa = 1 - pa
+
             # Calculate negative combined action NA. To save computation, na here is actually the "negated" NA
             na = 1
             for ld in self._neg_in_ld:
                 msg = ld.read()
-                msg = normalize(msg)    # pre-normalize
-                na *= 1 - msg
-            # na = 1 - na
+                # If msg is None, simply skip it
+                if msg is not None:
+                    msg = normalize(msg)    # pre-normalize
+                    # Note that msg for negative action should already be negated by a negation node,
+                    #   so don't need to negate it again here
+                    na *= msg
 
             # Combining PA with NA.
-            # msg = pa * (1 - na)
             msg = pa * na
             out_ld.set(msg, self._epsilon)
 

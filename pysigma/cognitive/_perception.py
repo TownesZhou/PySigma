@@ -109,3 +109,33 @@ def set_assumption(self, predicates, priors):
 
             # Set PBFN's function
             ltmfn.set_function(priors[i], var_sizes)
+
+
+def set_evidence(self, predicate, evidence):
+    """
+        Set evidence (function for WMFN) for the specified WMFN.
+    :param predicate:       The predicate to set evidence for. It must be a closed-world predicate
+    :param evidence:        The evidence. An int, float, or torch.Tensor
+    :return:
+    """
+    from .. import Sigma
+    assert isinstance(self, Sigma)
+
+    if not isinstance(predicate, Predicate):
+        raise ValueError("Argument 'predicate' must be a 'Predicate'")
+    if predicate.world != "closed":
+        raise ValueError("The predicate to set evidence for must be a closed-world predicate")
+    if not isinstance(evidence, (int, float, torch.Tensor)):
+        raise ValueError("Argument 'evidence' must be an 'int', 'float', or 'torch.Tensor'")
+
+    # Check evidence shape
+    if isinstance(evidence, torch.Tensor):
+        dims = list(var.size for var in predicate.var_list)
+        if dims != list(evidence.shape):
+            raise ValueError("The dimensions of the provided evidence does not match that of the predicate variable "
+                             "dimensions. Expect {}, but got {}".format(dims, list(evidence.shape)))
+
+    # Set evidence
+    wmfn = self.predicate2group[predicate.name]["WMFN"]
+    wmfn.set_function(evidence, predicate.var_list)
+
