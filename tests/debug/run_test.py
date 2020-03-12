@@ -23,9 +23,9 @@ def build_transitivity_1(init_state, num_objects, to_render):
     sigma.add(type1)
 
     # One arity-2 predicate
-    arg1 = PredicateArgument('arg1', type1, probabilistic=True, unique_symbol=None, normalize=False)
-    arg2 = PredicateArgument('arg2', type1, probabilistic=True, unique_symbol=None, normalize=False)
-    pred1 = Predicate('pred1', [arg1, arg2], world='closed', perception=True, function=init_state)
+    arg1 = PredicateArgument('arg1', type1, probabilistic=True, unique_symbol="%", normalize=False)
+    arg2 = PredicateArgument('arg2', type1, probabilistic=True, unique_symbol="%", normalize=False)
+    pred1 = Predicate('pred1', [arg1, arg2], world='closed', perception=False)
     sigma.add(pred1)
 
     # Transitivity rule
@@ -50,11 +50,14 @@ def build_transitivity_1(init_state, num_objects, to_render):
     sigma.add(cond1)
 
     # Register print
-    sigma.print_predicate_memory([pred1])
-    sigma.print_combined_action([pred1])
+    # sigma.print_predicate_memory([pred1])
+    # sigma.print_combined_action([pred1])
+
+    # Set evidence for pred1
+    sigma.set_evidence(pred1, init_state)
 
     # Run
-    sigma.decide(num_cycles=1, verbose=2)
+    sigma.decide(num_cycles=1, verbose=1)
 
     # Render (optional, only for debugging)
     if to_render:
@@ -99,5 +102,5 @@ def probabilistic_1(to_render=False):
 
 if __name__=="__main__":
     # simple_1(to_render=True)
-    # large_1(N=5, to_render=True)
+    # large_1(N=200, to_render=True)
     probabilistic_1(to_render=True)

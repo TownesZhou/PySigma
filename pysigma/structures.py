@@ -26,10 +26,23 @@ class PredicateArgument:
                                 If False, this variable will be treated as a vector variable.
                                 Note that if normalize is True, then probabilistic must be True
         :param unique_symbol:   'str' or None. If None, this variable will be treated as universal.
-                                  - `'!'`: Select best
-                                  - `'$'`: Select expected value
-                                  - `'^'`: Maintain exponential transform of distribution
-                                  - `'='`: Select by probability matching
+                                  - '!'` Select best
+                                  - '$': Select expected value (Currently disabled)
+                                  - '^': Maintain exponential transform of distribution (Currently disabled)
+                                  - '=': Select by probability matching
+                                  = '%': Maintain distribution
+                                Note:
+                                    - It is not allowed to specify multiple arguments with different unique symbols in a
+                                    unique predicate, except for the '%' symbol. Variables specified with '%' will be
+                                    treated with default selection behavior, i.e., maintain values along this dimension.
+                                    - Therefore, once the predicate becomes unique, i.e., as long as one of its
+                                    variables comes with any one of the unique symbols listed above, specifying '%'
+                                    symbol or simply leave the 'unique_symbol' field None for other variables does not
+                                    make any difference.
+                                    - While multiple arguments are specified with the same unique symbol other than '%',
+                                    the corresponding selection method will be performed on these variable dimensions
+                                    jointly. For example, for two variables with '!', will select the max value across
+                                    both variable dimensions.
         :param normalize:       True or False. Whether this variable represents a discrete distribution and to normalize
                                     messages over this variable dimension.
         """
@@ -41,7 +54,7 @@ class PredicateArgument:
             raise ValueError("argument 'probabilistic' of a PredicateArgument bust be a 'bool'")
         if unique_symbol is not None and not isinstance(unique_symbol, str):
             raise ValueError("argument 'unique_symbol' of a PredicateArgument must be a 'str'")
-        if unique_symbol is not None and unique_symbol not in ['!', '$', '^', '=']:
+        if unique_symbol is not None and unique_symbol not in ['!', '=', '%']:
             raise ValueError("Unknown unique symbol: '{}'".format(unique_symbol))
         if not isinstance(normalize, bool):
             raise ValueError("argument 'normalize' or a PredicateArgument must be a 'bool'")
@@ -270,8 +283,16 @@ class Predicate:
         self.var_name2var = {}  # Map from variable name to actual Variable instance
         self.wm_var_types = []
 
-        # check selection
+        # check if this predicate is unique, i.e., involves selection.
+        # If so, also checks that no different unique symbols have been specified, except for '%' symbol
+        # Final predicate unique symbol for the predicate recorded in self.pred_unique_sym, with the variables
+        #   self.pred_unique_vars over which the selection will be performed.
+        # If the final predicate unique symbol is '%', i.e., no arguments come with unique symbols other than '%' and
+        #   None, then it is treated with default selection behavior, i.e., maintain entire distribution. At this point,
+        #   it does not matter which argument was specified with '%' and which one was no
         self.selection = False  # Whether this predicate performs selection
+        self.pred_unique_sym = None
+        self.pred_unique_vars = []
         for argument in arguments:
             assert isinstance(argument, PredicateArgument)
             # Check duplicate argument names
@@ -285,6 +306,19 @@ class Predicate:
 
             if argument.unique_symbol is not None:
                 self.selection = True
+                if argument.unique_symbol != '%' and self.pred_unique_sym is not None \
+                        and argument.unique_symbol != self.pred_unique_sym:
+                    raise ValueError("Cannot specify multiple arguments with different unique symbols other than '%' "
+                                     "in a predicate. Already discovered unique symbol '{}' in arguments '{}', but "
+                                     "found unique symbol '{}' in the argument '{}."
+                                     .format(self.pred_unique_sym, self.pred_unique_vars,
+                                             argument.unique_symbol, argument.argument_name))
+                if argument.unique_symbol != '%':
+                    self.pred_unique_sym = argument.unique_symbol
+                    self.pred_unique_vars.append(argument.wmvar)
+        # If no special unique symbol (any symbol other than '%') detected, then set predicate unique symbol to '%'
+        if self.selection and self.pred_unique_sym is None:
+            self.pred_unique_sym = '%'
 
         if self.selection:
             if world is not 'closed':

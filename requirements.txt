@@ -1,5 +1,6 @@
 ### Required Packages ###
 
+numpy
 torch
 torchvision
 networkx
@@ -7,3 +8,4 @@ plotly==4.5.0
 dash==1.8.0
 pytest
 tqdm
+PrettyTable

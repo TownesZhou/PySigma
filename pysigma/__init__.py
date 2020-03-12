@@ -4,7 +4,7 @@
 """
 from .structures import *
 from .graphical import *
-from .cognitive import _register, _compiler, _runner, _perception, _learning, _inspector
+from .cognitive import _register, _compiler, _runner, _perception, _adaption, _inspector
 
 
 class Sigma:
@@ -32,11 +32,13 @@ class Sigma:
         self.predicate_list = []
         self.conditional_list = []
 
+        self.unique_preds = []      # List of unique predicates, over which selection on WMFN should be performed
+
         # mappings from name to structure
         self.name2type, self.name2predicate, self.name2conditional = {}, {}, {}
 
         ## Graphical level bookkeeping data structure
-        # mappings from predicate, conditional to node group
+        # mappings from predicate name, conditional name to node group
         #   use structure name to index
         self.predicate2group, self.conditional2group = {}, {}
 
@@ -101,6 +103,15 @@ class Sigma:
 
     def set_assumption(self, predicates, priors):
         _perception.set_assumption(self, predicates, priors)
+
+    def set_evidence(self, predicate, evidence):
+        _perception.set_evidence(self, predicate, evidence)
+
+
+    # Methods for adaption phase #
+
+    def _select(self):
+        _adaption._select(self)
 
 
     # Methods for running Sigma program #
