@@ -32,13 +32,13 @@ class Sigma:
         self.predicate_list = []
         self.conditional_list = []
 
-
+        self.unique_preds = []      # List of unique predicates, over which selection on WMFN should be performed
 
         # mappings from name to structure
         self.name2type, self.name2predicate, self.name2conditional = {}, {}, {}
 
         ## Graphical level bookkeeping data structure
-        # mappings from predicate, conditional to node group
+        # mappings from predicate name, conditional name to node group
         #   use structure name to index
         self.predicate2group, self.conditional2group = {}, {}
 

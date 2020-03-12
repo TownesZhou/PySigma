@@ -8,7 +8,6 @@ from tqdm import tqdm        # progress bar
 import time
 from prettytable import PrettyTable         # For printing performance statistics in tables
 from ..cognitive._inspector import *
-from ..cognitive._adaption import *
 from ..graphical._nodes import PBFN, LTMFN, GFFN
 
 
@@ -144,8 +143,8 @@ def _modify(self):
     from .. import Sigma
     assert isinstance(self, Sigma)
 
-    # TODO
-    pass
+    # Perform selection on closed-world unqiue predicates' WMFN node
+    self._select()
 
 
 def decide(self, num_cycles, verbose=0):

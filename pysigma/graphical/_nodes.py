@@ -119,6 +119,7 @@ class FactorNode(Node, ABC):
         self.pretty_log["function variables"] = [var.name for var in self._func_var_list] \
             if self._func_var_list is not None else None
         self.pretty_log["function size"] = var_size
+        self.pretty_log["function value"] = function
 
     def get_function(self):
         return self._function, self._func_var_list

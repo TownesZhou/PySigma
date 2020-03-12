@@ -100,6 +100,10 @@ def _register_predicate(self, predicate):
     self.predicate_list.append(predicate)
     self.name2predicate[predicate.name] = predicate
 
+    # Register in self.unique_preds if this predicate is unique
+    if predicate.selection:
+        self.unique_preds.append(predicate)
+
 
 def _register_conditional(self, conditional):
     """
