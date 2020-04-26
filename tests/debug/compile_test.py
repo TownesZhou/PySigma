@@ -1,5 +1,5 @@
 import torch
-from pysigma.sigmaboard import render
+from pysigma.sigmaboard import SigmaBoard
 from pysigma import Sigma
 from pysigma.structures import *
 
@@ -32,7 +32,7 @@ def predicate_compile_test_1(to_render=False):
 
     # test web-based render
     if to_render:
-        render(sigma)
+        SigmaBoard(sigma).render()
 
 
 def predicate_compile_test_2(to_render=False):
@@ -58,7 +58,7 @@ def predicate_compile_test_2(to_render=False):
 
     # test web-based render
     if to_render:
-        render(sigma)
+        SigmaBoard(sigma).render()
 
 
 def predicate_compile_test_3(to_render=False):
@@ -84,7 +84,7 @@ def predicate_compile_test_3(to_render=False):
 
     # test web-based render
     if to_render:
-        render(sigma)
+        SigmaBoard(sigma).render()
 
 
 def predicate_compile_test_4(to_render=False):
@@ -132,7 +132,7 @@ def conditional_compile_test_1(to_render=True):
     sigma.add(cond_1)
 
     if to_render:
-        render(sigma)
+        SigmaBoard(sigma).render()
 
 
 def conditional_compile_test_2(to_render=True):
@@ -173,7 +173,7 @@ def conditional_compile_test_2(to_render=True):
     sigma.add(cond_1)
 
     if to_render:
-        render(sigma)
+        SigmaBoard(sigma).render()
 
 
 def conditional_compile_test_3(to_render=True):
@@ -264,7 +264,6 @@ def conditional_compile_test_4(to_render=True):
 
 
 if __name__=="__main__":
-
     run_test(predicate_compile_test_1)
     run_test(predicate_compile_test_2)
     run_test(predicate_compile_test_3, to_render=False)
