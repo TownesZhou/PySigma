@@ -1,6 +1,7 @@
 """
     Utility functions
 """
+import torch.distributions
 
 
 def intern_name(name, struc_type):
@@ -20,3 +21,11 @@ def intern_name(name, struc_type):
         return "COND_[" + name.upper() + "]"
 
 
+# TODO general-inf: Utility methods for extracting natural parameters from an exponential torch.distributions, or
+#  instantiate an exponential torch.distribution from given natural parameters
+class Params2Dist:
+    pass
+
+
+class Dist2Params:
+    pass

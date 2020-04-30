@@ -2,24 +2,8 @@
     Basic structures in the graphical architecture
 """
 import torch
-
-# For now will use torch.Tensor directly. Not really necessary to make a subclass of Tensor, which may have side effects
-#   to the underlying computation graphs if we do so.
-
-# class Message(torch.Tensor):
-#     """
-#         A subclass of pytorch tensor. Stores message plm as tensors and can be directly manipulated, but keep extra
-#             bookkeeping information for message processing mechanism in Sigma.
-#     """
-#
-#     # Override __new__ so we can use Message() to create new tensors the same way as we use torch.Tensor()
-#     @staticmethod
-#     def __new__(cls, *args, **kwargs):
-#         return super().__new__(cls, *args, **kwargs)
-#
-#     def __init__(self, x, *args, **kwargs):
-#         super().__init__()
-#
+import torch.distributions as Dist
+from enum import Enum
 
 
 class Variable:
@@ -66,6 +50,87 @@ class Variable:
     def __hash__(self):
         # override so that hash value is that of the Variable's name (which is treated as identity)
         return hash(self.name)
+
+
+# TODO general-inf: Generalized message type and message representation
+class MessageType(Enum):
+    """
+        Enum class to represent message types
+    """
+    Tabular = 0
+    Distribution = 1
+    Particles = 2
+
+
+class Message():
+    """
+        Message structure to support general inference.
+        Three basic message type:
+            - Tabular factor
+            - Parametric distribution
+            - Particle list
+        Tabular factors will be represented by Categorical distribution, a special case of parametric distribution
+            message.
+        The message type does not impose restriction on the underlying message types available for use, and thus
+            different representations may coexist. For instance, in a Distribution message, a torch.distribution may
+            coexists with a particle list, whereas in a Particles message only particle list exists most of the time.
+    """
+    # Message type, of type MessageType
+    type = None
+    # Distribution
+    dist = None
+    # Particle list
+    particles = None
+    weights = None
+    # Shapes
+    s_shape = None
+    b_shape = None
+    e_shape = None
+
+    def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size, event_shape: torch.Size,
+                 dist: Dist = None, particles: torch.Tensor = None, weights: torch.Tensor = None):
+        """
+            Instantiate a message
+        """
+        assert isinstance(msg_type, MessageType)
+        assert isinstance(sample_shape, torch.Size)
+        assert isinstance(batch_shape, torch.Size)
+        assert isinstance(event_shape, torch.Size)
+        assert dist is None or isinstance(dist, Dist.Distribution)
+        assert particles is None or isinstance(particles, torch.Tensor)
+        assert weights is None or isinstance(weights, torch.Tensor)
+
+        self.type = msg_type
+        self.dist = dist
+        self.particles = particles
+        self.weights = weights
+        self.s_shape = sample_shape
+        self.b_shape = batch_shape
+        self.e_shape = event_shape
+
+        # Check whether (only) necessary arguments are provided
+        if self.type is MessageType.Tabular:
+            # Need to provide Categorical distribution and nothing else
+            assert isinstance(self.dist, Dist.Categorical)
+            assert self.particles is None
+            assert self.weights is None
+        if self.type is MessageType.Distribution:
+            # Need to provide some distribution. Particle list is optional
+            assert self.dist is not None
+        if self.type is MessageType.Particles:
+            # Need to provide a particle list, but no distribution
+            assert self.particles is not None
+            assert self.weights is not None
+            assert self.dist is None
+
+        # Check shape
+        if self.dist is not None:
+            assert self.b_shape == self.dist.batch_shape
+            assert self.e_shape == self.dist.event_shape
+        if self.particles is not None:
+            assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
+        if self.weights is not None:
+            assert self.s_shape == self.weights.shape
 
 
 class LinkData:
