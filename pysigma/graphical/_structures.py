@@ -2,57 +2,82 @@
     Basic structures in the graphical architecture
 """
 import torch
-import torch.distributions as Dist
+from torch.distributions.distribution import Distribution
+from torch.distributions.categorical import Categorical
+from torch.distributions.constraints import Constraint
 from enum import Enum
+
+
+# Variable Metatypes and Variable for general inference
+class VariableMetatype(Enum):
+    Indexing = 0  # Particle indexing variable, first dimension of a message
+    Relational = 1  # Relational variable, second set of dimensions of a message
+    Random = 2  # Random variable, last set of dimensions of a message
 
 
 class Variable:
     """
         Variable as in variable nodes in the graphical architecture. Store information about this variable such as
-            whether it is unique or universal.
-        Note: The equality of variables' identity is determined by the equality of their name, regardless of the values
-            of other fields
+            its meta-type, dimension size, and value range.
+        The equality testing is used for matching variables in Alpha-Beta graphs. Two variables are equal if and only
+            if ALL of the fields are equal. For example, if two Random variables are equal, then they must have the
+            same constraints.
+        The "type" of a variable, as defined in a predicate, is not considered here. This is to support matching across
+            different types in a principle way.
     """
+    # Variable name, its identity. Used for variable matching
+    name = None
+    # Variable meta-type, of type VariableMetatype
+    metatype = None
+    # Variable size. Size of the dimension that the variable corresponds to
+    size = None
+    # Constraints of the variable's value range. Of type Constraint from PyTorch. Only set when variable type is Random.
+    constraint = None
 
-    def __init__(self, name, size, probabilistic=False, unique=False, normalize=False, sum_op=None):
+    def __init__(self, name: str, metatype: VariableMetatype, size: int, constraint: Constraint):
         """
-        :param name:            Variable name
-        :param size:            The size, or maximum number of regions, of this variable dimension
-        :param probabilistic:   True/False, whether this variable is probabilistic
-        :param unique:          True/False, whether this variable is unique or universal
-        :param normalize:       True/False, whether this variable is to be normalized
-        :param sum_op:          Summarization operation. If none, then default to "max" if var is universal or "sum"
-                                    if var is unique.
+            Instantiate a variable
         """
+        assert isinstance(name, str)
+        assert isinstance(metatype, VariableMetatype)
+        assert isinstance(size, int)
+        assert isinstance(constraint, Constraint)
+
         self.name = name
+        self.metatype = metatype
         self.size = size
-        self.probabilistic = probabilistic
-        self.unique = unique
-        self.normalize = normalize
-
-        if sum_op is None:
-            self.sum_op = "sum" if self.unique else "max"
-        else:
-            self.sum_op = sum_op
+        self.constraint = constraint
 
     def __eq__(self, other):
-        # override so '==' operator test the 'name' field
-        return self.name == other.name
+        # override so '==' operator test variable equality
+        assert isinstance(other, Variable)
+        val = self.name == other.name and \
+              self.metatype == other.metatype and \
+              self.size == other.size and \
+              self.constraint == other.constraint
+
+        return val
 
     def __ne__(self, other):
-        # override so '!=' operator test the 'name' field
-        return self.name != other.name
+        # override so '!=' operator test variable equality
+        assert isinstance(other, Variable)
+        val = self.name != other.name or \
+              self.metatype != other.metatype or \
+              self.size != other.size or \
+              self.constraint != other.constraint
+
+        return val
 
     def __str__(self):
         # override to provide the name as the string representation
         return self.name
 
     def __hash__(self):
-        # override so that hash value is that of the Variable's name (which is treated as identity)
-        return hash(self.name)
+        # override so that hash value of the string representation of the variable is used
+        return hash(self.name + str(self.metatype) + str(self.size) + str(self.constraint))
 
 
-# TODO general-inf: Generalized message type and message representation
+# Generalized message type and message representation
 class MessageType(Enum):
     """
         Enum class to represent message types
@@ -62,7 +87,7 @@ class MessageType(Enum):
     Particles = 2
 
 
-class Message():
+class Message:
     """
         Message structure to support general inference.
         Three basic message type:
@@ -71,9 +96,10 @@ class Message():
             - Particle list
         Tabular factors will be represented by Categorical distribution, a special case of parametric distribution
             message.
-        The message type does not impose restriction on the underlying message types available for use, and thus
-            different representations may coexist. For instance, in a Distribution message, a torch.distribution may
-            coexists with a particle list, whereas in a Particles message only particle list exists most of the time.
+        The message type does not impose restriction on the types of underlying message representations available for
+            use, and thus different representations may coexist. For instance, in a Distribution message, a
+            torch.distribution may coexists with a particle list, whereas in a Particles message only particle list
+            exists.
     """
     # Message type, of type MessageType
     type = None
@@ -87,8 +113,9 @@ class Message():
     b_shape = None
     e_shape = None
 
-    def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size, event_shape: torch.Size,
-                 dist: Dist = None, particles: torch.Tensor = None, weights: torch.Tensor = None):
+    def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size,
+                 event_shape: torch.Size,
+                 dist: Distribution = None, particles: torch.Tensor = None, weights: torch.Tensor = None):
         """
             Instantiate a message
         """
@@ -96,7 +123,7 @@ class Message():
         assert isinstance(sample_shape, torch.Size)
         assert isinstance(batch_shape, torch.Size)
         assert isinstance(event_shape, torch.Size)
-        assert dist is None or isinstance(dist, Dist.Distribution)
+        assert dist is None or isinstance(dist, Distribution)
         assert particles is None or isinstance(particles, torch.Tensor)
         assert weights is None or isinstance(weights, torch.Tensor)
 
@@ -111,7 +138,7 @@ class Message():
         # Check whether (only) necessary arguments are provided
         if self.type is MessageType.Tabular:
             # Need to provide Categorical distribution and nothing else
-            assert isinstance(self.dist, Dist.Categorical)
+            assert isinstance(self.dist, Categorical)
             assert self.particles is None
             assert self.weights is None
         if self.type is MessageType.Distribution:
@@ -133,6 +160,7 @@ class Message():
             assert self.s_shape == self.weights.shape
 
 
+# TODO general-inf: LinkData
 class LinkData:
     """
         Identify the *data* of a ***directed*** link between a factor node and a variable node. Stores intermediate
@@ -199,7 +227,7 @@ class LinkData:
                 raise ValueError(
                     "The new message's dimension '{}' does not match the link memory's preset dimension '{}'. "
                     "Target variable node: '{}', link direction: toward factor node = '{}'"
-                    .format(size, self._dims, str(self.vn), self.to_fn))
+                        .format(size, self._dims, str(self.vn), self.to_fn))
 
         # Check epsilon condition: maximal absolute difference < epsilon
         #   TODO: allow other types of epsilon condition
