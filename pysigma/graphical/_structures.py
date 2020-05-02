@@ -265,11 +265,12 @@ class LinkData:
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
 
-    def read(self):
+    def read(self, clone: bool = False):
         """
             Return the current content stored in memory. Set new to False to indicate this link message have been read
                 since current cycle
-        :return:    memory content
+            if clone is True, return a cloned version of memory content
         """
         self.new = False
-        return self.memory
+        msg = self.memory.clone() if clone is True else self.memory
+        return msg
