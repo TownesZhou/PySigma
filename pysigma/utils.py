@@ -1,10 +1,12 @@
 """
     Utility functions
 """
+import torch
 import torch.distributions
+from typing import List, Type
 
 
-def intern_name(name, struc_type):
+def intern_name(name: str, struc_type: str):
     """
         Add prefix and brackets to transform user provided structure name to internal name
     :param name:    Structure name
@@ -30,7 +32,7 @@ class Params2Dist:
         {}
 
     @classmethod
-    def convert(cls, params, dist_type, b_shape=None, e_shape=None):
+    def convert(cls, params: List[torch.Tensor], dist_type: Type, b_shape: bool = None, e_shape: bool = None):
         """
             Automatic conversion. Provide the params and the distribution class, return a distribution instance.
             If b_shape, e_shape not None, then will check if the shape of the resulting distribution matches
@@ -62,7 +64,7 @@ class Dist2Params:
         {}
 
     @classmethod
-    def convert(cls, dist):
+    def convert(cls, dist: torch.distributions.Distribution):
         """
             Automatic conversion. Provide the distribution instance, return its params as list of tensors.
         """

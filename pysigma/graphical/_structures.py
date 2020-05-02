@@ -8,6 +8,7 @@ from torch.distributions.constraints import Constraint
 from enum import Enum
 from collections.abc import Iterable
 from torch.distributions.kl import kl_divergence as kl
+from typing import List
 
 from ._nodes import VariableNode, FactorNode
 from ..utils import Dist2Params, Params2Dist
@@ -183,7 +184,8 @@ class LinkData:
         During construction of the graph, its instance will be passed to NetworkX methods as the edge data to
             instantiate an edge.
     """
-    def __init__(self, vn, fn, var_list, to_fn, epsilon, **kwargs):
+    def __init__(self, vn: VariableNode, fn: FactorNode, var_list: List[Variable], to_fn: bool, epsilon: float,
+                 **kwargs):
         """
         :param vn:      name of the variable node that this link is incident to
         :param var_list:    list of variables of the adjacent variable node
@@ -223,7 +225,7 @@ class LinkData:
         else:
             return fn_name + " --> " + vn_name
 
-    def set(self, new_msg, check_diff=True, clone=False):
+    def set(self, new_msg: Message, check_diff: bool = True, clone: bool = False):
         """
             Set the link message memory to the new message arriving at this link.
             If check_diff is True, then will check if the new message is different from the existing one before
