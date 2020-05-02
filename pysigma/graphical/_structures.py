@@ -108,9 +108,9 @@ class Message:
             Instantiate a message
         """
         assert isinstance(msg_type, MessageType)
-        assert isinstance(sample_shape, torch.Size)
-        assert isinstance(batch_shape, torch.Size)
-        assert isinstance(event_shape, torch.Size)
+        assert isinstance(sample_shape, torch.Size) and len(sample_shape) == 1
+        assert isinstance(batch_shape, torch.Size) and len(batch_shape) >= 1
+        assert isinstance(event_shape, torch.Size) and len(event_shape) >= 1
         assert dist is None or isinstance(dist, Distribution)
         assert particles is None or isinstance(particles, torch.Tensor)
         assert weights is None or isinstance(weights, torch.Tensor)

@@ -30,17 +30,29 @@ class Params2Dist:
         {}
 
     @classmethod
-    def convert(cls, params, dist_type):
+    def convert(cls, params, dist_type, b_shape=None, e_shape=None):
         """
             Automatic conversion. Provide the params and the distribution class, return a distribution instance.
+            If b_shape, e_shape not None, then will check if the shape of the resulting distribution matches
         """
         assert isinstance(params, list) and all(isinstance(param, torch.Tensor) for param in params)
         assert issubclass(dist_type, torch.distributions.Distribution)
+        assert (b_shape is None) == (e_shape is None)
+        assert b_shape is None or isinstance(b_shape, torch.Size)
+
         if dist_type not in cls.type2method.keys():
             raise NotImplementedError("Conversion from parameters to distributions for distribution class {} has not"
                                       "been implemented".format(dist_type))
 
-        return cls.type2method[dist_type](params)
+        dist = cls.type2method[dist_type](params)
+
+        if b_shape is not None:
+            if dist.batch_shape != b_shape or dist.event_shape != e_shape:
+                raise ValueError("The shape of the generated distribution {} does not match the provided shape. "
+                                 "Expect (batch_shape, event_shape) == ({}, {}), but instead got ({}, {})."
+                                 .format(str(dist), b_shape, e_shape, dist.batch_shape, dist.event_shape))
+
+        return dist
 
 
 # TODO general-inf: Inversed version of the above class
