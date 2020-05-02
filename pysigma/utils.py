@@ -65,9 +65,6 @@ class Dist2Params:
 
 # TODO general-inf: Utility methods for extracting natural parameters from an exponential torch.distributions, or
 #  instantiate an exponential torch.distribution from given natural parameters
-#  Note that, a new distribution will be instantiated with parameter tensors cloned from the provided ones. This is to
-#  protect the distribution instance from changes in the provided tensor. However .clone() retains the cloned tensor in
-#  the computation graph, so that gradients can still flow to the provided tensor.
 class Natural2Exp:
     pass
 

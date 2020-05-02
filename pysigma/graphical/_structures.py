@@ -231,7 +231,8 @@ class LinkData:
               If the two message are of different types, then they will be deemed as different. Otherwise, KL-divergence
                 will be used as the metric and its value to be compared with pre-set epsilon value. For Particles
                 messages, the particles will be assumed to be identical, and the weights will be compared by treating
-                them as probs to a Categorical distribution, from which the KL-divergence value is extracted.
+                them as probs to a Categorical distribution (assuming the weights are already properly normalized),
+                from which the KL-divergence value is extracted.
               The following KL formula is used:
                     KL(old || new) = E[ log(old(x) / new(x) ],   x ~ old(x)
             If clone is True, then will store a cloned new_msg
@@ -250,11 +251,11 @@ class LinkData:
             p = self.memory.dist
             q = new_msg.dist
         else:
-            # Otherwise, message type is Particles, so will temporarily instantiate Categorical distributions
-            p_logits = self.memory.weights
-            q_logits = new_msg.weights
-            p = Categorical(logits=p_logits)
-            q = Categorical(logits=q_logits)
+            # Otherwise, message type are Particles, so we will temporarily instantiate Categorical distributions
+            p_probs = self.memory.weights
+            q_probs = new_msg.weights
+            p = Categorical(probs=p_probs)
+            q = Categorical(probs=q_probs)
         val = kl(p, q)
 
         # Compare KL value with pre-set epsilon
@@ -266,7 +267,7 @@ class LinkData:
         """
             Return the current content stored in memory. Set new to False to indicate this link message have been read
                 since current cycle
-        :return:    message content
+        :return:    memory content
         """
         self.new = False
         return self.memory
