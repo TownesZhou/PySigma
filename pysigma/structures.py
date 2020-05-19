@@ -8,7 +8,7 @@ import torch
 from collections import namedtuple
 from collections.abc import Iterable
 from .utils import *
-from .graphical._structures import Variable
+from .graphical._defs import Variable
 
 
 class PredicateArgument:
