@@ -4,11 +4,12 @@
     Author of this file: Jincheng Zhou, University of Southern California
 """
 
-import torch
+from torch.distributions import Distribution
+from torch import Size
 from collections import namedtuple
 from collections.abc import Iterable
 from .utils import *
-from .graphical._defs import Variable
+from .graphical._defs import Variable, VariableMetatype
 
 
 class PredicateArgument:
@@ -208,129 +209,154 @@ Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
 
 
 class Type:
-    def __init__(self, type_name, value_type, min=None, max=None, symbol_list=None):
+    def __init__(self, type_name, symbolic=False, size=None, symbol_list=None):
         """
-            Specify a Sigma type. Can be symbolic or discrete (will not support continuous type at this point). If
-            symbolic, must provide a list of symbols. If discrete, must specify the range of values through `min` and
-            `max`. Note that `min` is inclusive while `max` is exclusive, i.e., the actual range would be $[min, max)$
-        :param type_name: `str` type. Name of the Sigma type
-        :param value_type: `str` type. `"symbolic"` or `"discrete"`.
-        :param min: `int` type. The lowest value of a discrete type. Must specify if type is `"discrete"`.
-        :param max: `int` type. The highest value + 1 of a discrete type. Must specify if type is `"discrete"`.
-        :param symbol_list: An iterable of 'str' representing symbols. Must specify if type is `"symbol"`.
+            Specify a Type for a predicate's relational/random argument. Can be symbolic or discrete. Currently, Type
+                structure is only applicable to relational and random arguments, and specifications of particle indexing
+                arguments are declared at the Predicate's level.
+
+            For both relational and random arguments, a Type mainly declares the size of the corresponding tensor
+                dimension of the predicate's particle messages.
+
+            If symbolic, must declare a 'symbol_list', and the 'size' field will be inferred from the length of the
+                'symbol_list'. Otherwise must declare the 'size' value.
+
+        :param type_name: 'str' type. Name of the Sigma type
+        :param symbolic: 'bool' type. Declares if the type comes with a symbol list
+        :param size: 'int' type. The size of the argument's corresponding message dimension. Must specify if 'symbolic'
+                     is False
+        :param symbol_list: An iterable of 'str' representing symbols. Must specify if 'symbolic' is True
         """
         # Argument validation
         if not isinstance(type_name, str):
             raise ValueError("The 1st argument 'type_name' of a Type must be a 'str'")
-        if value_type not in ['symbolic', 'discrete']:
-            raise ValueError("The 2nd argument 'value_type' of a Type must be either 'symbolic' or 'discrete'")
-        if min is not None and (not isinstance(min, int) or min < 0):
-            raise ValueError("The argument 'min' of a Type must be a nonnegative integer")
-        if max is not None and (not isinstance(max, int) or max < 0):
-            raise ValueError("The argument 'max' of a Type must be a nonnegative integer")
-        if symbol_list is not None and \
-                (not isinstance(symbol_list, Iterable) or not all(isinstance(s, str) for s in symbol_list)):
-            raise ValueError("If not None, the argument 'symbol_list' of a Type must be an iterable of 'str's")
-        if value_type == 'symbolic' and symbol_list is None:
-            raise ValueError("A symbol list must be specified via symbol_list when value_type is 'symbolic'")
-        if value_type == 'discrete' and (min is None or max is None):
-            raise ValueError("Both min and max must be specified when value_type is 'discrete'")
-        if value_type == 'discrete' and min >= max:
-            raise ValueError("min value must be less than max value")
+        if not isinstance(symbolic, bool):
+            raise ValueError("The 2nd argument 'symbolic' must be of 'bool' type")
+        if symbolic is (symbol_list is None):
+            raise ValueError("'symbolic' should be True if and only if 'symbol_list' is provided")
+        if symbolic is (size is not None):
+            raise ValueError("'symbolic' should be False if and only if 'size' is provided")
+        if not isinstance(size, int) or size < 1:
+            raise ValueError("'size' must be of type 'int' and value be greater than 0")
+        if not isinstance(symbol_list, Iterable) or not all(isinstance(s, str) for s in symbol_list):
+            raise ValueError("'symbol_list' must be an iterable of 'str'")
 
         self.name = intern_name(type_name, "type")  # Prepend substring 'TYPE_' and send name to upper case
-        self.value_type = value_type
-        self.min = min
-        self.max = max
-        self.value_list = symbol_list if self.value_type == 'symbolic' else [i for i in range(min, max)]
+        self.symbolic = symbolic
+
+        self.value_list = list(symbol_list) if self.symbolic else list(range(size))
         self.size = len(self.value_list)
 
         # Set mapping between type values and actual axis values along message tensor's dimension.
-        self.value2axis = dict(zip(self.value_list, range(len(self.value_list))))
-        self.axis2value = dict(zip(range(len(self.value_list)), self.value_list))
+        self.value2axis = dict(zip(self.value_list, range(self.size)))
+        self.axis2value = dict(zip(range(self.size), self.value_list))
+
+    def __eq__(self, other):
+        # Two types are equal if ALL of their fields are equal
+        assert isinstance(other, Type)
+        val = self.name == other.name and \
+              self.symbolic == other.symbolic and \
+              self.size == other.size and \
+              self.value_list == other.value_list
+        return val
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class Predicate:
-    def __init__(self, predicate_name, arguments, world='open', perception=False, function=None, *args, **kwargs):
+    def __init__(self, predicate_name, relational_args, random_args, num_particles=128, distribution_class=None,
+                 memorial=False, perceptual=False):
         """
-            Speficy a Sigma predicate.
-        :param predicate_name:  `str` type
-        :param arguments:  An python iterable of 'PredicateArgument's. This is to specify the **working
-            memory variables** (formal arguments) corresponding to this predicate.
-        :param world:  `open` or `closed`. Default to `open`.
-        :param perception:  `bool` type. Whether this predicate can receive perceptual information.
-        :param function:
-                - `None`: no function specified at this predicate
-                - `int` or `float`: a constant function
-                - `torch.tensor`: Use the given tensor as the predicate function. Note that the shape of the tensor must
-                    agree with dimensions of the variables and in the order as they are specified.
-                - `str`: Name of another predicate. In this case they shares the same function.
+            Specify a Sigma predicate.
+
+        :param predicate_name: 'str' type. The name of the predicate.
+        :param relational_args: an Iterable of size-2 tuples. Each tuple specifies one relational argument - The first
+                                element of the tuple should be of 'str' type specifying the argument's name, whereas
+                                the second element should be of 'Type' type specifying the argument's type. The 'Type'
+                                of these arguments can be arbitrary, but the arguments' names should be distinct.
+        :param random_args: an Iterable of size-2 tuples, similar to the previous one. However for random arguments,
+                            besides the arguments' names having to be distinct, all of the arguments must be of the same
+                            'Type' and the 'Type' must NOT be symbolic.
+        :param num_particles: 'int' type. The number of particles to be drawn each cognitive cycle. Also the size of the
+                              predicate's particle indexing dimension. If left for None, then this field will be decided
+                              by the architecture.
+        :param distribution_class:  A subclass of 'torch.distributions.Distribution'. Specify the assumed distribution
+                                    of this predicate's knowledge. If specified, the predicate will be a "distribution"
+                                    predicate, and a number of "num_particles" particles will be actively drawn at the
+                                    start of each cognitive cycle. Otherwise, it will be assumed a "vector" predicate,
+                                    and no particles will be actively drawn.
+        :param memorial: 'bool' type. If True, the predicate is "memorial", meaning its knowledge will be latched to the
+                         next cognitive cycle. Otherwise it is "memory-less", and its knowledge will be immediately
+                         replaced with new information at each cycle.
+        :param perceptual: 'bool' type. If True, the predicate is "perceptual", and so can perceive observations.
         """
         # Argument validation
         if not isinstance(predicate_name, str):
-            raise ValueError("The 1st argument 'predicate_name' of a Predicate must be a 'str'")
-        if not isinstance(arguments, Iterable) or not all(isinstance(arg, PredicateArgument) for arg in arguments):
-            raise ValueError("The 2nd argument 'arguments' of a Predicate must be an iterable of 'PredicateArgument's")
-        if world not in ['open', 'closed']:
-            raise ValueError("The 3rd argument 'world' of a Predicate must be either 'open' or 'closed'")
-        if not isinstance(perception, bool):
-            raise ValueError("The 6th argument 'perception' must be either 'True' or 'False'")
-        if function is not None and not isinstance(function, (int, float, torch.Tensor, str)):
-            raise ValueError("If not None, the 7th argument 'function' of a predicate must be 'int', 'float', "
-                             "'torch.Tensor', or 'str'")
+            raise ValueError("The 1st field 'predicate_name' must be of 'str' type")
+        if not isinstance(relational_args, Iterable) or \
+                not all((isinstance(arg, tuple) and len(arg) == 2) for arg in relational_args):
+            raise ValueError("The 2nd field 'relational_args' must be an Iterable of size-2 tuples")
+        if not isinstance(random_args, Iterable) or \
+                not all((isinstance(arg, tuple) and len(arg) == 2) for arg in random_args):
+            raise ValueError("The 3nd field 'random_args' must be an Iterable of size-2 tuples")
+        if num_particles is not None and not (isinstance(num_particles, int) and num_particles > 0):
+            raise ValueError("If specified, the 4th field 'num_particles' must be a positive integer")
+        if distribution_class is not None and not issubclass(distribution_class, Distribution):
+            raise ValueError("If specified, the 5th field 'distribution' must provide a subclass of 'torch."
+                             "distributions.Distribution")
+        if not isinstance(memorial, bool):
+            raise ValueError("The 6th field 'memorial' must be of 'bool' type")
+        if not isinstance(perceptual, bool):
+            raise ValueError("The 7th field 'perception' must be of 'bool' type")
 
-        self.var_list = []  # List of Variables
-        self.var_name2var = {}  # Map from variable name to actual Variable instance
-        self.wm_var_types = []
+        self.predicate_name = intern_name(predicate_name, "predicate")
 
-        # check if this predicate is unique, i.e., involves selection.
-        # If so, also checks that no different unique symbols have been specified, except for '%' symbol
-        # Final predicate unique symbol for the predicate recorded in self.pred_unique_sym, with the variables
-        #   self.pred_unique_vars over which the selection will be performed.
-        # If the final predicate unique symbol is '%', i.e., no arguments come with unique symbols other than '%' and
-        #   None, then it is treated with default selection behavior, i.e., maintain entire distribution. At this point,
-        #   it does not matter which argument was specified with '%' and which one was no
-        self.selection = False  # Whether this predicate performs selection
-        self.pred_unique_sym = None
-        self.pred_unique_vars = []
-        for argument in arguments:
-            assert isinstance(argument, PredicateArgument)
-            # Check duplicate argument names
-            if argument.wmvar in self.var_list:
-                raise ValueError("arguments in a Predicate cannot duplicate. Duplicate name: {}"
-                                 .format(argument.argument_name))
+        self.relational_vars = []
+        self.relvar_name2relvar = {}
+        self.relvar_name2type = {}
+        for rel_arg in relational_args:
+            var_name = rel_arg[0]
+            var_type = rel_arg[1]
+            if not isinstance(var_name, str) or not isinstance(var_type, Type):
+                raise ValueError("The first element of an argument tuple must be of 'str' type to declare the "
+                                 "argument's name, and the second one be an instance of 'Type'. Instead, found: "
+                                 "({}, {})".format(type(var_name), type(var_type)))
+            if var_name in self.relvar_name2relvar.keys():
+                raise ValueError("Relational arguments' names must be distinct. Instead found repetition: {}"
+                                 .format(var_name))
+            rel_var = Variable(var_name, VariableMetatype.Relational, var_type.size)
+            self.relational_vars.append(rel_var)
+            self.relvar_name2relvar[var_name] = rel_var
+            self.relvar_name2type[var_name] = var_type
 
-            self.var_list.append(argument.wmvar)
-            self.var_name2var[argument.argument_name] = argument.wmvar
-            self.wm_var_types.append(argument.type)
+        self.random_vars = []
+        self.ranvar_name2ranvar = {}
+        self.ranvar_type = None
+        for ran_arg in random_args:
+            var_name = ran_arg[0]
+            var_type = ran_arg[1]
+            if not isinstance(var_name, str) or not isinstance(var_type, Type):
+                raise ValueError("The first element of an argument tuple must be of 'str' type to declare the "
+                                 "argument's name, and the second one be an instance of 'Type'. Instead, found: "
+                                 "({}, {})".format(type(var_name), type(var_type)))
+            if var_name in self.relvar_name2relvar.keys():
+                raise ValueError("Random arguments' names must be distinct. Instead found repetition: {}"
+                                 .format(var_name))
+            if var_type.symbolic:
+                raise ValueError("Random argument's type cannot be symbolic")
+            if self.ranvar_type is None:
+                self.ranvar_type = var_type
+            if var_type != self.ranvar_type:
+                raise ValueError("Rabdin arguments must all be of the same Type")
+            ran_var = Variable(var_name, VariableMetatype.Random, var_type.size)
+            self.random_vars.append(ran_var)
+            self.ranvar_name2ranvar[var_name] = ran_var
 
-            if argument.unique_symbol is not None:
-                self.selection = True
-                if argument.unique_symbol != '%' and self.pred_unique_sym is not None \
-                        and argument.unique_symbol != self.pred_unique_sym:
-                    raise ValueError("Cannot specify multiple arguments with different unique symbols other than '%' "
-                                     "in a predicate. Already discovered unique symbol '{}' in arguments '{}', but "
-                                     "found unique symbol '{}' in the argument '{}."
-                                     .format(self.pred_unique_sym, self.pred_unique_vars,
-                                             argument.unique_symbol, argument.argument_name))
-                if argument.unique_symbol != '%':
-                    self.pred_unique_sym = argument.unique_symbol
-                    self.pred_unique_vars.append(argument.wmvar)
-        # If no special unique symbol (any symbol other than '%') detected, then set predicate unique symbol to '%'
-        if self.selection and self.pred_unique_sym is None:
-            self.pred_unique_sym = '%'
-
-        if self.selection:
-            if world is not 'closed':
-                raise ValueError("When any of the predicate's variables involves selection, the predicate must be "
-                                 "closed-world.")
-
-        self.name = intern_name(predicate_name,
-                                "predicate")  # Prepend name with substring 'PRED_' and send to upper case
-        self.arguments = list(arguments)
-        self.world = world
-        self.perception = perception
-        self.function = function
+        self.index_var = Variable("INDEX", VariableMetatype.Indexing, num_particles)
+        self.dist_class = distribution_class
+        self.memorial = memorial
+        self.perceptual = perceptual
 
 
 class Conditional:

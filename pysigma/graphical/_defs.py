@@ -24,21 +24,20 @@ class VariableMetatype(Enum):
 class Variable:
     """
         Variable as in variable nodes in the graphical architecture. Store information about this variable such as
-            its meta-type, dimension size, and value range.
+            its meta-type and dimension size
         The equality testing is used for matching variables in Alpha-Beta graphs. Two variables are equal if and only
-            if ALL of the fields are equal. For example, if two Random variables are equal, then they must have the
-            same constraints.
-        The "type" of a variable, as defined in a predicate, is not considered here. This is to support matching across
-            different types in a principle way.
+            if ALL of the fields are equal.
+        The "Type" of a variable, as defined in a predicate, is not considered here. The only relevant information about
+            its "Type" is captured in the 'size' field. This is to support matching across different types of variables
+             in a principled way.
     """
-    def __init__(self, name: str, metatype: VariableMetatype, size: int, constraint: Constraint):
+    def __init__(self, name: str, metatype: VariableMetatype, size: int):
         """
             Instantiate a variable
         """
         assert isinstance(name, str)
         assert isinstance(metatype, VariableMetatype)
         assert isinstance(size, int)
-        assert isinstance(constraint, Constraint)
 
         # Variable name, its identity. Used for variable matching. Of type str
         self.name = name
@@ -46,29 +45,19 @@ class Variable:
         self.metatype = metatype
         # Variable size. Size of the dimension that the variable corresponds to. Of type int
         self.size = size
-        # Constraints of the variable's value range. Of type Constraint from PyTorch. Only set when variable type is
-        #   Random.
-        self.constraint = constraint
 
     def __eq__(self, other):
         # override so '==' operator test variable equality
         assert isinstance(other, Variable)
         val = self.name == other.name and \
               self.metatype == other.metatype and \
-              self.size == other.size and \
-              self.constraint == other.constraint
+              self.size == other.size
 
         return val
 
     def __ne__(self, other):
-        # override so '!=' operator test variable equality
-        assert isinstance(other, Variable)
-        val = self.name != other.name or \
-              self.metatype != other.metatype or \
-              self.size != other.size or \
-              self.constraint != other.constraint
-
-        return val
+        # override so '!=' operator test variable inequality
+        return not self.__eq__(other)
 
     def __str__(self):
         # override to provide the name as the string representation
@@ -76,7 +65,7 @@ class Variable:
 
     def __hash__(self):
         # override so that hash value of the string representation of the variable is used
-        return hash(self.name + str(self.metatype) + str(self.size) + str(self.constraint))
+        return hash(self.name + str(self.metatype) + str(self.size))
 
 
 # Generalized message type and message representation
