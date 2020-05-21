@@ -8,143 +8,137 @@ from torch.distributions import Distribution
 from torch import Size
 from collections import namedtuple
 from collections.abc import Iterable
+from itertools import chain
 from .utils import *
 from .graphical._defs import Variable, VariableMetatype
 
 
-class PredicatePattern:
-    """
-        Predicate Pattern in a Conditional
-    """
-
-    def __init__(self, predicate_name, elements, negation=False, nonlinearity=None):
-        """
-            Declare a Predicate Pattern in a Conditional
-        :param predicate_name:      'str'. name of the predicate in question
-        :param elements:            Iterable of 'PatternElement'.
-        :param negation:            True or False. Whether message for this pattern will be negated. Negation semantic
-                                        depends on whether the corresponding predicate is probabilistic. If so, will
-                                        take probabilistic negation, otherwise take arithmetic negation.
-                                    Default to False.
-        :param nonlinearity:        None or one of the following: `'negation'` or `'-'`, `'exponential'` or `'^'`,
-                                        `'sigmoid'` or `'s'`, `'relu'` or `'r'`, `'tanh'` or `'t'`, `'exp'` or `'e'`
-                                        (true exponential), or customized torch nonlinearity functions
-        """
-        if not isinstance(predicate_name, str):
-            raise ValueError("1st argument 'predicate_name' of a PredicatePattern must be a 'str'")
-        if not isinstance(elements, Iterable) or not all(isinstance(e, PatternElement) for e in elements):
-            raise ValueError("2nd argument 'elements' of a PredicatePattern must be an iterable of 'PatternElement's")
-        if not isinstance(negation, bool):
-            raise ValueError("the argument 'negation' of a PredicatePattern must be a 'bool'")
-        if nonlinearity is not None and nonlinearity not in ['negation', '-', 'exponential', '^', 'sigmoid', 's',
-                                                             'relu', 'r', 'tanh', 't', 'exp', 'e']:
-            raise ValueError("Unknown nonlinearity: '{}'".format(nonlinearity))
-        # TODO: allow customized nonlinearity declaration in future iterations
-
-        self.predicate_name = predicate_name
-        self.elements = list(elements)
-        self.negation = negation
-        self.nonlinearity = nonlinearity
-
-
-class PatternElement:
-    """
-        Element in a PredicatePattern
-          Each element is of the f
-                  - A Constant Region, which is:      # TODO: to implement in v1
-                      - An `int` if the variable is discrete, or an 'str' (a symbol) in this variable's symbol list if the
-                              variable is symbolic.
-                      - A iterable of `int` (if discrete) or 'str' (if symbolic) within the value range of this variable. This
-                              would yield a list of intervals at the specified values in the given list.
-                      - None: This would yield the entire scope of the dimension
-                  - A `Filter` or a `list` of `Filter`s. # TODO: to implement in future iterations
-                  - A `PatternVariable`.              # TODO: to implement in v1
-    """
-
-    def __init__(self, argument_name, value=None):
-        if not isinstance(argument_name, str):
-            raise ValueError("1st argument 'argument_name' of a PatternElement must be a 'str'")
-        if value is not None and not isinstance(value, (int, str, Iterable, Filter, PatternVariable)):
-            raise ValueError("If not None, 2nd argument 'value' of a PatternElement must be an 'int', 'str', "
-                             "an iterable of 'int' or 'str', a 'Filter', or a 'PatternVariable'")
-        if isinstance(value, Iterable) and \
-                not (all(isinstance(v, int) for v in value) or
-                     all(isinstance(v, str) for v in value) or
-                     all(isinstance(v, Filter) for v in value)):
-            raise ValueError("If an iterable, the 2nd argument 'value' of a PatternElement must be an iterable "
-                             "of 'int', 'str', or 'Filter's")
-
-        self.argument_name = argument_name
-        if isinstance(value, PatternVariable):
-            self.value = value
-        else:
-            self.value = list(value) if isinstance(value, Iterable) else [value]    # turn into list anyway
-
-
-class PatternVariable:
-    """
-        Pattern Variable to be defined in a predicate pattern
-          Each pattern variable is of the form `(variable_name, relation)`
-              - `variable_name`: `str` type. The name of the pattern variable. This is to be distinguished from the variable's
-                      working memory variable, or `argument_name`. These are the actual variables used to determine various
-                      forms of variable bindings in a conditional. Bindings are assumed when same pattern variable is referred
-                      in multiple places in a conditional. It's like the distinction between the actual argument and the
-                      formal argument in a procedural programming language.
-              - `relation`: an optional parameter
-                  - `None`: default value
-                  - an `int`: declaring offset
-                  - an `Affine`: declaring an affine transformation
-                  - a `Filter` or an iterable of `Filter`s.    # TODO: to implement in future iterations
-                  TODO: The `not-equal test` and "highly experimental" `:explicit` are not included here.
-    """
-
-    def __init__(self, variable_name, relation=None):
-        if not isinstance(variable_name, str):
-            raise ValueError("The 1st argument 'variable_name' of a PatternVariable must be a 'str'")
-        if variable_name[0] == '_':
-            raise ValueError("The 1st argument 'variable_name' of a PatternVariable cannot start with '_'")
-        if relation is not None and not isinstance(relation, (int, Affine, Filter, Iterable)):
-            raise ValueError("If not None, the 2nd argument 'relation' of a PatternVariable must be an 'int', "
-                             "an 'Affine', a 'Filter', or an iterable of 'Filter's")
-        if isinstance(relation, Iterable) and not all(isinstance(r, Filter) for r in relation):
-            raise ValueError("If an iterable, the 2bd argument 'relation' of a PatternVariable must be an iterable "
-                             "of Filters")
-
-        self.variable_name = variable_name
-        self.relation = list(relation) if isinstance(relation, Iterable) else relation
-
-
-class Affine:
-    """
-        Affine transformation to be defined alongside a pattern variable
-          Each affine transformation is of the form `(from, offset, coefficient, pad)`
-              - `from`: default to the current variable.
-              - `offset`: default to 0
-              - `coefficient`: default to 1
-              - `pad`: 0 for closed-world predicates and 1 for open-world predicates
-        TODO: Define a more generalized notion of 'mapping' in place of Affine in future iterations
-    """
-
-    def __init__(self, from_var=None, offset=0, coefficient=1, pad=0):
-        if from_var is not None and not isinstance(from_var, str):
-            raise ValueError("If not None, The 1st argument 'from_var' of an Affine must be a 'str'")
-        if not isinstance(offset, int):
-            raise ValueError("The 2nd argument 'offset' of an Affine must be an 'int'")
-        if not isinstance(coefficient, (int, float)):
-            raise ValueError("The 3rd argument 'coefficient' of an Affine must be an 'int' or a 'float'")
-        if not isinstance(pad, int):
-            raise ValueError("The 4th argument 'pad' of an Affine must be an 'int'")
-
-        self.from_var = from_var
-        self.offset = offset
-        self.coefficient = coefficient
-        self.pad = pad
-
-
-# TODO: Filters NOT TO IMPLEMENT IN SHORT TERM
-# Filter to be defined in a PredicatePattern
-#   Each filter is of the form `(constant_region, constant, coefficient)`
-Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
+# class PredPattern:
+#     """
+#         Predicate Pattern in a Conditional
+#     """
+#
+#     def __init__(self, predicate_name, elements):
+#         """
+#             Declare a Predicate Pattern in a Conditional
+#         :param predicate_name:      'str'. name of the predicate in question
+#         :param elements:            Iterable of 'PatternElement'.
+#         """
+#         if not isinstance(predicate_name, str):
+#             raise ValueError("1st argument 'predicate_name' of a PredicatePattern must be a 'str'")
+#         if not isinstance(elements, Iterable) or not all(isinstance(e, PatternElement) for e in elements):
+#             raise ValueError("2nd argument 'elements' of a PredicatePattern must be an iterable of 'PatternElement's")
+#         if not isinstance(negation, bool):
+#             raise ValueError("the argument 'negation' of a PredicatePattern must be a 'bool'")
+#         if nonlinearity is not None and nonlinearity not in ['negation', '-', 'exponential', '^', 'sigmoid', 's',
+#                                                              'relu', 'r', 'tanh', 't', 'exp', 'e']:
+#             raise ValueError("Unknown nonlinearity: '{}'".format(nonlinearity))
+#         # TODO: allow customized nonlinearity declaration in future iterations
+#
+#         self.predicate_name = predicate_name
+#         self.elements = list(elements)
+#         self.negation = negation
+#         self.nonlinearity = nonlinearity
+#
+#
+# class PatternElement:
+#     """
+#         Element in a PredicatePattern
+#           Each element is of the f
+#                   - A Constant Region, which is:      # TODO: to implement in v1
+#                       - An `int` if the variable is discrete, or an 'str' (a symbol) in this variable's symbol list if the
+#                               variable is symbolic.
+#                       - A iterable of `int` (if discrete) or 'str' (if symbolic) within the value range of this variable. This
+#                               would yield a list of intervals at the specified values in the given list.
+#                       - None: This would yield the entire scope of the dimension
+#                   - A `Filter` or a `list` of `Filter`s. # TODO: to implement in future iterations
+#                   - A `PatternVariable`.              # TODO: to implement in v1
+#     """
+#
+#     def __init__(self, argument_name, value=None):
+#         if not isinstance(argument_name, str):
+#             raise ValueError("1st argument 'argument_name' of a PatternElement must be a 'str'")
+#         if value is not None and not isinstance(value, (int, str, Iterable, Filter, PatternVariable)):
+#             raise ValueError("If not None, 2nd argument 'value' of a PatternElement must be an 'int', 'str', "
+#                              "an iterable of 'int' or 'str', a 'Filter', or a 'PatternVariable'")
+#         if isinstance(value, Iterable) and \
+#                 not (all(isinstance(v, int) for v in value) or
+#                      all(isinstance(v, str) for v in value) or
+#                      all(isinstance(v, Filter) for v in value)):
+#             raise ValueError("If an iterable, the 2nd argument 'value' of a PatternElement must be an iterable "
+#                              "of 'int', 'str', or 'Filter's")
+#
+#         self.argument_name = argument_name
+#         if isinstance(value, PatternVariable):
+#             self.value = value
+#         else:
+#             self.value = list(value) if isinstance(value, Iterable) else [value]    # turn into list anyway
+#
+#
+# class PatternVariable:
+#     """
+#         Pattern Variable to be defined in a predicate pattern
+#           Each pattern variable is of the form `(variable_name, relation)`
+#               - `variable_name`: `str` type. The name of the pattern variable. This is to be distinguished from the variable's
+#                       working memory variable, or `argument_name`. These are the actual variables used to determine various
+#                       forms of variable bindings in a conditional. Bindings are assumed when same pattern variable is referred
+#                       in multiple places in a conditional. It's like the distinction between the actual argument and the
+#                       formal argument in a procedural programming language.
+#               - `relation`: an optional parameter
+#                   - `None`: default value
+#                   - an `int`: declaring offset
+#                   - an `Affine`: declaring an affine transformation
+#                   - a `Filter` or an iterable of `Filter`s.    # TODO: to implement in future iterations
+#                   TODO: The `not-equal test` and "highly experimental" `:explicit` are not included here.
+#     """
+#
+#     def __init__(self, variable_name, relation=None):
+#         if not isinstance(variable_name, str):
+#             raise ValueError("The 1st argument 'variable_name' of a PatternVariable must be a 'str'")
+#         if variable_name[0] == '_':
+#             raise ValueError("The 1st argument 'variable_name' of a PatternVariable cannot start with '_'")
+#         if relation is not None and not isinstance(relation, (int, Affine, Filter, Iterable)):
+#             raise ValueError("If not None, the 2nd argument 'relation' of a PatternVariable must be an 'int', "
+#                              "an 'Affine', a 'Filter', or an iterable of 'Filter's")
+#         if isinstance(relation, Iterable) and not all(isinstance(r, Filter) for r in relation):
+#             raise ValueError("If an iterable, the 2bd argument 'relation' of a PatternVariable must be an iterable "
+#                              "of Filters")
+#
+#         self.variable_name = variable_name
+#         self.relation = list(relation) if isinstance(relation, Iterable) else relation
+#
+#
+# class Affine:
+#     """
+#         Affine transformation to be defined alongside a pattern variable
+#           Each affine transformation is of the form `(from, offset, coefficient, pad)`
+#               - `from`: default to the current variable.
+#               - `offset`: default to 0
+#               - `coefficient`: default to 1
+#               - `pad`: 0 for closed-world predicates and 1 for open-world predicates
+#         TODO: Define a more generalized notion of 'mapping' in place of Affine in future iterations
+#     """
+#
+#     def __init__(self, from_var=None, offset=0, coefficient=1, pad=0):
+#         if from_var is not None and not isinstance(from_var, str):
+#             raise ValueError("If not None, The 1st argument 'from_var' of an Affine must be a 'str'")
+#         if not isinstance(offset, int):
+#             raise ValueError("The 2nd argument 'offset' of an Affine must be an 'int'")
+#         if not isinstance(coefficient, (int, float)):
+#             raise ValueError("The 3rd argument 'coefficient' of an Affine must be an 'int' or a 'float'")
+#         if not isinstance(pad, int):
+#             raise ValueError("The 4th argument 'pad' of an Affine must be an 'int'")
+#
+#         self.from_var = from_var
+#         self.offset = offset
+#         self.coefficient = coefficient
+#         self.pad = pad
+#
+#
+# # TODO: Filters NOT TO IMPLEMENT IN SHORT TERM
+# # Filter to be defined in a PredicatePattern
+# #   Each filter is of the form `(constant_region, constant, coefficient)`
+# Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
 
 
 class Type:
@@ -215,8 +209,9 @@ class Predicate:
                                 the second element should be of 'Type' type specifying the argument's type. The 'Type'
                                 of these arguments can be arbitrary, but the arguments' names should be distinct.
         :param random_args: an Iterable of size-2 tuples, similar to the previous one. However for random arguments,
-                            besides the arguments' names having to be distinct, all of the arguments must be of the same
-                            'Type' and the 'Type' must NOT be symbolic.
+                            besides the arguments' names having to be distinct (including being distinct from relational
+                            arguments' names), all of the arguments must be of the same 'Type' and the 'Type' must NOT
+                            be symbolic.
         :param num_particles: 'int' type. The number of particles to be drawn each cognitive cycle. Also the size of the
                               predicate's particle indexing dimension. If left for None, then this field will be decided
                               by the architecture.
@@ -279,7 +274,7 @@ class Predicate:
                 raise ValueError("The first element of an argument tuple must be of 'str' type to declare the "
                                  "argument's name, and the second one be an instance of 'Type'. Instead, found: "
                                  "({}, {})".format(type(var_name), type(var_type)))
-            if var_name in self.relvar_name2relvar.keys():
+            if var_name in chain(self.relvar_name2relvar.keys(), self.ranvar_name2ranvar.keys()):
                 raise ValueError("Random arguments' names must be distinct. Instead found repetition: {}"
                                  .format(var_name))
             if var_type.symbolic:
@@ -287,7 +282,7 @@ class Predicate:
             if self.ranvar_type is None:
                 self.ranvar_type = var_type
             if var_type != self.ranvar_type:
-                raise ValueError("Rabdin arguments must all be of the same Type")
+                raise ValueError("Random arguments must all be of the same Type")
             ran_var = Variable(var_name, VariableMetatype.Random, var_type.size)
             self.random_vars.append(ran_var)
             self.ranvar_name2ranvar[var_name] = ran_var
@@ -300,25 +295,42 @@ class Predicate:
 
 class Conditional:
     def __init__(self, conditional_name, conditions=None, condacts=None, actions=None,
-                 function_var_names=None, function=None, normal=None, *args, **kwargs):
+                 function=None, function_var_names=None):
         """
             Specify a Sigma conditional
-        :param conditions:  an iterable of instances of PredicatePatterns
-        :param condacts:  an iterable of instances of PredicatePatterns
-        :param actions:  an iterable of instances of PredicatePatterns
-        :param function_var_names:  an iterable of `str`, specifying the variable names in the function. The dimensions
-                    of the function will be ordered in agreement with the given order of the variable names.
-                Note: function_var_names must consist of pattern variables already declared in the conditions, actions,
-                    & condacts.
-        :param function:  an `int` or `float` or a `torch.tensor` or 'str', specifying the conditional function defined
-                    over function_var_names.
-                If None, default to 1 everywhere.
-                If 'str', should be the name of another conditional, linking that conditional's function
-        :param normal:  an iterable of `str`, specifying which variables to normalize over in gradient descent learning
-            #TODO: leave to implement in future iterations
 
-            #TODO: Allow user to define customized summarization step for pattern variables
+            Each of conditions, condacts, and actions field consists of an Iterable of "predicate patterns", where each
+                "predicate pattern" is represented by a size-2 tuple. The first element of the tuple is of 'str' type,
+                representing the predicate's name. The second element is an Iterbale of "pattern elements", where each
+                "pattern element" is a size-3 tuple. The first element of such tuple is of 'str' type, corresponds to
+                one of the predicate's argument. The second element is either a 'str' (representing a predicate
+                variable), an Iterable of 'int' (list of constant integer values), or an Iterable of 'str' (also
+                constant but matches symbolic values). Finally, the third element is of 'PatternTransformation' type,
+                representing a transformation on the predicate variable's values.
+
+            In short, a predicate pattern should look like:
+                (pred_name, [(arg_1, var_1, trans_1), (arg_2, var_2, trans_2), ..., (arg_n, var_n, trans_n)])
+
+            Note that for condact and action predicate patterns, it is expected that no transformation is declared on
+                any of the variables, i.e., the third element of the above "pattern element" tuple is left as None.
+
+            The 'function' field specifies a factor function that semantically operates on the events represented by
+                random variables from the incoming messages. Therefore, only random variables are visible to the factor
+                function, and the dimensions corresponding to relational variables should be treated as the "batch
+                dimensions" of the incoming messages.
+
+        :param conditional_name: 'str' type. The name of this conditional
+        :param conditions: an Iterable of size-2 tuples.
+        :param condacts: same as 'conditions'
+        :param actions: same as 'conditions'
+        :param function: 'FactorFunction' type. Declares a factor function at this conditional.
+        :param function_var_names: an Iterable of 'str'. The list of random variables that the factor function concerns.
+                                   The order of the random variables will be respected in accordance to the order given
+                                   by the supplied iterable. The list of messages will be given to the factor function
+                                   w.r.t. this order at inference time.
         """
+        # TODO: Implement new Conditional
+
         # Check conditions, actions, & condacts
         if not isinstance(conditional_name, str):
             raise ValueError("1st argument 'conditional_name' of a Conditional must be a 'str'")
