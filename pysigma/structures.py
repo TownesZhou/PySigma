@@ -12,67 +12,6 @@ from .utils import *
 from .graphical._defs import Variable, VariableMetatype
 
 
-class PredicateArgument:
-    """
-        Argument in a Predicate
-    """
-
-    def __init__(self, argument_name, argument_type, probabilistic=False, unique_symbol=None, normalize=False, **kwargs):
-        """
-            Declare an Argument in a Predicate
-        :param argument_name:   'str'. Name of the predicate argument (working memory variable)
-        :param argument_type:   'Type'. The "type" of the working memory variable
-        :param probabilistic:   True or False. Whether this working memory variable is probabilistic, i.e., semantically
-                                    its individual values represent probabilistic scores within the interval [0, 1].
-                                If False, this variable will be treated as a vector variable.
-                                Note that if normalize is True, then probabilistic must be True
-        :param unique_symbol:   'str' or None. If None, this variable will be treated as universal.
-                                  - '!'` Select best
-                                  - '$': Select expected value (Currently disabled)
-                                  - '^': Maintain exponential transform of distribution (Currently disabled)
-                                  - '=': Select by probability matching
-                                  = '%': Maintain distribution
-                                Note:
-                                    - It is not allowed to specify multiple arguments with different unique symbols in a
-                                    unique predicate, except for the '%' symbol. Variables specified with '%' will be
-                                    treated with default selection behavior, i.e., maintain values along this dimension.
-                                    - Therefore, once the predicate becomes unique, i.e., as long as one of its
-                                    variables comes with any one of the unique symbols listed above, specifying '%'
-                                    symbol or simply leave the 'unique_symbol' field None for other variables does not
-                                    make any difference.
-                                    - While multiple arguments are specified with the same unique symbol other than '%',
-                                    the corresponding selection method will be performed on these variable dimensions
-                                    jointly. For example, for two variables with '!', will select the max value across
-                                    both variable dimensions.
-        :param normalize:       True or False. Whether this variable represents a discrete distribution and to normalize
-                                    messages over this variable dimension.
-        """
-        if not isinstance(argument_name, str):
-            raise ValueError("1st argument 'argument_name' of a PredicateArgument must be a 'str'")
-        if not isinstance(argument_type, Type):
-            raise ValueError("2nd argument 'argument_type' of a PredicateArgument must be a 'Type'")
-        if not isinstance(probabilistic, bool):
-            raise ValueError("argument 'probabilistic' of a PredicateArgument bust be a 'bool'")
-        if unique_symbol is not None and not isinstance(unique_symbol, str):
-            raise ValueError("argument 'unique_symbol' of a PredicateArgument must be a 'str'")
-        if unique_symbol is not None and unique_symbol not in ['!', '=', '%']:
-            raise ValueError("Unknown unique symbol: '{}'".format(unique_symbol))
-        if not isinstance(normalize, bool):
-            raise ValueError("argument 'normalize' or a PredicateArgument must be a 'bool'")
-        # Check that if normalize is True, then probabilistic is also true
-        if normalize and not probabilistic:
-            raise ValueError("If 'normalize' is True for a PredicateArgument, then it must also be probabilistic.")
-
-        self.argument_name = argument_name
-        self.type = argument_type
-        self.probabilistic = probabilistic
-        self.unique_symbol = unique_symbol
-        self.normalize = normalize
-
-        # Create working memory variable
-        self.wmvar = Variable(argument_name, argument_type.size, probabilistic, unique_symbol is not None, normalize)
-
-
 class PredicatePattern:
     """
         Predicate Pattern in a Conditional
