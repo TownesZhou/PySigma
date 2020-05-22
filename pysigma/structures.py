@@ -177,6 +177,10 @@ class Predicate:
         self.memorial = memorial
         self.perceptual = perceptual
 
+        # Dimensions of event tensor. torch.Size type.
+        self.dims = Size([self.index_var.size] + [v.size for v in self.relational_vars] +
+                         [v.size for v in self.random_vars])
+
 
 class Conditional:
     def __init__(self, conditional_name, conditions=None, condacts=None, actions=None,
