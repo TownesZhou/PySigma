@@ -141,6 +141,20 @@ from .graphical._defs import Variable, VariableMetatype
 # Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
 
 
+class VariableMap:
+    """
+        Class type for transformation on predicate's variables in pattern elements
+    """
+    pass
+
+
+class FactorFunction:
+    """
+        Class type for factor node function
+    """
+    pass
+
+
 class Type:
     def __init__(self, type_name, symbolic=False, size=None, symbol_list=None):
         """
@@ -302,17 +316,27 @@ class Conditional:
             Each of conditions, condacts, and actions field consists of an Iterable of "predicate patterns", where each
                 "predicate pattern" is represented by a size-2 tuple. The first element of the tuple is of 'str' type,
                 representing the predicate's name. The second element is an Iterbale of "pattern elements", where each
-                "pattern element" is a size-3 tuple. The first element of such tuple is of 'str' type, corresponds to
-                one of the predicate's argument. The second element is either a 'str' (representing a predicate
-                variable), an Iterable of 'int' (list of constant integer values), or an Iterable of 'str' (also
-                constant but matches symbolic values). Finally, the third element is of 'PatternTransformation' type,
-                representing a transformation on the predicate variable's values.
+                "pattern element" is a size-2 or size-3 tuple. The first element of such tuple is of 'str' type,
+                corresponds to one of the predicate's argument. The second element is either a 'str' (representing a
+                pattern variable), an Iterable of 'int' (list of constant integer values), or an Iterable of 'str'
+                (also constant but matches symbolic values). Finally, the third element is OPTIONAL, of
+                'PatternTransformation' type, representing a transformation on the predicate variable's values.
 
             In short, a predicate pattern should look like:
-                (pred_name, [(arg_1, var_1, trans_1), (arg_2, var_2, trans_2), ..., (arg_n, var_n, trans_n)])
+                    (pred_name, [(arg_1, var_1, trans_1), (arg_2, var_2, trans_2), ..., (arg_n, var_n, trans_n)])
+
+            The purpose of declaring pattern variables is to match predicate arguments within or across predicates,
+                i.e., variable binding, or (only for random arguments) to be picked up and recognized by the factor
+                function. Therefore, if matching is not necessary for a predicate argument, or if it is ignored by the
+                factor function, its corresponding pattern element can be left empty, and the architecture will declare
+                a default pattern variable that is uniquely associated this predicate argument.
+            Thus, it is acceptable to declare the following pattern:
+                    (pred_name, None)
+                in which case none of the arguments will be matched with others, and the factor function should ignore
+                all of the random arguments.
 
             Note that for condact and action predicate patterns, it is expected that no transformation is declared on
-                any of the variables, i.e., the third element of the above "pattern element" tuple is left as None.
+                any of the variables, All element tuples are size-2 tuples.
 
             The 'function' field specifies a factor function that semantically operates on the events represented by
                 random variables from the incoming messages. Therefore, only random variables are visible to the factor
@@ -323,138 +347,176 @@ class Conditional:
         :param conditions: an Iterable of size-2 tuples.
         :param condacts: same as 'conditions'
         :param actions: same as 'conditions'
-        :param function: 'FactorFunction' type. Declares a factor function at this conditional.
+        :param function: 'FactorFunction' type. Declares a factor function at this conditional. If left as None, will
+                         default to a constant factor function
         :param function_var_names: an Iterable of 'str'. The list of random variables that the factor function concerns.
                                    The order of the random variables will be respected in accordance to the order given
                                    by the supplied iterable. The list of messages will be given to the factor function
-                                   w.r.t. this order at inference time.
+                                   w.r.t. this order at inference time. If left for None, will default to all random
+                                   variables
         """
         # TODO: Implement new Conditional
 
-        # Check conditions, actions, & condacts
+        # Argument validation #
         if not isinstance(conditional_name, str):
-            raise ValueError("1st argument 'conditional_name' of a Conditional must be a 'str'")
-        if conditions is not None and \
-                (not isinstance(conditions, Iterable) or not all(isinstance(p, PredicatePattern) for p in conditions)):
-            raise ValueError("If not None, 2nd argument 'conditions' of a Conditional must be an iterable of "
-                             "'PredicatePattern's")
-        if condacts is not None and \
-                (not isinstance(condacts, Iterable) or not all(isinstance(p, PredicatePattern) for p in condacts)):
-            raise ValueError("If not None, 3rd argument 'condacts' of a Conditional must be an iterable of "
-                             "'PredicatePattern's")
-        if actions is not None and \
-                (not isinstance(actions, Iterable) or not all(isinstance(p, PredicatePattern) for p in actions)):
-            raise ValueError("If not None, 4th argument 'actions' of a Conditional must be an iterable of "
-                             "'PredicatePattern's")
-
-        if [conditions, actions, condacts] == [None, None, None]:
-            raise ValueError("Cannot specify an empty conditional")
-
-        if conditions is not None:
-            if [actions, condacts] == [None, None]:
-                raise ValueError("Cannot specify a conditional that consists of only conditions")
-
-        # Check rest of the arguments
+            raise ValueError("1st argument 'conditional_name' must be of 'str' type")
+        # cannot have only conditions or only actions
+        if condacts is None and (conditions is None or actions is None):
+            raise ValueError("A conditional cannot have only condition patterns or only action patterns")
+        # function must be specified if function_var_names is specified
+        if function is None and function_var_names is not None:
+            raise ValueError("5th argument 'function' must be specified if 'function_var_names' is specified")
+        if function is not None and not isinstance(function, FactorFunction):
+            raise ValueError("If specified, 5th argument 'function' must be of 'FactorFunction' type")
         if function_var_names is not None and \
-                (not isinstance(function_var_names, Iterable) or not all(
-                    isinstance(v, str) for v in function_var_names)):
-            raise ValueError(
-                "If not None, argument 'function_var_names' of a Conditional must be an iterable of 'str's")
+                not (isinstance(function_var_names, Iterable) and all(isinstance(v, str) for v in function_var_names)):
+            raise ValueError("If specified, 6th argument 'function_var_names' must be an Iterable of 'str', "
+                             "representing the list of pattern random variables to be picked up and recognized by the "
+                             "factor function.")
 
-        if function is not None and not isinstance(function, (int, float, torch.Tensor, str)):
-            raise ValueError("If not None, argument 'function' of a Conditional must be 'int', 'float', 'torch.Tensor',"
-                             " or 'str'")
-        if normal is not None and \
-                (not isinstance(normal, Iterable) or not all(isinstance(v, str) for v in normal)):
-            raise ValueError("If not None, argument 'normal' of a Conditional must be an iterable of 'str's")
+        # Check predicate pattern formats
+        if conditions is not None and \
+                not (isinstance(conditions, Iterable) and all(isinstance(p, tuple) for p in conditions)):
+            raise ValueError("When specified, 2nd argument 'conditions' must be an Iterable of tuples")
+        if condacts is not None and \
+                not (isinstance(condacts, Iterable) and all(isinstance(p, tuple) for p in condacts)):
+            raise ValueError("When specified, 3rd argument 'condacts' must be an Iterable of tuples")
+        if actions is not None and \
+                not (isinstance(actions, Iterable) and all(isinstance(p, tuple) for p in actions)):
+            raise ValueError("When specified, 4th argument 'actions' must be an Iterable of tuples")
 
         conditions = [] if conditions is None else list(conditions)
         condacts = [] if condacts is None else list(condacts)
         actions = [] if actions is None else list(actions)
 
-        # Change pattern's predicate names into internal names
-        #   Note that since Python's namedtuple is immutable, need to recreate namedtuple here. Maybe better way to do this?
-        for pt in conditions + condacts + actions:
-            pt.predicate_name = intern_name(pt.predicate_name, "predicate")
+        for pat_type, pat_group in zip([0, 1, 2], [conditions, condacts, actions]):
+            for pat in pat_group:
+                if not len(pat) == 2:
+                    raise ValueError("Expect each predicate pattern to be a size-2 tuple, instead found {}".format(pat))
+                pred_name, pat_elements = pat
+                if not isinstance(pred_name, str):
+                    raise ValueError("Expect the first element of each predicate pattern tuple to be of 'str' type, "
+                                     "representing the name of a predicate. Instead found {} in pattern {}"
+                                     .format(pred_name, pat))
+                if pat_elements is not None and not isinstance(pat_elements, Iterable) or all(isinstance(e, tuple)
+                                                                                              for e in pat_elements):
+                    raise ValueError("If specified, expect the second element of each predicate pattern tuple to be an "
+                                     "Iterable of  tuples, each tuple represent a single pattern element. Instead "
+                                     "found {}".format(pat_elements))
+                if pat_elements is not None:
+                    for ele in pat_elements:
+                        if len(ele) != 2 and len(ele) != 3:
+                            raise ValueError("Expect each pattern element to be either a size-2 or size-3 tuple. "
+                                             "Instead found {}".format(ele))
+                        if pat_type in [1, 2] and len(ele) == 3:
+                            raise ValueError("Expect only size-2 element tuple in condact and/or action predicate "
+                                             "patterns. Instead found {} in {}"
+                                             .format(ele, "condact" if pat_type == 1 else "action"))
+                        if len(ele) == 2:
+                            arg_name, pat_var = ele
+                        else:
+                            arg_name, pat_var, trans = ele
+                            if not isinstance(trans, VariableMap):
+                                raise ValueError("If provided, the third entry of a pattern element should be of "
+                                                 "'VariableMap' type, representing a transformation on the "
+                                                 "corresponding pattern variable. Instead found {} in element tuple {}"
+                                                 .format(type(trans), ele))
+                        if not isinstance(arg_name, str):
+                            raise ValueError("The first entry of a pattern element should be of 'str' type, "
+                                             "representing an argument of the corresponding predicate. Instead found "
+                                             "{} in element tuple {}".format(type(arg_name), ele))
+                        if not isinstance(pat_var, str) and \
+                                not (isinstance(pat_var, Iterable) and (all(isinstance(val, int) for val in pat_var)
+                                                                        or all(isinstance(val, str) for val in pat_var))):
+                            raise ValueError("The second entry of a pattern element must either be of 'str' type, "
+                                             "representing a pattern variable, or an Iterable of 'int' or 'str', the "
+                                             "former representing a list of constant discrete variable values while "
+                                             "the latter representing a list of constant symbolic variable values. "
+                                             "Instead found {} in element tuple {}".format(pat_var, ele))
 
-        # Name the predicate patterns for indexing various lookup tables
-        self.name2pattern = {"pattern_" + str(i): pattern for i, pattern in enumerate(conditions + condacts + actions)}
-        self.name2condition_pattern = {"pattern_" + str(i): pattern for i, pattern in enumerate(conditions)}
-        self.name2condact_pattern = {"pattern_" + str(i + len(conditions)): pattern for i, pattern in
-                                     enumerate(condacts)}
-        self.name2action_pattern = {"pattern_" + str(i + len(conditions) + len(condacts)): pattern for i, pattern in
-                                    enumerate(actions)}
-        self.pt_names = list(self.name2pattern.keys())
-        self.condition_pt_names = list(self.name2condition_pattern.keys())
-        self.condact_pt_names = list(self.name2condact_pattern.keys())
-        self.action_pt_names = list(self.name2action_pattern.keys())
+        # Name the predicate patterns for indexing various lookup tables.
+        # Map from pattern name to (internalized) predicate name
+        self.pat_name2pattern = {"pattern_" + str(i): pat for i, pat in enumerate(conditions + condacts + actions)}
 
-        # Set up pattern var list for future lookup
-        # Set up internal WM var -- pattern var map per predicate pattern for future lookup.
-        #       pattern_pt_vals = { pattern_name :
-        #                            { wm_var_name :
-        #                               { "name" : pt_var_name
-        #                                 "type" : "var" or "const"
-        #                                 "vals" : int/str values if type is const or None otherwise
-        #                                 "rel"  : relation, if specified, otherwise None} } }
-        # Map from pattern variable to wm variables that is associated with it
-        #       ptv2wmv = { pattern_name :
-        #                    { pt_var_name : list of corresponding wm vars } }
+        self.condition_name2pattern = {"pattern_" + str(i): pat for i, pat in enumerate(conditions)}
+        self.condact_name2pattern = {"pattern_" + str(i + len(conditions)): pat
+                                     for i, pat in enumerate(condacts)}
+        self.action_name2pattern = {"pattern_" + str(i + len(conditions + condacts)): pat
+                                    for i, pat in enumerate(actions)}
+
+        self.pat_name2pred_name = {pat_name: intern_name(pat[0], "predicate")
+                                   for pat_name, pat in self.pat_name2pattern.items()}
+        self.condition_name2pred_name = {pat_name: intern_name(pat[0], "predicate")
+                                         for pat_name, pat in self.condition_name2pattern.items()}
+        self.condact_name2pred_name = {pat_name: intern_name(pat[0], "predicate")
+                                       for pat_name, pat in self.condact_name2pattern.items()}
+        self.action_name2pred_name = {pat_name: intern_name(pat[0], "predicate")
+                                      for pat_name, pat in self.action_name2pattern.items()}
+
+        self.pt_names = list(self.pat_name2pattern.keys())
+        self.condition_names = list(self.condition_name2pattern.keys())
+        self.condact_names = list(self.condact_name2pattern.keys())
+        self.action_names = list(self.action_name2pattern.keys())
+
+        # set up LOOKUP TABLES:
+        # Map from predicate argument name to pattern variable info, for each predicate pattern
+        #       pattern_arg2var = { pattern_name :
+        #                               { pred_arg_name :
+        #                                   { "name" : pt_var_name
+        #                                     "const" : True/False
+        #                                     "vals" : int/str values if const is True or None otherwise
+        #                                     "map"  : transformation, if specified, otherwise None} } }
+        # Map from pattern variable name back to predicate argument names, for each predicate pattern
+        #       pattern_var2arg = { pattern_name :
+        #                               { pt_var_name : list of corresponding predicate argument names } }
         # Global dictionary of pattern variable info. To be registered once passed into a Sigma program (because need to
         #   look up various Type sizes
-        #   For the size field, take the max over the size of all wm vars associated with it if it is of 'var' type.
-        #       Else if 'const' type, take the number of elements / values in 'vals' field.
-        #       global_pt_vals = { pt_var_name :
-        #                           { "type" : "var" or "const",
-        #                             "size" : max size over associated wm vars
-        #                             "sum_op": Which summarization operation to take in beta branching subnet
-        #                                       currently support "sum" and "max"
-        #                             # TODO: extend this to support more summarization operations
-        #                             } }
+        #   For the size field, if the corresponding predicate arguments are relational, then take the max over the size
+        #       of all corresponding predicate arguments. Otherwise if random, make sure all corresponding predicate
+        #       arguments have the same size. If the pattern variable is a constant, then take as its size the number
+        #       of constant values.
+        #       global_var_info = { pt_var_name :
+        #                               { "metatype" : VariableMetatype field
+        #                                 "const" : True/False
+        #                                 "size" : max size over associated wm vars
+        #                               } }
         # constant pattern is assigned a unique constant variable name
-        self.ptvar_list = []
-        self.pattern_pt_vals = {}
-        self.global_pt_vals = {}  # To be filled after passed into a Sigma program
-        self.ptv2wmv = {}
+        self.pattern_arg2var = {}
+        self.pattern_var2arg = {}
+        self.global_var_info = {}       # Fill in when registered in a Sigma model
+        self.rel_var_list, self.ran_var_list = [], []   # Fill in when registered in a Sigma model
+
         const_count = 0
-
-        for pt_name, pattern in self.name2pattern.items():
-            self.pattern_pt_vals[pt_name] = {}
-            self.ptv2wmv[pt_name] = {}
-            for element in pattern.elements:
-                pt_var_info = {}
-                if type(element.value) is PatternVariable:
-                    pt_var_info["name"] = element.value.variable_name
-                    pt_var_info["type"] = "var"
-                    pt_var_info["vals"] = None
-                    pt_var_info["rel"] = element.value.relation
-                else:
-                    # Assign a unique internal pattern variable name to a pattern w/ constant values
-                    pt_var_info["name"] = "_CONST_" + str(const_count)
-                    pt_var_info["type"] = "const"
-                    pt_var_info["vals"] = element.value
-                    pt_var_info["rel"] = None
-                    const_count += 1
-
-                if pt_var_info["name"] not in self.ptvar_list:
-                    self.ptvar_list.append(pt_var_info["name"])
-                self.pattern_pt_vals[pt_name][element.argument_name] = pt_var_info
-                if pt_var_info["name"] not in self.ptv2wmv.keys():
-                    self.ptv2wmv[pt_name][pt_var_info["name"]] = [element.argument_name]
-                else:
-                    self.ptv2wmv[pt_name][pt_var_info["name"]].append(element.argument_name)
-
-        # Check that function_var_names agree with pattern variables declared in conditions, actions, & condacts
-        if function_var_names is not None:
-            for func_var in function_var_names:
-                if func_var not in self.ptvar_list:
-                    raise ValueError("The function variable '{}' is not one of the pattern variable declared in any "
-                                     "predicate pattern".format(func_var))
+        for pat_name, pat in self.pat_name2pattern.items():
+            self.pattern_arg2var[pat_name] = {}
+            self.pattern_var2arg[pat_name] = {}
+            if pat[1] is not None:
+                for ele in pat[1]:
+                    arg_name, pat_var = ele[0], ele[1]
+                    var_map = ele[2] if len(ele) == 3 else None
+                    if isinstance(pat_var, str):        # A pattern variable
+                        self.pattern_arg2var[pat_name][arg_name] = {
+                            'name': pat_var,
+                            'const': False,
+                            'vals': None,
+                            'map': var_map
+                        }
+                        if pat_var not in self.pattern_var2arg[pat_name].keys():
+                            self.pattern_var2arg[pat_name][pat_var] = [arg_name]
+                        else:
+                            self.pattern_var2arg[pat_name][pat_var].append(arg_name)
+                    else:                               # Constant
+                        self.pattern_arg2var[pat_name][arg_name] = {
+                            'name': "_CONST_" + str(const_count),
+                            'const': True,
+                            'vals': pat_var,
+                            'map': var_map
+                        }
+                        const_count += 1
 
         self.name = intern_name(conditional_name, "conditional")
         self.conditions = conditions
         self.condacts = condacts
         self.actions = actions
-        self.function_var_names = [var for var in function_var_names] if function_var_names is not None else None
-        self.normal = normal
+        self.function_var_names = list(function_var_names) if function_var_names is not None else None
         self.function = function
