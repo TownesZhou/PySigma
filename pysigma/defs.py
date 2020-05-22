@@ -10,8 +10,8 @@ from collections.abc import Iterable
 from torch.distributions.kl import kl_divergence as kl
 from typing import List
 
-from ._nodes import VariableNode, FactorNode
-from ..utils import Dist2Params, Params2Dist
+from graphical._nodes import VariableNode, FactorNode
+from utils import Dist2Params, Params2Dist
 
 
 # Variable Metatypes and Variable for general inference

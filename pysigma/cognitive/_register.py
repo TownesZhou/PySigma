@@ -4,7 +4,6 @@
     Adding and registering new Sigma structures
 """
 from ..structures import *
-from ..graphical._defs import *
 
 
 def add(self, structure):

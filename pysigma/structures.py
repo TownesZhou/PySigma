@@ -9,7 +9,7 @@ from torch import Size
 from collections.abc import Iterable
 from itertools import chain
 from .utils import *
-from .graphical._defs import Variable, VariableMetatype
+from defs import Variable, VariableMetatype
 
 
 class VariableMap:
@@ -549,7 +549,6 @@ class Conditional:
                 if ran_var not in self.ran_var_list:
                     raise ValueError("Unknown random pattern variable '{}' in 'function_var_names'. Existing declared "
                                      "random pattern variables are: {}".format(ran_var, self.ran_var_list))
-
 
     def __str__(self):
         # String representation for display
