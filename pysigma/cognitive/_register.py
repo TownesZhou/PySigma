@@ -39,35 +39,38 @@ def add(self, structure):
 
 def add_type(self, *args, **kwargs):
     """
-        Add a Sigma type to this Sigma program directly.
+        Add a Sigma type to this Sigma program directly. Return the created Type instance
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
 
     sigma_type = Type(*args, **kwargs)
     self.add(sigma_type)
+    return sigma_type
 
 
 def add_predicate(self, *args, **kwargs):
     """
-        Add a Sigma predicate to this Sigma program directly.
+        Add a Sigma predicate to this Sigma program directly. Return the created Predicate instance
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
 
     predicate = Predicate(*args, **kwargs)
     self.add(predicate)
+    return predicate
 
 
 def add_conditional(self, *args, **kwargs):
     """
-        Add a Sigma conditional to this Sigma program directly.
+        Add a Sigma conditional to this Sigma program directly. Return the created Conditional Instance
     """
     from .. import Sigma
     assert isinstance(self, Sigma)
 
     conditional = Conditional(*args, **kwargs)
     self.add(conditional)
+    return conditional
 
 
 def _register_type(self, sigma_type):

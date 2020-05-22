@@ -14,13 +14,27 @@ def intern_name(name: str, struc_type: str):
     :return:        processed name
     """
     assert struc_type in ["type", "predicate", "conditional"], "unknown type for processing structure name"
-    assert type(name) is str, "name must be str type"
+    assert isinstance(name, str)
     if struc_type is "type":
         return "TYPE_[" + name.upper() + "]"
     elif struc_type is "predicate":
         return "PRED_[" + name.upper() + "]"
     elif struc_type is "conditional":
         return "COND_[" + name.upper() + "]"
+
+def extern_name(name: str, struc_type: str):
+    """
+        Inverse operation of intern_name
+    """
+    assert struc_type in ["type", "predicate", "conditional"], "unknown type for processing structure name"
+    assert isinstance(name, str)
+    if struc_type is "type":
+        assert name.find("TYPE_") >= 0
+    if struc_type is "predicate":
+        assert name.find("PRED_[") >= 0
+    if struc_type is "conditional":
+        assert name.find("COND_[") >= 0
+    return name[6:-1]
 
 
 # TODO general-inf: Utility methods for instantiate a distribution from the given list of tensors. The given list of
