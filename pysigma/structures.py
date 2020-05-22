@@ -83,8 +83,8 @@ class Type:
 
 
 class Predicate:
-    def __init__(self, predicate_name, relational_args, random_args, num_particles=128, distribution_class=None,
-                 memorial=False, perceptual=False):
+    def __init__(self, predicate_name, relational_args, random_args, inference_mode, num_particles=128,
+                 distribution_class=None, memorial=False, perceptual=False):
         """
             Specify a Sigma predicate.
 
@@ -97,6 +97,8 @@ class Predicate:
                             besides the arguments' names having to be distinct (including being distinct from relational
                             arguments' names), all of the arguments must be of the same 'Type' and the 'Type' must NOT
                             be symbolic.
+        :param inference_mode: one of "BP", "VMP", or "EP". Choosing the inference method to be used at this predicate.
+                               This will also influence the choice of inference method used at related conditionals.
         :param num_particles: 'int' type. The number of particles to be drawn each cognitive cycle. Also the size of the
                               predicate's particle indexing dimension. If left for None, then this field will be decided
                               by the architecture.
@@ -119,6 +121,9 @@ class Predicate:
         if not isinstance(random_args, Iterable) or \
                 not all((isinstance(arg, tuple) and len(arg) == 2) for arg in random_args):
             raise ValueError("The 3nd field 'random_args' must be an Iterable of size-2 tuples")
+        if not isinstance(inference_mode, str) or inference_mode.upper() not in ["BP", "VMP", "EP"]:
+            raise ValueError("Must declare the inference method to be used at the predicate using the 4nd field "
+                             "'inference_mode', one of 'BP', 'VMP', or 'EP'")
         if num_particles is not None and not (isinstance(num_particles, int) and num_particles > 0):
             raise ValueError("If specified, the 4th field 'num_particles' must be a positive integer")
         if distribution_class is not None and not issubclass(distribution_class, Distribution):
@@ -172,6 +177,7 @@ class Predicate:
             self.random_vars.append(ran_var)
             self.ranvar_name2ranvar[var_name] = ran_var
 
+        self.inf_mode = inference_mode.upper()
         self.index_var = Variable("INDEX", VariableMetatype.Indexing, num_particles)
         self.dist_class = distribution_class
         self.memorial = memorial
@@ -302,7 +308,7 @@ class Conditional:
                                              "{} in element tuple {}".format(type(arg_name), ele))
                         if not isinstance(pat_var, str) and \
                                 not (isinstance(pat_var, Iterable) and (all(isinstance(val, int) for val in pat_var)
-                                                                        or all(isinstance(val, str) for val in pat_var))):
+                                                                    or all(isinstance(val, str) for val in pat_var))):
                             raise ValueError("The second entry of a pattern element must either be of 'str' type, "
                                              "representing a pattern variable, or an Iterable of 'int' or 'str', the "
                                              "former representing a list of constant discrete variable values while "
