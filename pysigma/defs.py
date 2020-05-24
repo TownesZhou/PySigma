@@ -93,9 +93,22 @@ class Message:
             exists.
     """
     def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size, event_shape: torch.Size,
-                 dist: Distribution = None, particles: torch.Tensor = None, weights: torch.Tensor = None):
+                 dist: Distribution = None, particles: torch.Tensor = None, weights: torch.Tensor = None,
+                 sampling_density: torch.Tensor = None):
         """
             Instantiate a message
+
+            :param msg_type: one of MessageType
+            :param sample_shape:
+            :param batch_shape:
+            :param event_shape:
+            :param dist: A PyTorch distribution instance. If the message is not Particles type
+            :param particles: Particle list. Must present if message is Particles type
+            :param weights: A one-dimension PyTorch tensor as particle weights. Size the same as the first dimension of
+                            the particle list.
+            :param sampling_density: A one-dimension PyTorch tensor containing the probability density of the particles
+                                     when they were sampled from the original sampling distribution. Size the same as
+                                     the first dimension of the particle list.
         """
         assert isinstance(msg_type, MessageType)
         assert isinstance(sample_shape, torch.Size) and len(sample_shape) == 1
@@ -112,6 +125,7 @@ class Message:
         # Particle list
         self.particles = particles
         self.weights = weights
+        self.sampling_density = sampling_density
         # Shapes
         self.s_shape = sample_shape
         self.b_shape = batch_shape
@@ -130,6 +144,7 @@ class Message:
             # Need to provide a particle list, but no distribution
             assert self.particles is not None
             assert self.weights is not None
+            assert self.sampling_density is not None
             assert self.dist is None
 
         # Check shape
@@ -140,6 +155,8 @@ class Message:
             assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
         if self.weights is not None:
             assert self.s_shape == self.weights.shape
+        if self.sampling_density is not None:
+            assert self.s_shape == self.sampling_density.shape
 
     def clone(self):
         """
