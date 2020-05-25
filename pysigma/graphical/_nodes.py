@@ -3,8 +3,110 @@
 """
 import torch
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
+from torch.distributions.categorical import Categorical
+from torch.distributions.kl import kl_divergence as kl
+from defs import Variable, MessageType, Message
 
-# from ._structures import Message
+
+class LinkData:
+    """
+        Identify the data of a directed link between a factor node and a variable node. Stores intermediate
+            messages in the message memory
+        Note that links are directional, and two of such links should be specified with opposite directions to
+            represent a bidirectional link between a factor node and a variable node, typically in the case of condacts.
+        During construction of the graph, its instance will be passed to NetworkX methods as the edge data to
+            instantiate an edge.
+    """
+    def __init__(self, vn, fn, var_list, to_fn, epsilon, **kwargs):
+        """
+        :param vn:      name of the variable node that this link is incident to
+        :param var_list:    list of variables of the adjacent variable node
+        :param to_fn:   True/False indicating whether this link is pointing toward a factor node
+        """
+        assert isinstance(vn, VariableNode)
+        assert isinstance(fn, FactorNode)
+        assert isinstance(var_list, Iterable) and all(isinstance(var, Variable) for var in var_list)
+        assert isinstance(to_fn, bool)
+        assert isinstance(epsilon, float)
+
+        # Message memory, of type Message
+        self.memory = None
+        # Whether this message is new, and haven't been read by recipient node. Of type bool
+        self.new = False
+        # Incident nodes and their variable list
+        self.vn = vn                # Of type VariableNode
+        self.fn = fn                # Of type FactorNode
+        self.var_list = var_list    # Iterable of Variable
+        # Link direction. Whether pointing toward a factor node. Of type bool
+        self.to_fn = to_fn
+        # Threshold of KL-divergence metric to measure whether a candidate message is different from the existing one
+        self._epsilon = epsilon
+        # Reserved field for additional attributes. Arbitrary type
+        self.attri = kwargs
+        # Dimension of the link message. Determined from var_list. Of type torch.Size
+        self._dims = torch.Size([var.size for var in self.var_list])
+        # Pretty log
+        self._pretty_log = {}
+
+    def __str__(self):
+        # Override for pretty debugging and printing
+        fn_name = self.fn.name
+        vn_name = self.vn.name
+        if self.to_fn:
+            return vn_name + " --> " + fn_name
+        else:
+            return fn_name + " --> " + vn_name
+
+    def set(self, new_msg, check_diff=True, clone=False):
+        """
+            Set the link message memory to the new message arriving at this link.
+            If check_diff is True, then will check if the new message is different from the existing one before
+                replacing the existing with the new one.
+              If the two message are of different types, then they will be deemed as different. Otherwise, KL-divergence
+                will be used as the metric and its value to be compared with pre-set epsilon value. For Particles
+                messages, the particles will be assumed to be identical, and the weights will be compared by treating
+                them as probs to a Categorical distribution (assuming the weights are already properly normalized),
+                from which the KL-divergence value is extracted.
+              The following KL formula is used:
+                    KL(old || new) = E[ log(old(x) / new(x) ],   x ~ old(x)
+            If clone is True, then will store a cloned new_msg
+        """
+        assert isinstance(new_msg, Message)
+
+        # If check_diff is False or no existing message or message types are different, will replace existing message
+        if self.memory is None or check_diff is False or new_msg.type != self.memory.type:
+            self.memory = new_msg.clone() if clone is True else new_msg
+            self.new = True
+            return
+
+        # Otherwise, check difference by KL-divergence
+        if new_msg.type in [MessageType.Tabular, MessageType.Distribution]:
+            # If message type is Tabular or Distribution, compute KL directly
+            p = self.memory.dist
+            q = new_msg.dist
+        else:
+            # Otherwise, message type are Particles, so we will temporarily instantiate Categorical distributions
+            p_probs = self.memory.weights
+            q_probs = new_msg.weights
+            p = Categorical(probs=p_probs)
+            q = Categorical(probs=q_probs)
+        val = kl(p, q)
+
+        # Compare KL value with pre-set epsilon
+        if val > self._epsilon:
+            self.memory = new_msg.clone() if clone is True else new_msg
+            self.new = True
+
+    def read(self, clone: bool = False):
+        """
+            Return the current content stored in memory. Set new to False to indicate this link message have been read
+                since current cycle
+            if clone is True, return a cloned version of memory content
+        """
+        self.new = False
+        msg = self.memory.clone() if clone is True else self.memory
+        return msg
 
 
 class Node(ABC):
@@ -15,14 +117,15 @@ class Node(ABC):
             will be passed to `NetworkX` methods to instantiate a node.
     """
 
-    def __init__(self, name, epsilon=10e-5):
+    def __init__(self, name):
+        self.name = name
         # Flag indicating whether quiescence reached in current cycle. If so, no sum-product local processing needed at
         #   this node.
-        self.name = name
-        self._epsilon = epsilon
         self.quiescence = False
+        # Flag indicating whether this node has been visited (compute() method called) during a decision cycle
+        self.visited = False
 
-        # List of LinkData of those link connecting to this factor node, incoming and outgoing ones respectively, from
+        # List of LinkData of those link connecting to this node, incoming and outgoing ones respectively, from
         #   which we retrieve messages
         self._in_linkdata = []
         self._out_linkdata = []
@@ -56,260 +159,48 @@ class Node(ABC):
 
 class FactorNode(Node, ABC):
     """
-        Specify a **factor node**, with pytorch tensor as optional factor node function (default to a constant function
-            of 1 everywhere effectively). It is the super class of factor nodes of various subtypes, such as alpha,
-            beta, delta, gamma nodes.
-        Implement default message processing mechanism of a factor node:
-            1. Product: broadcast the messages from all adjacent variable nodes except the output one to full dimension
-                (i.e., high dimensional tensor with all adjacent nodes' variables), and time them with this factor
-                node's function)
-            2. Summary: Take the result from step 1., compute the marginals for the output variable node's variables by
-                means of summary (taking sum/integral or max over other variables' dimensions)
-
-        Note: All implementation considers dynamic structure, i.e., the possibility of adding new link and nodes on the
-            fly. Therefore:
-                - Variable dimension alignment for each incoming link message is computed dynamically
+        Factor node abstract base class. Guarantees that all incident nodes are variable nodes.
     """
-
-    def __init__(self, name, function=None, func_var_list=None, epsilon=None):
-        """
-        :param name:            Name of this factor node
-        :param function:        An int, float, or torch.tensor. or Message, with dimension ordered by func_var_list. If
-                                None, set to default value (1). If torch.tensor, change type to Message
-        :param func_var_list:   Variables of the function. Default to None
-        :param epsilon:         The epsilon no-change criterion used for comparing quiesced message
-        """
+    def __init__(self, name):
         super(FactorNode, self).__init__(name)
-
-        # Set function
-        self._function = None
-        self._func_var_list = None
-        self.set_function(function, func_var_list)
-
-        # set custom epsilon
-        if epsilon is not None:
-            self._epsilon = epsilon
-
-        # List of Variables from all adjacent variable nodes. Used for dimension order of this factor node's
-        #   sum-product processing. In other words a flattened version of vn_var_dict
-        self._var_list = []
-
-        # pretty log
-        self.pretty_log["all variables"] = []  # init
-
-    def set_function(self, function, var_list):
-        """
-            (Re)set the factor node function.
-        :param function:    int, float, or a torch.tensor, or Message, with dimension ordered by var_list. If None, set
-                            to default value (1). If torch.tensor, change type to Message
-        :param var_list:    list of variable names corresponding to dimensions of function
-        """
-        var_size = [var.size for var in var_list] if var_list is not None else None
-
-        self._function = 1 if function is None else function
-        if isinstance(function, torch.Tensor):
-            assert list(function.shape) == var_size, "The dimensions of the function variables (in the specified order)" \
-                                                     " is {}, However, the dimensions of the provided function tensor " \
-                                                     "is {}. Function dimensions must agree with its variables' " \
-                                                     "dimensions".format(var_size, list(function.shape))
-        self._func_var_list = var_list
-
-        # update pretty log
-        self.pretty_log["function type"] = "tensor" if isinstance(function, torch.Tensor) else "constant"
-        self.pretty_log["function variables"] = [var.name for var in self._func_var_list] \
-            if self._func_var_list is not None else None
-        self.pretty_log["function size"] = var_size
-        self.pretty_log["function value"] = function
-
-    def get_function(self):
-        return self._function, self._func_var_list
 
     def add_link(self, linkdata):
         """
-            Register the name and variables of a newly added variable node by registering the linkdata that connect to
-                that variable node. New variables, if not already exist in _var_list, will be appended.
-            If a variable from the linkdata already exists in _var_list, check that their size agrees, otherwise raise
-                an error.
-
-            Note: if the link between the variable node and this factor node is bidirectional, then this method should
-                be called twice, once with linkdata of each direction.
-        :param linkdata:    the linkdata of the link that connects to the newly added variable node
+            Add a linkdata connecting to a variable node
         """
-        assert linkdata not in self._in_linkdata and linkdata not in self._out_linkdata, "Adding duplicate link"
-        if linkdata.to_fn:
-            assert linkdata.vn not in [ld.vn for ld in self._in_linkdata], \
-                "Adding duplicate link away from the variable node '{}'".format(linkdata.vn)
-        else:
-            assert linkdata.vn not in [ld.vn for ld in self._out_linkdata], \
-                "Adding duplicate link to the variable node '{}'".format(linkdata.vn)
-
-
-        # Check variable size agrees
-        for var in linkdata.var_list:
-            for old_var in self._var_list:
-                if var == old_var:
-                    assert var.size == old_var.size, "The variable '{}' from the variable node '{}' that attempts to " \
-                                                     "link to this factor node has size '{}', which does not match the " \
-                                                     "size '{}' of the variable with the same name already present in " \
-                                                     "the variable lists of this factor node." \
-                        .format(str(var), str(linkdata.vn), var.size, old_var.size)
+        assert isinstance(linkdata, LinkData)
+        assert linkdata.fn is self
+        if linkdata in self._in_linkdata + self._out_linkdata:
+            return
 
         if linkdata.to_fn:
             self._in_linkdata.append(linkdata)
         else:
             self._out_linkdata.append(linkdata)
 
-        for v in linkdata.var_list:
-            if v not in self._var_list:
-                self._var_list.append(v)
-
-                # update pretty log
-                self.pretty_log["all variables"].append(v.name)
-
-    def align(self, msg, var_list):
-        """
-            Compute and return the bradcasted message with its dimension AND shape properly aligned with the factor node
-                variable order. This means the variable dimensions of the message will be first permuted, and then the
-                message will be manually broadcasted to full shape.
-            Manual broadcast is enforced here to prevent dimension misalignment.
-
-            Note: MAY BE REPLACED LATER WITH PYTORCH'S BUILT-IN DIMENSION REARRANGEMENT FOR NAMED TENSORS.
-        :param msg:  unbroadcasted message from a linkdata
-        :param var_list: list of variables of the unbroadcasted message
-        :return:    broadcasted message with dimension aligned
-        """
-        # First take a view that append extra dimensions to the message
-        view_dim = msg.shape + ((1,) * (len(self._var_list) - len(msg.shape)))
-        # Find indices of the variables in _var_list
-        var_id = [self._var_list.index(var) for var in var_list]
-        # Compute the permutation
-        perm = [-1] * len(self._var_list)  # -1 is dummy value
-        for i, id in enumerate(var_id):
-            perm[id] = i
-        rest = len(var_list)
-        for i in range(len(self._var_list)):
-            if i not in var_id:
-                perm[i] = rest
-                rest += 1
-        # Permute message dimension
-        aligned_msg = msg.view(view_dim).permute(perm)
-        # Manual broadcast by expanding dimension
-        full_shape = tuple(var.size for var in self._var_list)
-        expanded_msg = aligned_msg.expand(full_shape)
-        return expanded_msg
-
-    def sp_product(self, msg1, msg2):
-        """
-            The default implementation of the product part of the sum-product algorithm. Return the product of two
-                messages. May be override by special purpose factor node
-            Note: Assume msg1 and msg2 are properly aligned and already broadcastable
-        """
-        result = msg1 * msg2
-        return result
-
-    def sp_sum(self, msg, dims):
-        """
-            The default implementation of the summary part of the sum-product algorithm by taking sum/integral over
-                specified dimensions. Returns the summed message
-        :param msg:     tensor or Message whose selected variable dimensions to be summed
-        :param dims:    a list of index specifying the dimension to be summed over
-        """
-        result = torch.sum(msg, dims)
-        return result
-
-    def sp_max(self, msg, dims):
-        """
-            The default implementation of the summary part of the sum-product algorithm by taking maximum over
-                specified dimensions. Returns the maxed over message
-        :param msg:     tensor or Message whose selected variable dimensions to be maxed
-        :param dims:    a list of index specifying the dimension to be maxed over
-        """
-        # torch.max() (min() as well) does not support operation over multiple dimensions, so we will iterate
-        # Assume dims is properly sorted, iterate over descending order
-        result = msg
-        for dim in reversed(dims):
-            result = torch.max(msg, dim=dim)[0]     # Take 1st result. 2nd is the indices
-
-        return result
-
-    def compute(self):
-        """
-            Compute messages from incoming nodes and send the message toward all outgoing variable nodes.
-            Default behavior is to time together aligned message from all incomming variable nodes except perhaps the
-                target one with the factor function
-            Implement the optimization so that no new message is computed and sent if messages from all incoming link
-                are not new.
-
-            Note: this method should be overriden by special purpose factor node subclass that comes with unique message
-                processing mechanism, such as Affine-Delta factor node
-        """
-        # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
-        # determine whether this node has reached quiescence
-
-        # If this node has not reached quiescence, compute and send new messages
-        for out_ld in self._out_linkdata:
-            out_vn = out_ld.vn
-            # If function is an int or float, keep as a scalar. Otherwise expand to full dim
-            buf = self._function if type(self._function) in [int, float] \
-                else self.align(self._function, self._func_var_list)
-
-            # Product
-            for in_ld in self._in_linkdata:
-                in_vn = in_ld.vn
-                if in_vn is out_vn:  # Here use 'is' operator to test variable node's identity
-                    continue
-                msg = self.align(in_ld.read(), in_ld.var_list)
-                buf = self.sp_product(buf, msg)
-
-            # Summary
-            # Perform sum reduce if variable is unique, otherwise perform max reduce
-            # TODO: extend to allow other types of summarizations
-            sum_reduce = [i for i, var in enumerate(self._var_list)
-                          if var.sum_op is "sum" and var not in out_ld.var_list]
-            max_reduce = [i for i, var in enumerate(self._var_list)
-                          if var.sum_op is "max" and var not in out_ld.var_list]
-            if len(sum_reduce) > 0:
-                buf = self.sp_sum(buf, sum_reduce)
-            if len(max_reduce) > 0:
-                buf = self.sp_max(buf, max_reduce)
-
-            # Send message
-            out_ld.set(buf, self._epsilon)
-
 
 class VariableNode(Node, ABC):
     """
-        Specify a **variable node**.
+        Variable node abstract base class.
     """
 
-    def __init__(self, name, var_list, epsilon=None):
+    def __init__(self, name, var_list):
         """
             Decalre a VariableNode
         :param name:        name of the variable node
         :param var_list:   list of Variables representing the variables of this variable nodes
-        :param epsilon:     The epsilon no-change criterion used for comparing quiesced message
         """
         super(VariableNode, self).__init__(name)
+        assert isinstance(var_list, Iterable) and all(isinstance(v, Variable) for v in var_list)
         self.var_list = var_list
-
-        # set custom epsilon
-        if epsilon is not None:
-            self._epsilon = epsilon
-
-        # Pretty log
-        self.pretty_log["variable names"] = [var.name for var in self.var_list]
-        self.pretty_log["variable dimensions"] = [var.size for var in self.var_list]
-        self.pretty_log["variable probabilistic"] = [var.probabilistic for var in self.var_list]
-        self.pretty_log["variable uniqueness"] = [var.unique for var in self.var_list]
-        self.pretty_log["variable normalization"] = [var.normalize for var in self.var_list]
-        self.pretty_log["variable sum op"] = [var.sum_op for var in self.var_list]
 
     def add_link(self, linkdata):
         """
             Register the LinkData connecting a factor node to this variable node.
-            Note: the 'vn' and 'var_list' fields should conform to the ones as specified in this variable node.
+            Check that the variable list specified in linkdata agrees with that pre-specified at this variable node
         """
-        if linkdata in self._in_linkdata or linkdata in self._out_linkdata:
+        assert linkdata.var_list == self.var_list
+        if linkdata in self._in_linkdata + self._out_linkdata:
             return
 
         if linkdata.to_fn:
@@ -317,54 +208,35 @@ class VariableNode(Node, ABC):
         else:
             self._in_linkdata.append(linkdata)
 
-    def sp_product(self, msg1, msg2):
-        """
-            The default implementation of the product part of the sum-product algorithm. Return the product of two
-                messages. May be override by special purpose factor node.
-        """
-        result = msg1 * msg2
-        return result
-
-    def compute(self):
-        """
-            Take the product of the messages from incoming nodes and send the result toward all outgoing nodes.
-            Implement the optimization so that no new meesage is computed and sent if message from all incoming link are
-                not new.
-        """
-        # First loop through incoming linkdata once to check whether messages from each incoming link is not new to
-        #   determine whether this node has reached quiescence
-
-        # If not reached quiescence, compute and send new messages
-        for out_ld in self._out_linkdata:
-            out_fn = out_ld.fn
-            buf = 1
-
-            # Taking products
-            for in_ld in self._in_linkdata:
-                in_fn = in_ld.fn
-                if in_fn is out_fn:  # Here use 'is' operator to test factor node's identity
-                    continue
-                msg = in_ld.read()
-                if msg is not None:     # If msg is None, simply skip
-                    buf = self.sp_product(buf, msg)
-
-            # Send message
-            out_ld.set(buf, self._epsilon)
-
 
 class DFN(FactorNode):
     """
-        Default (Dummy) Factor Node. No special computation
+        Default (Dummy) Factor Node. No special computation. Simply relay the message.
+        Requires that two incident variable nodes have same variable list
+        Only admit one incoming and one outgoing link
     """
-    def __init__(self, name, function=None, func_var_list=None):
-        super(DFN, self).__init__(name, function, func_var_list)
+    def __init__(self, name):
+        super(DFN, self).__init__(name)
         self.pretty_log["node type"] = "Default Function Node"
 
-    # Override check_quiesce() so that compute() will should always proceed. However this would not jeopardize
-    # computation because message sent to ld is same as old, so ld.new would not be set to true under epsilon condition
-    def check_quiesce(self):
-        super(DFN, self).check_quiesce()
-        return False  # Always return False so that compute() will still proceed
+    def add_link(self, linkdata):
+        assert isinstance(linkdata, LinkData)
+        # Make sure no more than on incoming and one outgoing link
+        assert (linkdata.to_fn and len(self._in_linkdata) == 0) or (not linkdata.to_fn and len(self._out_linkdata) == 0)
+        # Also make sure incident variable nodes' var_list agree with each other
+        if len(self._in_linkdata + self._out_linkdata) > 0:
+            var_list = (self._in_linkdata + self._out_linkdata)[0].var_list
+            assert var_list == linkdata.var_list
+
+        super(DFN, self).add_link(linkdata)
+
+    def compute(self):
+        self.visited = True
+
+        in_ld = self._in_linkdata[0]
+        out_ld = self._out_linkdata[0]
+        msg = in_ld.read()
+        out_ld.set(msg)
 
 
 class PBFN(FactorNode):
@@ -890,11 +762,19 @@ class GFFN(FactorNode):
 
 class DVN(VariableNode):
     """
-        Default (Dummy) Variable Node. Used to serve as structural juncture connecting factor nodes. No special computation
+        Default (Dummy) Variable Node. No special computation, simply relay message to next factor node
+        Only admit one incoming and one outgoing link
     """
     def __init__(self, name, var_list):
         super(DVN, self).__init__(name, var_list)
         self.pretty_log["node type"] = "Default Variable Node"
+
+    def add_link(self, linkdata):
+        assert isinstance(linkdata, LinkData)
+        # Make sure no more than on incoming and one outgoing link
+        assert (linkdata.to_fn and len(self._out_linkdata) == 0) or (not linkdata.to_fn and len(self._in_linkdata) == 0)
+
+        super(DVN, self).add_link(linkdata)
 
 
 class WMVN(VariableNode):

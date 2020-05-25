@@ -93,7 +93,7 @@ class Type:
 
 
 class Predicate:
-    def __init__(self, predicate_name, relational_args, random_args, inference_mode, num_particles=128,
+    def __init__(self, predicate_name, relational_args, random_args, inference_mode, num_particles=32,
                  distribution_class=None, memorial=False, perceptual=False):
         """
             Specify a Sigma predicate.
