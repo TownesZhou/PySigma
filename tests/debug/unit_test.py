@@ -105,6 +105,7 @@ def order_test_1(to_render=False):
 
 if __name__=="__main__":
 
+    pass
     # run_test(align_test_1)
     # run_test(align_test_2)
-    run_test(order_test_1, to_render=True)
+    # run_test(order_test_1, to_render=True)

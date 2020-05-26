@@ -267,6 +267,25 @@ class DVN(VariableNode):
             out_ld.set(msg)
 
 
+class LTFN(FactorNode):
+    """
+        Long-Term Memory Factor Node. Holds the distribution class of this predicate, and performs sampling of the
+            distribution if necessary.
+        Parameter to instantiate a concrete distribution instance is supplied via incoming links. If there are multiple
+            links, the parameter is taken as the SUM of incoming messages.
+        Therefore LTMFN take as input parameter messages, and produce as output distribution/particle messages
+    """
+
+    # TODO
+    def __init__(self, name, function=None, func_var_list=None):
+        super(LTMFN, self).__init__(name, function, func_var_list)
+        self.pretty_log["node type"] = "Long-Term Memory Function Node"
+
+    def get_shape(self):
+        # For use when checking perception content shape
+        return [var.size for var in self._var_list]
+
+
 class WMVN(VariableNode):
     """
         Working Memory Variable Node. Gate node connecting predicate memories to conditionals.
@@ -299,21 +318,6 @@ class PBFN(FactorNode):
     def check_quiesce(self):
         super(PBFN, self).check_quiesce()
         return False  # Always return False so that compute() will still proceed
-
-
-class LTMFN(FactorNode):
-    """
-        Long-Term Memory Factor Node
-    """
-
-    # TODO
-    def __init__(self, name, function=None, func_var_list=None):
-        super(LTMFN, self).__init__(name, function, func_var_list)
-        self.pretty_log["node type"] = "Long-Term Memory Function Node"
-
-    def get_shape(self):
-        # For use when checking perception content shape
-        return [var.size for var in self._var_list]
 
 
 class WMFN(FactorNode):
