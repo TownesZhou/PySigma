@@ -9,6 +9,7 @@ from torch.distributions.categorical import Categorical
 from torch.distributions.kl import kl_divergence as kl
 from defs import Variable, MessageType, Message
 from utils import Params2Dist
+import warnings
 
 
 class LinkData:
@@ -364,14 +365,63 @@ class LTMFN(FactorNode):
 
 class WMVN(VariableNode):
     """
-        Working Memory Variable Node. Gate node connecting predicate memories to conditionals.
-        Special computation of normalization if one of the predicate's wm variable node need normalization.
-    """
+        Working Memory Variable Node. Gate node connecting predicate structure to conditionals.
+        Will attempt to combine incoming messages if there are multiple incoming links. Subsuming the functionality of
+            FAN node in Lisp Sigma.
+        When combining messages, will exclude message from the link to which the combined message is to send to (if
+            such a bidirected link exists). This implements the Sum-Product algorithm's variable node semantics, if
+            this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.
 
-    # TODO: implement normalization
-    def __init__(self, name, var_list):
+        Note that messages combination can be carried out only if ALL the message are of Tabular type, or all of them
+            are of Particles type.
+        If messages are all Tabular type, combination is performed by summing the probs vector of the Categorical
+            distributions across messages.
+        If messages are all Particles type, combination is performed by (1) first concatenating the particles, (2) then
+            renormalize the weights, (3) and finally either resample or selecting the subset of particles of the highest
+            weight, so that the total number of resulting particles matching sample_shape (num_particles)
+    """
+    def __init__(self, name, var_list, num_particles, to_resample=True):
         super(WMVN, self).__init__(name, var_list)
         self.pretty_log["node type"] = "Working Memory Variable Node"
+
+        # Number of particles to keep when combining particles incoming messages
+        self.num_particles = num_particles
+        # Whether to resample, or to select highest rank of particles, when combining particle messages
+        self.to_resample = True
+
+    def compute(self):
+        # Exit if no outgoing link
+        if len(self.out_linkdata) == 0:
+            return
+        # Relay message if only one incoming link
+        if len(self.in_linkdata) == 1:
+            in_ld = self.in_linkdata[0]
+            msg = in_ld.read()
+            for out_ld in self.out_linkdata:
+                # Throw a warning if the outgoing link is connected to the same factor node that the only incoming
+                #   link is connected to, since in such case no message would be sent to that factor node
+                if out_ld.fn is in_ld.fn:
+                    warnings.warn("WMVN '{}' is connected to factor node '{}', while its only incoming link is also "
+                                  "connected from the same factor node. In this case no message would be sent out to "
+                                  "the factor node. Please check if the model is properly defined"
+                                  .format(self.name, out_ld.fn.name))
+                else:
+                    out_ld.set(msg)
+        # Otherwise, combine messages
+        else:
+            for out_ld in self.out_linkdata:
+                # exclusion principle
+                in_lds = list(in_ld for in_ld in self.in_linkdata if in_ld.fn is not out_ld.fn)
+                msgs = list(in_ld.read() for in_ld in in_lds)
+                # Check uniformity of incoming message type
+                assert all(msg.type is MessageType.Tabular for msg in msgs) or \
+                       all(msg.type is MessageType.Particles for msg in msgs), \
+                    "In WMVN '{}': when attempting to send message via link '{}', failed to combine incoming messages "\
+                    "because incoming messages are not all Tabular or all Particles type. Found message type '{}' " \
+                    "from links '{}'".format(self.name, out_ld, list(msg.type for msg in msgs), in_lds)
+                # TODO: Combine tabular messages
+
+
 
 
 class PBFN(FactorNode):
