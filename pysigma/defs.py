@@ -174,3 +174,8 @@ class Message:
 
         new_msg = Message(msg_type, self.s_shape, self.b_shape, self.e_shape, dist, particles, weights)
         return new_msg
+
+
+# TODO: Enum class of all the inference method
+class InferenceMethod(Enum):
+    pass

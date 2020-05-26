@@ -127,8 +127,8 @@ class Node(ABC):
 
         # List of LinkData of those link connecting to this node, incoming and outgoing ones respectively, from
         #   which we retrieve messages
-        self._in_linkdata = []
-        self._out_linkdata = []
+        self.in_linkdata = []
+        self.out_linkdata = []
 
         # Global logging info
         self.log = {}
@@ -145,7 +145,7 @@ class Node(ABC):
             Will update self.quiescence accordingly
         """
         quiesced = True
-        for in_ld in self._in_linkdata:
+        for in_ld in self.in_linkdata:
             if in_ld.new:
                 quiesced = False
                 break
@@ -168,15 +168,14 @@ class FactorNode(Node, ABC):
         """
             Add a linkdata connecting to a variable node
         """
-        assert isinstance(linkdata, LinkData)
         assert linkdata.fn is self
-        if linkdata in self._in_linkdata + self._out_linkdata:
+        if linkdata in self.in_linkdata + self.out_linkdata:
             return
 
         if linkdata.to_fn:
-            self._in_linkdata.append(linkdata)
+            self.in_linkdata.append(linkdata)
         else:
-            self._out_linkdata.append(linkdata)
+            self.out_linkdata.append(linkdata)
 
 
 class VariableNode(Node, ABC):
@@ -200,43 +199,84 @@ class VariableNode(Node, ABC):
             Check that the variable list specified in linkdata agrees with that pre-specified at this variable node
         """
         assert linkdata.var_list == self.var_list
-        if linkdata in self._in_linkdata + self._out_linkdata:
+        if linkdata in self.in_linkdata + self.out_linkdata:
             return
 
         if linkdata.to_fn:
-            self._out_linkdata.append(linkdata)
+            self.out_linkdata.append(linkdata)
         else:
-            self._in_linkdata.append(linkdata)
+            self.in_linkdata.append(linkdata)
 
 
 class DFN(FactorNode):
     """
-        Default (Dummy) Factor Node. No special computation. Simply relay the message.
-        Requires that two incident variable nodes have same variable list
-        Only admit one incoming and one outgoing link
+        Default (Dummy) Factor Node. No special computation. Simply relay message to one or multiple variable nodes
+        Requires that incident variable nodes have the same variable list
+        Only admit one incoming link but can connect with multiple outgoing links
     """
     def __init__(self, name):
         super(DFN, self).__init__(name)
-        self.pretty_log["node type"] = "Default Function Node"
+        self.pretty_log["node type"] = "Default Factor Node"
+
+        # Since all incident nodes should have the same variable list, we can therefore log it here as an attribute
+        self.var_list = None
 
     def add_link(self, linkdata):
         assert isinstance(linkdata, LinkData)
-        # Make sure no more than on incoming and one outgoing link
-        assert (linkdata.to_fn and len(self._in_linkdata) == 0) or (not linkdata.to_fn and len(self._out_linkdata) == 0)
+        # Make sure no more than on incoming alink
+        assert not linkdata.to_fn or len(self.in_linkdata) == 0
         # Also make sure incident variable nodes' var_list agree with each other
-        if len(self._in_linkdata + self._out_linkdata) > 0:
-            var_list = (self._in_linkdata + self._out_linkdata)[0].var_list
-            assert var_list == linkdata.var_list
+        if self.var_list is None:
+            self.var_list = linkdata.var_list
+        else:
+            assert self.var_list == linkdata.var_list
 
         super(DFN, self).add_link(linkdata)
 
     def compute(self):
         self.visited = True
 
-        in_ld = self._in_linkdata[0]
-        out_ld = self._out_linkdata[0]
+        in_ld = self.in_linkdata[0]
         msg = in_ld.read()
-        out_ld.set(msg)
+        for out_ld in self.out_linkdata:
+            out_ld.set(msg)
+
+
+class DVN(VariableNode):
+    """
+        Default (Dummy) Variable Node. No special computation. Simply relay message to one or multiple factor nodes
+        Only admit one incoming link but can connect with multiple outgoing links
+    """
+    def __init__(self, name, var_list):
+        super(DVN, self).__init__(name, var_list)
+        self.pretty_log["node type"] = "Default Variable Node"
+
+    def add_link(self, linkdata):
+        assert isinstance(linkdata, LinkData)
+        # Make sure no more than on incoming and one outgoing link
+        assert linkdata.to_fn or len(self.in_linkdata) == 0
+
+        super(DVN, self).add_link(linkdata)
+
+    def compute(self):
+        self.visited = True
+
+        in_ld = self.in_linkdata[0]
+        msg = in_ld.read()
+        for out_ld in self.out_linkdata:
+            out_ld.set(msg)
+
+
+class WMVN(VariableNode):
+    """
+        Working Memory Variable Node. Gate node connecting predicate memories to conditionals.
+        Special computation of normalization if one of the predicate's wm variable node need normalization.
+    """
+
+    # TODO: implement normalization
+    def __init__(self, name, var_list):
+        super(WMVN, self).__init__(name, var_list)
+        self.pretty_log["node type"] = "Working Memory Variable Node"
 
 
 class PBFN(FactorNode):
@@ -758,32 +798,3 @@ class GFFN(FactorNode):
     def check_quiesce(self):
         super(GFFN, self).check_quiesce()
         return False  # Always return False so that compute() will still proceed
-
-
-class DVN(VariableNode):
-    """
-        Default (Dummy) Variable Node. No special computation, simply relay message to next factor node
-        Only admit one incoming and one outgoing link
-    """
-    def __init__(self, name, var_list):
-        super(DVN, self).__init__(name, var_list)
-        self.pretty_log["node type"] = "Default Variable Node"
-
-    def add_link(self, linkdata):
-        assert isinstance(linkdata, LinkData)
-        # Make sure no more than on incoming and one outgoing link
-        assert (linkdata.to_fn and len(self._out_linkdata) == 0) or (not linkdata.to_fn and len(self._in_linkdata) == 0)
-
-        super(DVN, self).add_link(linkdata)
-
-
-class WMVN(VariableNode):
-    """
-        Working Memory Variable Node. Gate node connecting predicate memories to conditionals.
-        Special computation of normalization if one of the predicate's wm variable node need normalization.
-    """
-
-    # TODO: implement normalization
-    def __init__(self, name, var_list):
-        super(WMVN, self).__init__(name, var_list)
-        self.pretty_log["node type"] = "Working Memory Variable Node"
