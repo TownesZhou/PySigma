@@ -55,9 +55,10 @@ class Type:
             raise ValueError("'symbolic' should be True if and only if 'symbol_list' is provided")
         if symbolic is (size is not None):
             raise ValueError("'symbolic' should be False if and only if 'size' is provided")
-        if not isinstance(size, int) or size < 1:
+        if size is not None and (not isinstance(size, int) or size < 1):
             raise ValueError("'size' must be of type 'int' and value be greater than 0")
-        if not isinstance(symbol_list, Iterable) or not all(isinstance(s, str) for s in symbol_list):
+        if symbol_list is not None and (not isinstance(symbol_list, Iterable) or
+                                        not all(isinstance(s, str) for s in symbol_list)):
             raise ValueError("'symbol_list' must be an iterable of 'str'")
 
         # Declare attributes
