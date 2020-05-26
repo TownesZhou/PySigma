@@ -90,7 +90,7 @@ class Message:
     """
     def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size, event_shape: torch.Size,
                  dist: Distribution = None, particles: torch.Tensor = None, weights: torch.Tensor = None,
-                 sampling_density: torch.Tensor = None):
+                 log_density: torch.Tensor = None):
         """
             Instantiate a message
 
@@ -102,14 +102,17 @@ class Message:
             :param particles: Particle list. Must present if message is Particles type
             :param weights: A one-dimension PyTorch tensor as particle weights. Size the same as the first dimension of
                             the particle list.
-            :param sampling_density: A one-dimension PyTorch tensor containing the probability density of the particles
-                                     when they were sampled from the original sampling distribution. Size the same as
-                                     the first dimension of the particle list.
+            :param log_density: A one-dimension PyTorch tensor containing the log probability density (log-pdf) of the
+                                particles when they were sampled from the original sampling distribution. Size the same
+                                as the first dimension of the particle list.
         """
         assert isinstance(msg_type, MessageType)
-        assert isinstance(sample_shape, torch.Size) and len(sample_shape) == 1
-        assert isinstance(batch_shape, torch.Size) and len(batch_shape) >= 1
-        assert isinstance(event_shape, torch.Size) and len(event_shape) >= 1
+        # assert isinstance(sample_shape, torch.Size) and len(sample_shape) == 1
+        # assert isinstance(batch_shape, torch.Size) and len(batch_shape) >= 1
+        # assert isinstance(event_shape, torch.Size) and len(event_shape) >= 1
+        assert isinstance(sample_shape, torch.Size)
+        assert isinstance(batch_shape, torch.Size)
+        assert isinstance(event_shape, torch.Size)
         assert dist is None or isinstance(dist, Distribution)
         assert particles is None or isinstance(particles, torch.Tensor)
         assert weights is None or isinstance(weights, torch.Tensor)
@@ -121,7 +124,7 @@ class Message:
         # Particle list
         self.particles = particles
         self.weights = weights
-        self.sampling_density = sampling_density
+        self.log_density = log_density
         # Shapes
         self.s_shape = sample_shape
         self.b_shape = batch_shape
@@ -140,7 +143,7 @@ class Message:
             # Need to provide a particle list, but no distribution
             assert self.particles is not None
             assert self.weights is not None
-            assert self.sampling_density is not None
+            assert self.log_density is not None
             assert self.dist is None
 
         # Check shape
@@ -151,8 +154,8 @@ class Message:
             assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
         if self.weights is not None:
             assert self.s_shape == self.weights.shape
-        if self.sampling_density is not None:
-            assert self.s_shape == self.sampling_density.shape
+        if self.log_density is not None:
+            assert self.s_shape == self.log_density.shape
 
     def clone(self):
         """

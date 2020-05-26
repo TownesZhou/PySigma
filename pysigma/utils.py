@@ -46,12 +46,14 @@ class Params2Dist:
         {}
 
     @classmethod
-    def convert(cls, params: List[torch.Tensor], dist_type: Type, b_shape: bool = None, e_shape: bool = None):
+    def convert(cls, params: torch.Tensor, dist_type: Type, b_shape: torch.Size = None, e_shape: torch.Size = None):
         """
             Automatic conversion. Provide the params and the distribution class, return a distribution instance.
             If b_shape, e_shape not None, then will check if the shape of the resulting distribution matches
+
+            assume params has shape (b_shape + param_shape)
         """
-        assert isinstance(params, list) and all(isinstance(param, torch.Tensor) for param in params)
+        assert isinstance(params, torch.Tensor)
         assert issubclass(dist_type, torch.distributions.Distribution)
         assert (b_shape is None) == (e_shape is None)
         assert b_shape is None or isinstance(b_shape, torch.Size)
