@@ -1,11 +1,13 @@
 import pytest
 from pysigma.structures import *
+from torch.distributions import Distribution
 
 
 class TestTypeArgumentProblematic:
     """
         Test Type with problematic arguments
     """
+
     def test_type_problematic_1(self):
         # 1st argument must be str
         with pytest.raises(ValueError):
@@ -51,6 +53,7 @@ class TestTypeArgumentProblematic:
         with pytest.raises(ValueError):
             t = Type("test", False, 1, symbol_list=["a", "b", "c"])
 
+
 class TestTypeArgumentCorrect:
     """
         Test Type with correct arguments
@@ -65,66 +68,123 @@ class TestTypeArgumentCorrect:
         t = Type("test", False, 1)
 
 
-# class TestPredicateArgumentCorrect:
-#     """
-#         Test Predicate with problematic arguments
-#     """
-#
-#     test_type_1 = Type("type1", False, 1)
-#     test_type_2 = Type("type2", False, 10)
-#     test_type_3 = Type("type3", True, symbol_list=["a", "b", "c"])
-#     test_type_4 = Type("type4", True, symbol_list=["1", "2", "3"])
-#
-#     incorrect_relational_arg = (1, test_type_1)
-#     correct_relational_args = ('type1', test_type_3)
-#
-#     incorrect_random_args = (1, test_type_1)
-#     correct_random_args = (test_type_1, test_type_2)
-#
-#     def test_predicate_problematic_1(self):
-#         # name argument must be str
-#         with pytest.raises(ValueError):
-#             t = Predicate(1, [self.correct_relational_args], [self.correct_random_args], "BP")
-#
-#     def test_predicate_problematic_2(self):
-#         # relational_args must be iterable of size 2 tuple
-#         with pytest.raises(ValueError):
-#             t = Predicate("test", [(1, 1), (2, 3, 4)])
-#
-#     def test_predicate_problematic_3(self):
-#         # 1st element of tuple should be 'str', 2nd should be 'Type'
-#
-#         with pytest.raises(ValueError):
-#             t1 = Predicate("test", relational_args, random_args, "BP")
+class TestPredicateArgumentProblematic:
+    """
+        Test Predicate with problematic arguments
+    """
 
-    # def test_predicate_problematic_4(self):
-    #     # 2nd element type argument name should be distinct
-    #     with pytest.raises(ValueError):
-    #         t1 = Predicate("test", [("type1", self.test_type_1),
-    #                                 ("type2", self.test_type_1)])
+    test_type_1 = Type("type1", False, 1)
+    test_type_2 = Type("type2", False, 10)
+    test_type_3 = Type("type3", True, symbol_list=["a", "b", "c"])
+    test_type_4 = Type("type4", True, symbol_list=["1", "2", "3"])
+
+    correct_relational_args = [('type1', test_type_3)]
+    correct_random_args = [(test_type_1, test_type_2)]
+
+    def test_predicate_problematic_1(self):
+        # name argument must be str
+        with pytest.raises(ValueError):
+            t = Predicate(1, [self.correct_relational_args], self.correct_random_args, "BP")
+
+    def test_predicate_problematic_2(self):
+        # relational_args must be iterable of size 2 tuple
+        with pytest.raises(ValueError):
+            t = Predicate("test", [(1, 1), (2, 3, 4)], self.correct_random_args, "BP")
+
+    def test_predicate_problematic_3(self):
+        # relational_args 1st element of tuple should be 'str', 2nd should be 'Type'
+        with pytest.raises(ValueError):
+            t1 = Predicate("test", [(1, "str")], self.correct_random_args, "BP")
+            t2 = Predicate("test", [(1, self.test_type_1)], self.correct_random_args, "BP")
+            t3 = Predicate("test", [(self.test_type_1, self.test_type_2)], self.correct_random_args, "BP")
+
+    def test_predicate_problematic_4(self):
+        # relational_args 2nd element type argument name should be distinct
+        with pytest.raises(ValueError):
+            t1 = Predicate("test", [("arg1", self.test_type_1), ("arg2", self.test_type_2)], self.correct_random_args,
+                           "BP")
+
+    def test_predicate_problematic_5(self):
+        # random_args tuple argument name should be distinct among themselves
+        with pytest.raises(ValueError):
+            t1 = Predicate("test", self.correct_relational_args,
+                           [("arg1", self.test_type_1), ("arg1", self.test_type_1)], "BP")
+
+    def test_predicate_problematic_6(self):
+        # random_args tuple argument name should be distinct from relational args
+        with pytest.raises(ValueError):
+            t1 = Predicate("test", [("arg1", self.test_type_1)],
+                           [("arg1", self.test_type_1), ("arg2", self.test_type_1)], "BP")
+
+    def test_predicate_problematic_7(self):
+        # random_args tuple Type must not be symbolic
+        with pytest.raises(ValueError):
+            t1 = Predicate("test", [("arg1", self.test_type_1)],
+                           [("arg1", self.test_type_3), ("arg2", self.test_type_3)], "BP")
+
+    def test_predicate_problematic_8(self):
+        # random_args tuple Type must be the same type
+        with pytest.raises(ValueError):
+            t1 = Predicate("test", [("arg1", self.test_type_1)],
+                           [("arg1", self.test_type_1), ("arg2", self.test_type_1)], "BP")
+
+    def test_predicate_problematic_9(self):
+        # inference_mode other "BP", "VMP", "EP"
+        with pytest.raises(ValueError):
+            t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "ELSE")
+
+    def test_predicate_problematic_10(self):
+        # num_particles negative size
+        with pytest.raises(ValueError):
+            t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP",
+                           num_particles=-1)
+
+    # def test_predicate_problematic_5(self):
+    #
     #
     # def test_predicate_problematic_5(self):
-    #     # tuple argument name should be distinct among themselves
-    #     with pytest.raises(ValueError):
-    #         t1 = Predicate("test", [("type1", self.test_type_1),
-    #                                 ("type2", self.test_type_1)])
-    #
-    #
-    # def test_predicate_problematic_5(self):
-    #
-    # def test_predicate_problematic_5(self):
-    #
-    # def test_predicate_problematic_5(self):
-    #
-    #
-    # def test_predicate_problematic_5(self):
-#
-#     def test_predicate_correct(self):
-#         """
-#             Test Predicate with correct arguments
-#         """
-#
-#
+
+
+class TestPredicateArgumentCorrect:
+    """
+        Test Predicate with problematic arguments
+    """
+    test_type_1 = Type("type1", False, 1)
+    test_type_2 = Type("type2", False, 10)
+    test_type_3 = Type("type3", True, symbol_list=["a", "b", "c"])
+    test_type_4 = Type("type4", True, symbol_list=["1", "2", "3"])
+
+    # dist = Distribution(batch_shape=torch.Size([2, 2]), event_shape=torch.Size([2, 2]))
+
+    def test_predicate_correct_1(self):
+        # create some correct predicate
+        t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP")
+        t2 = Predicate("test2", [("arg_1", self.test_type_1), ("arg_3", self.test_type_3)],
+                       [("arg_2", self.test_type_2)], "VMP")
+        t3 = Predicate("test3", [("arg_4", self.test_type_4), ("arg_3", self.test_type_3)],
+                       [("arg_1", self.test_type_2), ("arg_2", self.test_type_2)], "EP")
+
+    def test_predicate_correct_2(self):
+        # specify number of particles
+        t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP", num_particles=100)
+
+    # TODO: test the distribution_class argument
+    # def test_predicate_correct_3(self):
+    #     t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP", distribution_class=self.dist)
+
+    def test_predicate_correct_4(self):
+        # memorial predicate
+        t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP", memorial=True)
+
+    def test_predicate_correct_4(self):
+        # perceptual predicate
+        t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP", perceptual=True)
+
+    def test_predicate_correct_4(self):
+        # memorial and perceptual predicate
+        t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP", memorial=True,
+                       perceptual=True)
+
 #     def test_consitional_problematic(self):
 #         """
 #             Test Conditional with problematic arguments
@@ -135,19 +195,4 @@ class TestTypeArgumentCorrect:
 #         """
 #             Test Conditional with correct arguments
 #         """
-#
-#
-#
-# if __name__ == "__main__":
-#     t = TestStructureArgValidation()
-#
-#     t.test_type_problematic()
-#     t.test_type_correct()
-#
-#     # t.test_predicate_problematic()
-#     # t.test_predicate_correct()
-#     #
-#     # t.test_conditional_problematic()
-#     # t.test_conditional_correct()
-#
-#     # print("Argument test passed successfully without error")
+
