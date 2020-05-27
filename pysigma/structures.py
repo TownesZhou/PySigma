@@ -212,7 +212,7 @@ class Predicate:
 
     def __str__(self):
         # String representation for display
-        return extern_name(self.name, "predicate")
+        return self.name
 
     def __hash__(self):
         # Hash by structure's own name. This assumes its name is unique in the model and therefore can be treated as
@@ -310,8 +310,8 @@ class Conditional:
                 if not isinstance(pred, Predicate):
                     raise ValueError("Expect the first element of each predicate pattern tuple to be an instance of "
                                      "'Predicate' class. Instead found {} in pattern {}" .format(pred, pat))
-                if pat_elements is not None and not isinstance(pat_elements, Iterable) or all(isinstance(e, tuple)
-                                                                                              for e in pat_elements):
+                if pat_elements is not None and not (isinstance(pat_elements, Iterable) and all(isinstance(e, tuple)
+                                                                                              for e in pat_elements)):
                     raise ValueError("If specified, expect the second element of each predicate pattern tuple to be an "
                                      "Iterable of  tuples, each tuple represent a single pattern element. Instead "
                                      "found {}".format(pat_elements))
@@ -500,7 +500,7 @@ class Conditional:
             all_pat_var_names = all_pat_var_names.union(set(entry.keys()))
         for pat_var_name in all_pat_var_names:
             metatype = None
-            size = None         # to be determined if metatype is Relational
+            size = 0         # to be determined if metatype is Relational
             var_type = None     # to be determined and check if metatype is Random
             for pat_name, entry in self.pattern_var2arg.items():
                 if pat_var_name not in entry.keys():
@@ -553,7 +553,7 @@ class Conditional:
 
     def __str__(self):
         # String representation for display
-        return extern_name(self.name, "conditional")
+        return self.name
 
     def __hash__(self):
         # Hash by structure's own name. This assumes its name is unique in the model and therefore can be treated as
