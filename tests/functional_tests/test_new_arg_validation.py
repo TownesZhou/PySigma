@@ -1,6 +1,6 @@
 import pytest
 from pysigma.structures import *
-from torch.distributions import Distribution
+import torch
 
 
 class TestTypeArgumentProblematic:
@@ -139,11 +139,6 @@ class TestPredicateArgumentProblematic:
             t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP",
                            num_particles=-1)
 
-    # def test_predicate_problematic_5(self):
-    #
-    #
-    # def test_predicate_problematic_5(self):
-
 
 class TestPredicateArgumentCorrect:
     """
@@ -153,8 +148,6 @@ class TestPredicateArgumentCorrect:
     test_type_2 = Type("type2", False, 10)
     test_type_3 = Type("type3", True, symbol_list=["a", "b", "c"])
     test_type_4 = Type("type4", True, symbol_list=["1", "2", "3"])
-
-    # dist = Distribution(batch_shape=torch.Size([2, 2]), event_shape=torch.Size([2, 2]))
 
     def test_predicate_correct_1(self):
         # create some correct predicate
@@ -168,9 +161,9 @@ class TestPredicateArgumentCorrect:
         # specify number of particles
         t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP", num_particles=100)
 
-    # TODO: test the distribution_class argument
-    # def test_predicate_correct_3(self):
-    #     t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP", distribution_class=self.dist)
+    def test_predicate_correct_3(self):
+        t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP",
+                       distribution_class=torch.distributions.categorical.Categorical)
 
     def test_predicate_correct_4(self):
         # memorial predicate
@@ -201,7 +194,6 @@ class TestConditionalArgumentProblematic:
             t = Conditional(1, [(self.test_pred_1, None)])
 
 
-
 class TestConditionalArgumentCorrect:
     """
         Test Conditional with correct arguments
@@ -212,7 +204,7 @@ class TestConditionalArgumentCorrect:
 
     test_pred_1 = Predicate("test1", [("arg_1", test_type_1)], [("arg_2", test_type_2)], "BP")
     test_pred_2 = Predicate("test2", [("arg_1", test_type_1), ("arg_3", test_type_3)],
-                       [("arg_2", test_type_2)], "VMP")
+                            [("arg_2", test_type_2)], "VMP")
 
     pat_element_1 = ('arg_1', 'var1')
     pat_element_2 = ('arg_2', 'var2')
@@ -220,12 +212,9 @@ class TestConditionalArgumentCorrect:
     pred_patterns_1 = (test_pred_1, [pat_element_1, pat_element_2])
     pred_patterns_2 = (test_pred_2, [pat_element_1, pat_element_2])
 
-
     test_conditions = [pred_patterns_1, pred_patterns_2]
     test_condacts = [pred_patterns_2, pred_patterns_1]
-
 
     def test_conditional_correct_1(self):
         # create conditional with only name
         t = Conditional("cond_1", self.test_conditions, self.test_condacts)
-
