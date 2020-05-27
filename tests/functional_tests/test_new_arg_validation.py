@@ -185,14 +185,47 @@ class TestPredicateArgumentCorrect:
         t1 = Predicate("test1", [("arg_1", self.test_type_1)], [("arg_2", self.test_type_2)], "BP", memorial=True,
                        perceptual=True)
 
-#     def test_consitional_problematic(self):
-#         """
-#             Test Conditional with problematic arguments
-#         """
-#
-#
-#     def test_consitional_correct(self):
-#         """
-#             Test Conditional with correct arguments
-#         """
+
+class TestConditionalArgumentProblematic:
+    """
+        Test Conditional with problematic arguments
+    """
+    test_type_1 = Type("type1", False, 1)
+    test_type_2 = Type("type2", False, 10)
+    test_type_3 = Type("type3", True, symbol_list=["a", "b", "c"])
+    test_pred_1 = Predicate("test1", [("arg_1", test_type_1)], [("arg_2", test_type_2)], "BP")
+
+    def test_conditional_problematic_1(self):
+        # name should be string
+        with pytest.raises(ValueError):
+            t = Conditional(1, [(self.test_pred_1, None)])
+
+
+
+class TestConditionalArgumentCorrect:
+    """
+        Test Conditional with correct arguments
+    """
+    test_type_1 = Type("type1", False, 1)
+    test_type_2 = Type("type2", False, 10)
+    test_type_3 = Type("type3", True, symbol_list=["a", "b", "c"])
+
+    test_pred_1 = Predicate("test1", [("arg_1", test_type_1)], [("arg_2", test_type_2)], "BP")
+    test_pred_2 = Predicate("test2", [("arg_1", test_type_1), ("arg_3", test_type_3)],
+                       [("arg_2", test_type_2)], "VMP")
+
+    pat_element_1 = ('arg_1', 'var1')
+    pat_element_2 = ('arg_2', 'var2')
+
+    pred_patterns_1 = (test_pred_1, [pat_element_1, pat_element_2])
+    pred_patterns_2 = (test_pred_2, [pat_element_1, pat_element_2])
+
+
+    test_conditions = [pred_patterns_1, pred_patterns_2]
+    test_condacts = [pred_patterns_2, pred_patterns_1]
+
+
+    def test_conditional_correct_1(self):
+        # create conditional with only name
+        t = Conditional("cond_1", self.test_conditions, self.test_condacts)
 
