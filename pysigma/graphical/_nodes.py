@@ -453,6 +453,7 @@ class WMVN(VariableNode):
                         # Using particle indices to select particles
                         new_particles = particles.index_select(dim=0, index=indices)
                         new_log_dens = log_densities.index_select(dim=0, index=indices)
+                        # Because we are resampling, the weights are uniform
                         new_weights = torch.ones(size=self.num_particles) * (1 / self.num_particles)
 
                     # Otherwise, sort the weights in descending and select the particles with the highest weights
@@ -465,6 +466,8 @@ class WMVN(VariableNode):
                         # Select particles
                         new_particles = particles.index_select(dim=0, index=indices)
                         new_log_dens = log_densities.index_select(dim=0, index=indices)
+                        # Normalize new weights so that it sums to 1
+                        new_weights *= (1 / new_weights.sum())
                     # Output message
                     out_msg = Message(MessageType.Particles, self.s_shape, b_shape, e_shape, dist=None,
                                       particles=new_particles, weights=new_weights, log_density=new_log_dens)
