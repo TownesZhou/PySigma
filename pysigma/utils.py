@@ -4,8 +4,9 @@
 import torch
 import torch.distributions
 from torch.distributions import Distribution
-from torch.distributions.constraints import Constraint
+from torch.distributions.constraints import Constraint, integer_interval
 from itertools import Iterable
+import math
 from typing import List, Type
 
 
@@ -107,6 +108,13 @@ class Exp2Natural:
     pass
 
 
+# TODO: Knowledge format check.
+#       Check if RV size, type, and value constraint are compatible with declared distribution class of predicate
+#       distribution class dependent
+class FormatCheck:
+    pass
+
+
 # TODO: Particle knowledge translator class
 class KnowledgeTraslator:
     """
@@ -148,10 +156,13 @@ class KnowledgeTraslator:
         assert issubclass(dist_class, Distribution)
         assert isinstance(var_sizes, Iterable) and all(isinstance(size, int) for size in var_sizes)
         assert isinstance(var_constraints, Iterable) and all(isinstance(c, Constraint) for c in var_constraints)
+        assert len(var_sizes) == len(var_constraints)
 
         self.dist_class = dist_class
         self.var_sizes = var_sizes
         self.var_constraints = var_constraints
+
+        self.num_vars = len(var_sizes)
 
     def event2torch_event(self, particles):
         """
@@ -196,3 +207,52 @@ class KnowledgeTraslator:
             raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
                                       .format(self.dist_class))
         return self.dict_2pred_param[self.dist_class](params)
+
+    """
+        Categorical distribution. Assumes all RV have size 1
+            - event translation from pred to torch:
+                Split last dimension by number of variables. Compute value by taking volume multiplication
+                
+    """
+    def _categorical_var_span(self):
+        # Helper function to determine the value range of each rv
+        assert all(isinstance(c, integer_interval) for c in self.var_constraints)
+        return list(c.upper_bound - c.lower_bound + 1 for c in self.var_constraints)
+
+    def _categorical_2torch_event(self, particles):
+        assert isinstance(particles, torch.Tensor) and particles.shape[-1] == self.num_vars
+        split_particles = particles.split(split_size=1, dim=-1)
+        var_span = self._categorical_var_span()
+
+        # Taking volume product
+        volume_prod = 1
+        base = 1
+        # Going backward through spans to take product
+        for val, span in zip(reversed(split_particles), reversed(var_span)):
+            # Cumulative summation by the product of i_th variable's value with its base
+            volume_prod += val * base
+            # Base of i_th var is the product of the spans of all later variables (i.e. from (i+1)th to n_th variable)
+            base *= span
+
+        return volume_prod
+
+    def _categorical_2pred_event(self, particles):
+        assert isinstance(particles, torch.Tensor)
+        # TODO: check particles dtype and shape
+        var_span = self._categorical_var_span()
+
+        # Treat values as volume products and take mod w.r.t. variables' spans
+        particle_list = []
+        residue = particles
+        base = math.prod(var_span)
+        # Going forward through spans to take modulo
+        for span in var_span:
+            base /= span
+            particle_list.append(residue % base)
+            residue = residue // base
+
+        # Concatenate along the last dimension
+        result = torch.cat(particle_list, dim=-1)
+        return result
+
+
