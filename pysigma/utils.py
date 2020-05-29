@@ -5,7 +5,7 @@ import torch
 import torch.distributions
 from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint, integer_interval
-from itertools import Iterable
+from collections.abc import Iterable
 import math
 from typing import List, Type
 
