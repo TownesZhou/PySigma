@@ -4,6 +4,7 @@
 import torch
 from torch.distributions import Distribution
 from torch.distributions.categorical import Categorical
+from torch.distributions.constraints import Constraint
 from enum import Enum
 
 from utils import Dist2Params, Params2Dist
@@ -27,13 +28,17 @@ class Variable:
             its "Type" is captured in the 'size' field. This is to support matching across different types of variables
              in a principled way.
     """
-    def __init__(self, name: str, metatype: VariableMetatype, size: int):
+    def __init__(self, name, metatype, size, value_constraints=None):
         """
-            Instantiate a variable
+            Instantiate a variable. Optionally indicates a list of value constraints if and only if variable is Random
+                metatype.
         """
         assert isinstance(name, str)
         assert isinstance(metatype, VariableMetatype)
         assert isinstance(size, int)
+        assert value_constraints is None or (isinstance(value_constraints, list) and
+                                             all(isinstance(c, Constraint) for c in value_constraints))
+        assert (value_constraints is not None) is (metatype is VariableMetatype.Random)
 
         # Variable name, its identity. Used for variable matching. Of type str
         self.name = name
@@ -41,6 +46,9 @@ class Variable:
         self.metatype = metatype
         # Variable size. Size of the dimension that the variable corresponds to. Of type int
         self.size = size
+        # List of value constraints if the Variable is of Random metatype.
+        #   Useful at Beta-join to select globally valid particle values
+        self.constraints = value_constraints
 
     def __eq__(self, other):
         # override so '==' operator test variable equality

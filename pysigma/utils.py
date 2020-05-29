@@ -7,7 +7,6 @@ from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint, integer_interval
 from collections.abc import Iterable
 import math
-from typing import List, Type
 
 
 def intern_name(name: str, struc_type: str):
@@ -51,7 +50,7 @@ class Params2Dist:
         {}
 
     @classmethod
-    def convert(cls, params: torch.Tensor, dist_type: Type, b_shape: torch.Size = None, e_shape: torch.Size = None):
+    def convert(cls, params, dist_type, b_shape=None, e_shape=None):
         """
             Automatic conversion. Provide the params and the distribution class, return a distribution instance.
             If b_shape, e_shape not None, then will check if the shape of the resulting distribution matches
@@ -85,7 +84,7 @@ class Dist2Params:
         {}
 
     @classmethod
-    def convert(cls, dist: torch.distributions.Distribution):
+    def convert(cls, dist):
         """
             Automatic conversion. Provide the distribution instance, return its params as list of tensors.
         """
