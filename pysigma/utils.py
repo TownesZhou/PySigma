@@ -3,6 +3,9 @@
 """
 import torch
 import torch.distributions
+from torch.distributions import Distribution
+from torch.distributions.constraints import Constraint
+from itertools import Iterable
 from typing import List, Type
 
 
@@ -21,6 +24,7 @@ def intern_name(name: str, struc_type: str):
         return "PRED_[" + name.upper() + "]"
     elif struc_type is "conditional":
         return "COND_[" + name.upper() + "]"
+
 
 def extern_name(name: str, struc_type: str):
     """
@@ -102,3 +106,93 @@ class Natural2Exp:
 class Exp2Natural:
     pass
 
+
+# TODO: Particle knowledge translator class
+class KnowledgeTraslator:
+    """
+        knowledge translator class. Translate knowledge tensors between the forms understandable by Predicate and that
+            understandable by PyTorch's distribution class. This includes both event particle tensors and parameter
+            tensors.
+
+        Different distribution class requires different handling, but in general values for multiple random variables
+            (potentially of different sizes) will be concatenated together to form the last dimension of event samples
+            that can be interpreted by PyTorch.
+
+        A translator instance should be instantiated and hold by each Predicate.
+    """
+
+    # distribution-dependent translation method pointer. Indexed by distribution class
+    dict_2torch_event = {
+
+    }
+    dict_2pred_event = {
+
+    }
+    dict_2torch_param = {
+
+    }
+    dict_2pred_param = {
+
+    }
+
+    def __init__(self, dist_class, var_sizes, var_constraints):
+        """
+            Instantiate a translator
+
+            :param dist_class: A subclass of torch.distributions.Distributions
+            :param var_sizes:  A sequence of integers, denoting the sizes of a predicate's random variables. The order
+                               will be respected when concatenating event values.
+            :param var_constraints: A sequence of torch.distributions.constraints.Constraint object. Each denoting the
+                                    value constraint of the corresponding random variable.
+        """
+        assert issubclass(dist_class, Distribution)
+        assert isinstance(var_sizes, Iterable) and all(isinstance(size, int) for size in var_sizes)
+        assert isinstance(var_constraints, Iterable) and all(isinstance(c, Constraint) for c in var_constraints)
+
+        self.dist_class = dist_class
+        self.var_sizes = var_sizes
+        self.var_constraints = var_constraints
+
+    def event2torch_event(self, particles):
+        """
+            Translate event particles from the format understandable by Predicate to the format understandable by
+                PyTorch
+        """
+        assert isinstance(particles, torch.Tensor)
+        if self.dist_class not in self.dict_2torch_event.keys():
+            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        return self.dict_2torch_event[self.dist_class](particles)
+
+    def event2pred_event(self, particles):
+        """
+            Translate event particles from the format understandable by PyTorch to the format understandable by
+                Predicate
+        """
+        assert isinstance(particles, torch.Tensor)
+        if self.dist_class not in self.dict_2pred_event.keys():
+            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        return self.dict_2pred_event[self.dist_class](particles)
+
+    def param2torch_param(self, params):
+        """
+            Translate parameters from the format understandable by Predicate to the format understandable by
+                PyTorch
+        """
+        assert isinstance(params, torch.Tensor)
+        if self.dist_class not in self.dict_2torch_param.keys():
+            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        return self.dict_2torch_param[self.dist_class](params)
+
+    def param2pred_event(self, params):
+        """
+            Translate parameters from the format understandable by PyTorch to the format understandable by
+                Predicate
+        """
+        assert isinstance(params, torch.Tensor)
+        if self.dist_class not in self.dict_2pred_param.keys():
+            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        return self.dict_2pred_param[self.dist_class](params)
