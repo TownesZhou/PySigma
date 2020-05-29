@@ -129,20 +129,6 @@ class KnowledgeTraslator:
         A translator instance should be instantiated and hold by each Predicate.
     """
 
-    # distribution-dependent translation method pointer. Indexed by distribution class
-    dict_2torch_event = {
-
-    }
-    dict_2pred_event = {
-
-    }
-    dict_2torch_param = {
-
-    }
-    dict_2pred_param = {
-
-    }
-
     def __init__(self, dist_class, var_sizes, var_constraints):
         """
             Instantiate a translator
@@ -153,6 +139,20 @@ class KnowledgeTraslator:
             :param var_constraints: A sequence of torch.distributions.constraints.Constraint object. Each denoting the
                                     value constraint of the corresponding random variable.
         """
+        # distribution-dependent translation method pointer. Indexed by distribution class
+        self.dict_2torch_event = {
+            torch.distributions.Categorical: self._categorical_2torch_event
+        }
+        self.dict_2pred_event = {
+            torch.distributions.Categorical: self._categorical_2pred_event
+        }
+        self.dict_2torch_param = {
+            torch.distributions.Categorical: self._categorical_2torch_param
+        }
+        self.dict_2pred_param = {
+            torch.distributions.Categorical: self._categorical_2pred_param
+        }
+
         assert issubclass(dist_class, Distribution)
         assert isinstance(var_sizes, Iterable) and all(isinstance(size, int) for size in var_sizes)
         assert isinstance(var_constraints, Iterable) and all(isinstance(c, Constraint) for c in var_constraints)
