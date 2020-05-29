@@ -22,6 +22,44 @@ class VariableMap:
 class FactorFunction:
     """
         Class type for factor node function
+
+        A FactorFunction instance can be thought of as a function object that takes in a set of batched tensors, each
+            corresponding to a batched value assignments to a random variable, and produces a single batched tensor that
+            represents the joint probability density, i.e.,
+                    val = Prob(X_1, X_2, ..., X_n)
+            where val, X_1, X_2, ..., X_n are all batched over the first dimension.
+
+        The first dimension of all tensors is the result of the particle indexing dimension and all relational
+            variables' dimensions being reshaped into one. Therefore, it should be ignored by the factor function
+            procedure and simply treated as the "batched" dimension.
+
+        Defines different types of factor functions:
+            a. Tabular factor function
+                Returns a full-dimension tensor at once representing the entire factor function table. Suitable when all
+                random variables X_1, ..., X_n have finite discrete domains.
+                Corresponds to legacy Lisp Sigma's factor node function
+
+            b. General form generative joint-probability density function
+                Returns a tensor representing the probability density each time given a set of value assignments to all
+                random variables. Enforce the semantics of
+                    val = Prob(X_1, X_2, ..., X_n)
+                Compatible with all particle-based inference methods
+
+            c. Exponential form joint-probability density function
+                Explicitly defines an exponential distribution. Encodes a exponential distribution class as the prior
+                and returns the PARAMETERS
+                Must declare this type if want architecture to recognize conjugate-exponential model structure and
+                carries out closed-form message updates
+
+            d. Deterministic factor function
+                Returns one or multiple VALUE tensors corresponding to one or multiple R.V.s given a value assignments
+                to other variables. Enforce the semantics of
+                    Y_1, Y_2, ..., Y_m = Func(X_1, X_2, ..., X_n)
+                Conceptually identical to (b) type factor function with a delta distribution, but due to concerns of
+                sample efficiency, this type should be used in practice
+                Note that once defined, the directionality of the corresponding Conditional is also assumed and fixed.
+                In other words, X_1, ..., X_n should only appear in condition patterns, and Y_1, ..., Y_m only in action
+                patterns
     """
     pass
 
@@ -30,8 +68,8 @@ class Type:
     def __init__(self, type_name, symbolic=False, size=None, symbol_list=None):
         """
             Specify a Type for a predicate's relational/random argument. Can be symbolic or discrete. Currently, Type
-                structure is only applicable to relational and random arguments, and specifications of particle indexing
-                arguments are declared at the Predicate's level.
+                structure is only applicable to relational and random arguments, and specification of particle indexing
+                argument is declared at the Predicate's level.
 
             For both relational and random arguments, a Type mainly declares the size of the corresponding tensor
                 dimension of the predicate's particle messages.
