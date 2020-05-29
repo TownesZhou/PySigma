@@ -212,7 +212,8 @@ class KnowledgeTraslator:
         Categorical distribution. Assumes all RV have size 1
             - event translation from pred to torch:
                 Split last dimension by number of variables. Compute value by taking volume multiplication
-                
+            - parameter translation from pred to torch:
+                reshape R.V. dimension into single dimension
     """
     def _categorical_var_span(self):
         # Helper function to determine the value range of each rv
@@ -254,5 +255,29 @@ class KnowledgeTraslator:
         # Concatenate along the last dimension
         result = torch.cat(particle_list, dim=-1)
         return result
+
+    def _categorical_2torch_param(self, params):
+        assert isinstance(params, torch.Tensor)
+        var_span = self._categorical_var_span()
+        old_shape = params.shape
+        assert old_shape[-len(var_span):] == torch.Size(var_span)
+
+        # Take a view of the parameter that flattens R.V. dimension
+        new_shape = old_shape[:-len(var_span)] + torch.Size([-1])
+        new_params = params.view(new_shape)
+
+        return new_params
+
+    def _categorical_2pred_param(self, params):
+        assert isinstance(params, torch.Tensor)
+        var_span = self._categorical_var_span()
+        assert params.shape[-1] == math.prod(var_span)
+
+        # Take a view of the parameter that expands last dimension into full R.V. dimensions
+        new_shape = params.shape[:-1] + torch.Size(var_span)
+        new_params = params.view(new_shape)
+
+        return new_params
+
 
 
