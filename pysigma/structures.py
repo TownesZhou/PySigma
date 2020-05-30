@@ -445,26 +445,25 @@ class Conditional:
         #                   - Fill in 'pattern_arg2var'
         #               b. For the entire pattern:
         #                   - For undeclared predicate arguments, declare pattern variable with name "DEFAULT_{}"
-        #                   - Check that each pattern variable is associated with arguments of the same metatype.
         #                   - Fill in 'pattern_var2arg'
+        #                   - Check that all arguments has been covered
+        #                   - Check that each pattern variable is associated with arguments of the same metatype.
+        #                   - Check that each Random variable is associated with arguments with the same type size
         #       2. Across the patterns:
         #               a. Gather pattern variables:
         #                   - Check that each pattern variable is associated with arguments of the same metatype.
         #                   - For relational pattern variables, determine its size by taking the max over the sizes of
         #                     all its associated predicate arguments.
-        #                !! - For random pattern variables, check that associated arguments' type sizes are the same,
-        #                       and gather all value constraints.
-        #                   - Generate variable instance and fill in 'global_var_info', 'rel_var_list', and
-        #                     'ran_var_list'
+        #                   - For random pattern variables, check that associated arguments' type sizes are the same
+        #                   - For random pattern variables, gather all value constraints
+        #                   - Generate variable instance and fill in 'rel_var_list', and 'ran_var_list'
         #               b. Check that 'function_var_names' agrees with 'ran_var_list'
-        #            !! c. Check that predicate types are compatible with pattern type / pattern directionality
-        #                   - At most one vector predicate among all predicate patterns that have a matching random
-        #                     variable
-        #                   - If Factor function is determinstic, check pattern directionality
-        #            !! d. Determine the global relational pattern variable order and joint dimensions for each global
-        #                  random variable
-        #            !! e. Determine (general) inference method at gamma factor node (the switch between close-form
-        #                  analytical update and particle-based stochastic update can be determined at runtime)
+        #               c. Check that predicate types are compatible with pattern type / pattern directionality
+        #                   - At most one vector predicate among all condition and condact patterns that have a matching
+        #                     random variable
+        #                !! - If Factor function is deterministic, check pattern directionality
+        #               d. Determine the global relational pattern variable order and corresponding joint relational
+        #                  dimensions
         #
         # Map from predicate argument name to pattern variable info, for each predicate pattern
         #       pattern_arg2var = { pattern_name :
@@ -479,7 +478,6 @@ class Conditional:
         # constant pattern is assigned a unique constant variable name
         self.pattern_arg2var = {}
         self.pattern_var2arg = {}
-        self.global_var_info = {}
         self.rel_var_list, self.ran_var_list = [], []
         self.var_list = []      # Determines global pattern variable order
         self.dims = []          # Determines global joint relational dimension (i.e., joint dimensions of all relational
@@ -546,12 +544,15 @@ class Conditional:
                         'vals': None,
                         'map': None
                     }
+                    # 1.b Fill in 'pattern_var2arg'
                     self.pattern_var2arg[pat_name][pat_var] = [arg_name]
-            # 1.b. Check that each pattern variable is associated with arguments of the same metatype
-            # First check all arguments has been covered
+
+            # 1.b Check that all arguments has been covered
             assert set(self.pattern_arg2var[pat_name].keys()) == \
                    set(chain(pred.relarg_name2relarg.keys(), pred.ranarg_name2ranarg.keys()))
+
             for pat_var, args in self.pattern_var2arg[pat_name].items():
+                # 1.b Check that each pattern variable is associated with arguments of the same metatype
                 if not all(arg_name in pred.relarg_name2relarg.keys() for arg_name in args) and \
                         not all(arg_name in pred.ranarg_name2ranarg.keys() for arg_name in args):
                     raise ValueError("Expect all predicate arguments associated with a pattern variable to be of the "
@@ -559,62 +560,90 @@ class Conditional:
                                      "associated arguments {} has metatypes {}"
                                      .format(pat_var, pat, args, list(pred.arg_name2metatype[arg] for arg in args)))
 
+                # 1.b Check that each Random variable is associated with arguments with the same type size
+                if pred.arg_name2metatype[args[0]] == VariableMetatype.Random:
+                    sizes = list(pred.ranarg_name2type[arg].size for arg in args)
+                    if min(sizes) != max(sizes):
+                        raise ValueError("Expect all predicate arguments associated with a Random metatype pattern "
+                                         "variable to have the same type size. Instead, found type sizes '{}' "
+                                         "associated with arguments '{}'"
+                                         .format(sizes, args))
+
         # 2.a Gather patern variables globally
         all_pat_var_names = set()
         for entry in self.pattern_var2arg.values():
             all_pat_var_names = all_pat_var_names.union(set(entry.keys()))
         for pat_var_name in all_pat_var_names:
             metatype = None
-            size = 0         # to be determined if metatype is Relational
-            var_type = None     # to be determined and check if metatype is Random
+            size = 0         # find max if metatype is Relational, make sure same if metatype is Random
+            constraint_set = set()    # to be filled if metatype is Random
             for pat_name, entry in self.pattern_var2arg.items():
                 if pat_var_name not in entry.keys():
                     continue
                 pat, pred = self.pat_name2pattern[pat_name], self.pat_name2pred[pat_name]
                 args = entry[pat_var_name]
-                # Check each pattern varaible is associated with arguments of the same metatype across patterns
+
+                # 2.b Check each pattern varaible is associated with arguments of the same metatype across patterns
                 if metatype is None:
                     metatype = pred.arg_name2metatype[args[0]]
-                else:
-                    if metatype is not pred.arg_name2metatype[args[0]]:
-                        raise ValueError("A pattern variable should be associated with predicate arguments of the same "
+                elif metatype is not pred.arg_name2metatype[args[0]]:
+                    raise ValueError("A pattern variable should be associated with predicate arguments of the same "
                                          "metatype across patterns. Found pattern variable '{}' associated with "
                                          "predicate argument '{}' with metatype '{}', when the metatype inferred from "
                                          "other arguments is '{}"
                                          .format(pat_var_name, args[0], pred.arg_name2metatype[args[0]], metatype))
-                # For relational variables, find maximal type size
+
+                # 2.b For relational variables, find maximal type size
                 if metatype is VariableMetatype.Relational:
                     tmp = max(pred.relarg_name2type[arg].size for arg in args)
                     size = max(tmp, size)
-                # For random variables, make sure the type of associated arguments is the same
+
+                # 2.b For random variables, make sure the type of associated arguments is the same
                 if metatype is VariableMetatype.Random:
-                    if var_type is None:
-                        var_type = pred.ranvar_type
-                    else:
-                        if var_type != pred.ranvar_type:
-                            raise ValueError("When a pattern variable is associated with random predicate arguments, "
-                                             "the associated arguments should be of the same type. However, found "
-                                             "pattern variable '{}' associated with predicate '{}' with random type "
-                                             "'{}', when the type inferred from other associated predicates is '{}'"
-                                             .format(pat_var_name, pred.name, pred.ranvar_type, var_type))
+                    if size == 0:
+                        size = pred.ranarg_name2type[args[0]].size
+                    elif size != pred.ranarg_name2type[args[0]].size:
+                        raise ValueError("A Random metatype pattern variable should be associated with predicate "
+                                         "arguments of the same type size across patterns. Found pattern variable '{}' "
+                                         "associated with predicate argument '{}' of type size '{}', while the correct "
+                                         "type size inferred from other arguments is '{}'"
+                                         .format(pat_var_name, args[0], pred.ranarg_name2type[args[0]].size, size))
+                    constraint_set = constraint_set.union(set(pred.ranarg_name2type[arg].constraint for arg in args))
+
             # Generate Variable instance and add to lists
-            pat_var = Variable(pat_var_name, metatype,
-                               size if metatype is VariableMetatype.Relational else var_type.size)
+            pat_var = Variable(pat_var_name, metatype, size,
+                               constraint_set if metatype is VariableMetatype.Random else None)
             if metatype is VariableMetatype.Relational:
                 self.rel_var_list.append(pat_var)
             else:
                 self.ran_var_list.append(pat_var)
 
-        # 2.b Decide global pattern variable order and joint dimension
-        self.var_list = self.rel_var_list + self.ran_var_list
-        self.dims = Size(pat_var.size for pat_var in self.rel_var_list)
-
-        # 2.c Check that 'function_var_names' agrees with 'ran_var_list'
+        # 2.b Check that 'function_var_names' agrees with 'ran_var_list'
         if function_var_names is not None:
             for ran_var in function_var_names:
                 if ran_var not in self.ran_var_list:
                     raise ValueError("Unknown random pattern variable '{}' in 'function_var_names'. Existing declared "
                                      "random pattern variables are: {}".format(ran_var, self.ran_var_list))
+
+        # 2.c Check that predicate types are compatible with pattern type / pattern directionality
+        for ran_var in self.ran_var_list:
+            # 2.c. At most one vector predicate among all condition and condact patterns that have a matching random
+            #      variable
+            vec_pred = None
+            for pat_name in self.condition_names + self.condact_names:
+                if ran_var.name in self.pattern_var2arg[pat_name].keys() and \
+                        self.pat_name2pred[pat_name].dist_class == None:
+                    if vec_pred is not None:
+                        raise ValueError("Expect at most one vector predicate among all condition and condact patterns "
+                                         "that have a matching random variable. Instead found at least two vector "
+                                         "predicates: '{}' and '{}' that matches on the random pattern variable '{}' "
+                                         .format(vec_pred, self.pat_name2pred[pat_name], ran_var))
+                    vec_pred = self.pat_name2pred[pat_name]
+
+        # TODO: 2.c Check pattern directionality for deterministic factor function
+
+        # 2.d Determine the global relational pattern variable order and corresponding joint relational dimensions
+        self.rel_dims = Size(pat_var.size for pat_var in self.rel_var_list)
 
     def __str__(self):
         # String representation for display

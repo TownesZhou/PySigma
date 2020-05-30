@@ -30,13 +30,13 @@ class Variable:
     """
     def __init__(self, name, metatype, size, value_constraints=None):
         """
-            Instantiate a variable. Optionally indicates a list of value constraints if and only if variable is Random
+            Instantiate a variable. Optionally indicates a set of value constraints if and only if variable is Random
                 metatype.
         """
         assert isinstance(name, str)
         assert isinstance(metatype, VariableMetatype)
         assert isinstance(size, int)
-        assert value_constraints is None or (isinstance(value_constraints, list) and
+        assert value_constraints is None or (isinstance(value_constraints, set) and
                                              all(isinstance(c, Constraint) for c in value_constraints))
         assert (value_constraints is not None) is (metatype is VariableMetatype.Random)
 
