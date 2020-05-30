@@ -3,7 +3,10 @@
 """
 import torch
 import torch.distributions
-from typing import List, Type
+from torch.distributions import Distribution
+from torch.distributions.constraints import Constraint, integer_interval
+from collections.abc import Iterable
+import math
 
 
 def intern_name(name: str, struc_type: str):
@@ -21,6 +24,7 @@ def intern_name(name: str, struc_type: str):
         return "PRED_[" + name.upper() + "]"
     elif struc_type is "conditional":
         return "COND_[" + name.upper() + "]"
+
 
 def extern_name(name: str, struc_type: str):
     """
@@ -46,7 +50,7 @@ class Params2Dist:
         {}
 
     @classmethod
-    def convert(cls, params: torch.Tensor, dist_type: Type, b_shape: torch.Size = None, e_shape: torch.Size = None):
+    def convert(cls, params, dist_type, b_shape=None, e_shape=None):
         """
             Automatic conversion. Provide the params and the distribution class, return a distribution instance.
             If b_shape, e_shape not None, then will check if the shape of the resulting distribution matches
@@ -80,7 +84,7 @@ class Dist2Params:
         {}
 
     @classmethod
-    def convert(cls, dist: torch.distributions.Distribution):
+    def convert(cls, dist):
         """
             Automatic conversion. Provide the distribution instance, return its params as list of tensors.
         """
@@ -101,4 +105,178 @@ class Natural2Exp:
 
 class Exp2Natural:
     pass
+
+
+# TODO: Knowledge format check.
+#       Check if RV size, type, and value constraint are compatible with declared distribution class of predicate
+#       distribution class dependent
+class FormatCheck:
+    pass
+
+
+# TODO: Particle knowledge translator class
+class KnowledgeTraslator:
+    """
+        knowledge translator class. Translate knowledge tensors between the forms understandable by Predicate and that
+            understandable by PyTorch's distribution class. This includes both event particle tensors and parameter
+            tensors.
+
+        Different distribution class requires different handling, but in general values for multiple random variables
+            (potentially of different sizes) will be concatenated together to form the last dimension of event samples
+            that can be interpreted by PyTorch.
+
+        A translator instance should be instantiated and hold by each Predicate.
+    """
+
+    def __init__(self, dist_class, var_sizes, var_constraints):
+        """
+            Instantiate a translator
+
+            :param dist_class: A subclass of torch.distributions.Distributions
+            :param var_sizes:  A sequence of integers, denoting the sizes of a predicate's random variables. The order
+                               will be respected when concatenating event values.
+            :param var_constraints: A sequence of torch.distributions.constraints.Constraint object. Each denoting the
+                                    value constraint of the corresponding random variable.
+        """
+        # distribution-dependent translation method pointer. Indexed by distribution class
+        self.dict_2torch_event = {
+            torch.distributions.Categorical: self._categorical_2torch_event
+        }
+        self.dict_2pred_event = {
+            torch.distributions.Categorical: self._categorical_2pred_event
+        }
+        self.dict_2torch_param = {
+            torch.distributions.Categorical: self._categorical_2torch_param
+        }
+        self.dict_2pred_param = {
+            torch.distributions.Categorical: self._categorical_2pred_param
+        }
+
+        assert issubclass(dist_class, Distribution)
+        assert isinstance(var_sizes, Iterable) and all(isinstance(size, int) for size in var_sizes)
+        assert isinstance(var_constraints, Iterable) and all(isinstance(c, Constraint) for c in var_constraints)
+        assert len(var_sizes) == len(var_constraints)
+
+        self.dist_class = dist_class
+        self.var_sizes = var_sizes
+        self.var_constraints = var_constraints
+
+        self.num_vars = len(var_sizes)
+
+    def event2torch_event(self, particles):
+        """
+            Translate event particles from the format understandable by Predicate to the format understandable by
+                PyTorch
+        """
+        assert isinstance(particles, torch.Tensor)
+        if self.dist_class not in self.dict_2torch_event.keys():
+            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        return self.dict_2torch_event[self.dist_class](particles)
+
+    def event2pred_event(self, particles):
+        """
+            Translate event particles from the format understandable by PyTorch to the format understandable by
+                Predicate
+        """
+        assert isinstance(particles, torch.Tensor)
+        if self.dist_class not in self.dict_2pred_event.keys():
+            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        return self.dict_2pred_event[self.dist_class](particles)
+
+    def param2torch_param(self, params):
+        """
+            Translate parameters from the format understandable by Predicate to the format understandable by
+                PyTorch
+        """
+        assert isinstance(params, torch.Tensor)
+        if self.dist_class not in self.dict_2torch_param.keys():
+            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        return self.dict_2torch_param[self.dist_class](params)
+
+    def param2pred_event(self, params):
+        """
+            Translate parameters from the format understandable by PyTorch to the format understandable by
+                Predicate
+        """
+        assert isinstance(params, torch.Tensor)
+        if self.dist_class not in self.dict_2pred_param.keys():
+            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        return self.dict_2pred_param[self.dist_class](params)
+
+    """
+        Categorical distribution. Assumes all RV have size 1
+            - event translation from pred to torch:
+                Split last dimension by number of variables. Compute value by taking volume multiplication
+            - parameter translation from pred to torch:
+                reshape R.V. dimension into single dimension
+    """
+    def _categorical_var_span(self):
+        # Helper function to determine the value range of each rv
+        assert all(isinstance(c, integer_interval) for c in self.var_constraints)
+        return list(c.upper_bound - c.lower_bound + 1 for c in self.var_constraints)
+
+    def _categorical_2torch_event(self, particles):
+        assert isinstance(particles, torch.Tensor) and particles.shape[-1] == self.num_vars
+        split_particles = particles.split(split_size=1, dim=-1)
+        var_span = self._categorical_var_span()
+
+        # Taking volume product
+        volume_prod = 1
+        base = 1
+        # Going backward through spans to take product
+        for val, span in zip(reversed(split_particles), reversed(var_span)):
+            # Cumulative summation by the product of i_th variable's value with its base
+            volume_prod += val * base
+            # Base of i_th var is the product of the spans of all later variables (i.e. from (i+1)th to n_th variable)
+            base *= span
+
+        return volume_prod
+
+    def _categorical_2pred_event(self, particles):
+        assert isinstance(particles, torch.Tensor)
+        # TODO: check particles dtype and shape
+        var_span = self._categorical_var_span()
+
+        # Treat values as volume products and take mod w.r.t. variables' spans
+        particle_list = []
+        residue = particles
+        base = math.prod(var_span)
+        # Going forward through spans to take modulo
+        for span in var_span:
+            base /= span
+            particle_list.append(residue % base)
+            residue = residue // base
+
+        # Concatenate along the last dimension
+        result = torch.cat(particle_list, dim=-1)
+        return result
+
+    def _categorical_2torch_param(self, params):
+        assert isinstance(params, torch.Tensor)
+        var_span = self._categorical_var_span()
+        old_shape = params.shape
+        assert old_shape[-len(var_span):] == torch.Size(var_span)
+
+        # Take a view of the parameter that flattens R.V. dimension
+        new_shape = old_shape[:-len(var_span)] + torch.Size([-1])
+        new_params = params.view(new_shape)
+
+        return new_params
+
+    def _categorical_2pred_param(self, params):
+        assert isinstance(params, torch.Tensor)
+        var_span = self._categorical_var_span()
+        assert params.shape[-1] == math.prod(var_span)
+
+        # Take a view of the parameter that expands last dimension into full R.V. dimensions
+        new_shape = params.shape[:-1] + torch.Size(var_span)
+        new_params = params.view(new_shape)
+
+        return new_params
+
+
 

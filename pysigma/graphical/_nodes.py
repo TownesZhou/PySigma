@@ -8,7 +8,7 @@ from torch.distributions import Distribution
 from torch.distributions.categorical import Categorical
 from torch.distributions.kl import kl_divergence as kl
 from defs import Variable, MessageType, Message
-from utils import Params2Dist
+from utils import Params2Dist, Dist2Params
 import warnings
 
 
@@ -386,10 +386,12 @@ class WMVN(VariableNode):
 
         # Number of particles to keep when combining particles incoming messages
         self.num_particles = num_particles
+        self.s_shape = torch.Size([self.num_particles])
         # Whether to resample, or to select highest rank of particles, when combining particle messages
         self.to_resample = True
 
     def compute(self):
+        self.visited = True
         # Exit if no outgoing link
         if len(self.out_linkdata) == 0:
             return
@@ -419,9 +421,59 @@ class WMVN(VariableNode):
                     "In WMVN '{}': when attempting to send message via link '{}', failed to combine incoming messages "\
                     "because incoming messages are not all Tabular or all Particles type. Found message type '{}' " \
                     "from links '{}'".format(self.name, out_ld, list(msg.type for msg in msgs), in_lds)
-                # TODO: Combine tabular messages
 
+                # Combine tabular messages: summing the probs and generate a new instance
+                b_shape, e_shape = msgs[0].b_shape, msgs[0].e_shape
+                if all(msg.type is MessageType.Tabular for msg in msgs):
+                    probs = 0
+                    for msg in msgs:
+                        # Obtain probs parameter of each message's Categorical distribution using utility methods
+                        tmp = Dist2Params.convert(msg.dist)
+                        probs += probs
+                    dist = Params2Dist.convert(probs, Categorical, b_shape, e_shape)
+                    out_msg = Message(MessageType.Tabular, self.s_shape, b_shape, e_shape, dist)
 
+                # Combine particle messages
+                else:
+                    num = len(msgs)
+                    # Concatenate particle list. Dimension 0 is the particle indexing dimension
+                    particles = torch.cat(list(msg.particles for msg in msgs), dim=0)
+                    weights = torch.cat(list(msg.weights for msg in msgs), dim=0)
+                    log_densities = torch.cat(list(msg.log_density for msg in msgs), dim=0)
+                    # normalize weights. Devide by the number of messages
+                    weights *= 1 / num
+
+                    # If to resample, then feed weights into a Categorical distribution and sample num_particles data
+                    #   i.e., resample particles based on their weights
+                    if self.to_resample:
+                        # Create resampling distribution
+                        rs_dist = Categorical(probs=weights)
+                        # Sample particle indices
+                        indices = rs_dist.sample(sample_shape=self.s_shape)
+                        # Using particle indices to select particles
+                        new_particles = particles.index_select(dim=0, index=indices)
+                        new_log_dens = log_densities.index_select(dim=0, index=indices)
+                        # Because we are resampling, the weights are uniform
+                        new_weights = torch.ones(size=self.num_particles) * (1 / self.num_particles)
+
+                    # Otherwise, sort the weights in descending and select the particles with the highest weights
+                    else:
+                        # Sort in descending order
+                        new_weights, indices = weights.sort(dim=0, descending=True)
+                        # Take firs num_particles elements
+                        new_weights = new_weights[:self.num_particles]
+                        indices = indices[:self.num_particles]
+                        # Select particles
+                        new_particles = particles.index_select(dim=0, index=indices)
+                        new_log_dens = log_densities.index_select(dim=0, index=indices)
+                        # Normalize new weights so that it sums to 1
+                        new_weights *= (1 / new_weights.sum())
+                    # Output message
+                    out_msg = Message(MessageType.Particles, self.s_shape, b_shape, e_shape, dist=None,
+                                      particles=new_particles, weights=new_weights, log_density=new_log_dens)
+
+                # Send message
+                out_ld.set(out_msg)
 
 
 class PBFN(FactorNode):

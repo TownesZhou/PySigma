@@ -4,8 +4,9 @@
     Author of this file: Jincheng Zhou, University of Southern California
 """
 
-from torch.distributions import Distribution
 from torch import Size
+from torch.distributions import Distribution
+from torch.distributions.constraints import Constraint
 from collections.abc import Iterable
 from itertools import chain
 from .utils import *
@@ -22,28 +23,70 @@ class VariableMap:
 class FactorFunction:
     """
         Class type for factor node function
+
+        A FactorFunction instance can be thought of as a function object that takes in a set of batched tensors, each
+            corresponding to a batched value assignments to a random variable, and produces a single batched tensor that
+            represents the joint probability density, i.e.,
+                    val = Prob(X_1, X_2, ..., X_n)
+            where val, X_1, X_2, ..., X_n are all batched over the first dimension.
+
+        The first dimension of all tensors is the result of the particle indexing dimension and all relational
+            variables' dimensions being reshaped into one. Therefore, it should be ignored by the factor function
+            procedure and simply treated as the "batched" dimension.
+
+        Defines different types of factor functions:
+            a. Tabular factor function
+                Returns a full-dimension tensor at once representing the entire factor function table. Suitable when all
+                random variables X_1, ..., X_n have finite discrete domains.
+                Corresponds to legacy Lisp Sigma's factor node function
+
+            b. General form generative joint-probability density function
+                Returns a tensor representing the probability density each time given a set of value assignments to all
+                random variables. Enforce the semantics of
+                    val = Prob(X_1, X_2, ..., X_n)
+                Compatible with all particle-based inference methods
+
+            c. Exponential form joint-probability density function
+                Explicitly defines an exponential distribution. Encodes a exponential distribution class as the prior
+                and returns the PARAMETERS
+                Must declare this type if want architecture to recognize conjugate-exponential model structure and
+                carries out closed-form message updates
+
+            d. Deterministic factor function
+                Returns one or multiple VALUE tensors corresponding to one or multiple R.V.s given a value assignments
+                to other variables. Enforce the semantics of
+                    Y_1, Y_2, ..., Y_m = Func(X_1, X_2, ..., X_n)
+                Conceptually identical to (b) type factor function with a delta distribution, but due to concerns of
+                sample efficiency, this type should be used in practice
+                Note that once defined, the directionality of the corresponding Conditional is also assumed and fixed.
+                In other words, X_1, ..., X_n should only appear in condition patterns, and Y_1, ..., Y_m only in action
+                patterns
     """
     pass
 
 
 class Type:
-    def __init__(self, type_name, symbolic=False, size=None, symbol_list=None):
+    def __init__(self, type_name, symbolic=False, size=None, symbol_list=None, value_constraint=None):
         """
-            Specify a Type for a predicate's relational/random argument. Can be symbolic or discrete. Currently, Type
-                structure is only applicable to relational and random arguments, and specifications of particle indexing
-                arguments are declared at the Predicate's level.
+            Specify a Type for a predicate's relational/random argument.
 
-            For both relational and random arguments, a Type mainly declares the size of the corresponding tensor
-                dimension of the predicate's particle messages.
+            For both relational and random arguments, a Type declares the size of the corresponding tensor dimension of
+                the predicate's event particle messages. For a random argument, additionally, a Type also defines its
+                valid value range and/or value type (e.g. real or integer values)
 
             If symbolic, must declare a 'symbol_list', and the 'size' field will be inferred from the length of the
                 'symbol_list'. Otherwise must declare the 'size' value.
+
+            value_constraint must be provided if and only if the Type is to be associated with random predicate
+                arguments. Otherwise an exception will be thrown
 
         :param type_name: 'str' type. Name of the Sigma type
         :param symbolic: 'bool' type. Declares if the type comes with a symbol list
         :param size: 'int' type. The size of the argument's corresponding message dimension. Must specify if 'symbolic'
                      is False
         :param symbol_list: An iterable of 'str' representing symbols. Must specify if 'symbolic' is True
+        :param value_constraint: A 'torch.distributions.constraints.Constraints' instance. Must specify if and only if
+                                 this Type is to be associated with random predicate arguments
         """
 
         # Argument validation
@@ -60,12 +103,16 @@ class Type:
         if symbol_list is not None and (not isinstance(symbol_list, Iterable) or
                                         not all(isinstance(s, str) for s in symbol_list)):
             raise ValueError("'symbol_list' must be an iterable of 'str'")
+        if value_constraint is not None and not isinstance(value_constraint, Constraint):
+            raise ValueError("If specified, 'value_constraint' must be an instance of 'torch.distributions.constraints."
+                             "Constraint'. Instead found '{}'".format(type(value_constraint)))
 
         # Declare attributes
         self.name = intern_name(type_name, "type")  # Prepend substring 'TYPE_' and send name to upper case
         self.symbolic = symbolic
         self.value_list = list(symbol_list) if self.symbolic else list(range(size))
         self.size = len(self.value_list)
+        self.constraint = value_constraint
 
         # Set mapping between type values and actual axis values along message tensor's dimension.
         self.value2axis = dict(zip(self.value_list, range(self.size)))
@@ -94,7 +141,7 @@ class Type:
 
 
 class Predicate:
-    def __init__(self, predicate_name, relational_args, random_args, inference_mode, num_particles=32,
+    def __init__(self, predicate_name, relational_args, random_args, inference_mode, num_particles=128,
                  distribution_class=None, memorial=False, perceptual=False):
         """
             Specify a Sigma predicate.
@@ -104,10 +151,8 @@ class Predicate:
                                 element of the tuple should be of 'str' type specifying the argument's name, whereas
                                 the second element should be of 'Type' type specifying the argument's type. The 'Type'
                                 of these arguments can be arbitrary, but the arguments' names should be distinct.
-        :param random_args: an Iterable of size-2 tuples, similar to the previous one. However for random arguments,
-                            besides the arguments' names having to be distinct (including being distinct from relational
-                            arguments' names), all of the arguments must be of the same 'Type' and the 'Type' must NOT
-                            be symbolic.
+        :param random_args: an Iterable of size-2 tuples, similar to the previous one. Besides those requirements for
+                            relational arguments, random arguments' types cannot be symbolic
         :param inference_mode: one of "BP", "VMP", or "EP". Choosing the inference method to be used at this predicate.
                                This will also influence the choice of inference method used at related conditionals.
         :param num_particles: 'int' type. The number of particles to be drawn each cognitive cycle. Also the size of the
@@ -149,66 +194,78 @@ class Predicate:
         # Declare attributes
         self.name = intern_name(predicate_name, "predicate")
 
-        self.relational_vars = []
-        self.relvar_name2relvar = {}
-        self.relvar_name2type = {}
+        self.relational_args = []
+        self.relarg_name2relarg = {}
+        self.relarg_name2type = {}
 
-        self.random_vars = []
-        self.ranvar_name2ranvar = {}
-        self.ranvar_type = None
+        self.random_args = []
+        self.ranarg_name2ranarg = {}
+        self.ranarg_name2type = {}
 
-        self.var_name2metatype = {}
+        self.arg_name2metatype = {}
 
         self.inf_mode = inference_mode.upper()
-        self.index_var = Variable("INDEX", VariableMetatype.Indexing, num_particles)
+        self.index_arg = Variable("INDEX", VariableMetatype.Indexing, num_particles)
         self.dist_class = distribution_class
         self.memorial = memorial
         self.perceptual = perceptual
-        self.dims = None
+        self.event_dims = None  # Event dimensions. Parameter dims may be different and dependent on distribution class
 
         for rel_arg in relational_args:
-            var_name = rel_arg[0]
-            var_type = rel_arg[1]
-            if not isinstance(var_name, str) or not isinstance(var_type, Type):
+            arg_name = rel_arg[0]
+            arg_type = rel_arg[1]
+            if not isinstance(arg_name, str) or not isinstance(arg_type, Type):
                 raise ValueError("The first element of an argument tuple must be of 'str' type to declare the "
                                  "argument's name, and the second one be an instance of 'Type'. Instead, found: "
-                                 "({}, {})".format(type(var_name), type(var_type)))
-            if var_name in self.relvar_name2relvar.keys():
+                                 "({}, {})".format(type(arg_name), type(arg_type)))
+
+            # Check that arguments' names are distinct
+            if arg_name in self.relarg_name2relarg.keys():
                 raise ValueError("Relational arguments' names must be distinct. Instead found repetition: {}"
-                                 .format(var_name))
-            rel_var = Variable(var_name, VariableMetatype.Relational, var_type.size)
-            self.relational_vars.append(rel_var)
-            self.relvar_name2relvar[var_name] = rel_var
-            self.relvar_name2type[var_name] = var_type
+                                 .format(arg_name))
+
+            rel_var = Variable(arg_name, VariableMetatype.Relational, arg_type.size)
+            self.relational_args.append(rel_var)
+            self.relarg_name2relarg[arg_name] = rel_var
+            self.relarg_name2type[arg_name] = arg_type
 
         for ran_arg in random_args:
-            var_name = ran_arg[0]
-            var_type = ran_arg[1]
-            if not isinstance(var_name, str) or not isinstance(var_type, Type):
+            arg_name = ran_arg[0]
+            arg_type = ran_arg[1]
+            if not isinstance(arg_name, str) or not isinstance(arg_type, Type):
                 raise ValueError("The first element of an argument tuple must be of 'str' type to declare the "
                                  "argument's name, and the second one be an instance of 'Type'. Instead, found: "
-                                 "({}, {})".format(type(var_name), type(var_type)))
-            if var_name in chain(self.relvar_name2relvar.keys(), self.ranvar_name2ranvar.keys()):
-                raise ValueError("Random arguments' names must be distinct. Instead found repetition: {}"
-                                 .format(var_name))
-            if var_type.symbolic:
+                                 "({}, {})".format(type(arg_name), type(arg_type)))
+
+            # Check that arguments' names are distinct
+            if arg_name in chain(self.relarg_name2relarg.keys(), self.ranarg_name2ranarg.keys()):
+                raise ValueError("Random arguments' names must be distinct, including from relational arguments. "
+                                 "Instead found repetition: {}".format(arg_name))
+            # Check that RV's type is not symbolic
+            if arg_type.symbolic:
                 raise ValueError("Random argument's type cannot be symbolic")
-            if self.ranvar_type is None:
-                self.ranvar_type = var_type
-            if var_type != self.ranvar_type:
-                raise ValueError("Random arguments must all be of the same Type")
-            ran_var = Variable(var_name, VariableMetatype.Random, var_type.size)
-            self.random_vars.append(ran_var)
-            self.ranvar_name2ranvar[var_name] = ran_var
+            # Check that RV's type specifies value constraint
+            if arg_type.constraint is None:
+                raise ValueError("A value constraint must be specified for a random variable's type. Instead found "
+                                 "random variable '{}' with type '{}' where no value constraint is specified."
+                                 .format(arg_name, arg_type))
 
-        for var_name in self.relvar_name2relvar.keys():
-            self.var_name2metatype[var_name] = VariableMetatype.Relational
-        for var_name in self.ranvar_name2ranvar.keys():
-            self.var_name2metatype[var_name] = VariableMetatype.Random
+            ran_var = Variable(arg_name, VariableMetatype.Random, arg_type.size)
+            self.random_args.append(ran_var)
+            self.ranarg_name2ranarg[arg_name] = ran_var
+            self.ranarg_name2type[arg_name] = arg_type
 
-        # Dimensions of event tensor. torch.Size type.
-        self.dims = Size([self.index_var.size] + [v.size for v in self.relational_vars] +
-                         [v.size for v in self.random_vars])
+        for arg_name in self.relarg_name2relarg.keys():
+            self.arg_name2metatype[arg_name] = VariableMetatype.Relational
+        for arg_name in self.ranarg_name2ranarg.keys():
+            self.arg_name2metatype[arg_name] = VariableMetatype.Random
+
+        # TODO: Check knowledge format. e.g. if RV type compatible with declared predicate's distribution class
+
+        # Dimensions of event tensor: [N, B_1, ..., B_n, (S_1+...+S_m)]
+        self.event_dims = Size([self.index_arg.size] +
+                         [v.size for v in self.relational_args] +
+                         sum([v.size for v in self.random_args]))
 
     def __str__(self):
         # String representation for display
@@ -383,23 +440,30 @@ class Conditional:
         #                   - Check that element's arg agree with the predicate's argument.
         #                   - Prepend prefix to element's variable name. "VAR_" for pattern variable. "CONST_" for
         #                     constants.
-        #                   - Check that trnas are not declared on constant values
-        #                   - Check that element's trans agree with the argument's metatype. !! Left for future work
+        #                   - Check that trans are not declared on constant values
+        #                !! - Check that element's trans agree with the argument's metatype. !! Left for future work
         #                   - Fill in 'pattern_arg2var'
         #               b. For the entire pattern:
         #                   - For undeclared predicate arguments, declare pattern variable with name "DEFAULT_{}"
-        #                   - Check that each pattern variable is associated with arguments of the same metatype.
         #                   - Fill in 'pattern_var2arg'
+        #                   - Check that all arguments has been covered
+        #                   - Check that each pattern variable is associated with arguments of the same metatype.
+        #                   - Check that each Random variable is associated with arguments with the same type size
         #       2. Across the patterns:
         #               a. Gather pattern variables:
         #                   - Check that each pattern variable is associated with arguments of the same metatype.
         #                   - For relational pattern variables, determine its size by taking the max over the sizes of
         #                     all its associated predicate arguments.
-        #                   - For random pattern variables, ALSO make sure the TYPE of associated arguments is the same
-        #                   - Generate variable instance and fill in 'global_var_info', 'rel_var_list', and
-        #                     'ran_var_list'
-        #               b. Decide the global pattern variable order and joint dimension
-        #               c. Check that 'function_var_names' agrees with 'ran_var_list'
+        #                   - For random pattern variables, check that associated arguments' type sizes are the same
+        #                   - For random pattern variables, gather all value constraints
+        #                   - Generate variable instance and fill in 'rel_var_list', and 'ran_var_list'
+        #               b. Check that 'function_var_names' agrees with 'ran_var_list'
+        #               c. Check that predicate types are compatible with pattern type / pattern directionality
+        #                   - At most one vector predicate among all condition and condact patterns that have a matching
+        #                     random variable
+        #                !! - If Factor function is deterministic, check pattern directionality
+        #               d. Determine the global relational pattern variable order and corresponding joint relational
+        #                  dimensions
         #
         # Map from predicate argument name to pattern variable info, for each predicate pattern
         #       pattern_arg2var = { pattern_name :
@@ -414,7 +478,6 @@ class Conditional:
         # constant pattern is assigned a unique constant variable name
         self.pattern_arg2var = {}
         self.pattern_var2arg = {}
-        self.global_var_info = {}
         self.rel_var_list, self.ran_var_list = [], []
         self.var_list = []      # Determines global pattern variable order
         self.dims = []          # Determines global joint relational dimension (i.e., joint dimensions of all relational
@@ -433,11 +496,11 @@ class Conditional:
                     var_map = ele[2] if len(ele) == 3 else None
 
                     # 1.a Check element's arg agree with predicate's arguments
-                    if arg_name not in chain(pred.relvar_name2relvar.keys(), pred.ranvar_name2ranvar.keys()):
+                    if arg_name not in chain(pred.relarg_name2relarg.keys(), pred.ranarg_name2ranarg.keys()):
                         raise ValueError("Unknown argument '{}' declared in the predicate pattern '{}'. The list of "
                                          "declared arguments for predicate '{}' is {}"
-                                         .format(arg_name, pat, pred.name, list(chain(pred.relvar_name2relvar.keys(),
-                                                                                      pred.ranvar_name2ranvar.keys()))))
+                                         .format(arg_name, pat, pred.name, list(chain(pred.relarg_name2relarg.keys(),
+                                                                                      pred.ranarg_name2ranarg.keys()))))
 
                     if isinstance(pat_var, str):        # A pattern variable
                         # 1.a. Prepend prefix to pattern variable's name and fill in look-up tables
@@ -471,7 +534,7 @@ class Conditional:
                     # TODO: 1.a. Check that element's trans agree with argument's metatype.
 
             # 1.b Across the entire pattern, find undeclared arguments, and declare with default name
-            for arg_name in chain(pred.relvar_name2relvar.keys(), pred.ranvar_name2ranvar.keys()):
+            for arg_name in chain(pred.relarg_name2relarg.keys(), pred.ranarg_name2ranarg.keys()):
                 if arg_name not in self.pattern_arg2var[pat_name].keys():
                     pat_var = "DEFAULT_" + str(default_count)
                     default_count += 1
@@ -481,18 +544,30 @@ class Conditional:
                         'vals': None,
                         'map': None
                     }
+                    # 1.b Fill in 'pattern_var2arg'
                     self.pattern_var2arg[pat_name][pat_var] = [arg_name]
-            # 1.b. Check that each pattern variable is associated with arguments of the same metatype
-            # First check all arguments has been covered
+
+            # 1.b Check that all arguments has been covered
             assert set(self.pattern_arg2var[pat_name].keys()) == \
-                   set(chain(pred.relvar_name2relvar.keys(), pred.ranvar_name2ranvar.keys()))
+                   set(chain(pred.relarg_name2relarg.keys(), pred.ranarg_name2ranarg.keys()))
+
             for pat_var, args in self.pattern_var2arg[pat_name].items():
-                if not all(arg_name in pred.relvar_name2relvar.keys() for arg_name in args) and \
-                        not all(arg_name in pred.ranvar_name2ranvar.keys() for arg_name in args):
+                # 1.b Check that each pattern variable is associated with arguments of the same metatype
+                if not all(arg_name in pred.relarg_name2relarg.keys() for arg_name in args) and \
+                        not all(arg_name in pred.ranarg_name2ranarg.keys() for arg_name in args):
                     raise ValueError("Expect all predicate arguments associated with a pattern variable to be of the "
                                      "same metatype. However, for the pattern variable '{}' in pattern '{}', its "
                                      "associated arguments {} has metatypes {}"
-                                     .format(pat_var, pat, args, list(pred.var_name2metatype[arg] for arg in args)))
+                                     .format(pat_var, pat, args, list(pred.arg_name2metatype[arg] for arg in args)))
+
+                # 1.b Check that each Random variable is associated with arguments with the same type size
+                if pred.arg_name2metatype[args[0]] == VariableMetatype.Random:
+                    sizes = list(pred.ranarg_name2type[arg].size for arg in args)
+                    if min(sizes) != max(sizes):
+                        raise ValueError("Expect all predicate arguments associated with a Random metatype pattern "
+                                         "variable to have the same type size. Instead, found type sizes '{}' "
+                                         "associated with arguments '{}'"
+                                         .format(sizes, args))
 
         # 2.a Gather patern variables globally
         all_pat_var_names = set()
@@ -500,56 +575,75 @@ class Conditional:
             all_pat_var_names = all_pat_var_names.union(set(entry.keys()))
         for pat_var_name in all_pat_var_names:
             metatype = None
-            size = 0         # to be determined if metatype is Relational
-            var_type = None     # to be determined and check if metatype is Random
+            size = 0         # find max if metatype is Relational, make sure same if metatype is Random
+            constraint_set = set()    # to be filled if metatype is Random
             for pat_name, entry in self.pattern_var2arg.items():
                 if pat_var_name not in entry.keys():
                     continue
                 pat, pred = self.pat_name2pattern[pat_name], self.pat_name2pred[pat_name]
                 args = entry[pat_var_name]
-                # Check each pattern varaible is associated with arguments of the same metatype across patterns
+
+                # 2.b Check each pattern varaible is associated with arguments of the same metatype across patterns
                 if metatype is None:
-                    metatype = pred.var_name2metatype[args[0]]
-                else:
-                    if metatype is not pred.var_name2metatype[args[0]]:
-                        raise ValueError("A pattern variable should be associated with predicate arguments of the same "
+                    metatype = pred.arg_name2metatype[args[0]]
+                elif metatype is not pred.arg_name2metatype[args[0]]:
+                    raise ValueError("A pattern variable should be associated with predicate arguments of the same "
                                          "metatype across patterns. Found pattern variable '{}' associated with "
                                          "predicate argument '{}' with metatype '{}', when the metatype inferred from "
                                          "other arguments is '{}"
-                                         .format(pat_var_name, args[0], pred.var_name2metatype[args[0]], metatype))
-                # For relational variables, find maximal type size
+                                         .format(pat_var_name, args[0], pred.arg_name2metatype[args[0]], metatype))
+
+                # 2.b For relational variables, find maximal type size
                 if metatype is VariableMetatype.Relational:
-                    tmp = max(pred.relvar_name2type[arg].size for arg in args)
+                    tmp = max(pred.relarg_name2type[arg].size for arg in args)
                     size = max(tmp, size)
-                # For random variables, make sure the type of associated arguments is the same
+
+                # 2.b For random variables, make sure the type of associated arguments is the same
                 if metatype is VariableMetatype.Random:
-                    if var_type is None:
-                        var_type = pred.ranvar_type
-                    else:
-                        if var_type != pred.ranvar_type:
-                            raise ValueError("When a pattern variable is associated with random predicate arguments, "
-                                             "the associated arguments should be of the same type. However, found "
-                                             "pattern variable '{}' associated with predicate '{}' with random type "
-                                             "'{}', when the type inferred from other associated predicates is '{}'"
-                                             .format(pat_var_name, pred.name, pred.ranvar_type, var_type))
+                    if size == 0:
+                        size = pred.ranarg_name2type[args[0]].size
+                    elif size != pred.ranarg_name2type[args[0]].size:
+                        raise ValueError("A Random metatype pattern variable should be associated with predicate "
+                                         "arguments of the same type size across patterns. Found pattern variable '{}' "
+                                         "associated with predicate argument '{}' of type size '{}', while the correct "
+                                         "type size inferred from other arguments is '{}'"
+                                         .format(pat_var_name, args[0], pred.ranarg_name2type[args[0]].size, size))
+                    constraint_set = constraint_set.union(set(pred.ranarg_name2type[arg].constraint for arg in args))
+
             # Generate Variable instance and add to lists
-            pat_var = Variable(pat_var_name, metatype,
-                               size if metatype is VariableMetatype.Relational else var_type.size)
+            pat_var = Variable(pat_var_name, metatype, size,
+                               constraint_set if metatype is VariableMetatype.Random else None)
             if metatype is VariableMetatype.Relational:
                 self.rel_var_list.append(pat_var)
             else:
                 self.ran_var_list.append(pat_var)
 
-        # 2.b Decide global pattern variable order and joint dimension
-        self.var_list = self.rel_var_list + self.ran_var_list
-        self.dims = Size(pat_var.size for pat_var in self.rel_var_list)
-
-        # 2.c Check that 'function_var_names' agrees with 'ran_var_list'
+        # 2.b Check that 'function_var_names' agrees with 'ran_var_list'
         if function_var_names is not None:
             for ran_var in function_var_names:
                 if ran_var not in self.ran_var_list:
                     raise ValueError("Unknown random pattern variable '{}' in 'function_var_names'. Existing declared "
                                      "random pattern variables are: {}".format(ran_var, self.ran_var_list))
+
+        # 2.c Check that predicate types are compatible with pattern type / pattern directionality
+        for ran_var in self.ran_var_list:
+            # 2.c. At most one vector predicate among all condition and condact patterns that have a matching random
+            #      variable
+            vec_pred = None
+            for pat_name in self.condition_names + self.condact_names:
+                if ran_var.name in self.pattern_var2arg[pat_name].keys() and \
+                        self.pat_name2pred[pat_name].dist_class == None:
+                    if vec_pred is not None:
+                        raise ValueError("Expect at most one vector predicate among all condition and condact patterns "
+                                         "that have a matching random variable. Instead found at least two vector "
+                                         "predicates: '{}' and '{}' that matches on the random pattern variable '{}' "
+                                         .format(vec_pred, self.pat_name2pred[pat_name], ran_var))
+                    vec_pred = self.pat_name2pred[pat_name]
+
+        # TODO: 2.c Check pattern directionality for deterministic factor function
+
+        # 2.d Determine the global relational pattern variable order and corresponding joint relational dimensions
+        self.rel_dims = Size(pat_var.size for pat_var in self.rel_var_list)
 
     def __str__(self):
         # String representation for display
