@@ -119,15 +119,8 @@ class Exp2Natural:
     pass
 
 
-# TODO: Knowledge format check.
-#       Check if RV size, type, and value constraint are compatible with declared distribution class of predicate
-#       distribution class dependent
-class FormatCheck:
-    pass
-
-
 # TODO: Query class
-class Query:
+class DistributionServer:
     """
         Query the distribution instance to draw a given number of particles or return the log-pdf of given samples
 
@@ -228,7 +221,9 @@ class KnowledgeTranslator:
             corresponds to one RV's value assignment respectively. Similarly, what is taken when translating from
             Predicate knowledge to PyTorch's knowledge is also a tuple of tensors
 
-        A translator instance should be instantiated and hold by each Predicate.
+        A translator instance should be instantiated and hold by each Predicate. When instantiated, also check if
+            provided var_sizes and var_constraints are compatible with dist_class. This is also distribution class
+            dependent therefore needs individual implementation.
     """
 
     def __init__(self, dist_class, var_sizes, var_constraints):
@@ -242,6 +237,9 @@ class KnowledgeTranslator:
                                     value constraint of the corresponding random variable.
         """
         # distribution-dependent translation method pointer. Indexed by distribution class
+        self.dict_2format_check = {
+            torch.distributions.Categorical: self._categorical_format_check
+        }
         self.dict_2torch_event = {
             torch.distributions.Categorical: self._categorical_2torch_event
         }
@@ -265,6 +263,12 @@ class KnowledgeTranslator:
         self.var_constraints = var_constraints
 
         self.num_vars = len(var_sizes)
+
+    def _format_check(self):
+        if self.dist_class not in self.dict_2format_check.keys():
+            raise NotImplementedError("Format check for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        self.dict_2format_check[self.dist_class]()
 
     def event2torch_event(self, particles):
         """
@@ -342,6 +346,9 @@ class KnowledgeTranslator:
 
     """
         Categorical distribution. Assumes all RV have size 1
+            - format check
+                - var_sizes are all 1
+                - var_constraints are all integer_interval
             - event translation from pred to torch:
                 Take a tuple of tensors each corresponding to one RV's value assignment. Compute value by taking volume 
                 product
@@ -352,6 +359,14 @@ class KnowledgeTranslator:
             - parameter translation from torch to pred:
                 Reshape last dimension into multiple dimensions, numbers of dims equal to the numbers of R.V.s
     """
+    def _categorical_format_check(self):
+        if not all(var_size == 1 for var_size in self.var_sizes):
+            raise ValueError("Categorical distribution: Random Variables must all have size of 1. Found: '{}'"
+                             .format(self.var_sizes))
+        if not all(isinstance(c, torch.distributions.constraints.integer_interval) for c in self.var_constraints):
+            raise ValueError("Categorical distribution: Random Variables must all declare 'integer_interval' value "
+                             "constraints. Found: '{}'".format(self.var_constraints))
+
     def _categorical_var_span(self):
         # Helper function to determine the value range of each rv
         assert all(isinstance(c, integer_interval) for c in self.var_constraints)
