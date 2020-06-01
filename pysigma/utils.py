@@ -5,6 +5,7 @@ import torch
 import torch.distributions
 from torch.distributions import Distribution, ExponentialFamily
 from torch.distributions.constraints import Constraint, integer_interval
+from torch.distributions.kl import kl_divergence
 from collections.abc import Iterable
 import math
 
@@ -64,6 +65,7 @@ class DistributionServer:
                     draw_particles()
             - Get log probability density from given particles:
                     log_pdf()
+            - Get the norm of the KL divergence of two batched distributions
 
         Certain distribution classes require special handling, for example for those categorized as finite discrete,
             particle values will be drawn uniformly, covering every value in the RV's value domain once and only once,
@@ -198,6 +200,9 @@ class DistributionServer:
 
     @classmethod
     def log_pdf(cls, dist, particles):
+        """
+            Get the log pdf of the given particles w.r.t. the given distribution instance
+        """
         assert isinstance(dist, Distribution)
         assert isinstance(particles, torch.Tensor)
 
@@ -206,6 +211,17 @@ class DistributionServer:
             raise NotImplementedError("Get log pdf method for distribution class '{}' not yet implemented"
                                       .format(dist_class))
         return cls.dict_log_pdf[dist_class](dist, particles)
+
+    @classmethod
+    def kl_norm(cls, dist1, dist2):
+        """
+            Get the norm of the KL divergence of two given batched distributions
+        """
+        assert isinstance(dist1, Distribution) and isinstance(dist2, Distribution)
+        assert dist1.batch_shape == dist2.batch_shape
+        kl = kl_divergence(dist1, dist2)
+        kl_norm = kl.norm()
+        return kl_norm
 
     """
         DEFAULT methods that may be applicable to multiple general distribution classes
@@ -534,6 +550,3 @@ class KnowledgeTranslator:
         new_params = params.view(new_shape)
 
         return new_params
-
-
-

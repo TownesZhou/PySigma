@@ -7,7 +7,7 @@ from torch.distributions.categorical import Categorical
 from torch.distributions.constraints import Constraint
 from enum import Enum
 
-from utils import Dist2Params, Params2Dist
+from utils import DistributionServer
 
 
 # Variable Metatypes and Variable for general inference
@@ -177,17 +177,20 @@ class Message:
         dist = None
         particles = None
         weights = None
+        log_density = None
 
         if self.dist is not None:
-            params = Dist2Params.convert(self.dist)
+            params = DistributionServer.dist2param(self.dist)
             params = params.clone()
-            dist = Params2Dist.convert(params, type(self.dist))
+            dist = DistributionServer.param2dist(type(self.dist), params, self.b_shape, self.e_shape)
         if self.particles is not None:
             particles = self.particles.clone()
         if self.weights is not None:
             weights = self.weights.clone()
+        if self.log_density is not None:
+            log_density = self.log_density.clone()
 
-        new_msg = Message(msg_type, self.s_shape, self.b_shape, self.e_shape, dist, particles, weights)
+        new_msg = Message(msg_type, self.s_shape, self.b_shape, self.e_shape, dist, particles, weights, log_density)
         return new_msg
 
 

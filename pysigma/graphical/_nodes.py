@@ -6,9 +6,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from torch.distributions import Distribution
 from torch.distributions.categorical import Categorical
-from torch.distributions.kl import kl_divergence as kl
 from defs import Variable, MessageType, Message
-from utils import Params2Dist, Dist2Params
+from utils import DistributionServer
 import warnings
 
 
@@ -21,15 +20,17 @@ class LinkData:
         During construction of the graph, its instance will be passed to NetworkX methods as the edge data to
             instantiate an edge.
     """
-    def __init__(self, vn, fn, var_list, to_fn, epsilon, **kwargs):
+    def __init__(self, vn, fn, to_fn, msg_shape, epsilon, **kwargs):
         """
-        :param vn:      name of the variable node that this link is incident to
-        :param var_list:    list of variables of the adjacent variable node
+        :param vn:      VariableNode instance that this link is incident to
+        :param fn:      FactorNode instance that this link is incident to
         :param to_fn:   True/False indicating whether this link is pointing toward a factor node
+        :param msg_shape    Fixed message shape that this linkdata will carry. Used for checking dimensions
+        :param epsilon:     epsilon upper bound for checking message difference using KL divergence
         """
         assert isinstance(vn, VariableNode)
         assert isinstance(fn, FactorNode)
-        assert isinstance(var_list, Iterable) and all(isinstance(var, Variable) for var in var_list)
+        assert isinstance(msg_shape, torch.Size)
         assert isinstance(to_fn, bool)
         assert isinstance(epsilon, float)
 
@@ -40,15 +41,13 @@ class LinkData:
         # Incident nodes and their variable list
         self.vn = vn                # Of type VariableNode
         self.fn = fn                # Of type FactorNode
-        self.var_list = var_list    # Iterable of Variable
+        self.msg_shape = msg_shape
         # Link direction. Whether pointing toward a factor node. Of type bool
         self.to_fn = to_fn
         # Threshold of KL-divergence metric to measure whether a candidate message is different from the existing one
         self.epsilon = epsilon
         # Reserved field for additional attributes. Arbitrary type
         self.attr = kwargs
-        # Dimension of the link message. Determined from var_list. Of type torch.Size
-        self.dims = torch.Size([var.size for var in self.var_list])
         # Pretty log
         self.pretty_log = {}
 
@@ -76,6 +75,11 @@ class LinkData:
             If clone is True, then will store a cloned new_msg
         """
         assert isinstance(new_msg, Message)
+        # Check new message shape
+        assert self.msg_shape == new_msg.s_shape + new_msg.b_shape + new_msg.e_shape
+        assert self.memory is None or (self.memory.s_shape == new_msg.s_shape and
+                                       self.memory.b_shape == new_msg.b_shape and
+                                       self.memory.e_shape == new_msg.e_shape)
 
         # If check_diff is False or no existing message or message types are different, will replace existing message
         if self.memory is None or check_diff is False or new_msg.type != self.memory.type:
@@ -89,12 +93,15 @@ class LinkData:
             p = self.memory.dist
             q = new_msg.dist
         else:
-            # Otherwise, message type are Particles, so we will temporarily instantiate Categorical distributions
-            p_probs = self.memory.weights
-            q_probs = new_msg.weights
-            p = Categorical(probs=p_probs)
-            q = Categorical(probs=q_probs)
-        val = kl(p, q)
+            # Otherwise, message type are Particles, so we will treats the particle weights as 'probs' to Categorical
+            #   distributions and instantiate temporary distribution instance
+            # Need to permute the dimension because we are taking the particle indexing dimension as the probs dimension
+            n_dims = len(self.memory.weights.shape)
+            p_probs = self.memory.weights.permute(list(range(1, n_dims)) + [0])
+            q_probs = new_msg.weights.permute(list(range(1, n_dims)) + [0])
+            p = DistributionServer.param2dist(Categorical, p_probs, self.memory.b_shape, torch.Size([]))
+            q = DistributionServer.param2dist(Categorical, q_probs, new_msg.b_shape, torch.Size([]))
+        val = DistributionServer.kl_norm(p, q)
 
         # Compare KL value with pre-set epsilon
         if val > self.epsilon:
@@ -276,7 +283,7 @@ class LTMFN(FactorNode):
             events from currently assumed distribution instance.
 
         Admits incoming link from WMVN that contains combined action message to this predicate by the end of the
-            decision cycle,  as well as the incoming link from parameter feed and WMFN that contains parameter messages.
+            decision cycle, as well as the incoming link from parameter feed and WMFN that contains parameter messages.
             Therefore needs special attribute in the links to identify which one sends "event" messages and which one
             sends "parameter" messages.
 
@@ -314,10 +321,15 @@ class LTMFN(FactorNode):
         # Knowledge
         self.dist = None            # Distribution instance at current decision cycle
         self.particles = None       # Particle list at current decision cycle
-        self.weights = torch.ones(num_particles) * (1 / num_particles)      # Uniform weight of particles that sum to 1
+        self.weights = None         # Particle weights
         self.log_density = None     # The log-pdf of particles
 
     def add_link(self, linkdata):
+        """
+            Only admits one incoming and one outgoing event message link, the former should be connected from WMVN_IN
+                and the later from WMVN_OUT (can be the same WMVN also). However can admits multiple incoming parameter
+                message link.
+        """
         assert isinstance(linkdata, LinkData)
 
         # Only admit one outgoing link and that must be WMVN. Check variable dimensions
