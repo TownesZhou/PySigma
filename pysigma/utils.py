@@ -3,7 +3,7 @@
 """
 import torch
 import torch.distributions
-from torch.distributions import Distribution
+from torch.distributions import Distribution, ExponentialFamily
 from torch.distributions.constraints import Constraint, integer_interval
 from collections.abc import Iterable
 import math
@@ -49,89 +49,133 @@ FINITE_DISCRETE_CLASSES = [
 ]
 
 
-# TODO general-inf: Utility methods for instantiate a distribution from the given list of tensors. The given list of
-#   tensors is treated as the parameters necessary to define that distribution. The semantics of the individual tensors
-#   in the list depends on the distribution.
-class Params2Dist:
-
-    @classmethod
-    def convert(cls, params, dist_type, b_shape=None, e_shape=None):
-        """
-            Automatic conversion. Provide the params and the distribution class, return a distribution instance.
-            If b_shape, e_shape not None, then will check if the shape of the resulting distribution matches
-
-            assume params has shape (b_shape + param_shape)
-        """
-        assert isinstance(params, torch.Tensor)
-        assert issubclass(dist_type, torch.distributions.Distribution)
-        assert (b_shape is None) == (e_shape is None)
-        assert b_shape is None or isinstance(b_shape, torch.Size)
-
-        if dist_type not in cls.type2method.keys():
-            raise NotImplementedError("Conversion from parameters to distributions for distribution class {} has not"
-                                      "been implemented".format(dist_type))
-
-        dist = cls.type2method[dist_type](params)
-
-        if b_shape is not None:
-            if dist.batch_shape != b_shape or dist.event_shape != e_shape:
-                raise ValueError("The shape of the generated distribution {} does not match the provided shape. "
-                                 "Expect (batch_shape, event_shape) == ({}, {}), but instead got ({}, {})."
-                                 .format(str(dist), b_shape, e_shape, dist.batch_shape, dist.event_shape))
-
-        return dist
-
-    # Lookup table for automatic conversion
-    type2method = {
-
-    }
-
-
-# TODO general-inf: Inversed version of the above class
-class Dist2Params:
-
-    @classmethod
-    def convert(cls, dist):
-        """
-            Automatic conversion. Provide the distribution instance, return its params as list of tensors.
-        """
-        assert isinstance(dist, torch.distributions.Distribution)
-        dist_type = type(dist)
-        if dist_type not in cls.type2method.keys():
-            raise NotImplementedError("Conversion from distributions to parameters for distribution class {} has not"
-                                      "been implemented".format(dist_type))
-
-        return cls.type2method[dist_type](dist)
-
-    # Lookup table for automatic conversion
-    type2method = {
-
-    }
-
-
-# TODO general-inf: Utility methods for extracting natural parameters from an exponential torch.distributions, or
-#  instantiate an exponential torch.distribution from given natural parameters
-class Natural2Exp:
-    pass
-
-
-class Exp2Natural:
-    pass
-
-
-# TODO: Query class
+# TODO: DistributionServer class
 class DistributionServer:
     """
-        Query the distribution instance to draw a given number of particles or return the log-pdf of given samples
+        Serving distribution class dependent utilities
+            - Conversion between PyTorch distribution parameters and distribution instance:
+                    param2dist(), dist2param()
+            - Translation between PyTorch distribution parameters and natural parameters for exponential family
+                distribution:
+                    natural2exp_dist(), exp_dist2natural()
+            - Get vector of moments from a given distribution instance:
+                    get_moments()
+            - Draw particles from distribution instance:
+                    draw_particles()
+            - Get log probability density from given particles:
+                    log_pdf()
 
         Certain distribution classes require special handling, for example for those categorized as finite discrete,
             particle values will be drawn uniformly, covering every value in the RV's value domain once and only once,
             while assigning each particle its probability mass as its particle weight.
-        Therefore we delegate all such operations to this Query class to allow special handling on an individual basis.
+        Therefore we delegate all such special handlings to this class on an individual basis.
 
         Note that input and output will conform to the format understandable by PyTorch's distribution class. To
             translate to and from formats compatible to PySigma's predicate knowledge, use KnowledgeTranslator class
     """
+    @classmethod
+    def param2dist(cls, dist_class, params, b_shape, e_shape):
+        """
+            Conversion from PyTorch distribution parameters to distribution instance
+            Return a distribution instance
+        """
+        assert isinstance(params, torch.Tensor)
+        assert issubclass(dist_class, torch.distributions.Distribution)
+        assert isinstance(b_shape, torch.Size)
+        assert isinstance(e_shape, torch.Size)
+
+        if dist_class not in cls.dict_param2dist.keys():
+            raise NotImplementedError("Conversion from parameters to distribution instance for distribution class '{}' "
+                                      "not yet implemented".format(dist_class))
+
+        dist = cls.dict_param2dist[dist_class](params)
+        if dist.batch_shape != b_shape or dist.event_shape != e_shape:
+            raise ValueError("The shape of the generated distribution {} does not match the provided shape. "
+                             "Provided (batch_shape, event_shape) == ({}, {}), but instead got ({}, {})."
+                             .format(str(dist), b_shape, e_shape, dist.batch_shape, dist.event_shape))
+        return dist
+
+    @classmethod
+    def dist2param(cls, dist):
+        """
+            Conversion from distribution instance to PyTorch distribution parameters
+            Return a parameter tensor
+        """
+        assert isinstance(dist, Distribution)
+        dist_class = type(dist)
+
+        if dist_class not in cls.dict_dist2param.keys():
+            raise NotImplementedError("Conversion from distribution instance to parameters for distribution class '{}' "
+                                      "not yet implemented".format(dist_class))
+        return cls.dict_dist2param[dist_class](dist)
+
+    @classmethod
+    def natural2exp_param(cls, dist_class, natural_params, b_shape, param_shape):
+        """
+            Translation from natural parameters to PyTorch distribution parameters for exponential family
+            Return a parameter tensor
+        """
+        assert isinstance(natural_params, torch.Tensor)
+        assert issubclass(dist_class, ExponentialFamily)
+        assert isinstance(b_shape, torch.Size)
+        assert isinstance(param_shape, torch.Size)
+
+        if dist_class not in cls.dict_natural2exp_param.keys():
+            raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
+                                      "distribution class '{}' not yet implemented".format(dist_class))
+        return cls.dict_natural2exp_param[dist_class](natural_params, b_shape, param_shape)
+
+    @classmethod
+    def exp_param2natural(cls, dist_class, exp_params, b_shape, param_shape):
+        """
+            Translation from PyTorch distribution parameters to natural parameters for exponential family
+            Return a parameter tensor
+        """
+        assert isinstance(exp_params, torch.Tensor)
+        assert issubclass(dist_class, ExponentialFamily)
+        assert isinstance(b_shape, torch.Size)
+        assert isinstance(param_shape, torch.Size)
+
+        if dist_class not in cls.dict_exp_param2natural.keys():
+            raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
+                                      "distribution class '{}' not yet implemented".format(dist_class))
+        return cls.dict_exp_param2natural[dist_class](exp_params, b_shape, param_shape)
+
+    @classmethod
+    def natural2exp_dist(cls, dist_class, natural_params, b_shape, e_shape, param_shape):
+        """
+            Composition of param2dist() with natural2exp_param()
+            Return a distribution instance
+        """
+        param = cls.natural2exp_param(dist_class, natural_params, b_shape, param_shape)
+        dist = cls.param2dist(dist_class, param, b_shape, e_shape)
+        return dist
+
+    @classmethod
+    def exp_dist2natural(cls, dist):
+        """
+            Composition of exp_param2natural() with dist2param()
+            Return a parameter tensor
+        """
+        exp_param = cls.dist2param(dist)
+        natural = cls.exp_param2natural(type(dist), exp_param, dist.batch_shape,
+                                        exp_param.shape[len(dist.batch_shape):])
+        return natural
+
+    @classmethod
+    def get_moments(cls, dist, n_moments):
+        """
+            Get vector of moments from a given distribution instance
+        """
+        assert isinstance(dist, Distribution)
+        assert isinstance(n_moments, int) and n_moments > 0
+
+        dist_class = type(dist)
+        if dist_class not in cls.dict_get_moments.keys():
+            raise NotImplementedError("Get moments method for distribution class '{}' not yet implemented"
+                                      .format(dist_class))
+        return cls.dict_get_moments[dist_class](dist, n_moments)
+
     @classmethod
     def draw_particles(cls, dist, num_particles):
         """
@@ -147,8 +191,8 @@ class DistributionServer:
         assert isinstance(num_particles, int)
 
         # Hand to special methods if they are implemented
-        if type(dist) in cls.type2special_draw.keys():
-            cls.type2special_draw[type(dist)](dist, num_particles)
+        if type(dist) in cls.dict_draw_particles.keys():
+            cls.dict_draw_particles[type(dist)](dist, num_particles)
         # Otherwise draw particles in the default way
         else:
             s_shape = torch.Size([num_particles])
@@ -159,18 +203,21 @@ class DistributionServer:
             return particles, weights, sampling_log_densities
 
     @classmethod
-    def get_log_pdf(cls, dist, particles):
+    def log_pdf(cls, dist, particles):
         assert isinstance(dist, Distribution)
         assert isinstance(particles, torch.Tensor)
 
         # Hand to special methods if they are implemented
-        if type(dict) in cls.type2special_get.keys():
-            cls.type2special_get[type(dict)](dist, particles)
+        if type(dict) in cls.dict_log_pdf.keys():
+            cls.dict_log_pdf[type(dict)](dist, particles)
         # Otherwise get log pdf in the default way
         else:
             log_pdf = dist.log_prob(value=particles)
             return log_pdf
 
+    """
+        Categorical distribution
+    """
     @classmethod
     def _categorical_draw(cls, dist, num_particles):
         """
@@ -197,14 +244,37 @@ class DistributionServer:
 
         return particles, weights, sampling_log_densities
 
-    # distribution class dependent method pointer
-    type2special_draw = {
+    """
+        distribution class dependent method pointer
+    """
+    dict_draw_particles = {
         torch.distributions.Categorical: _categorical_draw
     }
-
-    type2special_get = {
+    dict_log_pdf = {
 
     }
+    dict_param2dist = {
+
+    }
+    dict_dist2param = {
+
+    }
+    dict_natural2exp_param = {
+
+    }
+    dict_exp_param2natural = {
+
+    }
+    dict_natural2exp_dist = {
+
+    }
+    dict_exp_dist2natural = {
+
+    }
+    dict_get_moments = {
+
+    }
+
 
 
 # TODO: Particle knowledge translator class
