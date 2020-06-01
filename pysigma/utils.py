@@ -60,7 +60,7 @@ class DistributionServer:
                     natural2exp_dist(), exp_dist2natural()
             - Get vector of moments from a given distribution instance:
                     get_moments()
-            - Draw particles from distribution instance:
+            - Draw particles from  distribution instance:
                     draw_particles()
             - Get log probability density from given particles:
                     log_pdf()
@@ -190,34 +190,71 @@ class DistributionServer:
         assert isinstance(dist, Distribution)
         assert isinstance(num_particles, int)
 
-        # Hand to special methods if they are implemented
-        if type(dist) in cls.dict_draw_particles.keys():
-            cls.dict_draw_particles[type(dist)](dist, num_particles)
-        # Otherwise draw particles in the default way
-        else:
-            s_shape = torch.Size([num_particles])
-            particles = dist.sample(sample_shape=s_shape)
-            weights = 1         # uniform weights
-            sampling_log_densities = dist.log_prob(value=particles)
-
-            return particles, weights, sampling_log_densities
+        dist_class = type(dist)
+        if dist_class not in cls.dict_draw_particles.keys():
+            raise NotImplementedError("Draw particles method for distribution class '{}' not yet implemented"
+                                      .format(dist_class))
+        return cls.dict_draw_particles[dist_class](dist, num_particles)
 
     @classmethod
     def log_pdf(cls, dist, particles):
         assert isinstance(dist, Distribution)
         assert isinstance(particles, torch.Tensor)
 
-        # Hand to special methods if they are implemented
-        if type(dict) in cls.dict_log_pdf.keys():
-            cls.dict_log_pdf[type(dict)](dist, particles)
-        # Otherwise get log pdf in the default way
+        dist_class = type(dist)
+        if dist_class not in cls.dict_log_pdf.keys():
+            raise NotImplementedError("Get log pdf method for distribution class '{}' not yet implemented"
+                                      .format(dist_class))
+        return cls.dict_log_pdf[dist_class](dist, particles)
+
+    """
+        DEFAULT methods that may be applicable to multiple general distribution classes
+    """
+    @classmethod
+    def _default_get_moments(cls, dist, n_moments):
+        """
+            Default method for getting moments, but only supports up to second order moment (i.e. X^2)
+        """
+        assert n_moments <= 2
+
+        mean = dist.mean
+        if n_moments == 1:
+            return mean
         else:
-            log_pdf = dist.log_prob(value=particles)
-            return log_pdf
+            square = dist.variance + mean ** 2
+            # Stack mean and square to insert a new last dimension
+            result = torch.stack([mean, square], dim=len(mean.shape))
+            return result
+
+    @classmethod
+    def _default_draw_particles(cls, dist, num_particles):
+        s_shape = torch.Size([num_particles])
+        particles = dist.sample(sample_shape=s_shape)
+        weights = 1  # uniform weights
+        sampling_log_densities = dist.log_prob(value=particles)
+
+        return particles, weights, sampling_log_densities
+
+    @classmethod
+    def _default_log_pdf(cls, dist, particles):
+        log_pdf = dist.log_prob(value=particles)
+        return log_pdf
 
     """
         Categorical distribution
     """
+    @classmethod
+    def _categorical_param2dist(cls, params):
+        """
+            For categorical, params assumed to be fed as the 'probs' attribute
+        """
+        dist = torch.distributions.Categorical(probs=params)
+        return dist
+
+    @classmethod
+    def _categorical_dist2param(cls, dist):
+        return dist.probs
+
     @classmethod
     def _categorical_draw(cls, dist, num_particles):
         """
