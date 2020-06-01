@@ -41,13 +41,18 @@ def extern_name(name: str, struc_type: str):
     return name[6:-1]
 
 
+# TODO: Global dictionary that designates which PyTorch's distribution class is finite discrete
+FINITE_DISCRETE_CLASSES = [
+    torch.distributions.Categorical,
+    torch.distributions.Bernoulli,
+    torch.distributions.Binomial,
+]
+
+
 # TODO general-inf: Utility methods for instantiate a distribution from the given list of tensors. The given list of
 #   tensors is treated as the parameters necessary to define that distribution. The semantics of the individual tensors
 #   in the list depends on the distribution.
 class Params2Dist:
-    # Lookup table for automatic conversion
-    type2method = \
-        {}
 
     @classmethod
     def convert(cls, params, dist_type, b_shape=None, e_shape=None):
@@ -76,12 +81,14 @@ class Params2Dist:
 
         return dist
 
+    # Lookup table for automatic conversion
+    type2method = {
+
+    }
+
 
 # TODO general-inf: Inversed version of the above class
 class Dist2Params:
-    # Lookup table for automatic conversion
-    type2method = \
-        {}
 
     @classmethod
     def convert(cls, dist):
@@ -95,6 +102,11 @@ class Dist2Params:
                                       "been implemented".format(dist_type))
 
         return cls.type2method[dist_type](dist)
+
+    # Lookup table for automatic conversion
+    type2method = {
+
+    }
 
 
 # TODO general-inf: Utility methods for extracting natural parameters from an exponential torch.distributions, or
@@ -114,8 +126,96 @@ class FormatCheck:
     pass
 
 
+# TODO: Query class
+class Query:
+    """
+        Query the distribution instance to draw a given number of particles or return the log-pdf of given samples
+
+        Certain distribution classes require special handling, for example for those categorized as finite discrete,
+            particle values will be drawn uniformly, covering every value in the RV's value domain once and only once,
+            while assigning each particle its probability mass as its particle weight.
+        Therefore we delegate all such operations to this Query class to allow special handling on an individual basis.
+
+        Note that input and output will conform to the format understandable by PyTorch's distribution class. To
+            translate to and from formats compatible to PySigma's predicate knowledge, use KnowledgeTranslator class
+    """
+    @classmethod
+    def draw_particles(cls, dist, num_particles):
+        """
+            Draw a given number of particles from the given distribution instance. Return a tuple:
+                    (particles, weights, sampling_log_densities)
+
+            Special handling for certain distribution classes on an individual basis, for example for finite discrete
+                distributions.
+
+            Particles drawn are in the format compatible with PyTorch's distribution class
+        """
+        assert isinstance(dist, Distribution)
+        assert isinstance(num_particles, int)
+
+        # Hand to special methods if they are implemented
+        if type(dist) in cls.type2special_draw.keys():
+            cls.type2special_draw[type(dist)](dist, num_particles)
+        # Otherwise draw particles in the default way
+        else:
+            s_shape = torch.Size([num_particles])
+            particles = dist.sample(sample_shape=s_shape)
+            weights = 1         # uniform weights
+            sampling_log_densities = dist.log_prob(value=particles)
+
+            return particles, weights, sampling_log_densities
+
+    @classmethod
+    def get_log_pdf(cls, dist, particles):
+        assert isinstance(dist, Distribution)
+        assert isinstance(particles, torch.Tensor)
+
+        # Hand to special methods if they are implemented
+        if type(dict) in cls.type2special_get.keys():
+            cls.type2special_get[type(dict)](dist, particles)
+        # Otherwise get log pdf in the default way
+        else:
+            log_pdf = dist.log_prob(value=particles)
+            return log_pdf
+
+    @classmethod
+    def _categorical_draw(cls, dist, num_particles):
+        """
+            Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance's
+                'probs' attribute. Particles will be drawn uniformly covering every value in the RV's domain once and
+                only once, while their probability mass will be assigned as the particle weights respectively.
+        """
+        assert isinstance(dist, torch.distributions.Categorical)
+        span = dist.probs.shape[-1]
+        b_shape = dist.batch_shape
+        s_shape = torch.Size(num_particles)
+
+        particles = torch.ones(s_shape + b_shape)
+        for i in range(span):
+            particles[i] = particles[i] * i
+
+        # Weights obtained from probs attribute, by simply permuting the last dimension to first dimension
+        n_dims = len(dist.probs.shape)
+        dims = [n_dims-1, ] + [i for i in range(n_dims - 1)]
+        weights = dist.probs.clone().permute(dims)      # clone to prevent accidental in-place value change
+
+        # sampling log density obtained from API
+        sampling_log_densities = dist.log_prob(value=particles)
+
+        return particles, weights, sampling_log_densities
+
+    # distribution class dependent method pointer
+    type2special_draw = {
+        torch.distributions.Categorical: _categorical_draw
+    }
+
+    type2special_get = {
+
+    }
+
+
 # TODO: Particle knowledge translator class
-class KnowledgeTraslator:
+class KnowledgeTranslator:
     """
         knowledge translator class. Translate knowledge tensors between the forms understandable by Predicate and that
             understandable by PyTorch's distribution class. This includes both event particle tensors and parameter

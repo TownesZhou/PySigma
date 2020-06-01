@@ -272,8 +272,20 @@ class DVN(VariableNode):
 
 class LTMFN(FactorNode):
     """
-        Long-Term Memory Factor Node. Holds the distribution class of this predicate, and performs sampling of the
-            distribution if necessary.
+        Long-Term Memory Factor Node. Holds the distribution class of this predicate, and if necessary can draw particle
+            events from currently assumed distribution instance.
+
+        Admits incoming link from WMVN that contains combined action message to this predicate by the end of the
+            decision cycle,  as well as the incoming link from parameter feed and WMFN that contains parameter messages.
+            Therefore needs special attribute in the links to identify which one sends "event" messages and which one
+            sends "parameter" messages.
+
+        Only admits one incoming and one outgoing event message link, the former should be connected from WMVN_IN
+            and the later from WMVN_OUT (can be the same WMVN also). However can admits multiple incoming parameter
+            message link. The parameters of the assumed distribution instance will be taken as the SUM over all the
+            incoming parameters.
+
+
         Parameter to instantiate a concrete distribution instance is supplied via incoming links. If there are multiple
             links, the parameter is taken as the SUM of incoming messages.
         Will assume the parameters are represented by Particle type message with shape (batch_shape + param_shape)
@@ -429,7 +441,7 @@ class WMVN(VariableNode):
                     for msg in msgs:
                         # Obtain probs parameter of each message's Categorical distribution using utility methods
                         tmp = Dist2Params.convert(msg.dist)
-                        probs += probs
+                        probs += tmp
                     dist = Params2Dist.convert(probs, Categorical, b_shape, e_shape)
                     out_msg = Message(MessageType.Tabular, self.s_shape, b_shape, e_shape, dist)
 
