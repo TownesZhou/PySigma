@@ -100,30 +100,29 @@ class Message:
                  dist: Distribution = None, particles: torch.Tensor = None, weights: torch.Tensor = None,
                  log_density: torch.Tensor = None):
         """
-            Instantiate a message
+            Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
-            :param msg_type: one of MessageType
-            :param sample_shape:
-            :param batch_shape:
-            :param event_shape:
-            :param dist: A PyTorch distribution instance. If the message is not Particles type
-            :param particles: Particle list. Must present if message is Particles type
-            :param weights: A one-dimension PyTorch tensor as particle weights. Size the same as the first dimension of
-                            the particle list.
-            :param log_density: A one-dimension PyTorch tensor containing the log probability density (log-pdf) of the
-                                particles when they were sampled from the original sampling distribution. Size the same
-                                as the first dimension of the particle list.
+            :param msg_type:    one of MessageType
+            :param sample_shape:    a torch.Size. can be an empty shape
+            :param batch_shape:     a torch.Size. can be an empty shape
+            :param event_shape:     a torch.Size. can be an empty shape
+            :param dist:        A PyTorch distribution instance. If the message is not Particles type
+            :param particles:   Particle list. Must present if message is Particles type
+            :param weights:     Particle weights. Specify an int of 1 if the weights are uniform. Otherwise, must be a
+                                    nonnegative torch Tensor of shape (sample_shape + batch_shape). Values along
+                                    'sample_shape' dimension must add up to 1.
+            :param log_density: A PyTorch tensor containing the log probability density (log-pdf) of the
+                                particles when they were sampled from the original sampling distribution. Of shape
+                                (sample_shape + batch_shape)
         """
         assert isinstance(msg_type, MessageType)
-        # assert isinstance(sample_shape, torch.Size) and len(sample_shape) == 1
-        # assert isinstance(batch_shape, torch.Size) and len(batch_shape) >= 1
-        # assert isinstance(event_shape, torch.Size) and len(event_shape) >= 1
         assert isinstance(sample_shape, torch.Size)
         assert isinstance(batch_shape, torch.Size)
         assert isinstance(event_shape, torch.Size)
         assert dist is None or isinstance(dist, Distribution)
         assert particles is None or isinstance(particles, torch.Tensor)
-        assert weights is None or isinstance(weights, torch.Tensor)
+        assert weights is None or (isinstance(weights, int) and weights == 1) or isinstance(weights, torch.Tensor)
+        assert log_density is None or isinstance(log_density, torch.Tensor)
 
         # Message type, of type MessageType
         self.type = msg_type
@@ -133,10 +132,10 @@ class Message:
         self.particles = particles
         self.weights = weights
         self.log_density = log_density
-        # Shapes
-        self.s_shape = sample_shape
-        self.b_shape = batch_shape
-        self.e_shape = event_shape
+        # Shapes. Collapse the shape if it is a singleton (because PyTorch's distribution will collapse it anyhow)
+        self.s_shape = sample_shape if sample_shape != torch.Size([1]) else torch.Size([])
+        self.b_shape = batch_shape if batch_shape != torch.Size([1]) else torch.Size([])
+        self.e_shape = event_shape if event_shape != torch.Size([1]) else torch.Size([])
 
         # Check whether (only) necessary arguments are provided
         if self.type is MessageType.Tabular:
@@ -160,10 +159,10 @@ class Message:
             assert self.e_shape == self.dist.event_shape
         if self.particles is not None:
             assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
-        if self.weights is not None:
-            assert self.s_shape == self.weights.shape
+        if isinstance(self.weights, torch.Tensor):
+            assert self.s_shape + self.b_shape == self.weights.shape
         if self.log_density is not None:
-            assert self.s_shape == self.log_density.shape
+            assert self.s_shape + self.b_shape == self.log_density.shape
 
     def clone(self):
         """
