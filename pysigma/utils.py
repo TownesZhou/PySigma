@@ -119,15 +119,8 @@ class Exp2Natural:
     pass
 
 
-# TODO: Knowledge format check.
-#       Check if RV size, type, and value constraint are compatible with declared distribution class of predicate
-#       distribution class dependent
-class FormatCheck:
-    pass
-
-
 # TODO: Query class
-class Query:
+class DistributionServer:
     """
         Query the distribution instance to draw a given number of particles or return the log-pdf of given samples
 
@@ -223,9 +216,14 @@ class KnowledgeTranslator:
 
         Different distribution class requires different handling, but in general values for multiple random variables
             (potentially of different sizes) will be concatenated together to form the last dimension of event samples
-            that can be interpreted by PyTorch.
+            that can be interpreted by PyTorch. Therefore when translating back to Predicate knowledge format, what
+            is returned is a TUPLE of tensors, size of which equal to the number of RVs, and each tensor within which
+            corresponds to one RV's value assignment respectively. Similarly, what is taken when translating from
+            Predicate knowledge to PyTorch's knowledge is also a tuple of tensors
 
-        A translator instance should be instantiated and hold by each Predicate.
+        A translator instance should be instantiated and hold by each Predicate. When instantiated, also check if
+            provided var_sizes and var_constraints are compatible with dist_class. This is also distribution class
+            dependent therefore needs individual implementation.
     """
 
     def __init__(self, dist_class, var_sizes, var_constraints):
@@ -239,6 +237,9 @@ class KnowledgeTranslator:
                                     value constraint of the corresponding random variable.
         """
         # distribution-dependent translation method pointer. Indexed by distribution class
+        self.dict_2format_check = {
+            torch.distributions.Categorical: self._categorical_format_check
+        }
         self.dict_2torch_event = {
             torch.distributions.Categorical: self._categorical_2torch_event
         }
@@ -263,12 +264,24 @@ class KnowledgeTranslator:
 
         self.num_vars = len(var_sizes)
 
+    def _format_check(self):
+        if self.dist_class not in self.dict_2format_check.keys():
+            raise NotImplementedError("Format check for distribution class '{}' not yet implemented"
+                                      .format(self.dist_class))
+        self.dict_2format_check[self.dist_class]()
+
     def event2torch_event(self, particles):
         """
             Translate event particles from the format understandable by Predicate to the format understandable by
                 PyTorch
+            Take as input a tuple of torch tensors. Check that sizes of last dimensions equal to sizes of RVs
+            Return a single torch tensor.
         """
-        assert isinstance(particles, torch.Tensor)
+        # Do not check particle last dimension's size if var size is 1, because likely a dimension of size 1 will be
+        #   squeezed
+        assert isinstance(particles, tuple) and len(particles) == self.num_vars and \
+               all(isinstance(p, torch.Tensor) for p in particles) and \
+               all(p.shape[-1] == var_size for p, var_size in zip(particles, self.var_sizes) if var_size != 1)
         if self.dist_class not in self.dict_2torch_event.keys():
             raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
                                       .format(self.dist_class))
@@ -278,6 +291,8 @@ class KnowledgeTranslator:
         """
             Translate event particles from the format understandable by PyTorch to the format understandable by
                 Predicate
+            Take as input a single torch tensor.
+            Return a tuple of torch tensors, each corresponding to one RV's value assignment
         """
         assert isinstance(particles, torch.Tensor)
         if self.dist_class not in self.dict_2pred_event.keys():
@@ -308,27 +323,63 @@ class KnowledgeTranslator:
         return self.dict_2pred_param[self.dist_class](params)
 
     """
-        Categorical distribution. Assumes all RV have size 1
+        Default translation. 
             - event translation from pred to torch:
-                Split last dimension by number of variables. Compute value by taking volume multiplication
+                Take a tuple of tensors. Concatenate along last dimension
+            - event translation from torch to pred:
+                Take a tensor. Split last dimension according to the sizes of RVs. Return a tuple of tensors
             - parameter translation from pred to torch:
-                reshape R.V. dimension into single dimension
+                Assume same format. No special computation
+            - parameter translation from torch to pred:
+                Assume same format. No special computation
     """
+    def _default_2torch_event(self, particles):
+        result = torch.cat(particles, dim=-1)
+        return result
+
+    def _default_2pred_event(self, particles):
+        result = torch.split(particles, self.var_sizes, dim=-1)
+        return result
+
+    def _default_do_nothing(self, stuff):
+        return stuff
+
+    """
+        Categorical distribution. Assumes all RV have size 1
+            - format check
+                - var_sizes are all 1
+                - var_constraints are all integer_interval
+            - event translation from pred to torch:
+                Take a tuple of tensors each corresponding to one RV's value assignment. Compute value by taking volume 
+                product
+            - event translation from torch to pred:
+                Take volume modulo of the event values. Return a tuple a tensors
+            - parameter translation from pred to torch:
+                Flatten R.V. dimension into single dimension
+            - parameter translation from torch to pred:
+                Reshape last dimension into multiple dimensions, numbers of dims equal to the numbers of R.V.s
+    """
+    def _categorical_format_check(self):
+        if not all(var_size == 1 for var_size in self.var_sizes):
+            raise ValueError("Categorical distribution: Random Variables must all have size of 1. Found: '{}'"
+                             .format(self.var_sizes))
+        if not all(isinstance(c, torch.distributions.constraints.integer_interval) for c in self.var_constraints):
+            raise ValueError("Categorical distribution: Random Variables must all declare 'integer_interval' value "
+                             "constraints. Found: '{}'".format(self.var_constraints))
+
     def _categorical_var_span(self):
         # Helper function to determine the value range of each rv
         assert all(isinstance(c, integer_interval) for c in self.var_constraints)
         return list(c.upper_bound - c.lower_bound + 1 for c in self.var_constraints)
 
     def _categorical_2torch_event(self, particles):
-        assert isinstance(particles, torch.Tensor) and particles.shape[-1] == self.num_vars
-        split_particles = particles.split(split_size=1, dim=-1)
         var_span = self._categorical_var_span()
 
         # Taking volume product
         volume_prod = 1
         base = 1
         # Going backward through spans to take product
-        for val, span in zip(reversed(split_particles), reversed(var_span)):
+        for val, span in zip(reversed(particles), reversed(var_span)):
             # Cumulative summation by the product of i_th variable's value with its base
             volume_prod += val * base
             # Base of i_th var is the product of the spans of all later variables (i.e. from (i+1)th to n_th variable)
@@ -338,7 +389,6 @@ class KnowledgeTranslator:
 
     def _categorical_2pred_event(self, particles):
         assert isinstance(particles, torch.Tensor)
-        # TODO: check particles dtype and shape
         var_span = self._categorical_var_span()
 
         # Treat values as volume products and take mod w.r.t. variables' spans
@@ -351,8 +401,8 @@ class KnowledgeTranslator:
             particle_list.append(residue % base)
             residue = residue // base
 
-        # Concatenate along the last dimension
-        result = torch.cat(particle_list, dim=-1)
+        # Return a tuple of tensors
+        result = tuple(particle_list)
         return result
 
     def _categorical_2torch_param(self, params):

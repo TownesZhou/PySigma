@@ -46,7 +46,7 @@ class LinkData:
         # Threshold of KL-divergence metric to measure whether a candidate message is different from the existing one
         self.epsilon = epsilon
         # Reserved field for additional attributes. Arbitrary type
-        self.attri = kwargs
+        self.attr = kwargs
         # Dimension of the link message. Determined from var_list. Of type torch.Size
         self.dims = torch.Size([var.size for var in self.var_list])
         # Pretty log
@@ -285,9 +285,6 @@ class LTMFN(FactorNode):
             message link. The parameters of the assumed distribution instance will be taken as the SUM over all the
             incoming parameters.
 
-
-        Parameter to instantiate a concrete distribution instance is supplied via incoming links. If there are multiple
-            links, the parameter is taken as the SUM of incoming messages.
         Will assume the parameters are represented by Particle type message with shape (batch_shape + param_shape)
         Therefore LTMFN take as input parameter messages, and produce as output distribution/particle messages
 
@@ -333,7 +330,7 @@ class LTMFN(FactorNode):
             assert linkdata.dims == (self.batch_shape + self.param_shape)
             self.in_linkdata.append(linkdata)
 
-    def toggle_sampling(self, to_sample=False):
+    def toggle_draw(self, to_sample=False):
         # Turn on or off whether this LTMFN will sample particles during compute()
         self.to_sample = to_sample
 

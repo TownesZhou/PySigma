@@ -95,6 +95,11 @@ class Message:
             use, and thus different representations may coexist. For instance, in a Distribution message, a
             torch.distribution may coexists with a particle list, whereas in a Particles message only particle list
             exists.
+
+        Note that there's a distinction between knowledge format compatible with PyTorch's distribution class versus
+            that compatible with Sigma's cognitive structures. In general, what is contained in a message are knowledge
+            in the PyTorch's format. One should only translate such knowledge using KnowledgeTranslator class (see
+            utils.py) after extracting information from a Message instance.
     """
     def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size, event_shape: torch.Size,
                  dist: Distribution = None, particles: torch.Tensor = None, weights: torch.Tensor = None,
@@ -188,4 +193,9 @@ class Message:
 
 # TODO: Enum class of all the inference method
 class InferenceMethod(Enum):
-    pass
+    BP = 0
+    PARTICLE_BP = 1
+    VMP = 2
+    PARTICLE_VMP = 3
+    EP = 4
+    PARTICLE_EP = 5
