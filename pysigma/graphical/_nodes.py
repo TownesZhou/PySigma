@@ -432,33 +432,28 @@ class WMVN(VariableNode):
     """
         Working Memory Variable Node. Gate node connecting predicate structure to conditionals.
         Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
-            FAN node in Lisp Sigma.
+            FAN node in Lisp Sigma. Combination can be carried out if incoming messages are all Tabular, all exponential
+            Distribution, all homogeneous Particles (i.e. messages with same particle values), or a mixture of
+            homogeneous Particles with any Distribution.
         Following combination procedure is carried out to conform to the standard of all inference methods
 
         - If there are Particles incoming messages:
-            - For homogeneous messages (i.e. messages with same particle values), take element-wise product of
-                corresponding particle weights as the new weight and renormalize.
-            - For inhomogeneous messages, take together the particles and weights to form a mixed particle list.
-                - If to_resample is True, then treat the mixed particle list's weight as 'probs' to a Categorical
-                    distribution and sample index from it, which will be used to select entries from the mixed particle
-                    list to form a new particle list
-                - Otherwise, simply take the particles with highest weights from the mixed particle list so that the
-                    total number of selected particles match 'num_particles'
-            - If there are other Distributions messages,
-
-
+            - Ensure that all particle lists are homogeneous
+            - If there are other Distributions messages, draw a homogeneous particle list from the carried distribution
+                with each particle's weight computed by
+                        exp(log_pdf - sampling_log_pdf)
+                In other words, the weight is the pdf of the particle evaluated at the distribution, normalized by the
+                sampling density of the particle from its original sampling distribution.
+            - Combine all particle list by taking the element-wise product of all associated weights as the new weight
+                and renormalize.
+        - If messages are all Distributions:
+            - Ensure that they are all the same class of distribution, and that it is an exponential class distribution.
+        - If messages are all Tabular:
+            - Combine by taking factor product.
 
         When combining messages, will exclude message from the link to which the combined message is to send to (if
             such a bidirected link exists). This implements the Sum-Product algorithm's variable node semantics, if
             this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.
-
-        Note that messages combination can be carried out only if ALL the message are of Tabular type, or all of them
-            are of Particles type.
-        If messages are all Tabular type, combination is performed by summing the probs vector of the Categorical
-            distributions across messages.
-        If messages are all Particles type, combination is performed by (1) first concatenating the particles, (2) then
-            renormalize the weights, (3) and finally either resample or selecting the subset of particles of the highest
-            weight, so that the total number of resulting particles matching sample_shape (num_particles)
     """
     def __init__(self, name, var_list, num_particles, to_resample=True):
         super(WMVN, self).__init__(name, var_list)
@@ -505,7 +500,7 @@ class WMVN(VariableNode):
                 # Combine tabular messages: summing the probs and generate a new instance
                 b_shape, e_shape = msgs[0].b_shape, msgs[0].e_shape
                 if all(msg.type is MessageType.Tabular for msg in msgs):
-                    probs = 0
+                    probs = 0z
                     for msg in msgs:
                         # Obtain probs parameter of each message's Categorical distribution using utility methods
                         tmp = Dist2Params.convert(msg.dist)
