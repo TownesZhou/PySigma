@@ -431,8 +431,23 @@ class LTMFN(FactorNode):
 class WMVN(VariableNode):
     """
         Working Memory Variable Node. Gate node connecting predicate structure to conditionals.
-        Will attempt to combine incoming messages if there are multiple incoming links. Subsuming the functionality of
+        Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
             FAN node in Lisp Sigma.
+        Following combination procedure is carried out to conform to the standard of all inference methods
+
+        - If there are Particles incoming messages:
+            - For homogeneous messages (i.e. messages with same particle values), take element-wise product of
+                corresponding particle weights as the new weight and renormalize.
+            - For inhomogeneous messages, take together the particles and weights to form a mixed particle list.
+                - If to_resample is True, then treat the mixed particle list's weight as 'probs' to a Categorical
+                    distribution and sample index from it, which will be used to select entries from the mixed particle
+                    list to form a new particle list
+                - Otherwise, simply take the particles with highest weights from the mixed particle list so that the
+                    total number of selected particles match 'num_particles'
+            - If there are other Distributions messages,
+
+
+
         When combining messages, will exclude message from the link to which the combined message is to send to (if
             such a bidirected link exists). This implements the Sum-Product algorithm's variable node semantics, if
             this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.
