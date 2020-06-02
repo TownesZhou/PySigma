@@ -284,65 +284,21 @@ class TestConditionalArgumentProblematic:
     def test_conditional_problamatic_9(self):
         # Expect each predicate pattern to be a size-2 tuple
         with pytest.raises(ValueError):
-            t = Conditional("cond_1", [("sth", self.pred_1, [self.pat_element_1, self.pat_element_2])],
+            t1 = Conditional("cond_1", [("sth", self.pred_1, [self.pat_element_1, self.pat_element_2])],
                             self.condacts)
 
-            t = Conditional("cond_1", self.conditions,
+            t2 = Conditional("cond_1", self.conditions,
                             [("sth", self.pred_1, [self.pat_element_1, self.pat_element_2])])
 
-            t = Conditional("cond_1", self.conditions, self.condacts,
+            t3 = Conditional("cond_1", self.conditions, self.condacts,
                             [("sth", self.pred_1, [self.pat_element_1, self.pat_element_2])])
 
-    # def conditional_problamatic_10(self):
-    #     #
-    #     with pytest.raises(ValueError):
-    #         t = Conditional()
-    #
+    def conditional_problamatic_10(self):
+        # Expect the first element of each predicate pattern tuple to be an instance of 'Predicate' class.
+        with pytest.raises(ValueError):
+            t1 = Conditional("cond_1")
+
     # def test_conditional_problamatic_11(self):
-    #     #
-    #     with pytest.raises(ValueError):
-    #         t = Conditional()
-    #
-    # def test_conditional_problamatic_12(self):
-    #     #
-    #     with pytest.raises(ValueError):
-    #         t = Conditional()
-    #
-    # def test_conditional_problamatic_13(self):
-    #     #
-    #     with pytest.raises(ValueError):
-    #         t = Conditional()
-    #
-    # def test_conditional_problamatic_14(self):
-    #     #
-    #     with pytest.raises(ValueError):
-    #         t = Conditional()
-    #
-    # def test_conditional_problamatic_15(self):
-    #     #
-    #     with pytest.raises(ValueError):
-    #         t = Conditional()
-    #
-    # def test_conditional_problamatic_16(self):
-    #     #
-    #     with pytest.raises(ValueError):
-    #         t = Conditional()
-    #
-    # def test_conditional_problamatic_17(self):
-    #     #
-    #     with pytest.raises(ValueError):
-    #         t = Conditional()
-    #
-    # def test_conditional_problamatic_18(self):
-    #     #
-    #     t = Conditional()
-    #
-    # def test_conditional_problamatic_19(self):
-    #     #
-    #     t = Conditional()
-    #
-
-    #
 
 
 class TestConditionalArgumentCorrect:
