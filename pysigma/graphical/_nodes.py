@@ -6,9 +6,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from torch.distributions import Distribution
 from torch.distributions.categorical import Categorical
-from torch.distributions.kl import kl_divergence as kl
 from defs import Variable, MessageType, Message
-from utils import Params2Dist, Dist2Params
+from utils import DistributionServer
 import warnings
 
 
@@ -21,15 +20,18 @@ class LinkData:
         During construction of the graph, its instance will be passed to NetworkX methods as the edge data to
             instantiate an edge.
     """
-    def __init__(self, vn, fn, var_list, to_fn, epsilon, **kwargs):
+    def __init__(self, vn, fn, to_fn, msg_shape, epsilon, **kwargs):
         """
-        :param vn:      name of the variable node that this link is incident to
-        :param var_list:    list of variables of the adjacent variable node
+        :param vn:      VariableNode instance that this link is incident to
+        :param fn:      FactorNode instance that this link is incident to
         :param to_fn:   True/False indicating whether this link is pointing toward a factor node
+        :param msg_shape    Fixed message shape that this linkdata will carry. Used for checking dimensions
+                            Conceptually, it should be  sample_shape + batch_shape + event_shape
+        :param epsilon:     epsilon upper bound for checking message difference using KL divergence
         """
         assert isinstance(vn, VariableNode)
         assert isinstance(fn, FactorNode)
-        assert isinstance(var_list, Iterable) and all(isinstance(var, Variable) for var in var_list)
+        assert isinstance(msg_shape, torch.Size)
         assert isinstance(to_fn, bool)
         assert isinstance(epsilon, float)
 
@@ -40,15 +42,13 @@ class LinkData:
         # Incident nodes and their variable list
         self.vn = vn                # Of type VariableNode
         self.fn = fn                # Of type FactorNode
-        self.var_list = var_list    # Iterable of Variable
+        self.msg_shape = msg_shape
         # Link direction. Whether pointing toward a factor node. Of type bool
         self.to_fn = to_fn
         # Threshold of KL-divergence metric to measure whether a candidate message is different from the existing one
         self.epsilon = epsilon
         # Reserved field for additional attributes. Arbitrary type
         self.attr = kwargs
-        # Dimension of the link message. Determined from var_list. Of type torch.Size
-        self.dims = torch.Size([var.size for var in self.var_list])
         # Pretty log
         self.pretty_log = {}
 
@@ -76,6 +76,11 @@ class LinkData:
             If clone is True, then will store a cloned new_msg
         """
         assert isinstance(new_msg, Message)
+        # Check new message shape
+        assert self.msg_shape == new_msg.s_shape + new_msg.b_shape + new_msg.e_shape
+        assert self.memory is None or (self.memory.s_shape == new_msg.s_shape and
+                                       self.memory.b_shape == new_msg.b_shape and
+                                       self.memory.e_shape == new_msg.e_shape)
 
         # If check_diff is False or no existing message or message types are different, will replace existing message
         if self.memory is None or check_diff is False or new_msg.type != self.memory.type:
@@ -89,12 +94,15 @@ class LinkData:
             p = self.memory.dist
             q = new_msg.dist
         else:
-            # Otherwise, message type are Particles, so we will temporarily instantiate Categorical distributions
-            p_probs = self.memory.weights
-            q_probs = new_msg.weights
-            p = Categorical(probs=p_probs)
-            q = Categorical(probs=q_probs)
-        val = kl(p, q)
+            # Otherwise, message type are Particles, so we will treats the particle weights as 'probs' to Categorical
+            #   distributions and instantiate temporary distribution instance
+            # Need to permute the dimension because we are taking the particle indexing dimension as the probs dimension
+            n_dims = len(self.memory.weights.shape)
+            p_probs = self.memory.weights.permute(list(range(1, n_dims)) + [0])
+            q_probs = new_msg.weights.permute(list(range(1, n_dims)) + [0])
+            p = DistributionServer.param2dist(Categorical, p_probs, self.memory.b_shape, torch.Size([]))
+            q = DistributionServer.param2dist(Categorical, q_probs, new_msg.b_shape, torch.Size([]))
+        val = DistributionServer.kl_norm(p, q)
 
         # Compare KL value with pre-set epsilon
         if val > self.epsilon:
@@ -156,8 +164,13 @@ class Node(ABC):
         return quiesced
 
     @abstractmethod
-    def compute(self):
+    def add_link(self, linkdata):
         pass
+
+    @abstractmethod
+    def compute(self):
+        # TODO: Other general logging regarding node computation statistics to be added here
+        self.visited = True
 
 
 class FactorNode(Node, ABC):
@@ -171,6 +184,7 @@ class FactorNode(Node, ABC):
         """
             Add a linkdata connecting to a variable node
         """
+        assert isinstance(linkdata, LinkData)
         assert linkdata.fn is self
         if linkdata in self.in_linkdata + self.out_linkdata:
             return
@@ -186,22 +200,33 @@ class VariableNode(Node, ABC):
         Variable node abstract base class.
     """
 
-    def __init__(self, name, var_list):
+    def __init__(self, name, index_var, rel_var_list, ran_var_list):
         """
             Decalre a VariableNode
         :param name:        name of the variable node
-        :param var_list:   list of Variables representing the variables of this variable nodes
+        :param index_var:      Particle indexing variable
+        :param rel_var_list:   list of Variables representing the relational variables of this variable nodes
+        :param ran_var_list:   list of Variables representing the random variables of this variable nodes
         """
         super(VariableNode, self).__init__(name)
-        assert isinstance(var_list, Iterable) and all(isinstance(v, Variable) for v in var_list)
-        self.var_list = var_list
+        assert isinstance(index_var, Variable)
+        assert isinstance(rel_var_list, Iterable) and all(isinstance(v, Variable) for v in rel_var_list)
+        assert isinstance(ran_var_list, Iterable) and all(isinstance(v, Variable) for v in ran_var_list)
+
+        self.index_var = index_var
+        self.rel_var_list = rel_var_list
+        self.ran_var_list = ran_var_list
+        self.s_shape = torch.Size([index_var.size])
+        self.b_shape = torch.Size(list(rel_var.size for rel_var in rel_var_list))
+        self.e_shape = torch.Size(sum(list(ran_var.size for ran_var in ran_var_list)))
 
     def add_link(self, linkdata):
         """
             Register the LinkData connecting a factor node to this variable node.
             Check that the variable list specified in linkdata agrees with that pre-specified at this variable node
         """
-        assert linkdata.var_list == self.var_list
+        assert isinstance(linkdata, LinkData)
+        assert linkdata.msg_shape == self.s_shape + self.b_shape + self.e_shape
         if linkdata in self.in_linkdata + self.out_linkdata:
             return
 
@@ -222,27 +247,33 @@ class DFN(FactorNode):
         self.pretty_log["node type"] = "Default Factor Node"
 
         # Since all incident nodes should have the same variable list, we can therefore log it here as an attribute
-        self.var_list = None
+        self.index_var = None
+        self.rel_var_list = None
+        self.ran_var_list = None
 
     def add_link(self, linkdata):
         assert isinstance(linkdata, LinkData)
         # Make sure no more than on incoming alink
         assert not linkdata.to_fn or len(self.in_linkdata) == 0
         # Also make sure incident variable nodes' var_list agree with each other
-        if self.var_list is None:
-            self.var_list = linkdata.var_list
+        if self.index_var is None:
+            self.index_var = linkdata.vn.index_var
+            self.rel_var_list = linkdata.vn.rel_var_list
+            self.ran_var_list = linkdata.vn.ran_var_list
         else:
-            assert self.var_list == linkdata.var_list
+            assert self.index_var == linkdata.vn.index_var and \
+                   self.rel_var_list == linkdata.vn.rel_var_list and \
+                   self.ran_var_list == linkdata.vn.ran_var_list
 
         super(DFN, self).add_link(linkdata)
 
     def compute(self):
-        self.visited = True
-
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
             out_ld.set(msg)
+            
+        super(DFN, self).compute()
 
 
 class DVN(VariableNode):
@@ -250,8 +281,8 @@ class DVN(VariableNode):
         Default (Dummy) Variable Node. No special computation. Simply relay message to one or multiple factor nodes
         Only admit one incoming link but can connect with multiple outgoing links
     """
-    def __init__(self, name, var_list):
-        super(DVN, self).__init__(name, var_list)
+    def __init__(self, name, index_var, rel_var_list, ran_var_list):
+        super(DVN, self).__init__(name, index_var, rel_var_list, ran_var_list)
         self.pretty_log["node type"] = "Default Variable Node"
 
     def add_link(self, linkdata):
@@ -262,12 +293,12 @@ class DVN(VariableNode):
         super(DVN, self).add_link(linkdata)
 
     def compute(self):
-        self.visited = True
-
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
             out_ld.set(msg)
+            
+        super(DVN, self).compute()
 
 
 class LTMFN(FactorNode):
@@ -276,7 +307,7 @@ class LTMFN(FactorNode):
             events from currently assumed distribution instance.
 
         Admits incoming link from WMVN that contains combined action message to this predicate by the end of the
-            decision cycle,  as well as the incoming link from parameter feed and WMFN that contains parameter messages.
+            decision cycle, as well as the incoming link from parameter feed and WMFN that contains parameter messages.
             Therefore needs special attribute in the links to identify which one sends "event" messages and which one
             sends "parameter" messages.
 
@@ -288,8 +319,7 @@ class LTMFN(FactorNode):
         Will assume the parameters are represented by Particle type message with shape (batch_shape + param_shape)
         Therefore LTMFN take as input parameter messages, and produce as output distribution/particle messages
 
-        Can be toggled regarding whether to draw particles during compute(). If to draw, default to draw particles with
-            uniform weights
+        Can be toggled regarding whether to draw particles in draw_particles().
     """
     def __init__(self, name, distribution_class, num_particles, batch_shape, event_shape, param_shape):
         super(LTMFN, self).__init__(name)
@@ -303,10 +333,10 @@ class LTMFN(FactorNode):
 
         self.dist_class = distribution_class
         self.num_particles = num_particles
-        self.sample_shape = torch.Size([num_particles])
-        self.batch_shape = batch_shape
-        self.event_shape = event_shape
-        self.param_shape = param_shape
+        self.s_shape = torch.Size([num_particles])
+        self.b_shape = batch_shape
+        self.e_shape = event_shape
+        self.p_shape = param_shape
 
         # Flag that indicates whether to sample particles during compute()
         self.to_sample = False
@@ -314,21 +344,34 @@ class LTMFN(FactorNode):
         # Knowledge
         self.dist = None            # Distribution instance at current decision cycle
         self.particles = None       # Particle list at current decision cycle
-        self.weights = torch.ones(num_particles) * (1 / num_particles)      # Uniform weight of particles that sum to 1
+        self.weights = None         # Particle weights
         self.log_density = None     # The log-pdf of particles
 
     def add_link(self, linkdata):
+        """
+            Only admits one incoming and one outgoing event message link, the former should be connected from WMVN_IN
+                and the later from WMVN_OUT (can be the same WMVN also). However can admits multiple incoming parameter
+                message link.
+        """
         assert isinstance(linkdata, LinkData)
 
-        # Only admit one outgoing link and that must be WMVN. Check variable dimensions
+        # Only admit one outgoing link and that must be WMVN. Check dimensions to be compatible with event message
         if not linkdata.to_fn:
             assert len(self.out_linkdata) == 0 and isinstance(linkdata.vn, WMVN)
-            assert linkdata.dims == (self.sample_shape + self.batch_shape + self.event_shape)
-            self.out_linkdata.append(linkdata)
-        # Can admit multiple incoming links. Check variable dimension to be compatible with parameter messages
+            assert linkdata.msg_shape == self.s_shape + self.b_shape + self.e_shape
+        # Can admit multiple incoming links. Check that link has special attribute declared.
+        #   Check dimension for parameter link and event link respectively
         else:
-            assert linkdata.dims == (self.batch_shape + self.param_shape)
-            self.in_linkdata.append(linkdata)
+            assert 'type' in linkdata.attr.keys(), "Incoming link to a LTMFN must specify 'type' special attribute"
+            assert linkdata.attr['type'] in ['event', 'param'], "Incoming link to a LTMFN must have 'type' special " \
+                                                                "attribute with value 'event' or 'param'"
+            if linkdata.attr['type'] == 'event':
+                assert len(list(ld for ld in self.in_linkdata if ld.attr['type'] == 'event')) == 0
+                assert linkdata.msg_shape == self.s_shape + self.b_shape + self.e_shape
+            else:
+                assert linkdata.msg_shape == self.b_shape + self.p_shape
+        
+        super(LTMFN, self).add_link(linkdata)
 
     def toggle_draw(self, to_sample=False):
         # Turn on or off whether this LTMFN will sample particles during compute()
@@ -338,38 +381,51 @@ class LTMFN(FactorNode):
         # Return the particles and sampling log density
         return self.particles, self.log_density
 
+    def draw_particles(self):
+        """
+            Draw particles. This method should be called at the start of each decision cycle. Gather parameters from
+                incoming 'param' type of linkdata, obtain new distribution instance, and update 'particles', 'weights',
+                'log_density' attributes
+        """
+        if not self.to_sample:
+            return
+
+        # Obtain parameters from incoming 'param' link.
+        param_lds = list(ld for ld in self.in_linkdata if ld.attr['type'] == 'param')
+        assert len(param_lds) > 0
+        param = torch.zeros(self.b_shape + self.p_shape)
+        for param_ld in param_lds:
+            tmp = param_ld.read()
+            param += tmp
+
+        # Obtain new distribution instance
+        self.dist = DistributionServer.param2dist(self.dist_class, param, self.b_shape, self.e_shape)
+
+        # Update attributes
+        self.particles, self.weights, self.log_density = \
+            DistributionServer.draw_particles(self.dist, self.num_particles, self.b_shape, self.e_shape)
+
     def compute(self):
-        self.visited = True
-
-        assert len(self.in_linkdata) > 0, "No incoming link to LTMFN '{}'".format(self.name)
-        # Obtain parameter from incoming links, generate new distribution instance, and sample particles if necessary
-        msg = torch.zeros(self.batch_shape + self.param_shape)
-        for in_ld in self.in_linkdata:
-            tmp = in_ld.read()
-            msg += tmp
-        # Instantiate distribution instance
-        self.dist = Params2Dist.convert(msg, self.dist_class, self.batch_shape, self.event_shape)
-        # Draw uniform sample if necessary
-        if self.to_sample:
-            self.particles = self.dist.sample(sample_shape=self.sample_shape)
-            self.log_density = self.dist.log_prob(self.particles)
-
+        """
+            Generate message from assumed distribution and send toward WMVN_OUT
+        """
         # Generate message and send it to the WMVN
         # Particles message. Containing both distribution instance and particle list
         if self.to_sample:
-            out_msg = Message(MessageType.Particles, self.sample_shape, self.batch_shape, self.event_shape, self.dist,
+            out_msg = Message(MessageType.Particles, self.s_shape, self.b_shape, self.e_shape, self.dist,
                               self.particles, self.weights, self.log_density)
         # Distribution message. Containing only distribution instance
         else:
             # Tabular message if distribution of Categorical class
             if issubclass(self.dist_class, Categorical):
-                out_msg = Message(MessageType.Tabular, self.sample_shape, self.batch_shape, self.event_shape, self.dist)
+                out_msg = Message(MessageType.Tabular, self.s_shape, self.b_shape, self.e_shape, self.dist)
             # Otherwise Distribution message
             else:
-                out_msg = Message(MessageType.Distribution, self.sample_shape, self.batch_shape, self.event_shape,
-                                  self.dist)
+                out_msg = Message(MessageType.Distribution, self.s_shape, self.b_shape, self.e_shape, self.dist)
         out_ld = self.out_linkdata[0]
         out_ld.set(out_msg)
+        
+        super(LTMFN, self).compute()
 
 
 class WMVN(VariableNode):
