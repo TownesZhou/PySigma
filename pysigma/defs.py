@@ -102,8 +102,8 @@ class Message:
             utils.py) after extracting information from a Message instance.
     """
     def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size, event_shape: torch.Size,
-                 dist: Distribution = None, particles: torch.Tensor = None, weights: torch.Tensor = None,
-                 log_density: torch.Tensor = None):
+                 dist: Distribution = None, particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
+                 log_density: [torch.Tensor, int] = None):
         """
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 

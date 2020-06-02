@@ -587,24 +587,74 @@ class WMVN(VariableNode):
 
 class PBFN(FactorNode):
     """
-        Perception Buffer Factor Node. No special implementation needed. FactorNode original methods should suffice.
-            Except for quiescence checking - Need to make sure compute() always proceed regardless of quiescence
+        Perception Buffer Factor Node. Receive perception / observation / evidence as particle list and send to WMVN.
+            Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
+            in the caller of set_perception()
+        Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.
+        Perception is buffered, and will be latched to next cycle if no new observation is specified.
+        Overwrite check_quiesce() so that quiescence is determined by self.visited, i.e., whether compute() has been
+            carried out
     """
-    def __init__(self, name, function=None, func_var_list=None):
-        super(PBFN, self).__init__(name, function, func_var_list)
+    def __init__(self, name):
+        super(PBFN, self).__init__(name)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
-        # TODO: What should be the default function value for a PBFN ?
+        # Perception buffer
+        self.buffer = None
+        self.weights = None
+        self.s_shape = None
+        self.b_shape = None
+        self.e_shape = None
 
-    def get_shape(self):
-        # For use when checking perception content shape
-        return [var.size for var in self._var_list]
+    def set_perception(self, obs, weights, num_obs, b_shape, e_shape):
+        """
+            Update the perception buffer with new observation tensor. Should be called by the cognitive architecture
+            Need to specify weights corresponding to the observation particles. Sampling log density on the other hand
+                will be set to 0 in the outgoing Particle message.
 
-    # Override check_quiesce() so that compute() will should always proceed. However this would not jeopardize
-    # computation because message sent to ld is same as old, so ld.new would not be set to true under epsilon condition
+            :param obs:     Observation tensor. torch.Tensor. shape ([num_obs] + b_shape + e_shape)
+            :param weights: Weight tensor. torch.Tensor. shape ([num_obs] + b_shape)
+            :param num_obs: torch.Size
+            :param b_shape: torch.Size
+            :param e_shape: torch.Size
+        """
+        assert isinstance(obs, torch.Tensor)
+        assert isinstance(weights, torch.Tensor)
+        assert isinstance(num_obs, int)
+        assert isinstance(b_shape, torch.Size)
+        assert isinstance(e_shape, torch.Size)
+        assert obs.shape == torch.Size([num_obs]) + b_shape + e_shape
+        assert weights.shape == torch.Size([num_obs]) + b_shape
+
+        self.buffer = obs
+        self.weights = weights
+        self.s_shape = torch.Size([num_obs])
+        self.b_shape = b_shape
+        self.e_shape = e_shape
+
+    def add_link(self, linkdata):
+        # Ensure that not incoming link and only one outgoing link connecting to a WMVN
+        assert isinstance(linkdata, LinkData)
+        assert not linkdata.to_fn
+        assert len(self.out_linkdata) == 0
+        assert isinstance(linkdata.vn, WMVN)
+        super(PBFN, self).add_link(linkdata)
+
+    def compute(self):
+        # If no perception has been set in the buffer, then do not send
+        if self.buffer is None:
+            return
+
+        # Otherwise, send either way. Sampling log density set to uniform 0
+        out_ld = self.out_linkdata[0]
+        out_msg = Message(MessageType.Particles, self.s_shape, self.buffer, self.e_shape, None, self.buffer,
+                          self.weights, 0)
+        out_ld.set(out_msg)
+
+    # Override check_quiesce() so that quiescence is equivalent to visited
     def check_quiesce(self):
-        super(PBFN, self).check_quiesce()
-        return False  # Always return False so that compute() will still proceed
+        self.quiescence = self.visited
+        return self.quiescence
 
 
 class WMFN(FactorNode):
