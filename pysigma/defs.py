@@ -114,11 +114,14 @@ class Message:
             :param dist:        A PyTorch distribution instance. If the message is not Particles type
             :param particles:   Particle list. Must present if message is Particles type
             :param weights:     Particle weights. Specify an int of 1 if the weights are uniform. Otherwise, must be a
-                                    nonnegative torch Tensor of shape (sample_shape + batch_shape). Values along
-                                    'sample_shape' dimension must add up to 1.
-            :param log_density: A PyTorch tensor containing the log probability density (log-pdf) of the
-                                particles when they were sampled from the original sampling distribution. Of shape
-                                (sample_shape + batch_shape)
+                                nonnegative torch Tensor of shape (sample_shape + batch_shape). Values along
+                                'sample_shape' dimension must add up to 1.
+            :param log_density: A PyTorch tensor containing the log probability density (log-pdf) of the particles when
+                                they were sampled from the original sampling distribution. Specify an int of 0 if the
+                                sampling distribution was uniform. Otherwise, must be a nonnegative torch Tensor of
+                                shape (sample_shape + batch_shape). Note that this field generally should not be
+                                changed at any time during propagation after the particles are drawn, since they
+                                indicates the relative frequency of each particle.
         """
         assert isinstance(msg_type, MessageType)
         assert isinstance(sample_shape, torch.Size)
@@ -127,7 +130,8 @@ class Message:
         assert dist is None or isinstance(dist, Distribution)
         assert particles is None or isinstance(particles, torch.Tensor)
         assert weights is None or (isinstance(weights, int) and weights == 1) or isinstance(weights, torch.Tensor)
-        assert log_density is None or isinstance(log_density, torch.Tensor)
+        assert log_density is None or (isinstance(log_density, int) and log_density == 0) or \
+               isinstance(log_density, torch.Tensor)
 
         # Message type, of type MessageType
         self.type = msg_type
@@ -166,7 +170,7 @@ class Message:
             assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
         if isinstance(self.weights, torch.Tensor):
             assert self.s_shape + self.b_shape == self.weights.shape
-        if self.log_density is not None:
+        if isinstance(self.log_density, torch.Tensor):
             assert self.s_shape + self.b_shape == self.log_density.shape
 
     def clone(self):

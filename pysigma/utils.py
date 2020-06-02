@@ -255,6 +255,10 @@ class DistributionServer:
 
     @classmethod
     def _default_draw_particles(cls, dist, num_particles):
+        """
+            Default method for drawing particles. Draw according to the distribution itself.
+            Therefore, weights are uniform, and sampling log densities are the distribution's log pdf
+        """
         s_shape = torch.Size([num_particles])
         particles = dist.sample(sample_shape=s_shape)
         weights = 1  # uniform weights
@@ -303,8 +307,9 @@ class DistributionServer:
         dims = [n_dims-1, ] + [i for i in range(n_dims - 1)]
         weights = dist.probs.clone().permute(dims)      # clone to prevent accidental in-place value change
 
-        # sampling log density obtained from API
-        sampling_log_densities = dist.log_prob(value=particles)
+        # Since we are effectively drawing particles uniformly from the finite discrete domain, the sampling pdf is also
+        #   uniform
+        sampling_log_densities = 0
 
         return particles, weights, sampling_log_densities
 
@@ -338,7 +343,6 @@ class DistributionServer:
     dict_get_moments = {
 
     }
-
 
 
 # TODO: Particle knowledge translator class
