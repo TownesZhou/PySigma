@@ -318,8 +318,7 @@ class LTMFN(FactorNode):
         Will assume the parameters are represented by Particle type message with shape (batch_shape + param_shape)
         Therefore LTMFN take as input parameter messages, and produce as output distribution/particle messages
 
-        Can be toggled regarding whether to draw particles during compute(). If to draw, default to draw particles with
-            uniform weights
+        Can be toggled regarding whether to draw particles in draw_particles().
     """
     def __init__(self, name, distribution_class, num_particles, batch_shape, event_shape, param_shape):
         super(LTMFN, self).__init__(name)
@@ -333,10 +332,10 @@ class LTMFN(FactorNode):
 
         self.dist_class = distribution_class
         self.num_particles = num_particles
-        self.sample_shape = torch.Size([num_particles])
-        self.batch_shape = batch_shape
-        self.event_shape = event_shape
-        self.param_shape = param_shape
+        self.s_shape = torch.Size([num_particles])
+        self.b_shape = batch_shape
+        self.e_shape = event_shape
+        self.p_shape = param_shape
 
         # Flag that indicates whether to sample particles during compute()
         self.to_sample = False
@@ -355,15 +354,23 @@ class LTMFN(FactorNode):
         """
         assert isinstance(linkdata, LinkData)
 
-        # Only admit one outgoing link and that must be WMVN. Check variable dimensions
+        # Only admit one outgoing link and that must be WMVN. Check dimensions to be compatible with event message
         if not linkdata.to_fn:
             assert len(self.out_linkdata) == 0 and isinstance(linkdata.vn, WMVN)
-            assert linkdata.dims == (self.sample_shape + self.batch_shape + self.event_shape)
-            self.out_linkdata.append(linkdata)
-        # Can admit multiple incoming links. Check variable dimension to be compatible with parameter messages
+            assert linkdata.msg_shape == self.s_shape + self.b_shape + self.e_shape
+        # Can admit multiple incoming links. Check that link has special attribute declared.
+        #   Check dimension for parameter link and event link respectively
         else:
-            assert linkdata.dims == (self.batch_shape + self.param_shape)
-            self.in_linkdata.append(linkdata)
+            assert 'type' in linkdata.attr.keys(), "Incoming link to a LTMFN must specify 'type' special attribute"
+            assert linkdata.attr['type'] in ['event', 'param'], "Incoming link to a LTMFN must have 'type' special " \
+                                                                "attribute with value 'event' or 'param'"
+            if linkdata.attr['type'] == 'event':
+                assert len(list(ld for ld in self.in_linkdata if ld.attr['type'] == 'event')) == 0
+                assert linkdata.msg_shape == self.s_shape + self.b_shape + self.e_shape
+            else:
+                assert linkdata.msg_shape == self.b_shape + self.p_shape
+        
+        super(LTMFN, self).add_link(linkdata)
 
     def toggle_draw(self, to_sample=False):
         # Turn on or off whether this LTMFN will sample particles during compute()
@@ -373,36 +380,49 @@ class LTMFN(FactorNode):
         # Return the particles and sampling log density
         return self.particles, self.log_density
 
-    def compute(self):
-        self.visited = True
+    def draw_particles(self):
+        """
+            Draw particles. This method should be called at the start of each decision cycle. Gather parameters from
+                incoming 'param' type of linkdata, obtain new distribution instance, and update 'particles', 'weights',
+                'log_density' attributes
+        """
+        if not self.to_sample:
+            return
 
-        assert len(self.in_linkdata) > 0, "No incoming link to LTMFN '{}'".format(self.name)
-        # Obtain parameter from incoming links, generate new distribution instance, and sample particles if necessary
-        msg = torch.zeros(self.batch_shape + self.param_shape)
-        for in_ld in self.in_linkdata:
-            tmp = in_ld.read()
-            msg += tmp
-        # Instantiate distribution instance
-        self.dist = Params2Dist.convert(msg, self.dist_class, self.batch_shape, self.event_shape)
-        # Draw uniform sample if necessary
-        if self.to_sample:
-            self.particles = self.dist.sample(sample_shape=self.sample_shape)
-            self.log_density = self.dist.log_prob(self.particles)
+        # Obtain parameters from incoming 'param' link.
+        param_lds = list(ld for ld in self.in_linkdata if ld.attr['type'] == 'param')
+        assert len(param_lds) > 0
+        param = torch.zeros(self.b_shape + self.p_shape)
+        for param_ld in param_lds:
+            tmp = param_ld.read()
+            param += tmp
+
+        # Obtain new distribution instance
+        self.dist = DistributionServer.param2dist(self.dist_class, param, self.b_shape, self.e_shape)
+
+        # Update attributes
+        self.particles, self.weights, self.log_density = \
+            DistributionServer.draw_particles(self.dist, self.num_particles, self.b_shape, self.e_shape)
+
+    def compute(self):
+        """
+            Generate message from assumed distribution and send toward WMVN_OUT
+        """
+        self.visited = True
 
         # Generate message and send it to the WMVN
         # Particles message. Containing both distribution instance and particle list
         if self.to_sample:
-            out_msg = Message(MessageType.Particles, self.sample_shape, self.batch_shape, self.event_shape, self.dist,
+            out_msg = Message(MessageType.Particles, self.s_shape, self.b_shape, self.e_shape, self.dist,
                               self.particles, self.weights, self.log_density)
         # Distribution message. Containing only distribution instance
         else:
             # Tabular message if distribution of Categorical class
             if issubclass(self.dist_class, Categorical):
-                out_msg = Message(MessageType.Tabular, self.sample_shape, self.batch_shape, self.event_shape, self.dist)
+                out_msg = Message(MessageType.Tabular, self.s_shape, self.b_shape, self.e_shape, self.dist)
             # Otherwise Distribution message
             else:
-                out_msg = Message(MessageType.Distribution, self.sample_shape, self.batch_shape, self.event_shape,
-                                  self.dist)
+                out_msg = Message(MessageType.Distribution, self.s_shape, self.b_shape, self.e_shape, self.dist)
         out_ld = self.out_linkdata[0]
         out_ld.set(out_msg)
 

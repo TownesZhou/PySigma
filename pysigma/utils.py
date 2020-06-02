@@ -14,7 +14,7 @@ def intern_name(name: str, struc_type: str):
     """
         Add prefix and brackets to transform user provided structure name to internal name
     :param name:    Structure name
-    :param type:    one of "type", "predicate", or "conditional
+    :param struc_type:    one of "type", "predicate", or "conditional
     :return:        processed name
     """
     assert struc_type in ["type", "predicate", "conditional"], "unknown type for processing structure name"
@@ -179,7 +179,7 @@ class DistributionServer:
         return cls.dict_get_moments[dist_class](dist, n_moments)
 
     @classmethod
-    def draw_particles(cls, dist, num_particles):
+    def draw_particles(cls, dist, num_particles, b_shape, e_shape):
         """
             Draw a given number of particles from the given distribution instance. Return a tuple:
                     (particles, weights, sampling_log_densities)
@@ -191,12 +191,23 @@ class DistributionServer:
         """
         assert isinstance(dist, Distribution)
         assert isinstance(num_particles, int)
+        assert isinstance(b_shape, torch.Size)
+        assert isinstance(e_shape, torch.Size)
 
         dist_class = type(dist)
         if dist_class not in cls.dict_draw_particles.keys():
             raise NotImplementedError("Draw particles method for distribution class '{}' not yet implemented"
                                       .format(dist_class))
-        return cls.dict_draw_particles[dist_class](dist, num_particles)
+        particles, weights, sampling_log_densities = cls.dict_draw_particles[dist_class](dist, num_particles)
+
+        # shape check
+        s_shape = torch.Size([num_particles])
+        assert isinstance(particles, torch.Tensor) and particles.shape == s_shape + b_shape + e_shape
+        assert (isinstance(weights, int) and weights == 1) or (isinstance(weights, torch.Tensor) and
+                                                               weights.shape == s_shape + b_shape)
+        assert isinstance(sampling_log_densities, torch.Tensor) and sampling_log_densities.shape == s_shape + b_shape
+
+        return particles, weights, sampling_log_densities
 
     @classmethod
     def log_pdf(cls, dist, particles):
