@@ -246,17 +246,23 @@ class DFN(FactorNode):
         self.pretty_log["node type"] = "Default Factor Node"
 
         # Since all incident nodes should have the same variable list, we can therefore log it here as an attribute
-        self.var_list = None
+        self.index_var = None
+        self.rel_var_list = None
+        self.ran_var_list = None
 
     def add_link(self, linkdata):
         assert isinstance(linkdata, LinkData)
         # Make sure no more than on incoming alink
         assert not linkdata.to_fn or len(self.in_linkdata) == 0
         # Also make sure incident variable nodes' var_list agree with each other
-        if self.var_list is None:
-            self.var_list = linkdata.var_list
+        if self.index_var is None:
+            self.index_var = linkdata.vn.index_var
+            self.rel_var_list = linkdata.vn.rel_var_list
+            self.ran_var_list = linkdata.vn.ran_var_list
         else:
-            assert self.var_list == linkdata.var_list
+            assert self.index_var == linkdata.vn.index_var and \
+                   self.rel_var_list == linkdata.vn.rel_var_list and \
+                   self.ran_var_list == linkdata.vn.ran_var_list
 
         super(DFN, self).add_link(linkdata)
 
