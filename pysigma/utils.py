@@ -112,7 +112,7 @@ class DistributionServer:
         return cls.dict_dist2param[dist_class](dist)
 
     @classmethod
-    def natural2exp_param(cls, dist_class, natural_params, b_shape, param_shape):
+    def natural2exp_param(cls, dist_class, natural_params, b_shape):
         """
             Translation from natural parameters to PyTorch distribution parameters for exponential family
             Return a parameter tensor
@@ -125,10 +125,10 @@ class DistributionServer:
         if dist_class not in cls.dict_natural2exp_param.keys():
             raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
                                       "distribution class '{}' not yet implemented".format(dist_class))
-        return cls.dict_natural2exp_param[dist_class](natural_params, b_shape, param_shape)
+        return cls.dict_natural2exp_param[dist_class](natural_params, b_shape)
 
     @classmethod
-    def exp_param2natural(cls, dist_class, exp_params, b_shape, param_shape):
+    def exp_param2natural(cls, dist_class, exp_params, b_shape):
         """
             Translation from PyTorch distribution parameters to natural parameters for exponential family
             Return a parameter tensor
@@ -141,15 +141,15 @@ class DistributionServer:
         if dist_class not in cls.dict_exp_param2natural.keys():
             raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
                                       "distribution class '{}' not yet implemented".format(dist_class))
-        return cls.dict_exp_param2natural[dist_class](exp_params, b_shape, param_shape)
+        return cls.dict_exp_param2natural[dist_class](exp_params, b_shape)
 
     @classmethod
-    def natural2exp_dist(cls, dist_class, natural_params, b_shape, e_shape, param_shape):
+    def natural2exp_dist(cls, dist_class, natural_params, b_shape, e_shape):
         """
             Composition of param2dist() with natural2exp_param()
             Return a distribution instance
         """
-        param = cls.natural2exp_param(dist_class, natural_params, b_shape, param_shape)
+        param = cls.natural2exp_param(dist_class, natural_params, b_shape)
         dist = cls.param2dist(dist_class, param, b_shape, e_shape)
         return dist
 
@@ -160,8 +160,7 @@ class DistributionServer:
             Return a parameter tensor
         """
         exp_param = cls.dist2param(dist)
-        natural = cls.exp_param2natural(type(dist), exp_param, dist.batch_shape,
-                                        exp_param.shape[len(dist.batch_shape):])
+        natural = cls.exp_param2natural(type(dist), exp_param, dist.batch_shape)
         return natural
 
     @classmethod
