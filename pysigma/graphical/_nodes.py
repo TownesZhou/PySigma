@@ -646,6 +646,7 @@ class PBFN(FactorNode):
             return
 
         # Otherwise, send either way. Sampling log density set to uniform 0
+        assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
         out_msg = Message(MessageType.Particles, self.s_shape, self.buffer, self.e_shape, None, self.buffer,
                           self.weights, 0)
@@ -659,35 +660,117 @@ class PBFN(FactorNode):
 
 class WMFN(FactorNode):
     """
-        Working Memory Factor Node
+        Working Memory Factor Node. Effectively a buffer node that contains a memory buffer, whose content will be sent
+            as outgoing message only until the next decision cycle. During modification phase, the memory buffer content
+            can either be replaced entirely by, or taken a weighted sum with incoming message.
 
-        Special implementation for compute(): to ensure that messages coming out from WMFN is the WMFN content it self
-            and stays unchanged through the graph solution phase, we do not let messages on incoming link take part in
-            the computation of the outgoing message. They are only used during modification phase to modify the WMFN
-            content by performing selection (for unique predicates) or directly replace the WMFN content (for universal
-            predicates)
+        WMFN can buffer either parameters memory or event memory. However, each of them entails different handling.
+            Therefore, one must specify a type to be either 'param' or 'event' during initialization.
+
+        Can specify a decay rate. The new memory is then derived via
+                old_content * (1 - decay_rate) + new_content
+            therefore if decay_rate is 1 (default value), the old content will be completely forgotten.
+
+        The weighted sum procedure for different WMFN types and message types:
+            - For 'param' type of WMFN:
+                - Assume incoming message is Particle type, presenting parameters as particles in shape
+                    (b_shape + e_shape)
+                - Perform weighted sum on the particle values
+            - For 'event' type of WMFN:
+                - If message is Particle type, perform the weighted sum on the particle weights
+                - If message is Distribution or Tabular, perform the weighted sum on the distribution parameters
+
+        Note that the incoming message will always be cloned before performing weighted sum update. This is to prevent
+            any parts of the memory message from in-place change by some parts elsewhere in the graph.
+
+        Can admit only one incoming and one outgoing links.
     """
-    def __init__(self, name, function=None, func_var_list=None):
-        super(WMFN, self).__init__(name, function, func_var_list)
+    def __init__(self, name, content_type, decay_rate=1):
+        """
+            :param content_type: one of 'param' or 'event'
+            :param decay_rate:   The decay rate at which the old memory vanished. Within range [0, 1]
+                                 Default to 1, i.e., entirely forgetting old memory and replace with new content
+        """
+        super(WMFN, self).__init__(name)
         self.pretty_log["node type"] = "Working Memory Function Node"
 
-    # Override so that only allow one incoming link, and that must be WMVN
+        assert content_type in ['param', 'event']
+        assert isinstance(decay_rate, (float, int)) and 0 <= decay_rate <= 1
+
+        self.content_type = content_type
+        self.decay_rate = decay_rate
+        # memory buffer.
+        self.memory = None
+
+    # Override so that only allow one incoming link and one outgoing link
     def add_link(self, linkdata):
         if linkdata.to_fn:
-            assert isinstance(linkdata.vn, WMVN), "WMFN only admits an incoming link from WMVN"
-            assert len(self._in_linkdata) == 0, "WMFN only admits one incoming link"
+            assert len(self.in_linkdata) == 0
+        else:
+            assert len(self.out_linkdata) == 0
+
         super(WMFN, self).add_link(linkdata)
 
-    # Override so that WMFN ignores messages on incoming link, and only send its own function outwards
+    def update_memory(self):
+        """
+            Update the content in memory using message from incoming link.
+            Should only be called during modification phase
+        """
+        assert len(self.in_linkdata) > 0
+        in_ld = self.in_linkdata[0]
+        # Clone incoming message
+        msg = in_ld.read().clone()
+        assert self.memory is None or (msg.type == self.memory.type and
+                                       msg.s_shape == self.memory.s_shape and
+                                       msg.b_shape == self.memory.b_shape and
+                                       msg.e_shape == self.memory.e_shape)
+
+        # If memory is None or decay_rate is 1, directly replace memory buffer content
+        if self.memory is None or self.decay_rate == 1:
+            self.memory = msg
+
+        # Otherwise, perform weighted sum update
+        else:
+            # For param type of content, perform update on particle values
+            if self.content_type == 'param':
+                # Ensure message is Particle type
+                assert msg.type is MessageType.Particles
+                new_val = (1 - self.decay_rate) * self.memory.particles + msg.particles
+                self.memory = Message(MessageType.Particles, msg.s_shape, msg.b_shape, msg.e_shape, None, new_val,
+                                      msg.weights, msg.log_density)
+
+            # For event type of content
+            else:
+                # If message is Particle type, perform update on particle weights, and renoramlize
+                if msg.type is MessageType.Particles:
+                    # Ensure that incoming message's particle values are the same as that of the memory message
+                    assert msg.particles == self.memory.particles
+                    new_weights = (1 - self.decay_rate) * self.memory.weights + msg.weights
+                    # Normalize weights
+                    weight_sum = new_weights.sum(dim=0, keepdim=True)
+                    new_weights *= (1 / weight_sum)
+                    self.memory = Message(MessageType.Particles, msg.s_shape, msg.b_shape, msg.e_shape, None,
+                                          msg.particles, new_weights, msg.log_density)
+
+                # Otherwise, perform update directly on the distribution's parameters
+                else:
+                    old_param = DistributionServer.dist2param(self.memory.dist)
+                    in_param = DistributionServer.dist2param(msg.dist)
+                    new_param = (1 - self.decay_rate) * old_param + in_param
+                    new_dist = DistributionServer.param2dist(type(msg.dist), new_param, msg.b_shape, msg.e_shape)
+                    self.memory = Message(msg.type, msg.s_shape, msg.b_shape, msg.e_shape, new_dist, None, None, None)
+
     def compute(self):
-        for out_ld in self._out_linkdata:
-            out_ld.set(self._function, self._epsilon)
+        """
+            Sends memory content toward outgoing link (if memory is not None)
+        """
+        assert len(self.out_linkdata) > 0
+        if self.memory is not None:
+            self.out_linkdata[0].set(self.memory)
 
-        # Set quiescence state
-        self.quiescence = True
-
-    # Also override get_quiesce() so that quiescence state is not determined by incoming links but rather compute()
+    # Overrides so that quiescence for WMFN is equivalent to visited
     def check_quiesce(self):
+        self.quiescence = self.visited
         return self.quiescence
 
 
