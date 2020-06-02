@@ -431,35 +431,43 @@ class LTMFN(FactorNode):
 class WMVN(VariableNode):
     """
         Working Memory Variable Node. Gate node connecting predicate structure to conditionals.
-        Will attempt to combine incoming messages if there are multiple incoming links. Subsuming the functionality of
-            FAN node in Lisp Sigma.
+        Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
+            FAN node in Lisp Sigma. Combination can be carried out if incoming messages are all Tabular, all exponential
+            Distribution, all homogeneous Particles (i.e. messages with same particle values), or a mixture of
+            homogeneous Particles with any Distribution.
+        Following combination procedure is carried out to conform to the standard of all inference methods
+
+        1. If there are Particles incoming messages:
+            a. Ensure that all particle lists are homogeneous
+            b. If there are other Distributions/Tabular messages, draw a homogeneous particle list from the carried
+                distribution with each particle's weight computed by
+                        exp(log_pdf - sampling_log_pdf)
+                up to a renormalization factor. In other words, the weight is the pdf of the particle evaluated at the
+                distribution, inversely weighted by the sampling density of the particle from its original sampling
+                distribution.
+            c. Combine all particle list by taking the element-wise product of all associated weights as the new weight
+                and renormalize.
+        2. If messages are all Distributions:
+            a. Ensure that they are all the same class of distribution, and that it is an exponential class distribution.
+            b. Combine by taking the sum of the distribution's Natural parameters
+        3. If messages are all Tabular:
+            a. Combine by taking factor product.
+
         When combining messages, will exclude message from the link to which the combined message is to send to (if
             such a bidirected link exists). This implements the Sum-Product algorithm's variable node semantics, if
             this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.
 
-        Note that messages combination can be carried out only if ALL the message are of Tabular type, or all of them
-            are of Particles type.
-        If messages are all Tabular type, combination is performed by summing the probs vector of the Categorical
-            distributions across messages.
-        If messages are all Particles type, combination is performed by (1) first concatenating the particles, (2) then
-            renormalize the weights, (3) and finally either resample or selecting the subset of particles of the highest
-            weight, so that the total number of resulting particles matching sample_shape (num_particles)
+        Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
+            share the same set of incoming links that provide the messages, previously computed result will be reused
     """
-    def __init__(self, name, var_list, num_particles, to_resample=True):
-        super(WMVN, self).__init__(name, var_list)
+    def __init__(self, name, index_var, rel_var_list, ran_var_list):
+        super(WMVN, self).__init__(name, index_var, rel_var_list, ran_var_list)
         self.pretty_log["node type"] = "Working Memory Variable Node"
 
-        # Number of particles to keep when combining particles incoming messages
-        self.num_particles = num_particles
-        self.s_shape = torch.Size([self.num_particles])
-        # Whether to resample, or to select highest rank of particles, when combining particle messages
-        self.to_resample = True
+        # Cache for temporarily saving computation result for combination
+        self.cache = {}
 
     def compute(self):
-        self.visited = True
-        # Exit if no outgoing link
-        if len(self.out_linkdata) == 0:
-            return
         # Relay message if only one incoming link
         if len(self.in_linkdata) == 1:
             in_ld = self.in_linkdata[0]
@@ -477,90 +485,176 @@ class WMVN(VariableNode):
         # Otherwise, combine messages
         else:
             for out_ld in self.out_linkdata:
-                # exclusion principle
-                in_lds = list(in_ld for in_ld in self.in_linkdata if in_ld.fn is not out_ld.fn)
-                msgs = list(in_ld.read() for in_ld in in_lds)
-                # Check uniformity of incoming message type
-                assert all(msg.type is MessageType.Tabular for msg in msgs) or \
-                       all(msg.type is MessageType.Particles for msg in msgs), \
-                    "In WMVN '{}': when attempting to send message via link '{}', failed to combine incoming messages "\
-                    "because incoming messages are not all Tabular or all Particles type. Found message type '{}' " \
-                    "from links '{}'".format(self.name, out_ld, list(msg.type for msg in msgs), in_lds)
+                in_lds = tuple(in_ld for in_ld in self.in_linkdata if in_ld.fn is not out_ld.fn)
 
-                # Combine tabular messages: summing the probs and generate a new instance
-                b_shape, e_shape = msgs[0].b_shape, msgs[0].e_shape
-                if all(msg.type is MessageType.Tabular for msg in msgs):
-                    probs = 0
-                    for msg in msgs:
-                        # Obtain probs parameter of each message's Categorical distribution using utility methods
-                        tmp = Dist2Params.convert(msg.dist)
-                        probs += tmp
-                    dist = Params2Dist.convert(probs, Categorical, b_shape, e_shape)
-                    out_msg = Message(MessageType.Tabular, self.s_shape, b_shape, e_shape, dist)
-
-                # Combine particle messages
+                # Check if there's cached data. If yes, use cached result
+                if in_lds in self.cache.keys():
+                    out_msg = self.cache[in_lds]
+                # Otherwise, compute conbimed message
                 else:
-                    num = len(msgs)
-                    # Concatenate particle list. Dimension 0 is the particle indexing dimension
-                    particles = torch.cat(list(msg.particles for msg in msgs), dim=0)
-                    weights = torch.cat(list(msg.weights for msg in msgs), dim=0)
-                    log_densities = torch.cat(list(msg.log_density for msg in msgs), dim=0)
-                    # normalize weights. Devide by the number of messages
-                    weights *= 1 / num
+                    in_msgs = tuple(in_ld.read() for in_ld in in_lds)
+                    # 1. Find if there's any Particles message
+                    if any(msg.type == MessageType.Particles for msg in in_msgs):
+                        # 1.a. Ensure all particle lists are homogeneous
+                        particle_msgs = tuple(msg for msg in in_msgs if msg.type == MessageType.Particles)
+                        particle_lds = tuple(ld for ld in in_lds if ld.read().type == MessageType.Particles)
+                        tmp_msg, tmp_ld = particle_msgs[0], particle_lds[0]
+                        for msg, in_ld in zip(particle_msgs, particle_lds):
+                            assert msg.particles == tmp_msg.particles, \
+                                "At WMVN '{}': Incoming Particle message's particle values from  linkdata '{}' does " \
+                                "not agree with that of incoming Particle message from linkdata '{}'"\
+                                .format(self.name, in_ld, tmp_ld)
+                            assert msg.log_density == tmp_msg.log_density, \
+                                "At WMVN '{}': Incoming Particle message's sampling log density from linkdata '{}' " \
+                                "does not agree with that of incoming Particle message  from linkdata '{}'" \
+                                .format(self.name, in_ld, tmp_ld)
 
-                    # If to resample, then feed weights into a Categorical distribution and sample num_particles data
-                    #   i.e., resample particles based on their weights
-                    if self.to_resample:
-                        # Create resampling distribution
-                        rs_dist = Categorical(probs=weights)
-                        # Sample particle indices
-                        indices = rs_dist.sample(sample_shape=self.s_shape)
-                        # Using particle indices to select particles
-                        new_particles = particles.index_select(dim=0, index=indices)
-                        new_log_dens = log_densities.index_select(dim=0, index=indices)
-                        # Because we are resampling, the weights are uniform
-                        new_weights = torch.ones(size=self.num_particles) * (1 / self.num_particles)
+                        # 1.b Find any distribution message, if they exists, draw particle list
+                        dist_msgs = tuple(msg for msg in in_msgs if msg.type in [MessageType.Distribution,
+                                                                                 MessageType.Tabular])
+                        particles = tmp_msg.particles
+                        sampling_log_density = tmp_msg.log_density
+                        weights_list = list(msg.weights for msg in particle_msgs)
+                        for dist_msg in dist_msgs:
+                            # 1.b. Get log-pdf of the particles from this distribution
+                            log_density = DistributionServer.log_pdf(dist_msg.dist, particles)
+                            # 1.b. Compute new weights by inversely weighting log pdf with sampling log pdf
+                            weights = torch.exp(log_density - sampling_log_density)
+                            # 1.b. first normalize. Sum is taken over the first dimension
+                            weight_sum = weights.sum(dim=0, keepdim=True)
+                            weights *= (1 / weight_sum)
+                            # 1.b. Append this weights
+                            weights_list.append(weights)
 
-                    # Otherwise, sort the weights in descending and select the particles with the highest weights
+                        # 1.c. Take element-wise product of all weights
+                        new_weights = torch.tensor(1)
+                        for weights in weights_list:
+                            new_weights *= weights
+                        # 1.c. Normalize again
+                        weight_sum = new_weights.sum(dim=0, keepdim=True)
+                        new_weights *= (1 / weight_sum)
+
+                        # Generate message
+                        out_msg = Message(MessageType.Particles, self.s_shape, self.b_shape, self.e_shape, None,
+                                          particles, new_weights, sampling_log_density)
+
+                    # 2. Otherwise if all messages are Distribution
+                    elif all(msg.type == MessageType.Distribution for msg in in_msgs):
+                        tmp_msg, tmp_ld = in_msgs[0], in_lds[0]
+                        dist_class = type(tmp_msg.dist)
+                        # 2.a. Ensure all are the same exponential class of distribution
+                        for msg, in_ld in zip(in_msgs, in_lds):
+                            assert type(msg.dist) == dist_class, \
+                                "At WMVN '{}': Incoming Distribution message's distribution class from linkdata '{}' " \
+                                "is not the same as that from linkdata '{}'".format(self.name, in_ld, tmp_ld)
+                            assert isinstance(msg.dist, torch.distributions.ExponentialFamily), \
+                                "At WMVN '{}': All incoming messages are Distribution type, so expect them all of " \
+                                "exponential class. However found distribution type '{}' in the message from linkdata " \
+                                "'{}'".format(self.name, type(msg.dist), in_ld)
+                        # 2.b. Combine by taking the sum of the distributions' natural parameters
+                        sum_param = torch.tensor(0)
+                        for msg in in_msgs:
+                            sum_param += DistributionServer.exp_dist2natural(msg.dist)
+                        # Generate message
+                        new_dist = DistributionServer.natural2exp_dist(dist_class, sum_param, self.b_shape, self.e_shape)
+                        out_msg = Message(MessageType.Distribution, self.s_shape, self.b_shape, self.e_shape, new_dist,
+                                          None, None, None)
+
+                    # 3. Otherwise, it can only be all Tabular messages
                     else:
-                        # Sort in descending order
-                        new_weights, indices = weights.sort(dim=0, descending=True)
-                        # Take firs num_particles elements
-                        new_weights = new_weights[:self.num_particles]
-                        indices = indices[:self.num_particles]
-                        # Select particles
-                        new_particles = particles.index_select(dim=0, index=indices)
-                        new_log_dens = log_densities.index_select(dim=0, index=indices)
-                        # Normalize new weights so that it sums to 1
-                        new_weights *= (1 / new_weights.sum())
-                    # Output message
-                    out_msg = Message(MessageType.Particles, self.s_shape, b_shape, e_shape, dist=None,
-                                      particles=new_particles, weights=new_weights, log_density=new_log_dens)
+                        assert all(msg.type == MessageType.Tabular for msg in in_msgs)
+                        # 3.a. Combine by taking factor product
+                        factors = list(DistributionServer.dist2param(msg.dist) for msg in in_msgs)
+                        prod_factor = torch.tensor(1)
+                        for factor in factors:
+                            prod_factor *= factor
+                        # Generate message. Note that no need to normalize factor because normalization will be taken
+                        #   care by Categorical init
+                        new_dist = DistributionServer.param2dist(Categorical, prod_factor, self.b_shape, self.e_shape)
+                        out_msg = Message(MessageType.Tabular, self.s_shape, self.b_shape, self.e_shape, new_dist,
+                                          None, None, None)
 
+                # Cache result
+                self.cache[in_lds] = out_msg
                 # Send message
                 out_ld.set(out_msg)
+
+            # Clear cache
+            self.cache = {}
+
+        super(WMVN, self).compute()
 
 
 class PBFN(FactorNode):
     """
-        Perception Buffer Factor Node. No special implementation needed. FactorNode original methods should suffice.
-            Except for quiescence checking - Need to make sure compute() always proceed regardless of quiescence
+        Perception Buffer Factor Node. Receive perception / observation / evidence as particle list and send to WMVN.
+            Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
+            in the caller of set_perception()
+        Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.
+        Perception is buffered, and will be latched to next cycle if no new observation is specified.
+        Overwrite check_quiesce() so that quiescence is determined by self.visited, i.e., whether compute() has been
+            carried out
     """
-    def __init__(self, name, function=None, func_var_list=None):
-        super(PBFN, self).__init__(name, function, func_var_list)
+    def __init__(self, name):
+        super(PBFN, self).__init__(name)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
-        # TODO: What should be the default function value for a PBFN ?
+        # Perception buffer
+        self.buffer = None
+        self.weights = None
+        self.s_shape = None
+        self.b_shape = None
+        self.e_shape = None
 
-    def get_shape(self):
-        # For use when checking perception content shape
-        return [var.size for var in self._var_list]
+    def set_perception(self, obs, weights, num_obs, b_shape, e_shape):
+        """
+            Update the perception buffer with new observation tensor. Should be called by the cognitive architecture
+            Need to specify weights corresponding to the observation particles. Sampling log density on the other hand
+                will be set to 0 in the outgoing Particle message.
 
-    # Override check_quiesce() so that compute() will should always proceed. However this would not jeopardize
-    # computation because message sent to ld is same as old, so ld.new would not be set to true under epsilon condition
+            :param obs:     Observation tensor. torch.Tensor. shape ([num_obs] + b_shape + e_shape)
+            :param weights: Weight tensor. torch.Tensor. shape ([num_obs] + b_shape)
+            :param num_obs: torch.Size
+            :param b_shape: torch.Size
+            :param e_shape: torch.Size
+        """
+        assert isinstance(obs, torch.Tensor)
+        assert isinstance(weights, torch.Tensor)
+        assert isinstance(num_obs, int)
+        assert isinstance(b_shape, torch.Size)
+        assert isinstance(e_shape, torch.Size)
+        assert obs.shape == torch.Size([num_obs]) + b_shape + e_shape
+        assert weights.shape == torch.Size([num_obs]) + b_shape
+
+        self.buffer = obs
+        self.weights = weights
+        self.s_shape = torch.Size([num_obs])
+        self.b_shape = b_shape
+        self.e_shape = e_shape
+
+    def add_link(self, linkdata):
+        # Ensure that not incoming link and only one outgoing link connecting to a WMVN
+        assert isinstance(linkdata, LinkData)
+        assert not linkdata.to_fn
+        assert len(self.out_linkdata) == 0
+        assert isinstance(linkdata.vn, WMVN)
+        super(PBFN, self).add_link(linkdata)
+
+    def compute(self):
+        # If no perception has been set in the buffer, then do not send
+        if self.buffer is None:
+            return
+
+        # Otherwise, send either way. Sampling log density set to uniform 0
+        out_ld = self.out_linkdata[0]
+        out_msg = Message(MessageType.Particles, self.s_shape, self.buffer, self.e_shape, None, self.buffer,
+                          self.weights, 0)
+        out_ld.set(out_msg)
+
+    # Override check_quiesce() so that quiescence is equivalent to visited
     def check_quiesce(self):
-        super(PBFN, self).check_quiesce()
-        return False  # Always return False so that compute() will still proceed
+        self.quiescence = self.visited
+        return self.quiescence
 
 
 class WMFN(FactorNode):
