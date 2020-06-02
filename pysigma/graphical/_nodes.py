@@ -280,8 +280,8 @@ class DVN(VariableNode):
         Default (Dummy) Variable Node. No special computation. Simply relay message to one or multiple factor nodes
         Only admit one incoming link but can connect with multiple outgoing links
     """
-    def __init__(self, name, var_list):
-        super(DVN, self).__init__(name, var_list)
+    def __init__(self, name, index_var, rel_var_list, ran_var_list):
+        super(DVN, self).__init__(name, index_var, rel_var_list, ran_var_list)
         self.pretty_log["node type"] = "Default Variable Node"
 
     def add_link(self, linkdata):
