@@ -89,6 +89,8 @@ class TestPredicateArgumentProblematic:
     type_3 = Type("type3", True, symbol_list=["a", "b", "c"])  # symbolic without constraint
     type_4 = Type("type4", True, symbol_list=["1", "2", "3"], value_constraint=c)  # symbolic with constraint
 
+    type_5 = Type("type5", False, 9, value_constraint=c)  # non-symbolic with constraint
+
     correct_rel_args = [('type1', type_1)]
     correct_ran_args = [('type2', type_2)]
 
@@ -117,43 +119,35 @@ class TestPredicateArgumentProblematic:
     def test_predicate_problematic_5(self):
         # random_args tuple argument name should be distinct among themselves
         with pytest.raises(ValueError):
-            t1 = Predicate("test", self.correct_rel_args, [("arg1", self.type_1), ("arg1", self.type_1)], "BP")
+            t1 = Predicate("test", self.correct_rel_args, [("arg1", self.type_2), ("arg1", self.type_2)], "BP")
 
     def test_predicate_problematic_6(self):
         # random_args tuple argument name should be distinct from relational args
         with pytest.raises(ValueError):
-            t1 = Predicate("test", [("arg1", self.type_1)],
-                           [("arg1", self.type_1), ("arg2", self.type_1)], "BP")
+            t1 = Predicate("test", [("arg1", self.type_1)], [("arg1", self.type_2), ("arg2", self.type_2)], "BP")
 
     def test_predicate_problematic_7(self):
         # random_args tuple Type must not be symbolic
         with pytest.raises(ValueError):
-            t1 = Predicate("test", [("arg1", self.type_1)],
-                           [("arg1", self.type_3), ("arg2", self.type_3)], "BP")
+            t1 = Predicate("test", [("arg1", self.type_1)], [("arg1", self.type_2), ("arg2", self.type_2)], "BP")
 
     def test_predicate_problematic_8(self):
-        # random_args tuple Type must be the same type
-        # with pytest.raises(ValueError):
-        t1 = Predicate("test", [("arg3", self.type_1)],
-                       [("arg1", self.type_1), ("arg2", self.type_1)], "BP")
-
-    def test_predicate_problematic_9(self):
         # inference_mode other "BP", "VMP", "EP"
         with pytest.raises(ValueError):
             t1 = Predicate("test1", [("arg_1", self.type_1)], [("arg_2", self.type_2)], "ELSE")
 
-    def test_predicate_problematic_10(self):
+    def test_predicate_problematic_9(self):
         # num_particles negative size
         with pytest.raises(ValueError):
             t1 = Predicate("test1", [("arg_1", self.type_1)], [("arg_2", self.type_2)], "BP",
                            num_particles=-1)
 
-    def test_predicate_problematic_11(self):
+    def test_predicate_problematic_10(self):
         # random without constraint
         with pytest.raises(ValueError):
-            t1 = Predicate("test3", [("arg_1", self.type_1)], [("arg_2", self.type_2)], "EP")
+            t1 = Predicate("test3", [("arg_1", self.type_1)], [("arg_2", self.type_1)], "EP")
 
-    def test_predicate_problematic_12(self):
+    def test_predicate_problematic_11(self):
         # relational with constraint
         with pytest.raises(ValueError):
             t1 = Predicate("test3", [("arg_1", self.type_1)], [("arg_2", self.type_2)], "EP")
@@ -212,12 +206,14 @@ class TestConditionalArgumentProblematic:
     # predicate with both relational argument and random argument
     # relational argument should choose type without constraint
     # random argument should choose type with constraint
-    pred_1 = Predicate("test1", relational_args=[("arg_1", type_1)], random_args=[("arg_2", type_2)],
-                       inference_mode="BP")
+    pred_1 = Predicate("test1", relational_args=[("arg_1", type_1)],
+                       random_args=[("arg_2", type_2)], inference_mode="BP")
     pred_2 = Predicate("test2", relational_args=[("arg_1", type_1), ("arg_3", type_3)],
                        random_args=[("arg_2", type_2)], inference_mode="VMP")
     pred_3 = Predicate("test3", relational_args=[("arg_4", type_1), ("arg_3", type_3)],
                        random_args=[("arg_1", type_2), ("arg_2", type_2)], inference_mode="EP")
+    pred_4 = Predicate("test4", relational_args=[("arg_3", type_1), ("arg_4", type_3)],
+                       random_args=[("arg_5", type_2), ("arg_6", type_2)], inference_mode="EP")
 
     pat_element_1 = ('arg_1', 'var1')
     pat_element_2 = ('arg_2', 'var2')
@@ -228,9 +224,12 @@ class TestConditionalArgumentProblematic:
 
     pred_patterns_1 = (pred_1, [pat_element_1, pat_element_2])
     pred_patterns_2 = (pred_2, [pat_element_1, pat_element_2])
+    pred_patterns_3 = (pred_3, [pat_element_3, pat_element_4])
+    pred_patterns_4 = (pred_4, [pat_element_5, pat_element_6])
 
     conditions = [pred_patterns_1, pred_patterns_2]
     condacts = [pred_patterns_2, pred_patterns_1]
+    actions = [pred_patterns_3, pred_patterns_4]
 
     def test_conditional_problematic_1(self):
         # name should be string
@@ -241,7 +240,7 @@ class TestConditionalArgumentProblematic:
         # A conditional cannot have only condition patterns or only action patterns
         with pytest.raises(ValueError):
             t1 = Conditional("cond_1", conditions=self.conditions)
-            t2 = Conditional("cond_2", condacts=self.condacts)
+            t2 = Conditional("cond_2", actions=self.actions)
 
     def test_conditional_problematic_3(self):
         # 5th argument 'function' must be specified if 'function_var_names' is specified
@@ -359,12 +358,14 @@ class TestConditionalArgumentCorrect:
     # predicate with both relational argument and random argument
     # relational argument should choose type without constraint
     # random argument should choose type with constraint
-    pred_1 = Predicate("test1", relational_args=[("arg_1", type_1)], random_args=[("arg_2", type_2)],
-                       inference_mode="BP")
+    pred_1 = Predicate("test1", relational_args=[("arg_1", type_1)],
+                       random_args=[("arg_2", type_2)], inference_mode="BP")
     pred_2 = Predicate("test2", relational_args=[("arg_1", type_1), ("arg_3", type_3)],
                        random_args=[("arg_2", type_2)], inference_mode="VMP")
     pred_3 = Predicate("test3", relational_args=[("arg_4", type_1), ("arg_3", type_3)],
                        random_args=[("arg_1", type_2), ("arg_2", type_2)], inference_mode="EP")
+    pred_4 = Predicate("test4", relational_args=[("arg_3", type_1), ("arg_4", type_3)],
+                       random_args=[("arg_5", type_2), ("arg_6", type_2)], inference_mode="EP")
 
     pat_element_1 = ('arg_1', 'var1')
     pat_element_2 = ('arg_2', 'var2')
@@ -375,14 +376,21 @@ class TestConditionalArgumentCorrect:
 
     pred_patterns_1 = (pred_1, [pat_element_1, pat_element_2])
     pred_patterns_2 = (pred_2, [pat_element_1, pat_element_2])
+    pred_patterns_3 = (pred_3, [pat_element_3, pat_element_4])
+    pred_patterns_4 = (pred_4, [pat_element_5, pat_element_6])
 
     conditions = [pred_patterns_1, pred_patterns_2]
     condacts = [pred_patterns_2, pred_patterns_1]
+    actions = [pred_patterns_3, pred_patterns_4]
 
     def test_conditional_correct_1(self):
-        # no arg
-        t = Conditional("test", [(self.test_pred_1, None)])
+        # no pattern element
+        t = Conditional("test", [(self.pred_1, None)], [(self.pred_2, None)])
 
     def test_conditional_correct_2(self):
-        # create conditional with only name
-        t = Conditional("cond_1", self.test_conditions, self.test_condacts)
+        # create conditional with conditions and actions
+        t = Conditional("cond_1", conditions=self.conditions, actions=self.actions)
+
+    def test_conditional_correct_3(self):
+        # create conditional with only condacts
+        t = Conditional("cond_1", condacts=self.condacts)
