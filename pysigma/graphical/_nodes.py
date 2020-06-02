@@ -169,7 +169,8 @@ class Node(ABC):
 
     @abstractmethod
     def compute(self):
-        pass
+        # TODO: Other general logging regarding node computation statistics to be added here
+        self.visited = True
 
 
 class FactorNode(Node, ABC):
@@ -267,12 +268,12 @@ class DFN(FactorNode):
         super(DFN, self).add_link(linkdata)
 
     def compute(self):
-        self.visited = True
-
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
             out_ld.set(msg)
+            
+        super(DFN, self).compute()
 
 
 class DVN(VariableNode):
@@ -292,12 +293,12 @@ class DVN(VariableNode):
         super(DVN, self).add_link(linkdata)
 
     def compute(self):
-        self.visited = True
-
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
             out_ld.set(msg)
+            
+        super(DVN, self).compute()
 
 
 class LTMFN(FactorNode):
@@ -408,8 +409,6 @@ class LTMFN(FactorNode):
         """
             Generate message from assumed distribution and send toward WMVN_OUT
         """
-        self.visited = True
-
         # Generate message and send it to the WMVN
         # Particles message. Containing both distribution instance and particle list
         if self.to_sample:
@@ -425,6 +424,8 @@ class LTMFN(FactorNode):
                 out_msg = Message(MessageType.Distribution, self.s_shape, self.b_shape, self.e_shape, self.dist)
         out_ld = self.out_linkdata[0]
         out_ld.set(out_msg)
+        
+        super(LTMFN, self).compute()
 
 
 class WMVN(VariableNode):
