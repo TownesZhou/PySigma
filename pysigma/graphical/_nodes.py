@@ -26,6 +26,7 @@ class LinkData:
         :param fn:      FactorNode instance that this link is incident to
         :param to_fn:   True/False indicating whether this link is pointing toward a factor node
         :param msg_shape    Fixed message shape that this linkdata will carry. Used for checking dimensions
+                            Conceptually, it should be  sample_shape + batch_shape + event_shape
         :param epsilon:     epsilon upper bound for checking message difference using KL divergence
         """
         assert isinstance(vn, VariableNode)
@@ -163,6 +164,10 @@ class Node(ABC):
         return quiesced
 
     @abstractmethod
+    def add_link(self, linkdata):
+        pass
+
+    @abstractmethod
     def compute(self):
         pass
 
@@ -178,6 +183,7 @@ class FactorNode(Node, ABC):
         """
             Add a linkdata connecting to a variable node
         """
+        assert isinstance(linkdata, LinkData)
         assert linkdata.fn is self
         if linkdata in self.in_linkdata + self.out_linkdata:
             return
@@ -193,22 +199,33 @@ class VariableNode(Node, ABC):
         Variable node abstract base class.
     """
 
-    def __init__(self, name, var_list):
+    def __init__(self, name, index_var, rel_var_list, ran_var_list):
         """
             Decalre a VariableNode
         :param name:        name of the variable node
-        :param var_list:   list of Variables representing the variables of this variable nodes
+        :param index_var:      Particle indexing variable
+        :param rel_var_list:   list of Variables representing the relational variables of this variable nodes
+        :param ran_var_list:   list of Variables representing the random variables of this variable nodes
         """
         super(VariableNode, self).__init__(name)
-        assert isinstance(var_list, Iterable) and all(isinstance(v, Variable) for v in var_list)
-        self.var_list = var_list
+        assert isinstance(index_var, Variable)
+        assert isinstance(rel_var_list, Iterable) and all(isinstance(v, Variable) for v in rel_var_list)
+        assert isinstance(ran_var_list, Iterable) and all(isinstance(v, Variable) for v in ran_var_list)
+
+        self.index_var = index_var
+        self.rel_var_list = rel_var_list
+        self.ran_var_list = ran_var_list
+        self.s_shape = torch.Size([index_var.size])
+        self.b_shape = torch.Size(list(rel_var.size for rel_var in rel_var_list))
+        self.e_shape = torch.Size(sum(list(ran_var.size for ran_var in ran_var_list)))
 
     def add_link(self, linkdata):
         """
             Register the LinkData connecting a factor node to this variable node.
             Check that the variable list specified in linkdata agrees with that pre-specified at this variable node
         """
-        assert linkdata.var_list == self.var_list
+        assert isinstance(linkdata, LinkData)
+        assert linkdata.msg_shape == self.s_shape + self.b_shape + self.e_shape
         if linkdata in self.in_linkdata + self.out_linkdata:
             return
 
