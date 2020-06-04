@@ -841,10 +841,21 @@ class AlphaFactorNode(FactorNode, ABC):
             outgoing link. Additionally, links must declare a special attribute 'direction' with value 'inward' or
             'outward' to indicate whether it is pointing toward the conditional gamma factor node or not.
 
-        Such link check is implemented in add_link() to be inherited by concrete alpha factor node class
+        Such link check is implemented in add_link() to be inherited by concrete alpha factor node class. Also
+            implemented in this method is the registration of labeled pairs of linkdata in self.labeled_ld_pair
 
-        Also implemented is pre-computation check of link presence in compute()
+        compute() is implemented so that it execute inward_compute() and/or outward_compute() based on the presence of
+            linkdata pairs.
+
+        inward_compute() and outward_compute() are now abstract methods that must be implemeted by child classes, but
+            compute() should not be override.
     """
+    def __init__(self, name):
+        super(AlphaFactorNode, self).__init__(name)
+
+        # Pairs of incoming and outgoing linkdata labeled with their directionality w.r.t. the alpha structure
+        self.labeled_ld_pair = {}
+
     def add_link(self, linkdata):
         assert isinstance(linkdata, LinkData)
         assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
@@ -858,9 +869,40 @@ class AlphaFactorNode(FactorNode, ABC):
             
         super(AlphaFactorNode, self).add_link(linkdata)
 
+        # If the other ld of this ld pair has not been added, then temporarily register this ld instance directly
+        direction = linkdata.attr['direction']
+        if direction not in self.labeled_ld_pair.keys():
+            self.labeled_ld_pair[direction] = linkdata
+        # Otherwise, take out the other ld of this ld pair from the dict and replace entry with a tuple
+        #   Make sure that incoming ld is the first element of the tuple and outgoing ld the second element
+        else:
+            other_ld = self.labeled_ld_pair[direction]
+            self.labeled_ld_pair[direction] = (linkdata, other_ld) if linkdata.to_fn else (other_ld, linkdata)
+
     def compute(self):
-        assert len(self.in_linkdata) == len(self.out_linkdata) and len(self.in_linkdata) > 0
         super(AlphaFactorNode, self).compute()
+        assert len(self.in_linkdata) == len(self.out_linkdata) and len(self.in_linkdata) > 0
+
+        # Carry out directional computation based on presence of link in self.labeled_ld_pair
+        for direction in self.labeled_ld_pair.keys():
+            if direction == 'inward':
+                self.inward_compute()
+            else:
+                self.outward_compute()
+
+    @abstractmethod
+    def inward_compute(self):
+        """
+            Inward message computation. To be implemented by child class.
+        """
+        pass
+
+    @abstractmethod
+    def outward_compute(self):
+        """
+            Outward message computation. To be implemented by child class.
+        """
+        pass
 
 
 class RelMapNode(AlphaFactorNode):
