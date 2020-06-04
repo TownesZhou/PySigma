@@ -197,6 +197,52 @@ class Message:
         new_msg = Message(msg_type, self.s_shape, self.b_shape, self.e_shape, dist, particles, weights, log_density)
         return new_msg
 
+    """
+        Tensor manipulation utility methods
+    """
+    def batch_permute(self, target_dims):
+        """
+            Returns a permuted message whose tensor attributes are permuted from the original ones w.r.t. 'target_dims'
+                in the batch dimensions.
+            Note that target_dims is relative to the batch dimension. Its values should be within the range
+                    [-len(batch_shape), len(batch_shape) - 1]
+            The behavior of the permutation is similar to torch.Tensor.permute()
+
+            :param target_dims:     list of ints. The desired ordering batch dimensions
+        """
+        assert isinstance(target_dims, list) and all(isinstance(i, int) for i in target_dims)
+        assert len(target_dims) == len(self.b_shape) and \
+               all(-len(self.b_shape) <= i <= len(self.b_shape) - 1 for i in target_dims)
+
+        # add 1 to each entry in target_dims if the entry is positive, because there's a single sample dim at front, and
+        #   prepend with [0]. This thus returns the ordering of sample dim and batch dims together
+        new_b_shape = torch.Size(list(self.b_shape[target_dims[i]] for i in range(len(self.b_shape))))
+        s_b_dims = [0, ] + list(i + 1 if i >= 0 else i for i in target_dims)
+        num_s_b_dims = len(s_b_dims)
+        s_b_e_dims = s_b_dims + list(i + len(range(num_s_b_dims)) for i in range(len(self.e_shape)))
+
+        new_dist = self.dist
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if self.dist is not None:
+            dist_param = DistributionServer.dist2param(self.dist)
+            new_dist_param = dist_param.permute(list(s_b_dims[i] if i in range(num_s_b_dims) else i
+                                                     for i in range(len(dist_param.shape))))
+            new_dist = DistributionServer.param2dist(type(self.dist), new_dist_param, new_b_shape, self.e_shape)
+        if self.particles is not None:
+            new_particles = self.particles.permute(s_b_e_dims)
+        if isinstance(self.weights, torch.Tensor):
+            new_weights = self.weights.permute(s_b_dims)
+        if isinstance(self.log_density, torch.Tensor):
+            new_log_density = self.log_density.permute(s_b_dims)
+
+        new_msg = Message(self.type, self.s_shape, new_b_shape, self.e_shape, new_dist, new_particles, new_weights,
+                          new_log_density)
+
+        return new_msg
+
 
 # TODO: Enum class of all the inference method
 class InferenceMethod(Enum):
