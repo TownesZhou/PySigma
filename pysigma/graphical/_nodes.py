@@ -184,7 +184,9 @@ class Node(ABC):
 
 class FactorNode(Node, ABC):
     """
-        Factor node abstract base class. Guarantees that all incident nodes are variable nodes.
+        Factor node abstract base class.
+
+        Guarantees that all incident nodes are variable nodes.
     """
     def __init__(self, name):
         super(FactorNode, self).__init__(name)
@@ -207,6 +209,8 @@ class FactorNode(Node, ABC):
 class VariableNode(Node, ABC):
     """
         Variable node abstract base class.
+
+        Guarantees that all incident nodes are factor nodes
     """
 
     def __init__(self, name, index_var, rel_var_list, ran_var_list):
@@ -254,7 +258,9 @@ class VariableNode(Node, ABC):
 
 class DFN(FactorNode):
     """
-        Default (Dummy) Factor Node. No special computation. Simply relay message to one or multiple variable nodes
+        Default (Dummy) Factor Node.
+
+        No special computation. Simply relay message to one or multiple variable nodes
         Requires that incident variable nodes have the same variable list
         Only admit one incoming link but can connect with multiple outgoing links
     """
@@ -294,7 +300,9 @@ class DFN(FactorNode):
 
 class DVN(VariableNode):
     """
-        Default (Dummy) Variable Node. No special computation. Simply relay message to one or multiple factor nodes
+        Default (Dummy) Variable Node.
+
+        No special computation. Simply relay message to one or multiple factor nodes
         Only admit one incoming link but can connect with multiple outgoing links
     """
     def __init__(self, name, index_var, rel_var_list, ran_var_list):
@@ -328,8 +336,10 @@ class DVN(VariableNode):
 
 class LTMFN(FactorNode):
     """
-        Long-Term Memory Factor Node. Holds the distribution class of this predicate, and if necessary can draw particle
-            events from currently assumed distribution instance.
+        Long-Term Memory Factor Node.
+
+        Holds the distribution class of this predicate, and if necessary can draw particle events from currently
+            assumed distribution instance.
 
         Admits incoming link from WMVN that contains combined action message to this predicate by the end of the
             decision cycle, as well as the incoming link from parameter feed and WMFN that contains parameter messages.
@@ -455,7 +465,10 @@ class LTMFN(FactorNode):
 
 class WMVN(VariableNode):
     """
-        Working Memory Variable Node. Gate node connecting predicate structure to conditionals.
+        Working Memory Variable Node.
+
+        Gate node connecting predicate structure to conditionals.
+
         Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
             FAN node in Lisp Sigma. Combination can be carried out if incoming messages are all Tabular, all exponential
             Distribution, all homogeneous Particles (i.e. messages with same particle values), or a mixture of
@@ -612,7 +625,9 @@ class WMVN(VariableNode):
 
 class PBFN(FactorNode):
     """
-        Perception Buffer Factor Node. Receive perception / observation / evidence as particle list and send to WMVN.
+        Perception Buffer Factor Node.
+
+        Receive perception / observation / evidence as particle list and send to WMVN.
             Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
             in the caller of set_perception()
         Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.
@@ -685,7 +700,9 @@ class PBFN(FactorNode):
 
 class WMFN(FactorNode):
     """
-        Working Memory Factor Node. Effectively a buffer node that contains a memory buffer, whose content will be sent
+        Working Memory Factor Node.
+
+        Effectively a buffer node that contains a memory buffer, whose content will be sent
             as outgoing message only until the next decision cycle. During modification phase, the memory buffer content
             can either be replaced entirely by, or taken a weighted sum with incoming message.
 
@@ -802,5 +819,102 @@ class WMFN(FactorNode):
 """
     Nodes relating to Conditional subgraph structures
 """
+
+
+class RelMapNode(FactorNode):
+    """
+        Relation Variable Mapping Node
+
+        Convert between predicate arguments and pattern variables. Apply relational variable's VariableMap (if declared)
+            by selecting and placing entries among the message batch dimensions. This node can thus carry out
+            inner-pattern relational variable matching by itself.
+
+        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
+            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
+            it is pointing toward the conditional gamma factor node or not.
+
+        For inward direction, inner-pattern relational variable matching is handled by selecting entries on the
+            diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto
+            the diagonals of a larger message tensor.
+    """
+    pass
+
+
+class ExpSumNode(FactorNode):
+    """
+        Expansion / Summarization Node
+
+        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
+            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
+            it is pointing toward the conditional gamma factor node or not.
+
+        For inward direction, it expands and permutes the incoming message's relational variable dimensions to match the
+            full relational variable dimensions determined by the conditional. For outward direction, it summarizes
+            over irrelevant relational variables and permute the dimensions to match the relational variable dimensions
+            of this pattern.
+
+        Note that the expanded dimensions will be of size 1, so that the expanded tensor is broadcastable along this
+            dimension.
+
+        The summarization step can be thought of as a search or optimization problem, where one finds a single
+            distribution instance that best "summarizes" the behaviors of an entire space of distribution instances,
+            where the dimensions of the space is defined and spanned by the irrelevant relational variables. Depending
+            on the user-specified summarization criteria, different semantics can be interpreted for this step.
+    """
+    pass
+
+
+class RanTransNode(FactorNode):
+    """
+        Random Variable Transformation Node
+
+        Apply a user-specified transformation procedure defined in torch.distributions.transforms on the random
+            variables of the incoming message. In other words, this nodes transforms the values of the particle events
+            of the message distributions.
+
+        By transforming the RV values, it also induces new value constraints for the generated messages. For the inward
+            direction, the new induced value constraints will be used by the gamma factor node to carry out value check
+            for the matching RVs.
+
+        Note that if this node belongs to a Condact predicate pattern, the transformation specified by user MUST be
+            bijective. The forward transformation will be used for inward message propagation, whereas the backward
+            transformation will be used for outward message propagation.
+
+        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
+            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
+            it is pointing toward the conditional gamma factor node or not.
+    """
+    pass
+
+
+class GFN(FactorNode):
+    """
+        Gamma Factor Node
+
+        Carry out general-inference message computation at the PGM factor node.
+
+        Induce a message computation task for each of the outgoing link.
+    """
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
