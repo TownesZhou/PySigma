@@ -178,6 +178,12 @@ class Node(ABC):
 
     @abstractmethod
     def compute(self):
+        """
+            Compute method to be called to propagate message during decision phase.
+
+            Note that super() must be called within compute() method in any child class, because all abstract node-level
+                statistics logging is taken care of herein. 
+        """
         # TODO: Other general logging regarding node computation statistics to be added here
         self.visited = True
 
@@ -691,6 +697,8 @@ class PBFN(FactorNode):
         out_msg = Message(MessageType.Particles, self.s_shape, self.buffer, self.e_shape, None, self.buffer,
                           self.weights, 0)
         out_ld.set(out_msg)
+        
+        super(PBFN, self).compute()
 
     # Override check_quiesce() so that quiescence is equivalent to visited
     def check_quiesce(self):
@@ -809,6 +817,8 @@ class WMFN(FactorNode):
         assert len(self.out_linkdata) > 0
         if self.memory is not None:
             self.out_linkdata[0].set(self.memory)
+            
+        super(WMFN, self).compute()
 
     # Overrides so that quiescence for WMFN is equivalent to visited
     def check_quiesce(self):
@@ -818,10 +828,42 @@ class WMFN(FactorNode):
 
 """
     Nodes relating to Conditional subgraph structures
+        - Alpha subgraph: AlphaFactorNode, RelMapNode, ExpSumNode, RanTransNode
+        - Gamma factor node: GFN
 """
 
 
-class RelMapNode(FactorNode):
+class AlphaFactorNode(FactorNode, ABC):
+    """
+        Abstract base class for any factor node belonging to a alpha subgraph
+
+        The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and
+            outgoing link. Additionally, links must declare a special attribute 'direction' with value 'inward' or
+            'outward' to indicate whether it is pointing toward the conditional gamma factor node or not.
+
+        Such link check is implemented in add_link() to be inherited by concrete alpha factor node class
+
+        Also implemented is pre-computation check of link presence in compute()
+    """
+    def add_link(self, linkdata):
+        assert isinstance(linkdata, LinkData)
+        assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
+
+        if linkdata.to_fn:
+            assert len(self.in_linkdata) == 0 or linkdata.attr['direction'] != self.in_linkdata[0].attr['direction']
+            assert len(self.in_linkdata) <= 1
+        else:
+            assert len(self.out_linkdata) == 0 or linkdata.attr['direction'] != self.out_linkdata[0].attr['direction']
+            assert len(self.out_linkdata) <= 1
+            
+        super(AlphaFactorNode, self).add_link(linkdata)
+
+    def compute(self):
+        assert len(self.in_linkdata) == len(self.out_linkdata) and len(self.in_linkdata) > 0
+        super(AlphaFactorNode, self).compute()
+
+
+class RelMapNode(AlphaFactorNode):
     """
         Relation Variable Mapping Node
 
@@ -837,10 +879,19 @@ class RelMapNode(FactorNode):
             diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto
             the diagonals of a larger message tensor.
     """
-    pass
+    def __init__(self, name, arg2var, var2arg):
+        super(RelMapNode, self).__init__(name)
+        self.pretty_log["node type"] = "Relation Variable Mapping Node"
+        
+        assert isinstance(name, str)
+        assert isinstance(arg2var, dict)
+        assert isinstance(var2arg, dict)
+
+        self.arg2var = arg2var
+        self.var2arg = var2arg
 
 
-class ExpSumNode(FactorNode):
+class ExpSumNode(AlphaFactorNode):
     """
         Expansion / Summarization Node
 
@@ -864,7 +915,7 @@ class ExpSumNode(FactorNode):
     pass
 
 
-class RanTransNode(FactorNode):
+class RanTransNode(AlphaFactorNode):
     """
         Random Variable Transformation Node
 
@@ -887,7 +938,7 @@ class RanTransNode(FactorNode):
     pass
 
 
-class GFN(FactorNode):
+class GFN(AlphaFactorNode):
     """
         Gamma Factor Node
 

@@ -471,7 +471,7 @@ class Conditional:
         #                                   { "name" : pt_var_name
         #                                     "const" : True/False
         #                                     "vals" : int/str values if const is True or None otherwise
-        #                                     "map"  : transformation, if specified, otherwise None} } }
+        #                                     "map"  : VariableMap instance, if specified, otherwise None} } }
         # Map from pattern variable name back to predicate argument names, for each predicate pattern
         #       pattern_var2arg = { pattern_name :
         #                               { pt_var_name : list of corresponding predicate argument names } }
