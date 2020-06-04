@@ -100,6 +100,12 @@ class Message:
             that compatible with Sigma's cognitive structures. In general, what is contained in a message are knowledge
             in the PyTorch's format. One should only translate such knowledge using KnowledgeTranslator class (see
             utils.py) after extracting information from a Message instance.
+
+        In general, a message's tensor attributes have shape:
+            - distribution parameter:   (b_shape + param_shape)
+            - particles:                (s_shape + b_shape + e_shape)
+            - weights:                  (s_shape + b_shape)
+            - log_density:              (s_shape + b_shape)
     """
     def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size, event_shape: torch.Size,
                  dist: Distribution = None, particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
@@ -214,12 +220,16 @@ class Message:
         assert len(target_dims) == len(self.b_shape) and \
                all(-len(self.b_shape) <= i <= len(self.b_shape) - 1 for i in target_dims)
 
-        # add 1 to each entry in target_dims if the entry is positive, because there's a single sample dim at front, and
-        #   prepend with [0]. This thus returns the ordering of sample dim and batch dims together
         new_b_shape = torch.Size(list(self.b_shape[target_dims[i]] for i in range(len(self.b_shape))))
+        # Permute order for sample and batch dimensions together.
+        #   Add 1 to nonnegative values in target_dims because there's a single sample dimensions at front
         s_b_dims = [0, ] + list(i + 1 if i >= 0 else i for i in target_dims)
         num_s_b_dims = len(s_b_dims)
-        s_b_e_dims = s_b_dims + list(i + len(range(num_s_b_dims)) for i in range(len(self.e_shape)))
+        # Permute order for sample, batch, and event dimensions altogether
+        #   Substract len(self.e_shape) to negative values in s_b_dims because there's len(self.e_shape) dimensions
+        #   at back
+        s_b_e_dims = list(d - len(self.e_shape) if d < 0 else d for d in s_b_dims) + \
+                     list(i + num_s_b_dims for i in range(len(self.e_shape)))
 
         new_dist = self.dist
         new_particles = self.particles
@@ -227,15 +237,19 @@ class Message:
         new_log_density = self.log_density
 
         if self.dist is not None:
+            # dist has shape (b_shape + e_shape)
             dist_param = DistributionServer.dist2param(self.dist)
-            new_dist_param = dist_param.permute(list(s_b_dims[i] if i in range(num_s_b_dims) else i
+            new_dist_param = dist_param.permute(list(target_dims[i] if i < len(target_dims) else i
                                                      for i in range(len(dist_param.shape))))
             new_dist = DistributionServer.param2dist(type(self.dist), new_dist_param, new_b_shape, self.e_shape)
         if self.particles is not None:
+            # particles has shape (s_shape + b_shape + e_shape)
             new_particles = self.particles.permute(s_b_e_dims)
         if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
             new_weights = self.weights.permute(s_b_dims)
         if isinstance(self.log_density, torch.Tensor):
+            # log_density has shape (s_shape + b_shape)
             new_log_density = self.log_density.permute(s_b_dims)
 
         new_msg = Message(self.type, self.s_shape, new_b_shape, self.e_shape, new_dist, new_particles, new_weights,
