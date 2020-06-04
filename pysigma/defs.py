@@ -237,7 +237,7 @@ class Message:
         new_log_density = self.log_density
 
         if self.dist is not None:
-            # dist has shape (b_shape + e_shape)
+            # dist param has shape (b_shape + e_shape)
             dist_param = DistributionServer.dist2param(self.dist)
             new_dist_param = dist_param.permute(list(target_dims[i] if i < len(target_dims) else i
                                                      for i in range(len(dist_param.shape))))
@@ -251,6 +251,50 @@ class Message:
         if isinstance(self.log_density, torch.Tensor):
             # log_density has shape (s_shape + b_shape)
             new_log_density = self.log_density.permute(s_b_dims)
+
+        new_msg = Message(self.type, self.s_shape, new_b_shape, self.e_shape, new_dist, new_particles, new_weights,
+                          new_log_density)
+
+        return new_msg
+
+    def batch_unsqueeze(self, dim):
+        """
+            Returns a new message with a dimension of size one inserted at the specified batch dimension, similar to
+                torch.unsqueeze().
+            A 'dim' value within the range [-len(batch_shape) - 1, len(batch_shape) + 1] can be used. Note that 'dim'
+                is relative to the batch dimension only.
+
+            :param dim:     an int. The place where the new dimension of size one will be inserted at.
+        """
+        assert isinstance(dim, int) and -len(self.b_shape) - 1 <= dim <= len(self.b_shape) + 1
+
+        # Translate dim to positive value if it is negative
+        if dim < 0:
+            dim = len(self.b_shape) + dim
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dim = dim + 1
+        # Get new batch shape
+        new_b_shape = self.b_shape[:dim] + torch.Size([1]) + self.b_shape[dim:]
+
+        new_dist = self.dist
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if self.dist is not None:
+            # dist param has shape (b_shape + e_shape)
+            dist_param = DistributionServer.dist2param(self.dist)
+            new_dist_param = torch.unsqueeze(dist_param, dim)
+            new_dist = DistributionServer.param2dist(type(self.dist), new_dist_param, new_b_shape, self.e_shape)
+        if self.particles is not None:
+            # particles has shape (s_shape + b_shape + e_shape)
+            new_particles = torch.unsqueeze(self.particles, s_dim)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            new_weights = torch.unsqueeze(self.weights, s_dim)
+        if isinstance(self.log_density, torch.Tensor):
+            # log_density has shape (s_shape + b_shape)
+            new_log_density = torch.unsqueeze(self.log_density, s_dim)
 
         new_msg = Message(self.type, self.s_shape, new_b_shape, self.e_shape, new_dist, new_particles, new_weights,
                           new_log_density)
