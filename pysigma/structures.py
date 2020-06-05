@@ -16,7 +16,7 @@ from defs import Variable, VariableMetatype
 
 class VariableMap:
     """
-        Class type for transformation on predicate's variables in pattern elements
+        Class type for declaring mappings on relational variables in pattern elements
     """
     pass
 
@@ -62,6 +62,14 @@ class FactorFunction:
                 Note that once defined, the directionality of the corresponding Conditional is also assumed and fixed.
                 In other words, X_1, ..., X_n should only appear in condition patterns, and Y_1, ..., Y_m only in action
                 patterns
+    """
+    pass
+
+
+class Summarization:
+    """
+        Class type for declaring procedures for summarization over space of distribution instances spanned by relational
+            variable dimensions.
     """
     pass
 

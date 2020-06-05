@@ -75,7 +75,7 @@ class Variable:
 
     def __hash__(self):
         # override so that hash value of the string representation of the variable is used
-        return hash(self.name + str(self.metatype) + str(self.size))
+        return hash(self.name + str(self.metatype) + str(self.size) + str(self.constraints))
 
 
 # Generalized message type and message representation
