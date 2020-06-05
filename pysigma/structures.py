@@ -17,8 +17,37 @@ from defs import Variable, VariableMetatype
 class VariableMap:
     """
         Class type for declaring mappings on relational variables in pattern elements
+
+        Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance
+            therefore declares an integer-valued mapping with finite domain.
+
+        Every VariableMap instance should be able to tell the map's domain, codomain, and the mapping itself, with the
+            former two in the format of set of integers, and the latter one in the format of dictionary mapping integers
+            to integers.
+
+        The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
+            be computed lazily at runtime and returned by get_mapping(). This is to allow dynamic mappings such as
+            neural attention modules.
     """
-    pass
+    def __init__(self, mapping_func, domain, codomain, dynamic=False):
+        """
+            Initialize a VariableMap instance. Wraps around a user-specified function that implements the mapping
+                mechanism.
+
+            :param  mapping_func:   a user-specified function. Takes a list of integers as input, and returns a list of
+                                        integers of the same size. Each entry in the output list corresponds to the
+                                        value of f(x) of input x at the same index in the input list.
+            :param  domain:         A set of integers. Declares the domain of the mapping.
+            :param  codomain:       A set of integers. Declares the codomain of the mapping.
+            :param  dynamic:        True or False. Defaults to False. Indicates whether the mapping is dynamic. If True,
+                                        then mapping_func will be called each time a mapping dictionary is desired.
+                                        Otherwise, mapping_func will only be called once during initialization of this
+                                        VariableMap instance, and the result will reused.
+        """
+        assert callable(mapping_func)
+        assert isinstance(domain, set) and all(isinstance(i, int) and i >= 0 for i in domain)
+        assert isinstance(codomain, set) and all(isinstance(i, int) and i >= 0 for i in codomain)
+        assert isinstance(dynamic, bool)
 
 
 class FactorFunction:
