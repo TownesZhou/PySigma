@@ -24,14 +24,19 @@ class Variable:
             its meta-type and dimension size
         The equality testing is used for matching variables in Alpha-Beta graphs. Two variables are equal if and only
             if ALL of the fields are equal.
-        The "Type" of a variable, as defined in a predicate, is not considered here. The only relevant information about
-            its "Type" is captured in the 'size' field. This is to support matching across different types of variables
-             in a principled way.
+
     """
     def __init__(self, name, metatype, size, value_constraints=None):
         """
             Instantiate a variable. Optionally indicates a set of value constraints if and only if variable is Random
                 metatype.
+
+            :param name:                a str. The name of this variable
+            :param metatype:            VariableMetatype. The metatype of this variable: Indexing, Relational, Random,
+                                            or Parameter
+            :param size:                an int. The size of the dimension this variable corresponds to
+            :param value_constraints:   a set of torch.distributions.constraints.Constraint instances. The set of value
+                                            constraints that determine the value range (domain) of this variable
         """
         assert isinstance(name, str)
         assert isinstance(metatype, VariableMetatype)
@@ -55,7 +60,8 @@ class Variable:
         assert isinstance(other, Variable)
         val = self.name == other.name and \
               self.metatype == other.metatype and \
-              self.size == other.size
+              self.size == other.size and \
+              self.constraints == other.constraints
 
         return val
 
