@@ -9,7 +9,8 @@ from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint
 from collections.abc import Iterable
 from itertools import chain
-from .utils import *
+import warnings
+from .utils import intern_name, extern_name
 from defs import Variable, VariableMetatype
 
 
@@ -223,8 +224,15 @@ class Predicate:
             if arg_name in self.relarg_name2relarg.keys():
                 raise ValueError("Relational arguments' names must be distinct. Instead found repetition: {}"
                                  .format(arg_name))
+            # Check if variable's type specifies a value constraint. If specified, throw a user warning notifying that
+            #   the value constraint will be ignored
+            if arg_type.constraint is not None:
+                warnings.warn("A value constraint '{}' is found in the type '{}' associated with relational argument "
+                              "'{}'. The value constraint is ignored for now, but please check if the type should be "
+                              "used to address a relational predicate argument."
+                              .format(arg_type.constraint, arg_type, arg_name))
 
-            rel_var = Variable(arg_name, VariableMetatype.Relational, arg_type.size)
+            rel_var = Variable(arg_name, VariableMetatype.Relational, arg_type.size, None)
             self.relational_args.append(rel_var)
             self.relarg_name2relarg[arg_name] = rel_var
             self.relarg_name2type[arg_name] = arg_type
@@ -250,7 +258,7 @@ class Predicate:
                                  "random variable '{}' with type '{}' where no value constraint is specified."
                                  .format(arg_name, arg_type))
 
-            ran_var = Variable(arg_name, VariableMetatype.Random, arg_type.size)
+            ran_var = Variable(arg_name, VariableMetatype.Random, arg_type.size, arg_type.constraint)
             self.random_args.append(ran_var)
             self.ranarg_name2ranarg[arg_name] = ran_var
             self.ranarg_name2type[arg_name] = arg_type
@@ -265,7 +273,7 @@ class Predicate:
         # Dimensions of event tensor: [N, B_1, ..., B_n, (S_1+...+S_m)]
         self.event_dims = Size([self.index_arg.size] +
                          [v.size for v in self.relational_args] +
-                         sum([v.size for v in self.random_args]))
+                         [sum([v.size for v in self.random_args])])
 
     def __str__(self):
         # String representation for display
