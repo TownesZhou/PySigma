@@ -44,10 +44,62 @@ class VariableMap:
                                         Otherwise, mapping_func will only be called once during initialization of this
                                         VariableMap instance, and the result will reused.
         """
-        assert callable(mapping_func)
-        assert isinstance(domain, set) and all(isinstance(i, int) and i >= 0 for i in domain)
-        assert isinstance(codomain, set) and all(isinstance(i, int) and i >= 0 for i in codomain)
-        assert isinstance(dynamic, bool)
+        # Argument validation
+        if not callable(mapping_func):
+            raise ValueError("The 1st argument 'mapping_func' should be a python callable, accepting a list of "
+                             "integers as the batched input to the mapping and produces a list of integers of the same "
+                             "size as the batched output")
+        if not isinstance(domain, set) or not all(isinstance(i, int) and i >= 0 for i in domain):
+            raise ValueError("The 2nd argument 'domain' must be a set of non-negative integers, denoting the domain "
+                             "of the specified mapping")
+        if not isinstance(codomain, set) or not all(isinstance(i, int) and i >= 0 for i in codomain):
+            raise ValueError("The 3rd argument 'codomain' must be a set of non-negative integers, denoting the "
+                             "codomain of the specified mapping")
+        if not isinstance(dynamic, bool):
+            raise ValueError("The 4th argument 'dynamic' must be of type bool")
+
+        self.mapping_func = mapping_func
+        self.domain = domain
+        self.codomain = codomain
+        self.dynamic = dynamic
+        # mapping chache. This field will be looked up later as definition of the mapping
+        self.map = None
+
+        # Set the map cache if not dynamic
+        if not dynamic:
+            self.set_map()
+
+    def set_map(self):
+        """
+            Set self.map by obtaining the mapping dictionary from self.mapping_func
+        """
+        # Input list
+        input = list(self.domain)
+        output = self.mapping_func(input)
+        # Check output format and if its entries are in codomain range
+        if not isinstance(output, list) or not all(isinstance(i, int) and i >= 0 for i in output):
+            raise ValueError("The provided mapping python callable should return a list of non-negative integers. "
+                             "Instead, found: '{}'".format(output))
+        if not len(input) == len(output):
+            raise ValueError("The output list from the provided mapping python callable should be of the same size as "
+                             "the input list. Expecting size '{}', instead found size '{}'"
+                             .format(len(input), len(output)))
+        for i in output:
+            if i not in self.codomain:
+                raise ValueError("The output from the provided mapping python callable should be within the specified "
+                                 "codomain: '{}'. Instead, found entry in the output list: '{}'"
+                                 .format(self.codomain, i))
+        # Set mapping
+        self.map = dict(zip(input, output))
+
+    def get_map(self):
+        """
+            Return the mapping dictionary. If dynamic, then call set_map() to re-compute the dict before returning it,
+                otherwise return the cached one
+        """
+        if self.dynamic:
+            self.set_map()
+        return self.map
 
 
 class FactorFunction:
