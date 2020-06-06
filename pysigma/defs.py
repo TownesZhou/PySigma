@@ -86,15 +86,23 @@ class MessageType(Enum):
     Tabular = 0
     Distribution = 1
     Particles = 2
-
+    Parameter = 3
 
 class Message:
     """
         Message structure to support general inference.
-        Three basic message type:
+
+        Four basic message type:
             - Tabular factor
             - Parametric distribution
             - Particle list
+            - Parameter
+        Each of the first three all represents "events" of a batch of distributions, while the last one represents
+            parameters to a batch of distributions. For the last one, which class of distribution the parameters are
+            describing and whether the parameters are natural parameters to some exponential family, or common
+            parameters to PyTorch's distribution class interface, is of no concern to Message itself. Instead, their
+            semantic should and will be determined by the context where the message is used.
+
         Tabular factors will be represented by Categorical distribution, a special case of parametric distribution
             message.
         The message type does not impose restriction on the types of underlying message representations available for
@@ -113,9 +121,12 @@ class Message:
             - weights:                  (s_shape + b_shape)
             - log_density:              (s_shape + b_shape)
     """
-    def __init__(self, msg_type: MessageType, sample_shape: torch.Size, batch_shape: torch.Size, event_shape: torch.Size,
+    def __init__(self, msg_type: MessageType,
+                 sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
+                 param_shape: torch.Size = None,
                  dist: Distribution = None, particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
-                 log_density: [torch.Tensor, int] = None):
+                 log_density: [torch.Tensor, int] = None,
+                 parameters: torch.Tensor = None):
         """
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
@@ -136,14 +147,16 @@ class Message:
                                 indicates the relative frequency of each particle.
         """
         assert isinstance(msg_type, MessageType)
-        assert isinstance(sample_shape, torch.Size)
-        assert isinstance(batch_shape, torch.Size)
-        assert isinstance(event_shape, torch.Size)
+        assert sample_shape is None or isinstance(sample_shape, torch.Size)
+        assert batch_shape is None or isinstance(batch_shape, torch.Size)
+        assert event_shape is None or isinstance(event_shape, torch.Size)
+        assert param_shape is None or isinstance(param_shape, torch.Size)
         assert dist is None or isinstance(dist, Distribution)
         assert particles is None or isinstance(particles, torch.Tensor)
         assert weights is None or (isinstance(weights, int) and weights == 1) or isinstance(weights, torch.Tensor)
         assert log_density is None or (isinstance(log_density, int) and log_density == 0) or \
                isinstance(log_density, torch.Tensor)
+        assert parameters is None or isinstance(parameters, torch.Tensor)
 
         # Message type, of type MessageType
         self.type = msg_type
@@ -153,26 +166,40 @@ class Message:
         self.particles = particles
         self.weights = weights
         self.log_density = log_density
+        # Parameter
+        self.parameters = parameters
         # Shapes. Collapse the shape if it is a singleton (because PyTorch's distribution will collapse it anyhow)
-        self.s_shape = sample_shape if sample_shape != torch.Size([1]) else torch.Size([])
-        self.b_shape = batch_shape if batch_shape != torch.Size([1]) else torch.Size([])
-        self.e_shape = event_shape if event_shape != torch.Size([1]) else torch.Size([])
+        self.s_shape = None
+        self.b_shape = None
+        self.e_shape = None
+        self.p_shape = None
+        if sample_shape is not None:
+            self.s_shape = sample_shape if sample_shape != torch.Size([1]) else torch.Size([])
+        if batch_shape is not None:
+            self.b_shape = batch_shape if batch_shape != torch.Size([1]) else torch.Size([])
+        if event_shape is not None:
+            self.e_shape = event_shape if event_shape != torch.Size([1]) else torch.Size([])
+        if param_shape is not None:
+            self.p_shape = param_shape if param_shape != torch.Size([1]) else torch.Size([])
 
         # Check whether (only) necessary arguments are provided
         if self.type is MessageType.Tabular:
+            assert self.b_shape is not None and self.e_shape is not None
             # Need to provide Categorical distribution and nothing else
             assert isinstance(self.dist, Categorical)
-            assert self.particles is None
-            assert self.weights is None
         if self.type is MessageType.Distribution:
+            assert self.b_shape is not None and self.e_shape is not None
             # Need to provide some distribution. Particle list is optional
             assert self.dist is not None
         if self.type is MessageType.Particles:
+            assert self.s_shape is not None and self.b_shape is not None and self.e_shape is not None
             # Need to provide a particle list, but no distribution
             assert self.particles is not None
             assert self.weights is not None
             assert self.log_density is not None
-            assert self.dist is None
+        if self.type is MessageType.Parameter:
+            assert self.b_shape is not None and self.p_shape is not None
+            assert self.parameters is not None
 
         # Check shape
         if self.dist is not None:
@@ -184,16 +211,18 @@ class Message:
             assert self.s_shape + self.b_shape == self.weights.shape
         if isinstance(self.log_density, torch.Tensor):
             assert self.s_shape + self.b_shape == self.log_density.shape
+        if self.parameters is not None:
+            assert self.b_shape + self.p_shape == self.parameters.shape
 
     def clone(self):
         """
             Return a cloned message from self. Guarantees that every tensor that constitutes self is cloned
         """
-        msg_type = self.type
         dist = None
         particles = None
         weights = None
         log_density = None
+        parameters = None
 
         if self.dist is not None:
             params = DistributionServer.dist2param(self.dist)
@@ -205,8 +234,14 @@ class Message:
             weights = self.weights.clone()
         if self.log_density is not None:
             log_density = self.log_density.clone()
+        if self.parameters is not None:
+            parameters = self.parameters.clone()
 
-        new_msg = Message(msg_type, self.s_shape, self.b_shape, self.e_shape, dist, particles, weights, log_density)
+        new_msg = Message(self.type,
+                          sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
+                          param_shape=self.p_shape,
+                          dist=dist, particles=particles, weights=weights, log_density=log_density,
+                          parameters=parameters)
         return new_msg
 
     """
@@ -226,26 +261,28 @@ class Message:
         assert len(target_dims) == len(self.b_shape) and \
                all(-len(self.b_shape) <= i <= len(self.b_shape) - 1 for i in target_dims)
 
-        new_b_shape = torch.Size(list(self.b_shape[target_dims[i]] for i in range(len(self.b_shape))))
+        # Translate negative dims to nonnegative value
+        pos_target_dims = list(len(target_dims) + i if i < 0 else i for i in target_dims)
+        # Permuted batch shape
+        new_b_shape = torch.Size(list(self.b_shape[pos_target_dims[i]] for i in range(len(self.b_shape))))
         # Permute order for sample and batch dimensions together.
-        #   Add 1 to nonnegative values in target_dims because there's a single sample dimensions at front
-        s_b_dims = [0, ] + list(i + 1 if i >= 0 else i for i in target_dims)
-        num_s_b_dims = len(s_b_dims)
+        #   Add 1 to values in pos_target_dims because there's a single sample dimensions at front
+        s_b_dims = [0, ] + list(i + 1 for i in pos_target_dims)
         # Permute order for sample, batch, and event dimensions altogether
-        #   Substract len(self.e_shape) to negative values in s_b_dims because there's len(self.e_shape) dimensions
-        #   at back
-        s_b_e_dims = list(d - len(self.e_shape) if d < 0 else d for d in s_b_dims) + \
-                     list(i + num_s_b_dims for i in range(len(self.e_shape)))
+        s_b_e_dims = s_b_dims + list(i + len(s_b_dims) for i in range(len(self.e_shape)))
+        # Permute order for batch and parameter dimensions together
+        b_p_dims = pos_target_dims + list(i + len(pos_target_dims) for i in range(len(self.p_shape)))
 
         new_dist = self.dist
         new_particles = self.particles
         new_weights = self.weights
         new_log_density = self.log_density
+        new_parameters = self.parameters
 
         if self.dist is not None:
             # dist param has shape (b_shape + e_shape)
             dist_param = DistributionServer.dist2param(self.dist)
-            new_dist_param = dist_param.permute(list(target_dims[i] if i < len(target_dims) else i
+            new_dist_param = dist_param.permute(list(pos_target_dims[i] if i < len(pos_target_dims) else i
                                                      for i in range(len(dist_param.shape))))
             new_dist = DistributionServer.param2dist(type(self.dist), new_dist_param, new_b_shape, self.e_shape)
         if self.particles is not None:
@@ -257,9 +294,15 @@ class Message:
         if isinstance(self.log_density, torch.Tensor):
             # log_density has shape (s_shape + b_shape)
             new_log_density = self.log_density.permute(s_b_dims)
+        if self.parameters is not None:
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = self.parameters.permute(b_p_dims)
 
-        new_msg = Message(self.type, self.s_shape, new_b_shape, self.e_shape, new_dist, new_particles, new_weights,
-                          new_log_density)
+        new_msg = Message(self.type,
+                          sample_shape=self.s_shape, batch_shape=new_b_shape, event_shape=self.e_shape,
+                          param_shape=self.p_shape,
+                          dist=new_dist, particles=new_particles, weights=new_weights, log_density=new_log_density,
+                          parameters=new_parameters)
 
         return new_msg
 
@@ -286,6 +329,7 @@ class Message:
         new_particles = self.particles
         new_weights = self.weights
         new_log_density = self.log_density
+        new_parameters = self.parameters
 
         if self.dist is not None:
             # dist param has shape (b_shape + e_shape)
@@ -301,9 +345,15 @@ class Message:
         if isinstance(self.log_density, torch.Tensor):
             # log_density has shape (s_shape + b_shape)
             new_log_density = torch.unsqueeze(self.log_density, s_dim)
+        if self.parameters is not None:
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = torch.unsqueeze(self.parameters, s_dim)
 
-        new_msg = Message(self.type, self.s_shape, new_b_shape, self.e_shape, new_dist, new_particles, new_weights,
-                          new_log_density)
+        new_msg = Message(self.type,
+                          sample_shape=self.s_shape, batch_shape=new_b_shape, event_shape=self.e_shape,
+                          param_shape=self.p_shape,
+                          dist=new_dist, particles=new_particles, weights=new_weights, log_density=new_log_density,
+                          parameters=new_parameters)
 
         return new_msg
 
