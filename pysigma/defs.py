@@ -347,7 +347,7 @@ class Message:
             new_log_density = torch.unsqueeze(self.log_density, s_dim)
         if self.parameters is not None:
             # parameters has shape (b_shape + p_shape)
-            new_parameters = torch.unsqueeze(self.parameters, s_dim)
+            new_parameters = torch.unsqueeze(self.parameters, dim)
 
         new_msg = Message(self.type,
                           sample_shape=self.s_shape, batch_shape=new_b_shape, event_shape=self.e_shape,
@@ -355,6 +355,58 @@ class Message:
                           dist=new_dist, particles=new_particles, weights=new_weights, log_density=new_log_density,
                           parameters=new_parameters)
 
+        return new_msg
+
+    def batch_index_select(self, dim, index):
+        """
+            Returns a new Message which indexes the input message along batch dimension dim using the entries in index
+                which is a LongTensor.
+            A 'dim' value within the range [-len(batch_shape), len(batch_shape) - 1] can be used. Note that 'dim'
+                is relative to the batch dimension only.
+
+            :param dim:     an int. The dimension along which entries will be selected according to 'index'
+            :param index:   torch.LongTensor. The index of entries along 'dim' to be selected
+        """
+        assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
+        assert isinstance(index, torch.LongTensor) and len(index.shape) == 1
+
+        # Translate dim to positive value if it is negative
+        if dim < 0:
+            dim = len(self.b_shape) + dim
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dim = dim + 1
+        # Get new batch shape
+        new_b_shape = self.b_shape[:dim] + index.shape + self.b_shape[dim:]
+
+        new_dist = self.dist
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+        new_parameters = self.parameters
+
+        if self.dist is not None:
+            # dist param has shape (b_shape + e_shape)
+            dist_param = DistributionServer.dist2param(self.dist)
+            new_dist_param = torch.index_select(dist_param, dim, index)
+            new_dist = DistributionServer.param2dist(type(self.dist), new_dist_param, new_b_shape, self.e_shape)
+        if self.particles is not None:
+            # particles has shape (s_shape + b_shape + e_shape)
+            new_particles = torch.index_select(self.particles, s_dim, index)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            new_weights = torch.index_select(self.weights, s_dim, index)
+        if isinstance(self.log_density, torch.Tensor):
+            # log_density has shape (s_shape + b_shape)
+            new_log_density = torch.index_select(self.log_density, s_dim, index)
+        if self.parameters is not None:
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = torch.index_select(self.parameters, dim, index)
+
+        new_msg = Message(self.type,
+                          sample_shape=self.s_shape, batch_shape=new_b_shape, event_shape=self.e_shape,
+                          param_shape=self.p_shape,
+                          dist=new_dist, particles=new_particles, weights=new_weights, log_density=new_log_density,
+                          parameters=new_parameters)
         return new_msg
 
 
