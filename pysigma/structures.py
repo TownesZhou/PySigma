@@ -28,6 +28,10 @@ class VariableMap:
         The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
             be computed lazily at runtime and returned by get_map(). This is to allow dynamic mappings such as
             neural attention modules.
+
+        Only injective mapping can be accepted. This is because the semantic of mapping two relational variable's values
+            to a single value can be ill-defined. The injectivity is checked during set_map() by comparing the
+            cardinality of the image and the cardinality of the domain.
     """
     def __init__(self, mapping_func, domain, codomain, dynamic=False):
         """
@@ -95,16 +99,36 @@ class VariableMap:
         self.map = dict(zip(input, output))
         # Set mapping image
         self.image = set(self.map.values())
+        # Check injectivity
+        if len(self.image) != len(self.domain):
+            raise ValueError("The specified mapping should be injective. However, found that the cardinality of the "
+                             "mapping's image is '{}', whereas the cardinality of the specified domain is '{}'"
+                             .format(len(self.image), len(self.domain)))
 
     def get_map(self):
         """
             Return the mapping dictionary, the map's domain, and the map's image.
 
-            If dynamic, then call set_map() to re-compute the dict before returning it, otherwise return the cached one.
+            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.
         """
         if self.dynamic:
             self.set_map()
         return self.map, self.domain, self.image
+
+    def get_inverse_map(self):
+        """
+            Return the inverse map's mapping dictionary, the inverse map's domain (original map's image), and the
+                inverse map's image (should be the same as the original map's domain)
+
+            Note that because injectivity is guaranteed, computing an inverse map is possible.
+
+            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.
+        """
+        if self.dynamic:
+            self.set_map()
+
+        inverse_map = dict(zip(self.map.values(), self.map.keys()))
+        return inverse_map, self.image, self.domain
 
 
 class FactorFunction:
