@@ -26,7 +26,7 @@ class VariableMap:
             to integers.
 
         The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
-            be computed lazily at runtime and returned by get_mapping(). This is to allow dynamic mappings such as
+            be computed lazily at runtime and returned by get_map(). This is to allow dynamic mappings such as
             neural attention modules.
     """
     def __init__(self, mapping_func, domain, codomain, dynamic=False):
@@ -64,6 +64,8 @@ class VariableMap:
         self.dynamic = dynamic
         # mapping chache. This field will be looked up later as definition of the mapping
         self.map = None
+        # The image of the map, i.e., the set of values who has a corresponding input. It should be a subset of codomain
+        self.image = None
 
         # Set the map cache if not dynamic
         if not dynamic:
@@ -91,15 +93,18 @@ class VariableMap:
                                  .format(self.codomain, i))
         # Set mapping
         self.map = dict(zip(input, output))
+        # Set mapping image
+        self.image = set(self.map.values())
 
     def get_map(self):
         """
-            Return the mapping dictionary. If dynamic, then call set_map() to re-compute the dict before returning it,
-                otherwise return the cached one
+            Return the mapping dictionary, the map's domain, and the map's image.
+
+            If dynamic, then call set_map() to re-compute the dict before returning it, otherwise return the cached one.
         """
         if self.dynamic:
             self.set_map()
-        return self.map
+        return self.map, self.domain, self.image
 
 
 class FactorFunction:
