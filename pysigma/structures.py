@@ -4,6 +4,7 @@
     Author of this file: Jincheng Zhou, University of Southern California
 """
 
+import numpy as np
 from torch import Size
 from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint
@@ -38,9 +39,9 @@ class VariableMap:
             Initialize a VariableMap instance. Wraps around a user-specified function that implements the mapping
                 mechanism.
 
-            :param  mapping_func:   a user-specified function. Takes a list of integers as input, and returns a list of
-                                        integers of the same size. Each entry in the output list corresponds to the
-                                        value of f(x) of input x at the same index in the input list.
+            :param  mapping_func:   a user-specified function. Takes a numpy array of integers as input, and returns a
+                                        numpy array of integers of the same size. Each entry in the output array
+                                        corresponds to the value of f(x) of input x at the same index in the input array
             :param  domain:         A set of integers. Declares the domain of the mapping.
             :param  codomain:       A set of integers. Declares the codomain of the mapping.
             :param  dynamic:        True or False. Defaults to False. Indicates whether the mapping is dynamic. If True,
@@ -80,13 +81,13 @@ class VariableMap:
             Set self.map by obtaining the mapping dictionary from self.mapping_func
         """
         # Input list
-        input = list(self.domain)
+        input = np.array(list(self.domain))
         output = self.mapping_func(input)
         # Check output format and if its entries are in codomain range
-        if not isinstance(output, list) or not all(isinstance(i, int) and i >= 0 for i in output):
-            raise ValueError("The provided mapping python callable should return a list of non-negative integers. "
-                             "Instead, found: '{}'".format(output))
-        if not len(input) == len(output):
+        if not isinstance(output, np.ndarray) or not all(isinstance(i, np.int64) and i >= 0 for i in output):
+            raise ValueError("The provided mapping python callable should return a numpy array of non-negative "
+                             "np.int64. Instead, found: '{}'".format(output))
+        if input.size != output.size:
             raise ValueError("The output list from the provided mapping python callable should be of the same size as "
                              "the input list. Expecting size '{}', instead found size '{}'"
                              .format(len(input), len(output)))
