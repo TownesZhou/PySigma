@@ -83,43 +83,46 @@ class MessageType(Enum):
     """
         Enum class to represent message types
     """
-    Tabular = 0
-    Distribution = 1
-    Particles = 2
-    Parameter = 3
+    Parameter = 0
+    Particles = 1
+
 
 class Message:
     """
         Message structure to support general inference.
 
-        Four basic message type:
-            - Tabular factor
-            - Parametric distribution
-            - Particle list
-            - Parameter
-        Each of the first three all represents "events" of a batch of distributions, while the last one represents
-            parameters to a batch of distributions. For the last one, which class of distribution the parameters are
-            describing and whether the parameters are natural parameters to some exponential family, or common
-            parameters to PyTorch's distribution class interface, is of no concern to Message itself. Instead, their
-            semantic should and will be determined by the context where the message is used.
+        Two basic message types:
+            - Parameter: parameters to some batched distributions
+                - Contains a batched parameter tensor, of shape (batch_shape + event_shape)
+            - Particles: batched particle lists representing events drawn from some batched distributions
+                - Contains three components: particle value, particle weight, and sampling log density
+                - particle value is a batched tensor with shape (sample_shape + batch_shape + event_shape)
+                - particle weight is a batched tensor with shape (sample_shape + batch_shape) if the weights are not
+                    uniform. In this case, the entries should be non-negative values, and sum to 1 across 'sample_shape'
+                    dimension. Otherwise if the weights are uniform, it can be represented by an int of 1.
+                - sample log density is a batched tensor with shape (sample_shape + batch_shape) if the log densities
+                    are not uniform. Otherwise if the log densities are uniform, it can be represented by an int of 0.
 
-        Tabular factors will be represented by Categorical distribution, a special case of parametric distribution
-            message.
-        The message type does not impose restriction on the types of underlying message representations available for
-            use, and thus different representations may coexist. For instance, in a Distribution message, a
-            torch.distribution may coexists with a particle list, whereas in a Particles message only particle list
-            exists.
+        The semantics of a Message is determined not only by its type, but by its context as well. In other words,
+            which distribution or distribution class a Message represents, or whether a Parameter type message
+            represents a Natural parameter to an exponential distribution or a distribution-class specific parameter to
+            PyTorch's distribution class interface, is of no concern to the Message structure itself.
 
-        Note that there's a distinction between knowledge format compatible with PyTorch's distribution class versus
-            that compatible with Sigma's cognitive structures. In general, what is contained in a message are knowledge
-            in the PyTorch's format. One should only translate such knowledge using KnowledgeTranslator class (see
-            utils.py) after extracting information from a Message instance.
-
-        In general, a message's tensor attributes have shape:
-            - distribution parameter:   (b_shape + param_shape)
-            - particles:                (s_shape + b_shape + e_shape)
-            - weights:                  (s_shape + b_shape)
-            - log_density:              (s_shape + b_shape)
+        However, either type of message is assumed to reside in some group structure:
+            - For Parameter messages:
+                - Assume the "addition" operation is semantically well-defined on the parameters tensor itself.
+                - The '+' operator is overloaded for this type of message.
+                - Accordingly, the additive identity is assumed a zero tensor of the corresponding shape. An int of 0
+                    can be used as a simplified representation.
+            - For Particles messages:
+                - Assume the "element-wise multiplication with normalization" operation is semantically well-defined
+                    on the particles weight tensor, PROVIDED THAT the particle values and sampling log density of the
+                    two participating messages coincide. In other words, the pair of particle values and sampling log
+                    density tensor jointly defines a group under which multiplication on the particle weights is
+                    meaningful.
+                - The '*' operator is overloaded for this type of message.
+                - Accordingly, the multiplicative identity is assumed a tensor with entries of value 1 of the
+                    corresponding shape. An int of 1 can be used as a simplified representation.
     """
     def __init__(self, msg_type: MessageType,
                  sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
