@@ -360,19 +360,15 @@ class Message:
         # Permute order for batch and parameter dimensions together
         b_p_dims = pos_target_dims + list(i + len(pos_target_dims) for i in range(len(self.p_shape)))
 
-        new_dist = self.dist
+        new_parameters = self.parameters
         new_particles = self.particles
         new_weights = self.weights
         new_log_density = self.log_density
-        new_parameters = self.parameters
 
-        if self.dist is not None:
-            # dist param has shape (b_shape + e_shape)
-            dist_param = DistributionServer.dist2param(self.dist)
-            new_dist_param = dist_param.permute(list(pos_target_dims[i] if i < len(pos_target_dims) else i
-                                                     for i in range(len(dist_param.shape))))
-            new_dist = DistributionServer.param2dist(type(self.dist), new_dist_param, new_b_shape, self.e_shape)
-        if self.particles is not None:
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = self.parameters.permute(b_p_dims)
+        if isinstance(self.particles, torch.Tensor):
             # particles has shape (s_shape + b_shape + e_shape)
             new_particles = self.particles.permute(s_b_e_dims)
         if isinstance(self.weights, torch.Tensor):
@@ -381,16 +377,10 @@ class Message:
         if isinstance(self.log_density, torch.Tensor):
             # log_density has shape (s_shape + b_shape)
             new_log_density = self.log_density.permute(s_b_dims)
-        if self.parameters is not None:
-            # parameters has shape (b_shape + p_shape)
-            new_parameters = self.parameters.permute(b_p_dims)
 
         new_msg = Message(self.type,
-                          sample_shape=self.s_shape, batch_shape=new_b_shape, event_shape=self.e_shape,
-                          param_shape=self.p_shape,
-                          dist=new_dist, particles=new_particles, weights=new_weights, log_density=new_log_density,
-                          parameters=new_parameters)
-
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density, self.epsilon)
         return new_msg
 
     def batch_unsqueeze(self, dim):
