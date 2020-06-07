@@ -318,6 +318,18 @@ class Message:
         else:
             return self.s_shape + self.b_shape + self.e_shape
 
+    def same_size_as(self, other):
+        """
+            Check if self has the same shape as the other message. Return True if so.
+        """
+        assert isinstance(other, Message)
+        if self.type != other.type:
+            return False
+        elif self.type == MessageType.Parameter:
+            return self.b_shape == other.b_shape and self.p_shape == other.p_shape
+        else:
+            return self.s_shape == other.s_shape and self.b_shape == other.b_shape and self.e_shape == other.e_shape
+
     def clone(self):
         """
             Return a cloned message from self. Guarantees that every tensor that constitutes self is cloned
