@@ -160,7 +160,7 @@ class Message:
         """
         assert isinstance(msg_type, MessageType)
         assert param_shape is None or isinstance(param_shape, torch.Size)
-        assert sample_shape is None or isinstance(sample_shape, torch.Size)
+        assert sample_shape is None or isinstance(sample_shape, torch.Size) and len(sample_shape) <= 1
         assert batch_shape is None or isinstance(batch_shape, torch.Size)
         assert event_shape is None or isinstance(event_shape, torch.Size)
 
@@ -214,6 +214,64 @@ class Message:
             assert self.s_shape + self.b_shape == self.weights.shape
         if isinstance(self.log_density, torch.Tensor):
             assert self.s_shape + self.b_shape == self.log_density.shape
+
+    """
+        Overload arithmetic operators
+    """
+    def __add__(self, other):
+        """
+            Overloading addition operation '+'
+        """
+        assert isinstance(other, Message), "Message can only be added with another Message"
+        assert self.type == other.type, "Only the same type of messages can be added. First operand has type '{}', " \
+                                          "while the second one has type '{}'".format(self.type, other.type)
+        # Addition for Parameter type
+        if self.type == MessageType.Parameter:
+            assert self.b_shape == other.b_shape and self.p_shape == other.p_shape, \
+                "Only Messages with the same shape can be added together. The messages being added are of Parameter " \
+                "type. Found first message with (batch_shape, param_shape) = '{}', and second message with " \
+                "(batch_shape, param_shape) = '{}'".format((self.b_shape, self.p_shape), (other.b_shape, other.p_shape))
+            # Tensor addition
+            new_parameters = self.parameters + other.parameters
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
+
+        # Addition for Particles type
+        else:
+            assert self.s_shape == other.s_shape and self.b_shape == other.b_shape and self.e_shape == other.e_shape, \
+                "Only Messages with the same shape can be added together. The messages being added are of Particles " \
+                "type. Found first message with (sample_shape, batch_shape, event_shape) = '{}', and second message " \
+                "with (sample_shape, batch_shape, event_shape) = '{}'"\
+                .format((self.s_shape, self.b_shape, self.e_shape), (other.s_shape, other.b_shape, other.e_shape))
+            assert self.particles == other.particles, \
+                "For particle messages, only ones with matching particle values can be added together. "
+            assert self.log_density == other.log_density, \
+                "For particle messages, only ones with matching log sampling densities can be added together"
+            # Take element-wise product
+            new_weights = self.weights * other.weights
+            # Normalize results
+            new_weights *= torch.tensor(1) / new_weights.sum(dim=0, keepdim=True)
+            new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
+                              particles=self.particles, weights=new_weights, log_density=self.log_density)
+
+        return new_msg
+
+    def __sub__(self, other):
+        """
+            Overloading subtraction operator '-'
+        """
+        pass
+
+    def __mul__(self, other):
+        """
+            Overloading multiplication operator '*'
+        """
+        pass
+
+    def __truediv__(self, other):
+        """
+            Overloading division operator '/'
+        """
+        pass
 
     def clone(self):
         """
