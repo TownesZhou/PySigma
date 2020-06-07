@@ -139,88 +139,81 @@ class Message:
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
             :param msg_type:    one of MessageType
-            :param sample_shape:    a torch.Size. can be an empty shape
-            :param batch_shape:     a torch.Size. can be an empty shape
-            :param event_shape:     a torch.Size. can be an empty shape
-            :param dist:        A PyTorch distribution instance. If the message is not Particles type
-            :param particles:   Particle list. Must present if message is Particles type
-            :param weights:     Particle weights. Specify an int of 1 if the weights are uniform. Otherwise, must be a
-                                nonnegative torch Tensor of shape (sample_shape + batch_shape). Values along
-                                'sample_shape' dimension must add up to 1.
-            :param log_density: A PyTorch tensor containing the log probability density (log-pdf) of the particles when
-                                they were sampled from the original sampling distribution. Specify an int of 0 if the
-                                sampling distribution was uniform. Otherwise, must be a nonnegative torch Tensor of
-                                shape (sample_shape + batch_shape). Note that this field generally should not be
-                                changed at any time during propagation after the particles are drawn, since they
-                                indicates the relative frequency of each particle.
+            :param param_shape:     torch.Size. can be an empty shape. Must specify if message type is Parameter.
+            :param sample_shape:    torch.Size. can be an empty shape. Must specify if message type is Particles.
+            :param batch_shape:     torch.Size. can be an empty shape. Must specify if message type is Particles.
+            :param event_shape:     torch.Size. can be an empty shape. Must specify if message type is Particles.
+            :param parameters:  torch.Tensor. Of shape (batch_shape + param_shape) if the parameters do not represent
+                                    the identity in the parameter vector space. Alternatively, can be an int of 0 to
+                                    represent the identity. Must present if message type is Parameters.
+            :param particles:   torch.Tensor. Of shape (sample_shape + batch_shape + event_shape). Must present if
+                                    message type is Particles.
+            :param weights:     torch.Tensor. Of shape (sample_shape + batch_shape) if weights are not uniform.
+                                    Alternatively, can be an int of 1 to represent uniform weights. Must present if
+                                    message type is Particles.
+            :param log_density: torch.Tensor. Of shape (sample_shape + batch_shape) if log densities are not uniform,
+                                    i.e. if the particles were not drawn from an uniform distribution. Alternatively,
+                                    can be an int of 0 to represent uniform densities. Note that this field generally
+                                    should not be changed at any time during message propagation after the particles are
+                                    drawn, since they directly represent the original sampling distribution from which
+                                    the particles were originally drawn. Must present if message type is Particles.
         """
         assert isinstance(msg_type, MessageType)
+        assert param_shape is None or isinstance(param_shape, torch.Size)
         assert sample_shape is None or isinstance(sample_shape, torch.Size)
         assert batch_shape is None or isinstance(batch_shape, torch.Size)
         assert event_shape is None or isinstance(event_shape, torch.Size)
-        assert param_shape is None or isinstance(param_shape, torch.Size)
-        assert dist is None or isinstance(dist, Distribution)
+
+        assert parameters is None or (isinstance(parameters, int) and parameters == 0) or \
+               isinstance(parameters, torch.Tensor)
         assert particles is None or isinstance(particles, torch.Tensor)
         assert weights is None or (isinstance(weights, int) and weights == 1) or isinstance(weights, torch.Tensor)
         assert log_density is None or (isinstance(log_density, int) and log_density == 0) or \
                isinstance(log_density, torch.Tensor)
-        assert parameters is None or isinstance(parameters, torch.Tensor)
+
 
         # Message type, of type MessageType
         self.type = msg_type
-        # Distribution
-        self.dist = dist
+        # Parameter
+        self.parameters = parameters
         # Particle list
         self.particles = particles
         self.weights = weights
         self.log_density = log_density
-        # Parameter
-        self.parameters = parameters
+
         # Shapes. Collapse the shape if it is a singleton (because PyTorch's distribution will collapse it anyhow)
+        self.p_shape = None
         self.s_shape = None
         self.b_shape = None
         self.e_shape = None
-        self.p_shape = None
+        if param_shape is not None:
+            self.p_shape = param_shape if param_shape != torch.Size([1]) else torch.Size([])
         if sample_shape is not None:
             self.s_shape = sample_shape if sample_shape != torch.Size([1]) else torch.Size([])
         if batch_shape is not None:
             self.b_shape = batch_shape if batch_shape != torch.Size([1]) else torch.Size([])
         if event_shape is not None:
             self.e_shape = event_shape if event_shape != torch.Size([1]) else torch.Size([])
-        if param_shape is not None:
-            self.p_shape = param_shape if param_shape != torch.Size([1]) else torch.Size([])
 
-        # Check whether (only) necessary arguments are provided
-        if self.type is MessageType.Tabular:
-            assert self.b_shape is not None and self.e_shape is not None
-            # Need to provide Categorical distribution and nothing else
-            assert isinstance(self.dist, Categorical)
-        if self.type is MessageType.Distribution:
-            assert self.b_shape is not None and self.e_shape is not None
-            # Need to provide some distribution. Particle list is optional
-            assert self.dist is not None
-        if self.type is MessageType.Particles:
-            assert self.s_shape is not None and self.b_shape is not None and self.e_shape is not None
-            # Need to provide a particle list, but no distribution
-            assert self.particles is not None
-            assert self.weights is not None
-            assert self.log_density is not None
+        # Check whether necessary arguments are provided
         if self.type is MessageType.Parameter:
             assert self.b_shape is not None and self.p_shape is not None
             assert self.parameters is not None
+        if self.type is MessageType.Particles:
+            assert self.s_shape is not None and self.b_shape is not None and self.e_shape is not None
+            assert self.particles is not None
+            assert self.weights is not None
+            assert self.log_density is not None
 
         # Check shape
-        if self.dist is not None:
-            assert self.b_shape == self.dist.batch_shape
-            assert self.e_shape == self.dist.event_shape
-        if self.particles is not None:
+        if isinstance(self.parameters, torch.Tensor):
+            assert self.b_shape + self.p_shape == self.parameters.shape
+        if isinstance(self.particles, torch.Tensor):
             assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
         if isinstance(self.weights, torch.Tensor):
             assert self.s_shape + self.b_shape == self.weights.shape
         if isinstance(self.log_density, torch.Tensor):
             assert self.s_shape + self.b_shape == self.log_density.shape
-        if self.parameters is not None:
-            assert self.b_shape + self.p_shape == self.parameters.shape
 
     def clone(self):
         """
