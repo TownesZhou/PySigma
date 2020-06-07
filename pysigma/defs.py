@@ -109,27 +109,32 @@ class Message:
             PyTorch's distribution class interface, is of no concern to the Message structure itself.
 
         Both types of messages are endowed with certain arithmetic structures:
-            - For Parameter messages:
+            - For Parameter messages,
                 - Addition operation is defined as addition on the parameter tensors.
                 - Scalar multiplication is defined as scalar multiplication with the parameter tensors
+                - 0 is treated as the identity element.
                 - Parameter message structure therefore constructs and defines the "parameter space".
             - For Particles messages:
-                - The addition and scalar multiplication operation are defined similarly, however with the restriction
-                    that the two participating particles have matching particle values and sampling log densities.
-                    Moreover, results from any linear combination of Particle messages must be normalized so that the
-                    particle weights sum to 1 across the sample dimension
-                - In addition, a multiplication operation is defined as the element-wise product of the particle
-                    weights, similarly only if participating particles have matching particle values and sampling log
-                    densities. The result must also be normalized in a similar way.
+                - The following two operations are defined as operations on the particle weights, and meaningful only
+                    for Particle messages that share the same particle values and the same sampling log density of the
+                    particles. In addition, results from these two operations are normalized so that the weight tensor
+                    sum to 1 across the sample dimension.
+                - "Addition" operation is defined as element-wise multiplication of particle weights tensors.
+                - "Scalar multiplication" is defined as taking elements of the particle weights tensor to the power
+                    of the scalar.
+                - 1 is treated as the identity element for the element-wise multiplication operation.
+                - It turns out that the "addition" and "scalar multiplication" as defined above satisfy associativity
+                    and distributivity. With the set of possible weights closed under both operations, a vector space
+                    is therefore constructed and defined.
 
-        Accordingly, the '+' and '*' operator are overloaded.
+        Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
     """
     def __init__(self, msg_type: MessageType,
-                 sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
                  param_shape: torch.Size = None,
-                 dist: Distribution = None, particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
-                 log_density: [torch.Tensor, int] = None,
-                 parameters: torch.Tensor = None):
+                 sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
+                 parameters: torch.Tensor = None,
+                 particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
+                 log_density: [torch.Tensor, int] = None):
         """
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
