@@ -134,7 +134,7 @@ class Message:
                  sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
                  parameters: torch.Tensor = None,
                  particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
-                 log_density: [torch.Tensor, int] = None):
+                 log_density: [torch.Tensor, int] = None, epsilon=10-7):
         """
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
@@ -157,6 +157,7 @@ class Message:
                                     should not be changed at any time during message propagation after the particles are
                                     drawn, since they directly represent the original sampling distribution from which
                                     the particles were originally drawn. Must present if message type is Particles.
+            :param epsilon:     Numerical accuracy for value checks
         """
         assert isinstance(msg_type, MessageType)
         assert param_shape is None or isinstance(param_shape, torch.Size)
@@ -170,6 +171,7 @@ class Message:
         assert weights is None or (isinstance(weights, int) and weights == 1) or isinstance(weights, torch.Tensor)
         assert log_density is None or (isinstance(log_density, int) and log_density == 0) or \
                isinstance(log_density, torch.Tensor)
+        assert isinstance(epsilon, float)
 
 
         # Message type, of type MessageType
@@ -180,6 +182,8 @@ class Message:
         self.particles = particles
         self.weights = weights
         self.log_density = log_density
+        # Numerical accuracy
+        self.epsilon = epsilon
 
         # Shapes. Collapse the shape if it is a singleton (because PyTorch's distribution will collapse it anyhow)
         self.p_shape = None
@@ -205,13 +209,20 @@ class Message:
             assert self.weights is not None
             assert self.log_density is not None
 
-        # Check shape
+        # Check shape and values
         if isinstance(self.parameters, torch.Tensor):
             assert self.b_shape + self.p_shape == self.parameters.shape
         if isinstance(self.particles, torch.Tensor):
             assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
         if isinstance(self.weights, torch.Tensor):
             assert self.s_shape + self.b_shape == self.weights.shape
+            # Check that values are non-negative
+            assert torch.all(self.weights > 0), "Found negative values in particle weights"
+            # Check that values sum to 1 across sample dimension
+            weights_sum = weights.sum(dim=0)
+            assert torch.all((torch.ones_like(weights_sum) - self.epsilon) < weights_sum) and \
+                   torch.all((torch.ones_like(weights_sum) + self.epsilon) > weights_sum), \
+                "Particle weights do not sum to 1 across sample dimension. Found: '{}'".format(weights_sum)
         if isinstance(self.log_density, torch.Tensor):
             assert self.s_shape + self.b_shape == self.log_density.shape
 
@@ -249,29 +260,54 @@ class Message:
             # Take element-wise product
             new_weights = self.weights * other.weights
             # Normalize results
-            new_weights *= torch.tensor(1) / new_weights.sum(dim=0, keepdim=True)
+            new_weights *= torch.tensor(1.) / new_weights.sum(dim=0, keepdim=True)
             new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
                               particles=self.particles, weights=new_weights, log_density=self.log_density)
 
         return new_msg
 
-    def __sub__(self, other):
-        """
-            Overloading subtraction operator '-'
-        """
-        pass
-
     def __mul__(self, other):
         """
-            Overloading multiplication operator '*'
-        """
-        pass
+            Overloading multiplication operator '*'. Implements scalar multiplication semantics.
 
-    def __truediv__(self, other):
+            The scalar can be of type int, float, or torch.Tensor. If it is a torch.Tensor, can be a singleton tensor
+                representing a single scalar, or a tensor of shape batch_shape representing a batched scalars.
         """
-            Overloading division operator '/'
-        """
-        pass
+        assert isinstance(other, (int, float, torch.Tensor)), \
+            "Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. " \
+            "Instead found: '{}'".format(type(other))
+        if isinstance(other, torch.Tensor):
+            assert other.shape == torch.Size([]) or other.shape == self.b_shape, \
+                "If the scalar is a torch.Tensor, must be either a singleton tensor or a tensor with the same shape " \
+                "as the Message's batch shape: '{}'. Instead found: '{}'".format(self.b_shape, other.shape)
+
+        # Expand scalar tensor dimension if it is a batched scalars
+        b_p_other = other
+        s_b_e_other = other
+        if isinstance(other, torch.Tensor) and other.dim() > 0:
+            for i in range(len(self.p_shape)):
+                b_p_other = torch.unsqueeze(b_p_other, dim=-1)
+
+            s_b_e_other = torch.unsqueeze(s_b_e_other, dim=0)
+            for i in range(len(self.e_shape)):
+                s_b_e_other = torch.unsqueeze(s_b_e_other, dim=-1)
+
+        # Scalar multiplication for Parameter messages
+        if self.type == MessageType.Parameter:
+            new_parameters = b_p_other * self.parameters
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
+
+        # Scalar multiplication for Particles messages
+        else:
+            # Take weights tensor to the power of the scalar
+            new_weights = torch.pow(self.weights, s_b_e_other)
+            # Normalize
+            new_weights *= torch.tensor(1.) / new_weights.sum(dim=0, keepdim=True)
+            new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
+                              particles=self.particles, weights=new_weights, log_density=self.log_density)
+
+        return new_msg
+
 
     def clone(self):
         """
