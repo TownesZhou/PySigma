@@ -308,35 +308,27 @@ class Message:
 
         return new_msg
 
-
     def clone(self):
         """
             Return a cloned message from self. Guarantees that every tensor that constitutes self is cloned
         """
-        dist = None
+        parameters = None
         particles = None
         weights = None
         log_density = None
-        parameters = None
 
-        if self.dist is not None:
-            params = DistributionServer.dist2param(self.dist)
-            params = params.clone()
-            dist = DistributionServer.param2dist(type(self.dist), params, self.b_shape, self.e_shape)
-        if self.particles is not None:
-            particles = self.particles.clone()
-        if self.weights is not None:
-            weights = self.weights.clone()
-        if self.log_density is not None:
-            log_density = self.log_density.clone()
-        if self.parameters is not None:
+        if isinstance(self.parameters, torch.Tensor):
             parameters = self.parameters.clone()
+        if isinstance(self.particles, torch.Tensor):
+            particles = self.particles.clone()
+        if isinstance(self.weights, torch.Tensor):
+            weights = self.weights.clone()
+        if isinstance(self.log_density, torch.Tensor):
+            log_density = self.log_density.clone()
 
         new_msg = Message(self.type,
-                          sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                          param_shape=self.p_shape,
-                          dist=dist, particles=particles, weights=weights, log_density=log_density,
-                          parameters=parameters)
+                          self.p_shape, self.s_shape, self.b_shape, self.e_shape,
+                          parameters, particles, weights, log_density, self.epsilon)
         return new_msg
 
     """
