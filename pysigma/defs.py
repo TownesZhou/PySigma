@@ -2,12 +2,8 @@
     Basic structures in the graphical architecture
 """
 import torch
-from torch.distributions import Distribution
-from torch.distributions.categorical import Categorical
 from torch.distributions.constraints import Constraint
 from enum import Enum
-
-from utils import DistributionServer
 
 
 # Variable Metatypes and Variable for general inference
@@ -307,6 +303,17 @@ class Message:
                               particles=self.particles, weights=new_weights, log_density=self.log_density)
 
         return new_msg
+
+    def size(self):
+        """
+            Return the shape of the mssage.
+            For Parameter message, returns  (batch_shape + param_shape)
+            For Particles message, returns  (sample_shape + batch_shape + event_shape)
+        """
+        if self.type == MessageType.Parameter:
+            return self.b_shape + self.p_shape
+        else:
+            return self.s_shape + self.b_shape + self.e_shape
 
     def clone(self):
         """
