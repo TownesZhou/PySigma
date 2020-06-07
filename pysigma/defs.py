@@ -130,7 +130,7 @@ class Message:
                  sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
                  parameters: torch.Tensor = None,
                  particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
-                 log_density: [torch.Tensor, int] = None, epsilon=10-7):
+                 log_density: [torch.Tensor, int] = None, epsilon=10-7, **kwargs):
         """
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
@@ -154,6 +154,7 @@ class Message:
                                     drawn, since they directly represent the original sampling distribution from which
                                     the particles were originally drawn. Must present if message type is Particles.
             :param epsilon:     Numerical accuracy for value checks
+            :param kwargs:      Additional optional attributes
         """
         assert isinstance(msg_type, MessageType)
         assert param_shape is None or isinstance(param_shape, torch.Size)
@@ -180,6 +181,8 @@ class Message:
         self.log_density = log_density
         # Numerical accuracy
         self.epsilon = epsilon
+        # Additional important attributes
+        self.attr = kwargs
 
         # Shapes. Collapse the shape if it is a singleton (because PyTorch's distribution will collapse it anyhow)
         self.p_shape = None
