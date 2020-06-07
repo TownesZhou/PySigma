@@ -108,21 +108,21 @@ class Message:
             represents a Natural parameter to an exponential distribution or a distribution-class specific parameter to
             PyTorch's distribution class interface, is of no concern to the Message structure itself.
 
-        However, either type of message is assumed to reside in some group structure:
+        Both types of messages are endowed with certain arithmetic structures:
             - For Parameter messages:
-                - Assume the "addition" operation is semantically well-defined on the parameters tensor itself.
-                - The '+' operator is overloaded for this type of message.
-                - Accordingly, the additive identity is assumed a zero tensor of the corresponding shape. An int of 0
-                    can be used as a simplified representation.
+                - Addition operation is defined as addition on the parameter tensors.
+                - Scalar multiplication is defined as scalar multiplication with the parameter tensors
+                - Parameter message structure therefore constructs and defines the "parameter space".
             - For Particles messages:
-                - Assume the "element-wise multiplication with normalization" operation is semantically well-defined
-                    on the particles weight tensor, PROVIDED THAT the particle values and sampling log density of the
-                    two participating messages coincide. In other words, the pair of particle values and sampling log
-                    density tensor jointly defines a group under which multiplication on the particle weights is
-                    meaningful.
-                - The '*' operator is overloaded for this type of message.
-                - Accordingly, the multiplicative identity is assumed a tensor with entries of value 1 of the
-                    corresponding shape. An int of 1 can be used as a simplified representation.
+                - The addition and scalar multiplication operation are defined similarly, however with the restriction
+                    that the two participating particles have matching particle values and sampling log densities.
+                    Moreover, results from any linear combination of Particle messages must be normalized so that the
+                    particle weights sum to 1 across the sample dimension
+                - In addition, a multiplication operation is defined as the element-wise product of the particle
+                    weights, similarly only if participating particles have matching particle values and sampling log
+                    densities. The result must also be normalized in a similar way.
+
+        Accordingly, the '+' and '*' operator are overloaded.
     """
     def __init__(self, msg_type: MessageType,
                  sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
