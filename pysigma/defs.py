@@ -446,18 +446,15 @@ class Message:
         # Get new batch shape
         new_b_shape = self.b_shape[:dim] + index.shape + self.b_shape[dim:]
 
-        new_dist = self.dist
+        new_parameters = self.parameters
         new_particles = self.particles
         new_weights = self.weights
         new_log_density = self.log_density
-        new_parameters = self.parameters
 
-        if self.dist is not None:
-            # dist param has shape (b_shape + e_shape)
-            dist_param = DistributionServer.dist2param(self.dist)
-            new_dist_param = torch.index_select(dist_param, dim, index)
-            new_dist = DistributionServer.param2dist(type(self.dist), new_dist_param, new_b_shape, self.e_shape)
-        if self.particles is not None:
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = torch.index_select(self.parameters, dim, index)
+        if isinstance(self.particles, torch.Tensor):
             # particles has shape (s_shape + b_shape + e_shape)
             new_particles = torch.index_select(self.particles, s_dim, index)
         if isinstance(self.weights, torch.Tensor):
@@ -466,15 +463,10 @@ class Message:
         if isinstance(self.log_density, torch.Tensor):
             # log_density has shape (s_shape + b_shape)
             new_log_density = torch.index_select(self.log_density, s_dim, index)
-        if self.parameters is not None:
-            # parameters has shape (b_shape + p_shape)
-            new_parameters = torch.index_select(self.parameters, dim, index)
 
         new_msg = Message(self.type,
-                          sample_shape=self.s_shape, batch_shape=new_b_shape, event_shape=self.e_shape,
-                          param_shape=self.p_shape,
-                          dist=new_dist, particles=new_particles, weights=new_weights, log_density=new_log_density,
-                          parameters=new_parameters)
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density, self.epsilon)
         return new_msg
 
 
