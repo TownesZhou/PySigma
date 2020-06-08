@@ -67,9 +67,9 @@ class TestPredicateDataStructure:
 
     def test_inf_mode(self):
         assert self.pred_1.inf_mode == "BP"
-        assert self.pred_2.inf_mode == "VPM"
+        assert self.pred_2.inf_mode == "VMP"
         assert self.pred_3.inf_mode == "EP"
 
     def test_event_dims(self):
-        assert self.pred_1.event_dims == torch.Size([])
+        assert self.pred_1.event_dims == torch.Size([128, 1, ])
 
