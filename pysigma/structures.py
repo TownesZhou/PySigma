@@ -4,20 +4,132 @@
     Author of this file: Jincheng Zhou, University of Southern California
 """
 
+import numpy as np
 from torch import Size
 from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint
 from collections.abc import Iterable
 from itertools import chain
-from .utils import *
+import warnings
+from .utils import intern_name, extern_name
 from defs import Variable, VariableMetatype
 
 
 class VariableMap:
     """
-        Class type for transformation on predicate's variables in pattern elements
+        Class type for declaring mappings on relational variables in pattern elements
+
+        Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance
+            therefore declares an integer-valued mapping with finite domain.
+
+        Every VariableMap instance should be able to tell the map's domain, codomain, and the mapping itself, with the
+            former two in the format of set of integers, and the latter one in the format of dictionary mapping integers
+            to integers.
+
+        The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
+            be computed lazily at runtime and returned by get_map(). This is to allow dynamic mappings such as
+            neural attention modules.
+
+        Only injective mapping can be accepted. This is because the semantic of mapping two relational variable's values
+            to a single value can be ill-defined. The injectivity is checked during set_map() by comparing the
+            cardinality of the image and the cardinality of the domain.
     """
-    pass
+    def __init__(self, mapping_func, domain, codomain, dynamic=False):
+        """
+            Initialize a VariableMap instance. Wraps around a user-specified function that implements the mapping
+                mechanism.
+
+            :param  mapping_func:   a user-specified function. Takes a numpy array of integers as input, and returns a
+                                        numpy array of integers of the same size. Each entry in the output array
+                                        corresponds to the value of f(x) of input x at the same index in the input array
+            :param  domain:         A set of integers. Declares the domain of the mapping.
+            :param  codomain:       A set of integers. Declares the codomain of the mapping.
+            :param  dynamic:        True or False. Defaults to False. Indicates whether the mapping is dynamic. If True,
+                                        then mapping_func will be called each time a mapping dictionary is desired.
+                                        Otherwise, mapping_func will only be called once during initialization of this
+                                        VariableMap instance, and the result will reused.
+        """
+        # Argument validation
+        if not callable(mapping_func):
+            raise ValueError("The 1st argument 'mapping_func' should be a python callable, accepting a list of "
+                             "integers as the batched input to the mapping and produces a list of integers of the same "
+                             "size as the batched output")
+        if not isinstance(domain, set) or not all(isinstance(i, int) and i >= 0 for i in domain):
+            raise ValueError("The 2nd argument 'domain' must be a set of non-negative integers, denoting the domain "
+                             "of the specified mapping")
+        if not isinstance(codomain, set) or not all(isinstance(i, int) and i >= 0 for i in codomain):
+            raise ValueError("The 3rd argument 'codomain' must be a set of non-negative integers, denoting the "
+                             "codomain of the specified mapping")
+        if not isinstance(dynamic, bool):
+            raise ValueError("The 4th argument 'dynamic' must be of type bool")
+
+        self.mapping_func = mapping_func
+        self.domain = domain
+        self.codomain = codomain
+        self.dynamic = dynamic
+        # mapping chache. This field will be looked up later as definition of the mapping
+        self.map = None
+        # The image of the map, i.e., the set of values who has a corresponding input. It should be a subset of codomain
+        self.image = None
+
+        # Set the map cache if not dynamic
+        if not dynamic:
+            self.set_map()
+
+    def set_map(self):
+        """
+            Set self.map by obtaining the mapping dictionary from self.mapping_func
+        """
+        # Input list
+        input = np.array(list(self.domain))
+        output = self.mapping_func(input)
+        # Check output format and if its entries are in codomain range
+        if not isinstance(output, np.ndarray) or not all(isinstance(i, np.int64) and i >= 0 for i in output):
+            raise ValueError("The provided mapping python callable should return a numpy array of non-negative "
+                             "np.int64. Instead, found: '{}'".format(output))
+        if input.size != output.size:
+            raise ValueError("The output list from the provided mapping python callable should be of the same size as "
+                             "the input list. Expecting size '{}', instead found size '{}'"
+                             .format(len(input), len(output)))
+        for i in output:
+            if i not in self.codomain:
+                raise ValueError("The output from the provided mapping python callable should be within the specified "
+                                 "codomain: '{}'. Instead, found entry in the output list: '{}'"
+                                 .format(self.codomain, i))
+        # Set mapping
+        self.map = dict(zip(input, output))
+        # Set mapping image
+        self.image = set(self.map.values())
+        # Check injectivity
+        if len(self.image) != len(self.domain):
+            raise ValueError("The specified mapping should be injective. However, found that the cardinality of the "
+                             "mapping's image is '{}', whereas the cardinality of the specified domain is '{}'"
+                             .format(len(self.image), len(self.domain)))
+
+    def get_map(self):
+        """
+            Return the mapping dictionary, the map's domain, and the map's image.
+
+            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.
+        """
+        if self.dynamic:
+            self.set_map()
+        return self.map, self.domain, self.image
+
+    def get_inverse_map(self):
+        """
+            Return the inverse map's mapping dictionary, the inverse map's domain (original map's image), and the
+                inverse map's image (should be the same as the original map's domain)
+
+            Note that because injectivity is guaranteed, computing an inverse map is possible.
+
+            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.
+        """
+        if self.dynamic:
+            self.set_map()
+
+        inverse_map = dict(zip(self.map.values(), self.map.keys()))
+        return inverse_map, self.image, self.domain
 
 
 class FactorFunction:
@@ -61,6 +173,14 @@ class FactorFunction:
                 Note that once defined, the directionality of the corresponding Conditional is also assumed and fixed.
                 In other words, X_1, ..., X_n should only appear in condition patterns, and Y_1, ..., Y_m only in action
                 patterns
+    """
+    pass
+
+
+class Summarization:
+    """
+        Class type for declaring procedures for summarization over space of distribution instances spanned by relational
+            variable dimensions.
     """
     pass
 
@@ -223,8 +343,15 @@ class Predicate:
             if arg_name in self.relarg_name2relarg.keys():
                 raise ValueError("Relational arguments' names must be distinct. Instead found repetition: {}"
                                  .format(arg_name))
+            # Check if variable's type specifies a value constraint. If specified, throw a user warning notifying that
+            #   the value constraint will be ignored
+            if arg_type.constraint is not None:
+                warnings.warn("A value constraint '{}' is found in the type '{}' associated with relational argument "
+                              "'{}'. The value constraint is ignored for now, but please check if the type should be "
+                              "used to address a relational predicate argument."
+                              .format(arg_type.constraint, arg_type, arg_name))
 
-            rel_var = Variable(arg_name, VariableMetatype.Relational, arg_type.size)
+            rel_var = Variable(arg_name, VariableMetatype.Relational, arg_type.size, None)
             self.relational_args.append(rel_var)
             self.relarg_name2relarg[arg_name] = rel_var
             self.relarg_name2type[arg_name] = arg_type
@@ -250,7 +377,7 @@ class Predicate:
                                  "random variable '{}' with type '{}' where no value constraint is specified."
                                  .format(arg_name, arg_type))
 
-            ran_var = Variable(arg_name, VariableMetatype.Random, arg_type.size)
+            ran_var = Variable(arg_name, VariableMetatype.Random, arg_type.size, arg_type.constraint)
             self.random_args.append(ran_var)
             self.ranarg_name2ranarg[arg_name] = ran_var
             self.ranarg_name2type[arg_name] = arg_type
@@ -265,7 +392,7 @@ class Predicate:
         # Dimensions of event tensor: [N, B_1, ..., B_n, (S_1+...+S_m)]
         self.event_dims = Size([self.index_arg.size] +
                          [v.size for v in self.relational_args] +
-                         sum([v.size for v in self.random_args]))
+                         [sum([v.size for v in self.random_args])])
 
     def __str__(self):
         # String representation for display
@@ -471,7 +598,7 @@ class Conditional:
         #                                   { "name" : pt_var_name
         #                                     "const" : True/False
         #                                     "vals" : int/str values if const is True or None otherwise
-        #                                     "map"  : transformation, if specified, otherwise None} } }
+        #                                     "map"  : VariableMap instance, if specified, otherwise None} } }
         # Map from pattern variable name back to predicate argument names, for each predicate pattern
         #       pattern_var2arg = { pattern_name :
         #                               { pt_var_name : list of corresponding predicate argument names } }

@@ -11,6 +11,15 @@ from utils import DistributionServer
 import warnings
 
 
+"""
+    Basic data structures and abstract node classes
+        - LinkData
+        - Node
+        - FactorNode
+        - VariableNode
+"""
+
+
 class LinkData:
     """
         Identify the data of a directed link between a factor node and a variable node. Stores intermediate
@@ -169,13 +178,21 @@ class Node(ABC):
 
     @abstractmethod
     def compute(self):
+        """
+            Compute method to be called to propagate message during decision phase.
+
+            Note that super() must be called within compute() method in any child class, because all abstract node-level
+                statistics logging is taken care of herein. 
+        """
         # TODO: Other general logging regarding node computation statistics to be added here
         self.visited = True
 
 
 class FactorNode(Node, ABC):
     """
-        Factor node abstract base class. Guarantees that all incident nodes are variable nodes.
+        Factor node abstract base class.
+
+        Guarantees that all incident nodes are variable nodes.
     """
     def __init__(self, name):
         super(FactorNode, self).__init__(name)
@@ -198,6 +215,8 @@ class FactorNode(Node, ABC):
 class VariableNode(Node, ABC):
     """
         Variable node abstract base class.
+
+        Guarantees that all incident nodes are factor nodes
     """
 
     def __init__(self, name, index_var, rel_var_list, ran_var_list):
@@ -236,9 +255,18 @@ class VariableNode(Node, ABC):
             self.in_linkdata.append(linkdata)
 
 
+"""
+    Utility structural nodes
+        - DFN
+        - DVN
+"""
+
+
 class DFN(FactorNode):
     """
-        Default (Dummy) Factor Node. No special computation. Simply relay message to one or multiple variable nodes
+        Default (Dummy) Factor Node.
+
+        No special computation. Simply relay message to one or multiple variable nodes
         Requires that incident variable nodes have the same variable list
         Only admit one incoming link but can connect with multiple outgoing links
     """
@@ -278,7 +306,9 @@ class DFN(FactorNode):
 
 class DVN(VariableNode):
     """
-        Default (Dummy) Variable Node. No special computation. Simply relay message to one or multiple factor nodes
+        Default (Dummy) Variable Node.
+
+        No special computation. Simply relay message to one or multiple factor nodes
         Only admit one incoming link but can connect with multiple outgoing links
     """
     def __init__(self, name, index_var, rel_var_list, ran_var_list):
@@ -301,10 +331,21 @@ class DVN(VariableNode):
         super(DVN, self).compute()
 
 
+"""
+    Nodes relating to Predicate subgraph structures
+        - LTMFN
+        - WMVN
+        - PBFN
+        - WMFN
+"""
+
+
 class LTMFN(FactorNode):
     """
-        Long-Term Memory Factor Node. Holds the distribution class of this predicate, and if necessary can draw particle
-            events from currently assumed distribution instance.
+        Long-Term Memory Factor Node.
+
+        Holds the distribution class of this predicate, and if necessary can draw particle events from currently
+            assumed distribution instance.
 
         Admits incoming link from WMVN that contains combined action message to this predicate by the end of the
             decision cycle, as well as the incoming link from parameter feed and WMFN that contains parameter messages.
@@ -430,7 +471,10 @@ class LTMFN(FactorNode):
 
 class WMVN(VariableNode):
     """
-        Working Memory Variable Node. Gate node connecting predicate structure to conditionals.
+        Working Memory Variable Node.
+
+        Gate node connecting predicate structure to conditionals.
+
         Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
             FAN node in Lisp Sigma. Combination can be carried out if incoming messages are all Tabular, all exponential
             Distribution, all homogeneous Particles (i.e. messages with same particle values), or a mixture of
@@ -587,7 +631,9 @@ class WMVN(VariableNode):
 
 class PBFN(FactorNode):
     """
-        Perception Buffer Factor Node. Receive perception / observation / evidence as particle list and send to WMVN.
+        Perception Buffer Factor Node.
+
+        Receive perception / observation / evidence as particle list and send to WMVN.
             Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
             in the caller of set_perception()
         Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.
@@ -646,10 +692,13 @@ class PBFN(FactorNode):
             return
 
         # Otherwise, send either way. Sampling log density set to uniform 0
+        assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
         out_msg = Message(MessageType.Particles, self.s_shape, self.buffer, self.e_shape, None, self.buffer,
                           self.weights, 0)
         out_ld.set(out_msg)
+        
+        super(PBFN, self).compute()
 
     # Override check_quiesce() so that quiescence is equivalent to visited
     def check_quiesce(self):
@@ -659,483 +708,306 @@ class PBFN(FactorNode):
 
 class WMFN(FactorNode):
     """
-        Working Memory Factor Node
+        Working Memory Factor Node.
 
-        Special implementation for compute(): to ensure that messages coming out from WMFN is the WMFN content it self
-            and stays unchanged through the graph solution phase, we do not let messages on incoming link take part in
-            the computation of the outgoing message. They are only used during modification phase to modify the WMFN
-            content by performing selection (for unique predicates) or directly replace the WMFN content (for universal
-            predicates)
+        Effectively a buffer node that contains a memory buffer, whose content will be sent
+            as outgoing message only until the next decision cycle. During modification phase, the memory buffer content
+            can either be replaced entirely by, or taken a weighted sum with incoming message.
+
+        WMFN can buffer either parameters memory or event memory. However, each of them entails different handling.
+            Therefore, one must specify a type to be either 'param' or 'event' during initialization.
+
+        Can specify a decay rate. The new memory is then derived via
+                old_content * (1 - decay_rate) + new_content
+            therefore if decay_rate is 1 (default value), the old content will be completely forgotten.
+
+        The weighted sum procedure for different WMFN types and message types:
+            - For 'param' type of WMFN:
+                - Assume incoming message is Particle type, presenting parameters as particles in shape
+                    (b_shape + e_shape)
+                - Perform weighted sum on the particle values
+            - For 'event' type of WMFN:
+                - If message is Particle type, perform the weighted sum on the particle weights
+                - If message is Distribution or Tabular, perform the weighted sum on the distribution parameters
+
+        Note that the incoming message will always be cloned before performing weighted sum update. This is to prevent
+            any parts of the memory message from in-place change by some parts elsewhere in the graph.
+
+        Can admit only one incoming and one outgoing links.
     """
-    def __init__(self, name, function=None, func_var_list=None):
-        super(WMFN, self).__init__(name, function, func_var_list)
+    def __init__(self, name, content_type, decay_rate=1):
+        """
+            :param content_type: one of 'param' or 'event'
+            :param decay_rate:   The decay rate at which the old memory vanished. Within range [0, 1]
+                                 Default to 1, i.e., entirely forgetting old memory and replace with new content
+        """
+        super(WMFN, self).__init__(name)
         self.pretty_log["node type"] = "Working Memory Function Node"
 
-    # Override so that only allow one incoming link, and that must be WMVN
+        assert content_type in ['param', 'event']
+        assert isinstance(decay_rate, (float, int)) and 0 <= decay_rate <= 1
+
+        self.content_type = content_type
+        self.decay_rate = decay_rate
+        # memory buffer.
+        self.memory = None
+
+    # Override so that only allow one incoming link and one outgoing link
     def add_link(self, linkdata):
         if linkdata.to_fn:
-            assert isinstance(linkdata.vn, WMVN), "WMFN only admits an incoming link from WMVN"
-            assert len(self._in_linkdata) == 0, "WMFN only admits one incoming link"
+            assert len(self.in_linkdata) == 0
+        else:
+            assert len(self.out_linkdata) == 0
+
         super(WMFN, self).add_link(linkdata)
 
-    # Override so that WMFN ignores messages on incoming link, and only send its own function outwards
+    def update_memory(self):
+        """
+            Update the content in memory using message from incoming link.
+            Should only be called during modification phase
+        """
+        assert len(self.in_linkdata) > 0
+        in_ld = self.in_linkdata[0]
+        # Clone incoming message
+        msg = in_ld.read().clone()
+        assert self.memory is None or (msg.type == self.memory.type and
+                                       msg.s_shape == self.memory.s_shape and
+                                       msg.b_shape == self.memory.b_shape and
+                                       msg.e_shape == self.memory.e_shape)
+
+        # If memory is None or decay_rate is 1, directly replace memory buffer content
+        if self.memory is None or self.decay_rate == 1:
+            self.memory = msg
+
+        # Otherwise, perform weighted sum update
+        else:
+            # For param type of content, perform update on particle values
+            if self.content_type == 'param':
+                # Ensure message is Particle type
+                assert msg.type is MessageType.Particles
+                new_val = (1 - self.decay_rate) * self.memory.particles + msg.particles
+                self.memory = Message(MessageType.Particles, msg.s_shape, msg.b_shape, msg.e_shape, None, new_val,
+                                      msg.weights, msg.log_density)
+
+            # For event type of content
+            else:
+                # If message is Particle type, perform update on particle weights, and renoramlize
+                if msg.type is MessageType.Particles:
+                    # Ensure that incoming message's particle values are the same as that of the memory message
+                    assert msg.particles == self.memory.particles
+                    new_weights = (1 - self.decay_rate) * self.memory.weights + msg.weights
+                    # Normalize weights
+                    weight_sum = new_weights.sum(dim=0, keepdim=True)
+                    new_weights *= (1 / weight_sum)
+                    self.memory = Message(MessageType.Particles, msg.s_shape, msg.b_shape, msg.e_shape, None,
+                                          msg.particles, new_weights, msg.log_density)
+
+                # Otherwise, perform update directly on the distribution's parameters
+                else:
+                    old_param = DistributionServer.dist2param(self.memory.dist)
+                    in_param = DistributionServer.dist2param(msg.dist)
+                    new_param = (1 - self.decay_rate) * old_param + in_param
+                    new_dist = DistributionServer.param2dist(type(msg.dist), new_param, msg.b_shape, msg.e_shape)
+                    self.memory = Message(msg.type, msg.s_shape, msg.b_shape, msg.e_shape, new_dist, None, None, None)
+
     def compute(self):
-        for out_ld in self._out_linkdata:
-            out_ld.set(self._function, self._epsilon)
+        """
+            Sends memory content toward outgoing link (if memory is not None)
+        """
+        assert len(self.out_linkdata) > 0
+        if self.memory is not None:
+            self.out_linkdata[0].set(self.memory)
+            
+        super(WMFN, self).compute()
 
-        # Set quiescence state
-        self.quiescence = True
-
-    # Also override get_quiesce() so that quiescence state is not determined by incoming links but rather compute()
+    # Overrides so that quiescence for WMFN is equivalent to visited
     def check_quiesce(self):
+        self.quiescence = self.visited
         return self.quiescence
 
 
-class ACFN(FactorNode):
+"""
+    Nodes relating to Conditional subgraph structures
+        - Alpha subgraph: AlphaFactorNode, RelMapNode, ExpSumNode, RanTransNode
+        - Gamma factor node: GFN
+"""
+
+
+class AlphaFactorNode(FactorNode, ABC):
     """
-        Action-Combination Factor Node.
+        Abstract base class for any factor node belonging to a alpha subgraph
 
-        Regarding combination operation:
-            - If predicate is a vector predicate (all wm vars are vector vars), then operations are vector summation
-            without normalization.
-            - If predicate is a probabilistic predicate, will adopt probabilistic logical operations:
-                1. Calculate a "positive combined action" message by taking the probabilistic OR of messages of all
-                    incoming positive actions
-                2. Calculate a "negative combined action" message by taking the probabilistic OR of messages of all
-                    incoming negative actions. Note that the incoming messages should already been negated by NFN
-                        E.g. For all incoming messages M_i, The PA (positive combined action) is calculated by
-                            PA = 1 - (1 - M_1)*(1 - M_2)* ... *(1 - M_n)
-                             Similarly for NA (negative combined action)
-                3. Final message is calculated by taking the probabilistic AND of PA and (1 - NA). Semantically, this
-                    may be interpreted as enforcing what these two combined actions propose should agree with each other
-                            msg = PA * (1 - NA)
+        The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and
+            outgoing link. Additionally, links must declare a special attribute 'direction' with value 'inward' or
+            'outward' to indicate whether it is pointing toward the conditional gamma factor node or not.
 
-        Regarding message pre-normalization before taking the above computation:
-            - For probabilistic message without normalization (not a discrete distribution), simply scale it so that
-                individual values fall in range [0, 1]
-            - For ones with normalization (representing a discrete distribution), linearly normalize over the
-                distribution variable dimension, so that not only do individual values fall in range [0, 1], but values
-                sum up to 1 across those variable dimensions
+        Such link check is implemented in add_link() to be inherited by concrete alpha factor node class. Also
+            implemented in this method is the registration of labeled pairs of linkdata in self.labeled_ld_pair
 
-        Note: ACFN admits only one outgoing linkdata, which connects to corresponding predicate group's WMVN_IN
+        compute() is implemented so that it execute inward_compute() and/or outward_compute() based on the presence of
+            linkdata pairs.
+
+        inward_compute() and outward_compute() are now abstract methods that must be implemeted by child classes, but
+            compute() should not be override.
     """
+    def __init__(self, name):
+        super(AlphaFactorNode, self).__init__(name)
 
-    # TODO: Special implementation of sum-product to implement message disjunction
-    def __init__(self, name, ):
-        super(ACFN, self).__init__(name, function=None, func_var_list=None)
-        self.pretty_log["node type"] = "Action Combination Function Node"
-
-        # Record message from which linkdata is positive action and which is negative action
-        self._pos_in_ld = []
-        self._neg_in_ld = []
-        self.pretty_log["positive actions from"] = []
-        self.pretty_log["negative actions from"] = []
+        # Pairs of incoming and outgoing linkdata labeled with their directionality w.r.t. the alpha structure
+        self.labeled_ld_pair = {}
 
     def add_link(self, linkdata):
-        # Make sure only add one outgoing link
-        assert linkdata.to_fn or len(self._out_linkdata) == 0, "Attempting to add more than one outgoing link"
-        # Make sure every linkdata's var list agree with each other
-        if len(self._var_list) > 0:
-            assert self._var_list == linkdata.var_list, \
-                "linkdata var list mismatch in ACFN. Expects: {}, found: {}".format(self._var_list, linkdata.var_list)
+        assert isinstance(linkdata, LinkData)
+        assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
 
-        super(ACFN, self).add_link(linkdata)
         if linkdata.to_fn:
-            if linkdata.attri['negation']:
-                self._neg_in_ld.append(linkdata)
-                self.pretty_log["negative actions from"].append(linkdata.vn.name)
-            else:
-                self._pos_in_ld.append(linkdata)
-                self.pretty_log["positive actions from"].append(linkdata.vn.name)
-
-    def compute(self):
-
-        assert len(self._out_linkdata) == 1
-        assert len(self._in_linkdata) > 0
-        out_ld = self._out_linkdata[0]
-
-        # Delay computation until all messages on incoming links are valid, i.e., not None
-        # for ld in self._in_linkdata:
-        #     # DO NOT USE read() HERE because we don't want to alter ld.new state
-        #     if ld.memory is None:
-        #         return
-
-        # Determine whether to take probabilistic operation, whether any variable dimension represents distribution
-        probabilistic = any(var.probabilistic for var in self._var_list)
-        normal = any(var.normalize for var in self._var_list)
-        normal_dim = list(self._var_list.index(var) for var in self._var_list if var.normalize)
-
-        # util function to normalize msg
-        def normalize(msg):
-            # First clamp the msg tensor so individual values lie in range [0, 1]
-            msg = msg.clamp(min=0., max=1.)
-            # If the msg represents distribution, normalize over those dimensions
-            if normal:
-                msg = msg / msg.sum(dim=normal_dim, keepdim=True)   # linear scale
-            return msg
-
-        if probabilistic:
-            # Calculate positive combined action PA
-            pa = 1
-            for ld in self._pos_in_ld:
-                msg = ld.read()
-                # If msg is None, simply skip it
-                if msg is not None:
-                    msg = normalize(msg)    # pre-normalize
-                    pa *= 1 - msg
-            pa = 1 - pa
-
-            # Calculate negative combined action NA. To save computation, na here is actually the "negated" NA
-            na = 1
-            for ld in self._neg_in_ld:
-                msg = ld.read()
-                # If msg is None, simply skip it
-                if msg is not None:
-                    msg = normalize(msg)    # pre-normalize
-                    # Note that msg for negative action should already be negated by a negation node,
-                    #   so don't need to negate it again here
-                    na *= msg
-
-            # Combining PA with NA.
-            msg = pa * na
-            out_ld.set(msg, self._epsilon)
-
+            assert len(self.in_linkdata) == 0 or linkdata.attr['direction'] != self.in_linkdata[0].attr['direction']
+            assert len(self.in_linkdata) <= 1
         else:
-            # Simply take vector summation
-            msg = 0
-            for ld in self._in_linkdata:
-                msg += ld.read()
-            out_ld.set(msg)
+            assert len(self.out_linkdata) == 0 or linkdata.attr['direction'] != self.out_linkdata[0].attr['direction']
+            assert len(self.out_linkdata) <= 1
+            
+        super(AlphaFactorNode, self).add_link(linkdata)
 
-
-class FFN(FactorNode):
-    """
-        Filter Node
-    """
-
-    # TODO
-    def __init__(self, name, function=None, func_var_list=None):
-        super(FFN, self).__init__(name, function, func_var_list)
-        self.pretty_log["node type"] = "Filter Factor Node"
-
-
-class NFN(FactorNode):
-    """
-        Negation Factor Node.
-
-        For vector predicate (all variables are vector), simply take arithmetic negation
-        For probabilistic predicate (have probabilistic variable), take probabilistic negation: neg = 1 - p
-            Note: assume arriving messages are properly normalized (individual value in range [0, 1])
-
-        Note: NFN admits at most two pairs of incoming / outgoing links (one pair in condition / action pattern,
-            two pairs in condact pattern)
-    """
-    def __init__(self, name):
-        """
-        :param name:        Name of the node
-        """
-        super(NFN, self).__init__(name, function=None, func_var_list=None)
-        self.pretty_log["node type"] = "Negation Factor Node"
-
-    # Override to make sure only admit at most two pairs of incoming / outgoing links
-    def add_link(self, linkdata):
-        assert (not linkdata.to_fn or len(self._in_linkdata) <= 1), "Attempting to add more than two incoming links"
-        assert (linkdata.to_fn or len(self._out_linkdata) <= 1), "Attempting to add more than two outgoing links"
-        super(NFN, self).add_link(linkdata)
-
-        self.pretty_log["negation type"] = "probabilistic" if any(var.probabilistic for var in self._var_list) else \
-                                           "vector"
+        # If the other ld of this ld pair has not been added, then temporarily register this ld instance directly
+        direction = linkdata.attr['direction']
+        if direction not in self.labeled_ld_pair.keys():
+            self.labeled_ld_pair[direction] = linkdata
+        # Otherwise, take out the other ld of this ld pair from the dict and replace entry with a tuple
+        #   Make sure that incoming ld is the first element of the tuple and outgoing ld the second element
+        else:
+            other_ld = self.labeled_ld_pair[direction]
+            self.labeled_ld_pair[direction] = (linkdata, other_ld) if linkdata.to_fn else (other_ld, linkdata)
 
     def compute(self):
+        super(AlphaFactorNode, self).compute()
+        assert len(self.in_linkdata) == len(self.out_linkdata) and len(self.in_linkdata) > 0
 
-        # Check that there are equal number of incoming links and outgoing links
-        assert len(self._in_linkdata) == len(self._out_linkdata), \
-            "The number of of incoming links ({}) do not match the number of outgoing links ({}). " \
-                .format(len(self._in_linkdata), len(self._out_linkdata))
-
-        for in_ld in self._in_linkdata:
-            out_ld = [ld for ld in self._out_linkdata if ld.vn is not in_ld.vn][0]
-
-            # Determine if to use arithmetic negation or probabilistic negation
-            probabilistic = any(var.probabilistic for var in self._var_list)
-
-            msg = in_ld.read()
-            if probabilistic:
-                assert torch.all(msg > 0) and torch.all(msg < 1), \
-                    "Though declared probabilistic, the incoming message at this Negation Factor Node does not lie " \
-                    "within range [0, 1]. Max val: {}, Min val: {}".format(torch.max(msg), torch.min(msg))
-                msg = 1 - msg       # Take probabilistic negation
+        # Carry out directional computation based on presence of link in self.labeled_ld_pair
+        for direction in self.labeled_ld_pair.keys():
+            if direction == 'inward':
+                self.inward_compute()
             else:
-                msg = -msg          # Otherwise, take arithmetic negation
+                self.outward_compute()
 
-            out_ld.set(msg, self._epsilon)
-
-
-class NLFN(FactorNode):
-    """
-        Nonlinearity Factor Node. Element-wise nonlinearity "filters"
-    """
-
-    # TODO:
-    def __init__(self, name, nonlinear):
+    @abstractmethod
+    def inward_compute(self):
         """
-        :param name:        Name of the node
-        :param nonlinear:  'str' or function objects, specifying the type of element-wise nonlinearity
+            Inward message computation. To be implemented by child class.
         """
-        super(NLFN, self).__init__(name, function=None, func_var_list=None)
-        self.nonlinear = nonlinear
-        self.pretty_log["node type"] = "Nonlinearity Factor Node"
-        self.pretty_log["nonlinearity"] = str(nonlinear)
+        pass
 
-
-class ADFN(FactorNode):
-    """
-        Affine Delta Factor Node, generally for matching between WM variables and Pattern variables
-        Performs delta function masking and variable swapping
-        Essential component of the Rete's Alpha network's within pattern variable matching
-
-        Note: ADFN only admits at most two pairs of incoming / outgoing links. (one pair in condition / action pattern,
-            two pairs in condact pattern)
-
-        Note: Special implementation needed for resolving potential conflicts between pattern variables and wm variables,
-                especially mismatch in sizes.
-
-        pt_var_info schema:
-            { wm_var_name :
-                  { "name" : pt_var_name
-                    "type" : "var" or "const"
-                    "vals" : int/str values if type is const or None otherwisea
-                    "rel"  : relation, if specified, otherwise None } }
-    """
-    def __init__(self, name, pt_var_info):
-        super(ADFN, self).__init__(name, function=None, func_var_list=None)
-        self.pretty_log["node type"] = "Affine Delta Factor Node"
-        self._pt_var_info = pt_var_info
-
-    # Override to make sure only admit at most two pairs of incoming / outgoing links
-    def add_link(self, linkdata):
-        assert (not linkdata.to_fn or len(self._in_linkdata) <= 1), "Attempting to add more than two incoming links"
-        assert (linkdata.to_fn or len(self._out_linkdata) <= 1), "Attempting to add more than two outgoing links"
-        super(ADFN, self).add_link(linkdata)
-
-    # Override compute() to implement tensor manipulation
-    def compute(self):
+    @abstractmethod
+    def outward_compute(self):
         """
-            Three cases for each variable dimension:
-                1. If associated pattern var shared among multiple wm var:
-                    - If message goes inward, take diagonal values and shrink dimension
-                    - If message goes outward, expand dimensions, put values on diagonals and put 0 everywhere else
-                2. If associated pattern var is constant,
-                    - If message goes inward, take the slices and concatenate, slices taken in the order specified by 'vals'
-                    - If message goes outward, split into slices and put in place. Put 0 everywhere else
-                3. If associated pattern var is a variable but is distinct, then simply swap variable.
-
-            In cases 1 and 3, need to account for mismatch in variable dimension sizes when swapping variables:
-                - If need to enlarge dimension size, append necessary slices of 0's at the tail of that dimension
-                - If need to shrink dimension size, truncate necessary slices at the tail of that dimension
-
-            # TODO: Accomodate for within-pattern variable relations in future iterations
-                        E.g.  pred[ (arg1 v) (arg2 (v + 3)) ]
-                    Or more generally,
-                        E.g.  pred[ (arg1 v) (arg2 f(v)) ]
-                    Where f(v) is a custom mapping embodying the relation
+            Outward message computation. To be implemented by child class.
         """
-
-        # Check that there are equal number of incoming links and outgoing links
-        assert len(self._in_linkdata) == len(self._out_linkdata), \
-            "The number of of incoming links ({}) do not match the number of outgoing links ({}). " \
-                .format(len(self._in_linkdata), len(self._out_linkdata))
-
-        for in_ld in self._in_linkdata:
-            out_ld = [ld for ld in self._out_linkdata if ld.vn is not in_ld.vn][0]
-
-            # Compare var_list against pt_var_info and determin wm vars and pt vars
-            # Use set to discard orders for comparison
-            in_ld_varnames, out_ld_varnames = set(var.name for var in in_ld.var_list), set(var.name for var in out_ld.var_list)
-            wm_varnames, pt_varnames = set(self._pt_var_info.keys()), set(v["name"] for v in self._pt_var_info.values())
-            assert (in_ld_varnames == wm_varnames and out_ld_varnames == pt_varnames) or \
-                   (in_ld_varnames == pt_varnames and out_ld_varnames == wm_varnames), \
-                "wm vars and pattern vars provided by pt_var_info does not match that as specified in the linkdata. " \
-                "In pt_var_info: wm vars - '{}', pattern vars - '{}'. " \
-                "In linkdata: incoming link vars - '{}', outgoing link vars - '{}'." \
-                .format(wm_varnames, pt_varnames, in_ld_varnames, out_ld_varnames)
-
-            # Determine direction of this pair of links. Inward or outward, w.r.t. beta network
-            inward = True if in_ld_varnames == wm_varnames else False
-
-            in_varname_list = list(var.name for var in in_ld.var_list)
-            out_varname_list = list(var.name for var in out_ld.var_list)
-            # in_var2dim = {v.name: k for k, v in enumerate(in_ld.var_list)}
-            # out_var2dim = {v.name: k for k, v in enumerate(out_ld.var_list)}
-            in_dim = [var.size for var in in_ld.var_list]
-            out_dim = [var.size for var in out_ld.var_list]
-
-            msg = in_ld.read()      # read message
-            assert isinstance(msg, torch.Tensor)
-            trace_varnames = list(var.name for var in in_ld.var_list)  # Trace the change of variable dimensions of msg
-
-            # Build ptvar -> wmvar lookup table to distinguish shared pt vars from distinct ones
-            ptvar2wmvar = {}
-            for wm_varname, v in self._pt_var_info.items():
-                pt_varname = v['name']
-                if pt_varname not in ptvar2wmvar.keys():
-                    ptvar2wmvar[pt_varname] = [wm_varname]
-                else:
-                    ptvar2wmvar[pt_varname].append(wm_varname)
-
-            for wm_varname, v in self._pt_var_info.items():
-                pt_varname = v['name']
-                # First do case 2, constant variables. Throughout this step, variable order should not be altered
-                if v['type'] == "const":
-                    vals = v['vals']
-                    # If inward, simply index select
-                    if inward:
-                        dim = in_varname_list.index(wm_varname)
-                        # If value is None, then simply take the full span
-                        if vals is not None:
-                            msg = msg.index_select(dim=dim, index=torch.LongTensor(vals))
-                        trace_varnames[dim] = pt_varname
-                    # If outward, then need to take slice separately, create empty slices, and concatenate
-                    else:
-                        dim = in_varname_list.index(pt_varname)
-                        # If vals is None, then treat it as full span
-                        vals = list(range(in_dim[dim])) if vals is None else vals
-                        assert in_dim[dim] == len(vals)     # This should always be correct since size of const pt vars are determined by len of vals
-                        slice_shape = list(msg.shape)
-                        slice_shape[dim] = 1
-                        dim_target_size = out_dim[out_varname_list.index(wm_varname)]
-                        # Slice messages
-                        sliced_msg = msg.split(1, dim=dim)      # Split into tuple of tensors with shape slice_shape
-                        assert all(list(t.shape) == slice_shape for t in sliced_msg)
-                        # Create target message
-                        target_slices = list(torch.zeros(size=slice_shape)
-                                             if i not in vals else sliced_msg[vals.index(i)]
-                                             for i in range(dim_target_size))
-                        # Concatenate to form new message
-                        msg = torch.cat(target_slices, dim=dim)
-                        trace_varnames[dim] = wm_varname
-
-                # Second do case 3, swap distinct pt vars and account for mismatch in size
-                elif len(ptvar2wmvar[pt_varname]) == 1:
-                    if inward:      # inward should be enlarging size, if any
-                        dim = in_varname_list.index(wm_varname)
-                        wm_size = in_dim[dim]
-                        pt_size = out_dim[out_varname_list.index(pt_varname)]
-                        assert wm_size <= pt_size
-                        trace_varnames[dim] = pt_varname
-                        # Enlarge dimension size with zero tensor if needed
-                        if pt_size > wm_size:
-                            extra_shape = list(msg.shape)
-                            extra_shape[dim] = pt_size - wm_size
-                            msg = torch.cat((msg, torch.zeros(size=extra_shape)), dim=dim)
-                    else:           # outward should be shrinking size, if any
-                        dim = in_varname_list.index(pt_varname)
-                        pt_size = in_dim[dim]
-                        wm_size = out_dim[out_varname_list.index(wm_varname)]
-                        assert wm_size <= pt_size
-                        trace_varnames[dim] = wm_varname
-                        # Shrink dimension size by truncating tail is needed
-                        if pt_size > wm_size:
-                            msg = torch.split(msg, wm_size, dim=dim)[0]     # Only take the first chunk
-
-            # Finally case 1, where variable order may be changed due to taking the diagonal
-            for pt_varname, wm_varname_list in ptvar2wmvar.items():
-                if len(wm_varname_list) > 1:
-                    # If message goes inward, take diagonal values and shrink dimension
-                    if inward:
-                        # Diagonalize first pair
-                        wm_varname1 = wm_varname_list[0]
-                        wm_varname2 = wm_varname_list[1]
-                        dim1 = trace_varnames.index(wm_varname1)    # use trace_varnames because var order may have
-                        dim2 = trace_varnames.index(wm_varname2)    # changed
-                        msg = torch.diagonal(msg, dim1=dim1, dim2=dim2)
-                        trace_varnames.remove(wm_varname1)
-                        trace_varnames.remove(wm_varname2)
-                        trace_varnames.append(pt_varname)       # Diagonalized dimension is appended as the last dim
-
-                        # If there are more than two wm vars sharing the same pt vars
-                        for i in range(2, len(wm_varname_list)):
-                            wm_varname = wm_varname_list[i]
-                            dim1 = trace_varnames.index(wm_varname)     # use trace_varnames because var order changed
-                            msg = torch.diagonal(msg, dim1=dim1, dim2=-1)
-                            trace_varnames.remove(wm_varname)
-
-                        # Accomodate for mismatch in pt var dimension size
-                        tar_dim = out_dim[out_varname_list.index(pt_varname)]
-                        cur_dim = msg.shape[-1]
-                        if tar_dim > cur_dim:
-                            extra_shape = list(msg.shape)
-                            extra_shape[-1] = tar_dim - cur_dim
-                            msg = torch.cat((msg, torch.zeros(size=extra_shape)), dim=-1)
-
-                    # If message goes outward, expand dimensions, put values on diagonals and put 0 everywhere else
-                    else:
-                        # Will permute the working dimension to the front for easy indexing
-                        dim = trace_varnames.index(pt_varname)
-                        perm = (dim,) + tuple(i for i in range(msg.dim()) if i is not dim)  # index permutation for msg
-                        perm_msg = msg.permute(perm)        # working pt var dimension now put at front
-                        wm_dim_sizes = tuple(out_dim[out_varname_list.index(wm_varname)]
-                                             for wm_varname in wm_varname_list)
-                        tar_shape = wm_dim_sizes + tuple(perm_msg.size())[1:]
-                        buf = torch.zeros(tar_shape)        # zero tensor where diag val will be put on first two dim
-
-                        # Account for mismatch in size
-                        for i in range(min(wm_dim_sizes)):
-                            buf[(i,) * len(wm_dim_sizes)] += perm_msg[i]
-                        msg = buf
-
-                        # bookkeeping stuff
-                        trace_varnames.remove(pt_varname)
-                        trace_varnames = wm_varname_list + trace_varnames
-
-            # Final step: permute variable dimension to align with out_varname_list and check dim against out_dim
-            assert all(var in out_varname_list for var in trace_varnames)
-            assert all(var in trace_varnames for var in out_varname_list)
-
-            perm = tuple(trace_varnames.index(var) for var in out_varname_list)
-            msg = msg.permute(perm)
-            assert list(msg.size()) == out_dim
-
-            out_ld.set(msg, self._epsilon)
+        pass
 
 
-class ATFN(FactorNode):
+class RelMapNode(AlphaFactorNode):
     """
-        Affine Transformation Factor Node
+        Relation Variable Mapping Node
+
+        Convert between predicate arguments and pattern variables. Apply relational variable's VariableMap (if declared)
+            by selecting and placing entries among the message batch dimensions. This node can thus carry out
+            inner-pattern relational variable matching by itself.
+
+        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
+            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
+            it is pointing toward the conditional gamma factor node or not.
+
+        For inward direction, inner-pattern relational variable matching is handled by selecting entries on the
+            diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto
+            the diagonals of a larger message tensor.
     """
+    def __init__(self, name, arg2var, var2arg):
+        super(RelMapNode, self).__init__(name)
+        self.pretty_log["node type"] = "Relation Variable Mapping Node"
+        
+        assert isinstance(name, str)
+        assert isinstance(arg2var, dict)
+        assert isinstance(var2arg, dict)
 
-    # TODO
-    def __init__(self, name, affine):
-        """
-        :param name:    Name of the node
-        :param affine:  Affine transformation specification
-        """
-        super(ATFN, self).__init__(name, function=None, func_var_list=None)
-        self.affine = affine
-        self.pretty_log["node type"] = "Affine Transformation Factor Node"
+        self.arg2var = arg2var
+        self.var2arg = var2arg
 
 
-class BJFN(FactorNode):
+class ExpSumNode(AlphaFactorNode):
     """
-        Beta-Join Factor Node. Serve as structural juncture at Beta subnet in a conditional. No special computation
+        Expansion / Summarization Node
+
+        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
+            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
+            it is pointing toward the conditional gamma factor node or not.
+
+        For inward direction, it expands and permutes the incoming message's relational variable dimensions to match the
+            full relational variable dimensions determined by the conditional. For outward direction, it summarizes
+            over irrelevant relational variables and permute the dimensions to match the relational variable dimensions
+            of this pattern.
+
+        Note that the expanded dimensions will be of size 1, so that the expanded tensor is broadcastable along this
+            dimension.
+
+        The summarization step can be thought of as a search or optimization problem, where one finds a single
+            distribution instance that best "summarizes" the behaviors of an entire space of distribution instances,
+            where the dimensions of the space is defined and spanned by the irrelevant relational variables. Depending
+            on the user-specified summarization criteria, different semantics can be interpreted for this step.
     """
-    def __init__(self, name):
-        super(BJFN, self).__init__(name, function=None, func_var_list=None)
-        self.pretty_log["node type"] = "Beta-Join Factor Node"
+    pass
 
 
-class GFFN(FactorNode):
+class RanTransNode(AlphaFactorNode):
     """
-        Gamma Function Factor Node
+        Random Variable Transformation Node
+
+        Apply a user-specified transformation procedure defined in torch.distributions.transforms on the random
+            variables of the incoming message. In other words, this nodes transforms the values of the particle events
+            of the message distributions.
+
+        By transforming the RV values, it also induces new value constraints for the generated messages. For the inward
+            direction, the new induced value constraints will be used by the gamma factor node to carry out value check
+            for the matching RVs.
+
+        Note that if this node belongs to a Condact predicate pattern, the transformation specified by user MUST be
+            bijective. The forward transformation will be used for inward message propagation, whereas the backward
+            transformation will be used for outward message propagation.
+
+        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
+            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
+            it is pointing toward the conditional gamma factor node or not.
     """
+    pass
 
-    # TODO
-    def __init__(self, name, function, func_var_list):
-        super(GFFN, self).__init__(name, function=function, func_var_list=func_var_list)
-        self.pretty_log["node type"] = "Gamma Function Factor Node"
 
-    # Override check_quiesce() so that compute() will should always proceed. However this would not jeopardize
-    # computation because message sent to ld is same as old, so ld.new would not be set to true under epsilon condition
-    def check_quiesce(self):
-        super(GFFN, self).check_quiesce()
-        return False  # Always return False so that compute() will still proceed
+class GFN(AlphaFactorNode):
+    """
+        Gamma Factor Node
+
+        Carry out general-inference message computation at the PGM factor node.
+
+        Induce a message computation task for each of the outgoing link.
+    """
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
