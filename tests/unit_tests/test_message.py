@@ -23,6 +23,7 @@ class TestInitMessage:
                      parameters=torch.ones(4)
                      )
         assert m1.size() == torch.Size([2])
+        ss = str(m1)
         assert m2.size() == torch.Size([4])
 
     def test_0xp_parameter(self):
@@ -179,7 +180,7 @@ class TestMessageArithmetic:
 
         m3 = m1 + m2
 
-    def test_multiplication_particle_int(self):
+    def test_multiplication_particle_int_float(self):
         m1 = Message(MessageType.Particles,
                      sample_shape=torch.Size([2]),
                      batch_shape=torch.Size([3]),
