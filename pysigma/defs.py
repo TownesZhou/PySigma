@@ -22,6 +22,7 @@ class Variable:
             if ALL of the fields are equal.
 
     """
+
     def __init__(self, name, metatype, size, value_constraints=None):
         """
             Instantiate a variable. Optionally indicates a set of value constraints if and only if variable is Random
@@ -125,12 +126,13 @@ class Message:
 
         Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
     """
+
     def __init__(self, msg_type: MessageType,
                  param_shape: torch.Size = None,
                  sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
                  parameters: torch.Tensor = None,
                  particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
-                 log_density: [torch.Tensor, int] = None, epsilon=10-7, **kwargs):
+                 log_density: [torch.Tensor, int] = None, epsilon=10e-7, **kwargs):
         """
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
@@ -169,7 +171,6 @@ class Message:
         assert log_density is None or (isinstance(log_density, int) and log_density == 0) or \
                isinstance(log_density, torch.Tensor)
         assert isinstance(epsilon, float)
-
 
         # Message type, of type MessageType
         self.type = msg_type
@@ -228,13 +229,14 @@ class Message:
     """
         Overload arithmetic operators
     """
+
     def __add__(self, other):
         """
             Overloading addition operation '+'
         """
         assert isinstance(other, Message), "Message can only be added with another Message"
         assert self.type == other.type, "Only the same type of messages can be added. First operand has type '{}', " \
-                                          "while the second one has type '{}'".format(self.type, other.type)
+                                        "while the second one has type '{}'".format(self.type, other.type)
         # Addition for Parameter type
         if self.type == MessageType.Parameter:
             assert self.b_shape == other.b_shape and self.p_shape == other.p_shape, \
@@ -250,11 +252,11 @@ class Message:
             assert self.s_shape == other.s_shape and self.b_shape == other.b_shape and self.e_shape == other.e_shape, \
                 "Only Messages with the same shape can be added together. The messages being added are of Particles " \
                 "type. Found first message with (sample_shape, batch_shape, event_shape) = '{}', and second message " \
-                "with (sample_shape, batch_shape, event_shape) = '{}'"\
-                .format((self.s_shape, self.b_shape, self.e_shape), (other.s_shape, other.b_shape, other.e_shape))
-            assert self.particles == other.particles, \
+                "with (sample_shape, batch_shape, event_shape) = '{}'" \
+                    .format((self.s_shape, self.b_shape, self.e_shape), (other.s_shape, other.b_shape, other.e_shape))
+            assert torch.all(self.particles.eq(other.particles)), \
                 "For particle messages, only ones with matching particle values can be added together. "
-            assert self.log_density == other.log_density, \
+            assert torch.all(self.log_density.eq(other.log_density)), \
                 "For particle messages, only ones with matching log sampling densities can be added together"
             # Take element-wise product
             new_weights = self.weights * other.weights
@@ -276,7 +278,7 @@ class Message:
             "Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. " \
             "Instead found: '{}'".format(type(other))
         if isinstance(other, torch.Tensor):
-            assert other.shape == torch.Size([]) or other.shape == self.b_shape, \
+            assert other.shape == torch.Size([1]) or other.shape == self.b_shape, \
                 "If the scalar is a torch.Tensor, must be either a singleton tensor or a tensor with the same shape " \
                 "as the Message's batch shape: '{}'. Instead found: '{}'".format(self.b_shape, other.shape)
 
@@ -284,12 +286,14 @@ class Message:
         b_p_other = other
         s_b_e_other = other
         if isinstance(other, torch.Tensor) and other.dim() > 0:
-            for i in range(len(self.p_shape)):
-                b_p_other = torch.unsqueeze(b_p_other, dim=-1)
+            if self.type is MessageType.Parameter:
+                for i in range(len(self.p_shape)):
+                    b_p_other = torch.unsqueeze(b_p_other, dim=-1)
 
-            s_b_e_other = torch.unsqueeze(s_b_e_other, dim=0)
-            for i in range(len(self.e_shape)):
-                s_b_e_other = torch.unsqueeze(s_b_e_other, dim=-1)
+            if self.type is MessageType.Particles:
+                s_b_e_other = torch.unsqueeze(s_b_e_other, dim=0)
+                for i in range(len(self.e_shape)):
+                    s_b_e_other = torch.unsqueeze(s_b_e_other, dim=-1)
 
         # Scalar multiplication for Parameter messages
         if self.type == MessageType.Parameter:
@@ -306,6 +310,27 @@ class Message:
                               particles=self.particles, weights=new_weights, log_density=self.log_density)
 
         return new_msg
+
+    def __str__(self):
+        if self.type == MessageType.Parameter:
+            b_shape_str = str(list(self.b_shape))
+            p_shape_str = str(list(self.p_shape))
+            parameters_str = str(list(self.parameters.tolist()))
+
+            return f"Type: Parameter\nBatch_Shape: {b_shape_str}\nParameter_Shape: {p_shape_str}\n" \
+                   f"Parameters{parameters_str}"
+
+        else:
+            s_shape_str = str(list(self.s_shape))
+            b_shape_str = str(list(self.b_shape))
+            e_shape_str = str(list(self.e_shape))
+            particles_str = str(list(self.particles.tolist()))
+            weights_str = str(list(self.weights.tolist()))
+            log_density_str = str(list(self.log_density.tolist()))
+
+            return f"Type: Particles\nSample_Shape: {s_shape_str}\nBatch_Shape: {b_shape_str}\n" \
+                   f"Event_Shape: {e_shape_str}\nParticles: {particles_str}\n" \
+                   f"Weights: {weights_str}\nLog_Density: {log_density_str}"
 
     def size(self):
         """
@@ -356,6 +381,7 @@ class Message:
     """
         Tensor manipulation utility methods
     """
+
     def batch_permute(self, target_dims):
         """
             Returns a permuted message whose tensor attributes are permuted from the original ones w.r.t. 'target_dims'
