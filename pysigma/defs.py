@@ -90,7 +90,8 @@ class Message:
 
         Two basic message types:
             - Parameter: parameters to some batched distributions
-                - Contains a batched parameter tensor, of shape (batch_shape + event_shape)
+                - Contains a batched parameter tensor, of shape (batch_shape + param_shape)
+
             - Particles: batched particle lists representing events drawn from some batched distributions
                 - Contains three components: particle value, particle weight, and sampling log density
                 - particle value is a batched tensor with shape (sample_shape + batch_shape + event_shape)
@@ -99,6 +100,12 @@ class Message:
                     dimension. Otherwise if the weights are uniform, it can be represented by an int of 1.
                 - sample log density is a batched tensor with shape (sample_shape + batch_shape) if the log densities
                     are not uniform. Otherwise if the log densities are uniform, it can be represented by an int of 0.
+
+        Message shape constraints:
+            - sample_shape must have exactly length 1.
+            - batch_shape can have arbitrary positive length, but the size of each dimension must be at least 2.
+            - event_shape must have exactly length 1.
+            - param_shape must have exactly length 1.
 
         The semantics of a Message is determined not only by its type, but by its context as well. In other words,
             which distribution or distribution class a Message represents, or whether a Parameter type message
@@ -111,6 +118,7 @@ class Message:
                 - Scalar multiplication is defined as scalar multiplication with the parameter tensors
                 - 0 is treated as the identity element.
                 - Parameter message structure therefore constructs and defines the "parameter space".
+
             - For Particles messages:
                 - The following two operations are defined as operations on the particle weights, and meaningful only
                     for Particle messages that share the same particle values and the same sampling log density of the
@@ -137,10 +145,11 @@ class Message:
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
             :param msg_type:    one of MessageType
-            :param param_shape:     torch.Size. can be an empty shape. Must specify if message type is Parameter.
-            :param sample_shape:    torch.Size. can be an empty shape. Must specify if message type is Particles.
-            :param batch_shape:     torch.Size. can be an empty shape. Must specify if message type is Particles.
-            :param event_shape:     torch.Size. can be an empty shape. Must specify if message type is Particles.
+            :param param_shape:     torch.Size. Must specify if message type is Parameter. Can be a shape of arbitrary
+                                        length, but the size of each dimension must be at least 2.
+            :param sample_shape:    torch.Size. Must specify if message type is Particles. Must be a shape of length 1.
+            :param batch_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of length 1.
+            :param event_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of length 1.
             :param parameters:  torch.Tensor. Of shape (batch_shape + param_shape) if the parameters do not represent
                                     the identity in the parameter vector space. Alternatively, can be an int of 0 to
                                     represent the identity. Must present if message type is Parameters.
@@ -159,10 +168,10 @@ class Message:
             :param kwargs:      Additional optional attributes
         """
         assert isinstance(msg_type, MessageType)
-        assert param_shape is None or isinstance(param_shape, torch.Size)
-        assert sample_shape is None or isinstance(sample_shape, torch.Size) and len(sample_shape) <= 1
-        assert batch_shape is None or isinstance(batch_shape, torch.Size)
-        assert event_shape is None or isinstance(event_shape, torch.Size)
+        assert param_shape is None or isinstance(param_shape, torch.Size) and len(param_shape) == 1
+        assert sample_shape is None or isinstance(sample_shape, torch.Size) and len(sample_shape) == 1
+        assert batch_shape is None or isinstance(batch_shape, torch.Size) and all(d >= 2 for d in batch_shape)
+        assert event_shape is None or isinstance(event_shape, torch.Size) and len(event_shape) == 1
 
         assert parameters is None or (isinstance(parameters, int) and parameters == 0) or \
                isinstance(parameters, torch.Tensor)
@@ -214,7 +223,7 @@ class Message:
             assert self.b_shape + self.p_shape == self.parameters.shape
         if isinstance(self.particles, torch.Tensor):
             assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
-        if isinstance(self.weights, torch.Tensor) :
+        if isinstance(self.weights, torch.Tensor):
             assert self.s_shape + self.b_shape == self.weights.shape
             # Check that values are non-negative
             assert torch.all(self.weights > 0), "Found negative values in particle weights"
