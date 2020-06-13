@@ -64,7 +64,7 @@ class TestInitMessage:
                     batch_shape=torch.Size([1]),
                     event_shape=torch.Size([1]),
                     particles=torch.rand(100),
-                    weights=torch.Tensor([0.01] * 100),
+                    weights=torch.tensor([0.01] * 100),
                     log_density=torch.rand(100)
                     )
         assert m.size() == torch.Size([100])
@@ -75,20 +75,19 @@ class TestInitMessage:
                     batch_shape=torch.Size([10]),
                     event_shape=torch.Size([1]),
                     particles=torch.rand(10),
-                    weights=torch.Tensor([0.1] * 10),
+                    weights=torch.tensor([0.1] * 10),
                     log_density=torch.rand(10)
                     )
         assert m.size() == torch.Size([10])
 
-    # TODO: Fix this issue
     def test_0x0xe_particles(self):
         m = Message(MessageType.Particles,
                     sample_shape=torch.Size([1]),
                     batch_shape=torch.Size([1]),
                     event_shape=torch.Size([10]),
                     particles=torch.rand(10),
-                    weights=torch.ones(1),
-                    log_density=torch.rand(1)
+                    weights=torch.tensor(1),
+                    log_density=torch.tensor(1)
                     )
         assert m.size() == torch.Size([10])
 
@@ -98,7 +97,7 @@ class TestInitMessage:
                     batch_shape=torch.Size([10]),
                     event_shape=torch.Size([1]),
                     particles=torch.rand(10, 10),
-                    weights=torch.Tensor([[0.1] * 10] * 10),
+                    weights=torch.tensor([[0.1] * 10] * 10),
                     log_density=torch.rand(10, 10)
                     )
         assert m.size() == torch.Size([10, 10])
@@ -109,7 +108,7 @@ class TestInitMessage:
                     batch_shape=torch.Size([10]),
                     event_shape=torch.Size([10]),
                     particles=torch.rand(10, 10, 10),
-                    weights=torch.Tensor([[0.1] * 10] * 10),
+                    weights=torch.tensor([[0.1] * 10] * 10),
                     log_density=torch.rand(10, 10)
                     )
         assert m.size() == torch.Size([10, 10, 10])
@@ -122,42 +121,44 @@ class TestMessageArithmetic:
         simple addition, multiply by int, float,
         singleton tensor, and tensors with same shape
     """
+    def helper_normalize(self, weight):
+        return weight / weight.sum(dim=0, keepdim=True)
 
     def test_addition_parameter(self):
         m1 = Message(MessageType.Parameter,
                      param_shape=torch.Size([1]),
                      batch_shape=torch.Size([2]),
-                     parameters=torch.Tensor([1, 2])
+                     parameters=torch.tensor([1, 2])
                      )
 
         m2 = Message(MessageType.Parameter,
                      param_shape=torch.Size([1]),
                      batch_shape=torch.Size([2]),
-                     parameters=torch.Tensor([2, 3])
+                     parameters=torch.tensor([2, 3])
                      )
 
         m3 = m1 + m2
 
         assert m3.size() == m2.size()
-        assert torch.all(m3.parameters.eq(torch.Tensor([3, 5])))
+        assert torch.all(m3.parameters.eq(torch.tensor([3, 5])))
 
     def test_addition_parameter_edge(self):
         m1 = Message(MessageType.Parameter,
                      param_shape=torch.Size([1]),
                      batch_shape=torch.Size([2]),
-                     parameters=torch.Tensor([1, 2])
+                     parameters=torch.tensor([1, 2])
                      )
 
         m2 = Message(MessageType.Parameter,
                      param_shape=torch.Size([1]),
                      batch_shape=torch.Size([2]),
-                     parameters=torch.Tensor([2, 3])
+                     parameters=torch.tensor([2, 3])
                      )
 
         m3 = m1 + m2
 
         assert m3.size() == m2.size()
-        assert torch.all(m3.parameters.eq(torch.Tensor([3, 5])))
+        assert torch.all(m3.parameters.eq(torch.tensor([3, 5])))
 
     def test_addition_particles(self):
         m1 = Message(MessageType.Particles,
@@ -165,8 +166,8 @@ class TestMessageArithmetic:
                      batch_shape=torch.Size([3]),
                      event_shape=torch.Size([2]),
                      particles=torch.ones(2, 3, 2),
-                     weights=torch.Tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
-                     log_density=torch.Tensor([[1, 2, 3], [4, 5, 6]])
+                     weights=torch.tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
+                     log_density=torch.tensor([[1, 2, 3], [4, 5, 6]])
                      )
 
         m2 = Message(MessageType.Particles,
@@ -174,11 +175,21 @@ class TestMessageArithmetic:
                      batch_shape=torch.Size([3]),
                      event_shape=torch.Size([2]),
                      particles=torch.ones(2, 3, 2),
-                     weights=torch.Tensor([[0.2, 0.3, 0.4], [0.8, 0.7, 0.6]]),
-                     log_density=torch.Tensor([[1, 2, 3], [4, 5, 6]])
+                     weights=torch.tensor([[0.2, 0.3, 0.4], [0.8, 0.7, 0.6]]),
+                     log_density=torch.tensor([[1, 2, 3], [4, 5, 6]])
                      )
 
         m3 = m1 + m2
+
+    def test_multiplication_parameter_int_float(self):
+        m1 = Message(MessageType.Parameter,
+                     param_shape=torch.Size([3]),
+                     batch_shape=torch.Size([2,3]),
+                     parameters=torch.rand(2, 3, 3)
+                     )
+
+        m2 = m1 * 5
+        m3 = m2 * 2.4
 
     def test_multiplication_particle_int_float(self):
         m1 = Message(MessageType.Particles,
@@ -186,29 +197,76 @@ class TestMessageArithmetic:
                      batch_shape=torch.Size([3]),
                      event_shape=torch.Size([2]),
                      particles=torch.ones(2, 3, 2),
-                     weights=torch.Tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
-                     log_density=torch.Tensor([[1, 2, 3], [4, 5, 6]])
+                     weights=torch.tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
+                     log_density=torch.tensor([[1, 2, 3], [4, 5, 6]])
                      )
 
         m2 = m1 * 5
         m3 = m2 * 2.4
 
-    # TODO: continue testing this once fixed
+    def test_multiplication_particle_int_float_high_dim(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3,4,5]),
+                     event_shape=torch.Size([2,5]),
+                     particles=torch.rand(2, 3, 4, 5, 2, 5),
+                     weights=1,
+                     log_density=0
+                     )
+
+        m2 = m1 * 5
+        m3 = m2 * 2.4
+
     def test_multiplication_particle_tensor_singleton(self):
         m1 = Message(MessageType.Particles,
                      sample_shape=torch.Size([2]),
                      batch_shape=torch.Size([3]),
                      event_shape=torch.Size([2]),
                      particles=torch.ones(2, 3, 2),
-                     weights=torch.Tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
-                     log_density=torch.Tensor([[1, 2, 3], [4, 5, 6]])
+                     weights=torch.tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
+                     log_density=torch.tensor([[1, 2, 3], [4, 5, 6]])
                      )
 
-        m2 = m1 * torch.Tensor([4])
-        print()
+        m2 = m1 * torch.tensor(4)
 
-    # def test_multiplication_particle_tensor_sameshape(self):
-    #     pass
+    def test_multiplication_particle_tensor_sameshape(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 3, 2),
+                     weights=torch.tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
+                     log_density=torch.tensor([[1, 2, 3], [4, 5, 6]])
+                     )
+
+        t = torch.tensor([1, 2, 3])
+        m2 = m1 * t
+
+    def test_multiplication_particle_tensor_sameshape_uniform_weight(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 3, 2),
+                     weights=1,
+                     log_density=torch.tensor([[1, 2, 3], [4, 5, 6]])
+                     )
+
+        t = torch.tensor([1, 2, 3])
+        m2 = m1 * t
+
+    def test_multiplication_particle_tensor_sameshape_uniform_weight_edge(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([1]),
+                     batch_shape=torch.Size([3]),
+                     event_shape=torch.Size([1]),
+                     particles=torch.ones(3),
+                     weights=1,
+                     log_density=torch.tensor([1, 2, 3])
+                     )
+
+        t = torch.tensor([1, 2, 3])
+        m2 = m1 * t
 
 
 class TestMessageDimensionOperation:
@@ -229,8 +287,8 @@ class TestMessageDimensionOperation:
                      batch_shape=torch.Size([3]),
                      event_shape=torch.Size([2]),
                      particles=torch.ones(2, 3, 2),
-                     weights=torch.Tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
-                     log_density=torch.Tensor([[1, 2, 3], [4, 5, 6]])
+                     weights=torch.tensor([[0.1, 0.5, 0.7], [0.9, 0.5, 0.3]]),
+                     log_density=torch.tensor([[1, 2, 3], [4, 5, 6]])
                      )
 
         m2 = m1.clone()
@@ -241,7 +299,6 @@ class TestMessageDimensionOperation:
         assert torch.all(m2.weights.eq(m1.weights))
         assert torch.all(m2.log_density.eq(m1.log_density))
 
-    # TODO: test once fixed
     def test_parameter_batch_permute(self):
         m1 = Message(MessageType.Parameter,
                      batch_shape=torch.Size([2, 3, 4]),
@@ -250,7 +307,6 @@ class TestMessageDimensionOperation:
                      )
         m2 = m1.batch_permute([2, 0, 1])
 
-    # TODO test once fixed
     def test_particles_batch_permute(self):
         m1 = Message(MessageType.Particles,
                      sample_shape=torch.Size([2]),
@@ -282,10 +338,54 @@ class TestMessageDimensionOperation:
                      weights=self.helper_normalize(torch.ones(2, 3, 2, 3)),
                      log_density=torch.ones(2, 3, 2, 3)
                      )
-        m2 = m1.batch_unsqueeze(2)
+        m2 = m1.batch_unsqueeze(3)
+        assert m2.s_shape == torch.Size([2])
+        assert m2.b_shape == torch.Size([3, 2, 3, 1])
+        assert m2.e_shape == torch.Size([2])
 
-    # TODO test once fixed
     def test_particles_batch_unsqueeze_edge(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([1]),
+                     batch_shape=torch.Size([3, 2, 3]),
+                     event_shape=torch.Size([1]),
+                     particles=torch.ones(3, 2, 3),
+                     weights=self.helper_normalize(torch.ones(3, 2, 3)),
+                     log_density=torch.ones(3, 2, 3)
+                     )
+        m2 = m1.batch_unsqueeze(3)
+        assert m2.s_shape == torch.Size([])
+        assert m2.b_shape == torch.Size([3, 2, 3, 1])
+        assert m2.e_shape == torch.Size([])
+
+    def test_particles_batch_unsqueeze_zero_dim(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 2, 3]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 3, 2, 3, 2),
+                     weights=self.helper_normalize(torch.ones(2, 3, 2, 3)),
+                     log_density=torch.ones(2, 3, 2, 3)
+                     )
+        m2 = m1.batch_unsqueeze(0)
+        assert m2.s_shape == torch.Size([2])
+        assert m2.b_shape == torch.Size([1, 3, 2, 3])
+        assert m2.e_shape == torch.Size([2])
+
+    def test_particles_batch_unsqueeze_negative_dim(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 2, 3]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 3, 2, 3, 2),
+                     weights=self.helper_normalize(torch.ones(2, 3, 2, 3)),
+                     log_density=torch.ones(2, 3, 2, 3)
+                     )
+        m2 = m1.batch_unsqueeze(-1)
+        assert m2.s_shape == torch.Size([2])
+        assert m2.b_shape == torch.Size([3, 2, 3, 1])
+        assert m2.e_shape == torch.Size([2])
+
+    def test_particles_batch_unsqueeze_edge_2(self):
         m1 = Message(MessageType.Particles,
                      sample_shape=torch.Size([1]),
                      batch_shape=torch.Size([3, 2, 3]),
@@ -295,6 +395,9 @@ class TestMessageDimensionOperation:
                      log_density=torch.ones(3, 2, 3)
                      )
         m2 = m1.batch_unsqueeze(2)
+        assert m2.s_shape == torch.Size([])
+        assert m2.b_shape == torch.Size([3, 2, 1, 3])
+        assert m2.e_shape == torch.Size([])
 
     # TODO test once fixed
     def test_parameter_batch_index_select(self):

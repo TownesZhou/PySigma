@@ -214,7 +214,7 @@ class Message:
             assert self.b_shape + self.p_shape == self.parameters.shape
         if isinstance(self.particles, torch.Tensor):
             assert self.s_shape + self.b_shape + self.e_shape == self.particles.shape
-        if isinstance(self.weights, torch.Tensor):
+        if isinstance(self.weights, torch.Tensor) :
             assert self.s_shape + self.b_shape == self.weights.shape
             # Check that values are non-negative
             assert torch.all(self.weights > 0), "Found negative values in particle weights"
@@ -225,6 +225,9 @@ class Message:
                 "Particle weights do not sum to 1 across sample dimension. Found: '{}'".format(weights_sum)
         if isinstance(self.log_density, torch.Tensor):
             assert self.s_shape + self.b_shape == self.log_density.shape
+
+        if isinstance(self.weights, int) and self.weights == 1:
+            self.weights = torch.tensor(self.weights)
 
     """
         Overload arithmetic operators
@@ -278,22 +281,20 @@ class Message:
             "Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. " \
             "Instead found: '{}'".format(type(other))
         if isinstance(other, torch.Tensor):
-            assert other.shape == torch.Size([1]) or other.shape == self.b_shape, \
+            assert other.shape == torch.Size([]) or other.shape == self.b_shape, \
                 "If the scalar is a torch.Tensor, must be either a singleton tensor or a tensor with the same shape " \
                 "as the Message's batch shape: '{}'. Instead found: '{}'".format(self.b_shape, other.shape)
 
         # Expand scalar tensor dimension if it is a batched scalars
         b_p_other = other
-        s_b_e_other = other
+        s_b_other = other
         if isinstance(other, torch.Tensor) and other.dim() > 0:
             if self.type is MessageType.Parameter:
                 for i in range(len(self.p_shape)):
                     b_p_other = torch.unsqueeze(b_p_other, dim=-1)
 
             if self.type is MessageType.Particles:
-                s_b_e_other = torch.unsqueeze(s_b_e_other, dim=0)
-                for i in range(len(self.e_shape)):
-                    s_b_e_other = torch.unsqueeze(s_b_e_other, dim=-1)
+                s_b_other = torch.unsqueeze(s_b_other, dim=0)
 
         # Scalar multiplication for Parameter messages
         if self.type == MessageType.Parameter:
@@ -302,12 +303,34 @@ class Message:
 
         # Scalar multiplication for Particles messages
         else:
-            # Take weights tensor to the power of the scalar
-            new_weights = torch.pow(self.weights, s_b_e_other)
-            # Normalize
-            new_weights *= torch.tensor(1.) / new_weights.sum(dim=0, keepdim=True)
-            new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                              particles=self.particles, weights=new_weights, log_density=self.log_density)
+            # if weight uniform
+            if self.weights.shape == torch.Size([]) and self.weights == torch.tensor(1):
+                # if scalar is Tensor and non-singleton
+                if isinstance(other, torch.Tensor) and other.dim() > 0:
+                    # Creates uniform weights that matches
+                    # edge case when sample is empty
+                    if self.s_shape == torch.Size([]):
+                        new_weights = torch.pow(torch.ones(*(self.b_shape)), other)
+                    else:
+                        new_weights = torch.pow(torch.ones(*(self.s_shape + self.b_shape)), s_b_other)
+                    new_weights *= torch.tensor(1.) / new_weights.sum(dim=0, keepdim=True)
+                    new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape,
+                                      event_shape=self.e_shape,
+                                      particles=self.particles, weights=new_weights, log_density=self.log_density)
+
+                # if scalar is int, float, or singleton Tensor
+                else:
+                    new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape,
+                                      event_shape=self.e_shape,
+                                      particles=self.particles, weights=1, log_density=self.log_density)
+            # if weight not uniform
+            else:
+                # Take weights tensor to the power of the scalar
+                new_weights = torch.pow(self.weights, s_b_other)
+                # Normalize
+                new_weights *= torch.tensor(1.) / new_weights.sum(dim=0, keepdim=True)
+                new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
+                                  particles=self.particles, weights=new_weights, log_density=self.log_density)
 
         return new_msg
 
@@ -403,10 +426,14 @@ class Message:
         # Permute order for sample and batch dimensions together.
         #   Add 1 to values in pos_target_dims because there's a single sample dimensions at front
         s_b_dims = [0, ] + list(i + 1 for i in pos_target_dims)
-        # Permute order for sample, batch, and event dimensions altogether
-        s_b_e_dims = s_b_dims + list(i + len(s_b_dims) for i in range(len(self.e_shape)))
-        # Permute order for batch and parameter dimensions together
-        b_p_dims = pos_target_dims + list(i + len(pos_target_dims) for i in range(len(self.p_shape)))
+
+        if self.type == MessageType.Particles:
+            # Permute order for sample, batch, and event dimensions altogether
+            s_b_e_dims = s_b_dims + list(i + len(s_b_dims) for i in range(len(self.e_shape)))
+
+        if self.type == MessageType.Parameter:
+            # Permute order for batch and parameter dimensions together
+            b_p_dims = pos_target_dims + list(i + len(pos_target_dims) for i in range(len(self.p_shape)))
 
         new_parameters = self.parameters
         new_particles = self.particles
@@ -444,9 +471,12 @@ class Message:
 
         # Translate dim to positive value if it is negative
         if dim < 0:
-            dim = len(self.b_shape) + dim
+            dim = len(self.b_shape) + dim + 1
         # For message contents who has a sample dimension at front, add 1 to dim
-        s_dim = dim + 1
+        if self.s_shape != torch.Size([]):
+            s_dim = dim + 1
+        else:
+            s_dim = dim
         # Get new batch shape
         new_b_shape = self.b_shape[:dim] + torch.Size([1]) + self.b_shape[dim:]
 
