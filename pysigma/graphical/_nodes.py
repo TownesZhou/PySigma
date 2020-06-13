@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from torch.distributions import Distribution
 from torch.distributions.categorical import Categorical
+from torch.nn.functional import cosine_similarity
 from defs import Variable, MessageType, Message
 from utils import DistributionServer
 import warnings
@@ -35,7 +36,8 @@ class LinkData:
         :param fn:      FactorNode instance that this link is incident to
         :param to_fn:   True/False indicating whether this link is pointing toward a factor node
         :param msg_shape    Fixed message shape that this linkdata will carry. Used for checking dimensions
-                            Conceptually, it should be  sample_shape + batch_shape + event_shape
+                            For Parameter message, should be (batch_shape + param_shape)
+                            FOr particles message, should be (sample_shape + batch_shape + event_shape)
         :param epsilon:     epsilon upper bound for checking message difference using KL divergence
         """
         assert isinstance(vn, VariableNode)
@@ -70,50 +72,66 @@ class LinkData:
         else:
             return fn_name + " --> " + vn_name
 
+    def reset_shape(self, msg_shape):
+        """
+            Reset shape for the Message
+            CAUTION: will clear memory buffer and set self.new to False
+        """
+        assert isinstance(msg_shape, torch.Size)
+        self.msg_shape = msg_shape
+        self.memory = None
+        self.new = False
+
     def set(self, new_msg, check_diff=True, clone=False):
         """
             Set the link message memory to the new message arriving at this link.
+
             If check_diff is True, then will check if the new message is different from the existing one before
                 replacing the existing with the new one.
-              If the two message are of different types, then they will be deemed as different. Otherwise, KL-divergence
-                will be used as the metric and its value to be compared with pre-set epsilon value. For Particles
-                messages, the particles will be assumed to be identical, and the weights will be compared by treating
-                them as probs to a Categorical distribution (assuming the weights are already properly normalized),
-                from which the KL-divergence value is extracted.
-              The following KL formula is used:
-                    KL(old || new) = E[ log(old(x) / new(x) ],   x ~ old(x)
+
+            Messages will be deemed difference in the following cases:
+                - if they are of different types,
+                - if they are both Parameter type and the batch average L2 distance between the two parameter tensors
+                    is larger than epsilon,
+                - if they are both Particles type and they possess either different particle values or different
+                    sampling log densities,
+                - if they are both Particles type, and they possess the same particles values and same sampling log
+                    densities, but the batch average cosine similarity distance between the two particle weight tensors
+                    is larger than epsilon.
+
             If clone is True, then will store a cloned new_msg
         """
         assert isinstance(new_msg, Message)
         # Check new message shape
-        assert self.msg_shape == new_msg.s_shape + new_msg.b_shape + new_msg.e_shape
-        assert self.memory is None or (self.memory.s_shape == new_msg.s_shape and
-                                       self.memory.b_shape == new_msg.b_shape and
-                                       self.memory.e_shape == new_msg.e_shape)
+        assert self.msg_shape == new_msg.size()
+        assert self.memory is None or self.memory.same_size_as(new_msg)
 
-        # If check_diff is False or no existing message or message types are different, will replace existing message
-        if self.memory is None or check_diff is False or new_msg.type != self.memory.type:
+        # Will replace the memory immediately if any one of the following conditions is met:
+        #   - self.memory is None
+        #   - check_diff is False
+        #   - new message has different type
+        #   - message type is Particles and new message has different particle values and/or sampling log densities
+        if self.memory is None or check_diff is False or new_msg.type != self.memory.type or \
+                (new_msg.type == MessageType.Particles and not (torch.equal(self.memory.particles, new_msg.particles) and
+                                                                torch.equal(self.memory.log_density, new_msg.log_density))):
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
             return
 
         # Otherwise, check difference by KL-divergence
-        if new_msg.type in [MessageType.Tabular, MessageType.Distribution]:
-            # If message type is Tabular or Distribution, compute KL directly
-            p = self.memory.dist
-            q = new_msg.dist
+        if self.memory.type == MessageType.Parameter:
+            # For Parameter message, compare batch average L2 distance
+            # Parameter tensor has shape (batch_shape + param_shape), with param_shape of length 1
+            # L2 distance is computed along param_shape dimension, i.e., the -1 dimension
+            diff = new_msg.parameters - self.memory.parameters
+            val = diff.norm(dim=-1).mean()
         else:
-            # Otherwise, message type are Particles, so we will treats the particle weights as 'probs' to Categorical
-            #   distributions and instantiate temporary distribution instance
-            # Need to permute the dimension because we are taking the particle indexing dimension as the probs dimension
-            n_dims = len(self.memory.weights.shape)
-            p_probs = self.memory.weights.permute(list(range(1, n_dims)) + [0])
-            q_probs = new_msg.weights.permute(list(range(1, n_dims)) + [0])
-            p = DistributionServer.param2dist(Categorical, p_probs, self.memory.b_shape, torch.Size([]))
-            q = DistributionServer.param2dist(Categorical, q_probs, new_msg.b_shape, torch.Size([]))
-        val = DistributionServer.kl_norm(p, q)
+            # For Particles message, compare batch average cosine similarity distance
+            # Particle weights has shape (sample_shape + batch_shape), with sample_shape of length 1
+            # cosine similarity distance is computed along sample_shape dimension. i.e., the 0 dimension
+            val = cosine_similarity(new_msg.weights, self.memory.weights, dim=0).mean()
 
-        # Compare KL value with pre-set epsilon
+        # Compare distance value with epsilon
         if val > self.epsilon:
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
@@ -479,6 +497,7 @@ class WMVN(VariableNode):
             FAN node in Lisp Sigma. Combination can be carried out if incoming messages are all Tabular, all exponential
             Distribution, all homogeneous Particles (i.e. messages with same particle values), or a mixture of
             homogeneous Particles with any Distribution.
+
         Following combination procedure is carried out to conform to the standard of all inference methods
 
         1. If there are Particles incoming messages:
@@ -921,16 +940,83 @@ class RelMapNode(AlphaFactorNode):
             diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto
             the diagonals of a larger message tensor.
     """
-    def __init__(self, name, arg2var, var2arg):
+    def __init__(self, name, arg2var, var2arg, arg2var_map):
+        """
+            Necessary data structure:
+
+            :param  arg2var:    dictionary mapping predicate argument Variable instance to pattern variable Variable
+                                    instance
+            :param  var2arg:    dictionary mapping pattern variable Variable instance to predicate argument Variable
+                                    instance
+            :param  arg2var_map:    dictionary mapping predicate argument Variable instance to VariableMap instance
+        """
         super(RelMapNode, self).__init__(name)
         self.pretty_log["node type"] = "Relation Variable Mapping Node"
         
         assert isinstance(name, str)
         assert isinstance(arg2var, dict)
         assert isinstance(var2arg, dict)
+        assert isinstance(arg2var_map, dict)
 
         self.arg2var = arg2var
         self.var2arg = var2arg
+        self.arg2var_map = arg2var_map
+
+        # Obtain mapping dictionary and inverse mapping dictionary
+        self.arg2var_map_tuple = {arg: var_map.get_map() for arg, var_map in self.arg2var_map.items()}
+        self.arg2var_map_inv_tuple = {arg: var_map.get_inverse_map() for arg, var_map in self.arg2var_map.items()}
+
+    def inward_compute(self):
+        """
+            Inward computation. Convert predicate relational arguments to pattern relational variables. Apply mappings
+                to relational variable's values, if specified.
+
+            For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the
+                inverse mapping should be used to map predicate arguments to pattern variables.
+
+            Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument
+                and pattern variable respectively. However to be user friendly this should be checked beforehand by
+                compiler.
+            Note that domain should be a subset of predicate argument size range, but image should be exactly equal to
+                the pattern variable size range
+        """
+        in_ld, out_ld = self.labeled_ld_pair['inward']
+        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
+        msg = in_ld.read()
+        assert isinstance(msg, Message)
+        in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
+
+        # Check that given data structures agree with variable lists of the incident variable node
+        assert set(self.arg2var.keys()) == set(in_rel_var_list)
+        assert set(self.var2arg.keys()) == set(out_rel_var_list)
+        # Check that mapping's domain and image agree with variables' sizes
+        #   Note that for inward computation we are using the inverse map
+        for arg, var_map_tuple in self.arg2var_map_inv_tuple.items():
+            pat_var = self.arg2var[arg]
+            _, domain, image = var_map_tuple
+            assert domain.issubset(set(range(arg.size)))
+            assert image == set(range(pat_var.size))
+
+        # 1. First, for each predicate argument that specifies a VariableMap, select entries along that dimension
+        #       according to VariableMap
+        #    For this we should use original forward mapping, because we are selecting "image" to place in "domain", in
+        #       the order mandated by domain
+        #    Note that we have guaranteed that forward mapping's domain is equal to pattern variable's size range
+        for arg, var_map_tuple in self.arg2var_map_tuple.items():
+            pat_var = self.arg2var[arg]
+            dim = in_rel_var_list.index(arg)
+            map_dict,  _, _ = var_map_tuple
+            indices = torch.tensor(list(map_dict[i] for i in range(pat_var.size)), dtype=torch.long)
+            msg = msg.batch_index_select(dim, indices)
+
+        # 2. The step above guarantees that for any dimensions that share the same pattern variable, their axis values
+        #       directly correspond to the pattern variable's value.
+        #    Now we should collapse the dimensions that share the same pattern variable, by selecting the diagonal
+        #       entries across these dimensions.
+
+
+    def outward_compute(self):
+        pass
 
 
 class ExpSumNode(AlphaFactorNode):
@@ -989,7 +1075,6 @@ class GFN(AlphaFactorNode):
         Induce a message computation task for each of the outgoing link.
     """
     pass
-
 
 
 
