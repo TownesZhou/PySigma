@@ -279,6 +279,12 @@ class Message:
 
         return new_msg
 
+    def __iadd__(self, other):
+        """
+            Overloading self-addition operator '+='
+        """
+        return self.__add__(other)
+
     def __mul__(self, other):
         """
             Overloading multiplication operator '*'. Implements scalar multiplication semantics.
@@ -342,6 +348,12 @@ class Message:
                                   particles=self.particles, weights=new_weights, log_density=self.log_density)
 
         return new_msg
+
+    def __imul__(self, other):
+        """
+            Overloading self-multiplication operator '*='
+        """
+        return self.__mul__(other)
 
     def __str__(self):
         if self.type == MessageType.Parameter:
