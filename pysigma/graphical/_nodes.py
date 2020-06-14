@@ -503,27 +503,28 @@ class WMVN(VariableNode):
         Gate node connecting predicate structure to conditionals.
 
         Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
-            FAN node in Lisp Sigma. Combination can be carried out if incoming messages are all Tabular, all exponential
-            Distribution, all homogeneous Particles (i.e. messages with same particle values), or a mixture of
-            homogeneous Particles with any Distribution.
+            FAN node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there
+            exist Particles type messages but all of them are homogeneous (sharing the same particle values as well as
+            sampling log densities).
 
         Following combination procedure is carried out to conform to the standard of all inference methods
 
-        1. If there are Particles incoming messages:
+        1. If there are Particles type incoming messages:
             a. Ensure that all particle lists are homogeneous
-            b. If there are other Distributions/Tabular messages, draw a homogeneous particle list from the carried
-                distribution with each particle's weight computed by
+            b. If there are other Parameter messages, convert the parameter into distribution instance in the
+                pre-specified distribution class, query the log pdf of the homogeneous particle lists w.r.t. this
+                distribution instance, and compute the weights by
                         exp(log_pdf - sampling_log_pdf)
                 up to a renormalization factor. In other words, the weight is the pdf of the particle evaluated at the
-                distribution, inversely weighted by the sampling density of the particle from its original sampling
+                distribution, inversely weighted by the sampling density of the particle from its ORIGINAL sampling
                 distribution.
             c. Combine all particle list by taking the element-wise product of all associated weights as the new weight
-                and renormalize.
-        2. If messages are all Distributions:
-            a. Ensure that they are all the same class of distribution, and that it is an exponential class distribution.
-            b. Combine by taking the sum of the distribution's Natural parameters
-        3. If messages are all Tabular:
-            a. Combine by taking factor product.
+                and re-normalize, i.e., addition operation defined for the Particles messages.
+        2. If messages are all Parameter type:
+            a. Sum over the parameters using the addition operation defined for the Parameter messages.
+
+        Since occasionally querying log pdf is to be performed, WMVN thus needs to know the distribution class the
+            predicate it belongs to is assuming.
 
         When combining messages, will exclude message from the link to which the combined message is to send to (if
             such a bidirected link exists). This implements the Sum-Product algorithm's variable node semantics, if
@@ -532,10 +533,13 @@ class WMVN(VariableNode):
         Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
             share the same set of incoming links that provide the messages, previously computed result will be reused
     """
-    def __init__(self, name, index_var, rel_var_list, ran_var_list):
+    def __init__(self, name, index_var, rel_var_list, ran_var_list, dist_class):
+        assert issubclass(dist_class, Distribution)
         super(WMVN, self).__init__(name, index_var, rel_var_list, ran_var_list)
         self.pretty_log["node type"] = "Working Memory Variable Node"
 
+        # Distribution class the Predicate self belongs to is assuming
+        self.dist_class = dist_class
         # Cache for temporarily saving computation result for combination
         self.cache = {}
 
@@ -557,12 +561,15 @@ class WMVN(VariableNode):
         # Otherwise, combine messages
         else:
             for out_ld in self.out_linkdata:
+                # The tuple of all incoming linkdata that are not connected to the factor node the selected outgoing
+                #   linkdata is connected to.
+                # Use tuple here because tuple is hashable and we will use it as keys to cache dictionary
                 in_lds = tuple(in_ld for in_ld in self.in_linkdata if in_ld.fn is not out_ld.fn)
 
                 # Check if there's cached data. If yes, use cached result
                 if in_lds in self.cache.keys():
                     out_msg = self.cache[in_lds]
-                # Otherwise, compute conbimed message
+                # Otherwise, compute combined message
                 else:
                     in_msgs = tuple(in_ld.read() for in_ld in in_lds)
                     # 1. Find if there's any Particles message
@@ -572,79 +579,51 @@ class WMVN(VariableNode):
                         particle_lds = tuple(ld for ld in in_lds if ld.read().type == MessageType.Particles)
                         tmp_msg, tmp_ld = particle_msgs[0], particle_lds[0]
                         for msg, in_ld in zip(particle_msgs, particle_lds):
-                            assert msg.particles == tmp_msg.particles, \
-                                "At WMVN '{}': Incoming Particle message's particle values from  linkdata '{}' does " \
-                                "not agree with that of incoming Particle message from linkdata '{}'"\
+                            assert torch.equal(tmp_msg.particles, msg.particles), \
+                                "At WMVN '{}': When attempting to combine incoming messages, found that incoming " \
+                                "Particle message's particle values from  linkdata '{}' does not agree with that of " \
+                                "incoming Particle message from linkdata '{}'"\
                                 .format(self.name, in_ld, tmp_ld)
                             assert msg.log_density == tmp_msg.log_density, \
-                                "At WMVN '{}': Incoming Particle message's sampling log density from linkdata '{}' " \
-                                "does not agree with that of incoming Particle message  from linkdata '{}'" \
+                                "At WMVN '{}': When attempting to combine incoming messages, found that incoming " \
+                                "Particle message's sampling log density from linkdata '{}' does not agree with that of " \
+                                "incoming Particle message  from linkdata '{}'" \
                                 .format(self.name, in_ld, tmp_ld)
 
-                        # 1.b Find any distribution message, if they exists, draw particle list
-                        dist_msgs = tuple(msg for msg in in_msgs if msg.type in [MessageType.Distribution,
-                                                                                 MessageType.Tabular])
+                        # 1.b Find any Parameter type message, if they exist, draw particle list
+                        param_msgs = tuple(msg for msg in in_msgs if msg.type is MessageType.Parameter)
                         particles = tmp_msg.particles
                         sampling_log_density = tmp_msg.log_density
-                        weights_list = list(msg.weights for msg in particle_msgs)
-                        for dist_msg in dist_msgs:
-                            # 1.b. Get log-pdf of the particles from this distribution
-                            log_density = DistributionServer.log_pdf(dist_msg.dist, particles)
-                            # 1.b. Compute new weights by inversely weighting log pdf with sampling log pdf
+                        s_shape = tmp_msg.s_shape
+                        b_shape = tmp_msg.b_shape
+                        e_shape = tmp_msg.e_shape
+
+                        # 2.b Compute particle weights w.r.t. distributions induced by the Parameter type messages
+                        candidate_msgs = list(particle_msgs)
+                        for param_msg in param_msgs:
+                            # Obtain distribution instance
+                            dist = DistributionServer.param2dist(self.dist_class, param_msg.parameters, b_shape, e_shape)
+                            # Query log pdf
+                            log_density = DistributionServer.log_pdf(dist, particles)
+                            # Compute new weights by inversely weighting log pdf with sampling log pdf
                             weights = torch.exp(log_density - sampling_log_density)
-                            # 1.b. first normalize. Sum is taken over the first dimension
-                            weight_sum = weights.sum(dim=0, keepdim=True)
-                            weights *= (1 / weight_sum)
-                            # 1.b. Append this weights
-                            weights_list.append(weights)
+                            # Convert to Particles message and append to candidate msg list. Normalization of weights
+                            #   is taken care of during Message initialization
+                            msg = Message(MessageType.Particles,
+                                          sample_shape=s_shape, batch_shape=b_shape, event_shape=e_shape,
+                                          particles=particles, weights=weights, log_density=log_density)
+                            candidate_msgs.append(msg)
 
-                        # 1.c. Take element-wise product of all weights
-                        new_weights = torch.tensor(1)
-                        for weights in weights_list:
-                            new_weights *= weights
-                        # 1.c. Normalize again
-                        weight_sum = new_weights.sum(dim=0, keepdim=True)
-                        new_weights *= (1 / weight_sum)
+                        # Combine messages
+                        out_msg = candidate_msgs[0]
+                        for msg in candidate_msgs[1:]:
+                            out_msg += msg
 
-                        # Generate message
-                        out_msg = Message(MessageType.Particles, self.s_shape, self.b_shape, self.e_shape, None,
-                                          particles, new_weights, sampling_log_density)
-
-                    # 2. Otherwise if all messages are Distribution
-                    elif all(msg.type == MessageType.Distribution for msg in in_msgs):
-                        tmp_msg, tmp_ld = in_msgs[0], in_lds[0]
-                        dist_class = type(tmp_msg.dist)
-                        # 2.a. Ensure all are the same exponential class of distribution
-                        for msg, in_ld in zip(in_msgs, in_lds):
-                            assert type(msg.dist) == dist_class, \
-                                "At WMVN '{}': Incoming Distribution message's distribution class from linkdata '{}' " \
-                                "is not the same as that from linkdata '{}'".format(self.name, in_ld, tmp_ld)
-                            assert isinstance(msg.dist, torch.distributions.ExponentialFamily), \
-                                "At WMVN '{}': All incoming messages are Distribution type, so expect them all of " \
-                                "exponential class. However found distribution type '{}' in the message from linkdata " \
-                                "'{}'".format(self.name, type(msg.dist), in_ld)
-                        # 2.b. Combine by taking the sum of the distributions' natural parameters
-                        sum_param = torch.tensor(0)
-                        for msg in in_msgs:
-                            sum_param += DistributionServer.exp_dist2natural(msg.dist)
-                        # Generate message
-                        new_dist = DistributionServer.natural2exp_dist(dist_class, sum_param, self.b_shape, self.e_shape)
-                        out_msg = Message(MessageType.Distribution, self.s_shape, self.b_shape, self.e_shape, new_dist,
-                                          None, None, None)
-
-                    # 3. Otherwise, it can only be all Tabular messages
-                    else:
-                        assert all(msg.type == MessageType.Tabular for msg in in_msgs)
-                        # 3.a. Combine by taking factor product
-                        factors = list(DistributionServer.dist2param(msg.dist) for msg in in_msgs)
-                        prod_factor = torch.tensor(1)
-                        for factor in factors:
-                            prod_factor *= factor
-                        # Generate message. Note that no need to normalize factor because normalization will be taken
-                        #   care by Categorical init
-                        new_dist = DistributionServer.param2dist(Categorical, prod_factor, self.b_shape, self.e_shape)
-                        out_msg = Message(MessageType.Tabular, self.s_shape, self.b_shape, self.e_shape, new_dist,
-                                          None, None, None)
+                    # 2. Otherwise if all messages are Parameter type
+                    elif all(msg.type == MessageType.Parameter for msg in in_msgs):
+                        out_msg = in_msgs[0]
+                        for msg in in_msgs[1:]:
+                            out_msg += msg
 
                 # Cache result
                 self.cache[in_lds] = out_msg
