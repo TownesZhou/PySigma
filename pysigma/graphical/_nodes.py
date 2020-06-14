@@ -730,14 +730,9 @@ class WMFN(FactorNode):
                 old_content * (1 - decay_rate) + new_content
             therefore if decay_rate is 1 (default value), the old content will be completely forgotten.
 
-        The weighted sum procedure for different WMFN types and message types:
-            - For 'param' type of WMFN:
-                - Assume incoming message is Particle type, presenting parameters as particles in shape
-                    (b_shape + e_shape)
-                - Perform weighted sum on the particle values
-            - For 'event' type of WMFN:
-                - If message is Particle type, perform the weighted sum on the particle weights
-                - If message is Distribution or Tabular, perform the weighted sum on the distribution parameters
+        The weighted sum procedure is viewed as a linear combination process in the message space. The linear operator
+            (addition, scalar multiplication) definitions are different depending on the content type. Please see
+            Message class documentation for more info.
 
         Note that the incoming message will always be cloned before performing weighted sum update. This is to prevent
             any parts of the memory message from in-place change by some parts elsewhere in the graph.
@@ -778,56 +773,25 @@ class WMFN(FactorNode):
         assert len(self.in_linkdata) > 0
         in_ld = self.in_linkdata[0]
         # Clone incoming message
-        msg = in_ld.read().clone()
-        assert self.memory is None or (msg.type == self.memory.type and
-                                       msg.s_shape == self.memory.s_shape and
-                                       msg.b_shape == self.memory.b_shape and
-                                       msg.e_shape == self.memory.e_shape)
+        new_msg = in_ld.read().clone()
+        assert self.memory is None or (isinstance(self.memory, Message) and new_msg.type == self.memory.type and
+                                       new_msg.size() == self.memory.size())
 
         # If memory is None or decay_rate is 1, directly replace memory buffer content
         if self.memory is None or self.decay_rate == 1:
-            self.memory = msg
-
+            self.memory = new_msg
         # Otherwise, perform weighted sum update
         else:
-            # For param type of content, perform update on particle values
-            if self.content_type == 'param':
-                # Ensure message is Particle type
-                assert msg.type is MessageType.Particles
-                new_val = (1 - self.decay_rate) * self.memory.particles + msg.particles
-                self.memory = Message(MessageType.Particles, msg.s_shape, msg.b_shape, msg.e_shape, None, new_val,
-                                      msg.weights, msg.log_density)
-
-            # For event type of content
-            else:
-                # If message is Particle type, perform update on particle weights, and renoramlize
-                if msg.type is MessageType.Particles:
-                    # Ensure that incoming message's particle values are the same as that of the memory message
-                    assert msg.particles == self.memory.particles
-                    new_weights = (1 - self.decay_rate) * self.memory.weights + msg.weights
-                    # Normalize weights
-                    weight_sum = new_weights.sum(dim=0, keepdim=True)
-                    new_weights *= (1 / weight_sum)
-                    self.memory = Message(MessageType.Particles, msg.s_shape, msg.b_shape, msg.e_shape, None,
-                                          msg.particles, new_weights, msg.log_density)
-
-                # Otherwise, perform update directly on the distribution's parameters
-                else:
-                    old_param = DistributionServer.dist2param(self.memory.dist)
-                    in_param = DistributionServer.dist2param(msg.dist)
-                    new_param = (1 - self.decay_rate) * old_param + in_param
-                    new_dist = DistributionServer.param2dist(type(msg.dist), new_param, msg.b_shape, msg.e_shape)
-                    self.memory = Message(msg.type, msg.s_shape, msg.b_shape, msg.e_shape, new_dist, None, None, None)
+            self.memory = new_msg + self.memory * (1 - self.decay_rate)
 
     def compute(self):
         """
             Sends memory content toward outgoing link (if memory is not None)
         """
+        super(WMFN, self).compute()
         assert len(self.out_linkdata) > 0
         if self.memory is not None:
             self.out_linkdata[0].write(self.memory)
-            
-        super(WMFN, self).compute()
 
     # Overrides so that quiescence for WMFN is equivalent to visited
     def check_quiesce(self):
