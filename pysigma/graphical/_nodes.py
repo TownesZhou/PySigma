@@ -82,7 +82,7 @@ class LinkData:
         self.memory = None
         self.new = False
 
-    def set(self, new_msg, check_diff=True, clone=False):
+    def write(self, new_msg, check_diff=True, clone=False):
         """
             Set the link message memory to the new message arriving at this link.
 
@@ -98,6 +98,9 @@ class LinkData:
                 - if they are both Particles type, and they possess the same particles values and same sampling log
                     densities, but the batch average cosine similarity distance between the two particle weight tensors
                     is larger than epsilon.
+
+            If want to set a new message of a different message type than the current memory, make sure reset_shape()
+                is first called so that shape check works for the new message.
 
             If clone is True, then will store a cloned new_msg
         """
@@ -188,7 +191,7 @@ class Node(ABC):
                 quiesced = False
                 break
         self.quiescence = quiesced
-        return quiesced
+        return self.quiescence
 
     @abstractmethod
     def add_link(self, linkdata):
@@ -317,7 +320,7 @@ class DFN(FactorNode):
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
-            out_ld.set(msg)
+            out_ld.write(msg)
             
         super(DFN, self).compute()
 
@@ -344,7 +347,7 @@ class DVN(VariableNode):
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
-            out_ld.set(msg)
+            out_ld.write(msg)
             
         super(DVN, self).compute()
 
@@ -482,7 +485,7 @@ class LTMFN(FactorNode):
             else:
                 out_msg = Message(MessageType.Distribution, self.s_shape, self.b_shape, self.e_shape, self.dist)
         out_ld = self.out_linkdata[0]
-        out_ld.set(out_msg)
+        out_ld.write(out_msg)
         
         super(LTMFN, self).compute()
 
@@ -544,7 +547,7 @@ class WMVN(VariableNode):
                                   "the factor node. Please check if the model is properly defined"
                                   .format(self.name, out_ld.fn.name))
                 else:
-                    out_ld.set(msg)
+                    out_ld.write(msg)
         # Otherwise, combine messages
         else:
             for out_ld in self.out_linkdata:
@@ -640,7 +643,7 @@ class WMVN(VariableNode):
                 # Cache result
                 self.cache[in_lds] = out_msg
                 # Send message
-                out_ld.set(out_msg)
+                out_ld.write(out_msg)
 
             # Clear cache
             self.cache = {}
@@ -715,7 +718,7 @@ class PBFN(FactorNode):
         out_ld = self.out_linkdata[0]
         out_msg = Message(MessageType.Particles, self.s_shape, self.buffer, self.e_shape, None, self.buffer,
                           self.weights, 0)
-        out_ld.set(out_msg)
+        out_ld.write(out_msg)
         
         super(PBFN, self).compute()
 
@@ -835,7 +838,7 @@ class WMFN(FactorNode):
         """
         assert len(self.out_linkdata) > 0
         if self.memory is not None:
-            self.out_linkdata[0].set(self.memory)
+            self.out_linkdata[0].write(self.memory)
             
         super(WMFN, self).compute()
 
