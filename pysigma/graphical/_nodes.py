@@ -317,12 +317,11 @@ class DFN(FactorNode):
         super(DFN, self).add_link(linkdata)
 
     def compute(self):
+        super(DFN, self).compute()
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
             out_ld.write(msg)
-            
-        super(DFN, self).compute()
 
 
 class DVN(VariableNode):
@@ -344,12 +343,11 @@ class DVN(VariableNode):
         super(DVN, self).add_link(linkdata)
 
     def compute(self):
+        super(DVN, self).compute()
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
             out_ld.write(msg)
-            
-        super(DVN, self).compute()
 
 
 """
@@ -479,6 +477,7 @@ class LTMFN(FactorNode):
         """
             Generate message from assumed distribution and send toward WMVN_OUT
         """
+        super(LTMFN, self).compute()
         assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
 
@@ -493,7 +492,6 @@ class LTMFN(FactorNode):
                               batch_shape=self.b_shape, param_shape=self.p_shape, parameters=self.param)
 
         out_ld.write(out_msg)
-        super(LTMFN, self).compute()
 
 
 class WMVN(VariableNode):
@@ -544,6 +542,7 @@ class WMVN(VariableNode):
         self.cache = {}
 
     def compute(self):
+        super(WMVN, self).compute()
         # Relay message if only one incoming link
         if len(self.in_linkdata) == 1:
             in_ld = self.in_linkdata[0]
@@ -633,8 +632,6 @@ class WMVN(VariableNode):
             # Clear cache
             self.cache = {}
 
-        super(WMVN, self).compute()
-
 
 class PBFN(FactorNode):
     """
@@ -643,8 +640,11 @@ class PBFN(FactorNode):
         Receive perception / observation / evidence as particle list and send to WMVN.
             Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
             in the caller of set_perception()
+
         Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.
+
         Perception is buffered, and will be latched to next cycle if no new observation is specified.
+
         Overwrite check_quiesce() so that quiescence is determined by self.visited, i.e., whether compute() has been
             carried out
     """
@@ -665,19 +665,21 @@ class PBFN(FactorNode):
             Need to specify weights corresponding to the observation particles. Sampling log density on the other hand
                 will be set to 0 in the outgoing Particle message.
 
-            :param obs:     Observation tensor. torch.Tensor. shape ([num_obs] + b_shape + e_shape)
-            :param weights: Weight tensor. torch.Tensor. shape ([num_obs] + b_shape)
+            :param obs:     Observations. torch.Tensor. shape ([num_obs] + b_shape + e_shape)
+            :param weights: Weights. torch.Tensor or int. shape ([num_obs] + b_shape) if tensor, otherwise an int of 1
+                                to indicate uniform weights
             :param num_obs: torch.Size
             :param b_shape: torch.Size
             :param e_shape: torch.Size
         """
         assert isinstance(obs, torch.Tensor)
-        assert isinstance(weights, torch.Tensor)
+        assert isinstance(weights, (torch.Tensor, int))
         assert isinstance(num_obs, int)
         assert isinstance(b_shape, torch.Size)
         assert isinstance(e_shape, torch.Size)
         assert obs.shape == torch.Size([num_obs]) + b_shape + e_shape
-        assert weights.shape == torch.Size([num_obs]) + b_shape
+        assert (isinstance(weights, torch.Tensor) and weights.shape == torch.Size([num_obs]) + b_shape) or \
+               (isinstance(weights, int) and weights == 1)
 
         self.buffer = obs
         self.weights = weights
@@ -686,7 +688,7 @@ class PBFN(FactorNode):
         self.e_shape = e_shape
 
     def add_link(self, linkdata):
-        # Ensure that not incoming link and only one outgoing link connecting to a WMVN
+        # Ensure that no incoming link and only one outgoing link connecting to a WMVN
         assert isinstance(linkdata, LinkData)
         assert not linkdata.to_fn
         assert len(self.out_linkdata) == 0
@@ -694,6 +696,7 @@ class PBFN(FactorNode):
         super(PBFN, self).add_link(linkdata)
 
     def compute(self):
+        super(PBFN, self).compute()
         # If no perception has been set in the buffer, then do not send
         if self.buffer is None:
             return
@@ -701,11 +704,10 @@ class PBFN(FactorNode):
         # Otherwise, send either way. Sampling log density set to uniform 0
         assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
-        out_msg = Message(MessageType.Particles, self.s_shape, self.buffer, self.e_shape, None, self.buffer,
-                          self.weights, 0)
+        out_msg = Message(MessageType.Particles,
+                          sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
+                          particles=self.buffer, weights=self.weights, log_density=0)
         out_ld.write(out_msg)
-        
-        super(PBFN, self).compute()
 
     # Override check_quiesce() so that quiescence is equivalent to visited
     def check_quiesce(self):
