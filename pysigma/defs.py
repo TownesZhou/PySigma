@@ -155,9 +155,10 @@ class Message:
                                     represent the identity. Must present if message type is Parameters.
             :param particles:   torch.Tensor. Of shape (sample_shape + batch_shape + event_shape). Must present if
                                     message type is Particles.
-            :param weights:     torch.Tensor. Of shape (sample_shape + batch_shape) if weights are not uniform.
-                                    Alternatively, can be an int of 1 to represent uniform weights. Must present if
-                                    message type is Particles.
+            :param weights:     torch.Tensor. Of shape (sample_shape + batch_shape) if weights are not uniform. In this
+                                    case the weights tensor will be normalize over sample_shape dimension so that it
+                                    sums to 1 over this dimension. Alternatively, can be an int of 1 to represent
+                                    uniform weights. Must present if message type is Particles.
             :param log_density: torch.Tensor. Of shape (sample_shape + batch_shape) if log densities are not uniform,
                                     i.e. if the particles were not drawn from an uniform distribution. Alternatively,
                                     can be an int of 0 to represent uniform densities. Note that this field generally
@@ -218,7 +219,7 @@ class Message:
             assert self.weights is not None
             assert self.log_density is not None
 
-        # Check shape and values
+        # Check shape and values. Adjust if necessary
         if isinstance(self.parameters, torch.Tensor):
             assert self.b_shape + self.p_shape == self.parameters.shape
         if isinstance(self.particles, torch.Tensor):
@@ -227,11 +228,9 @@ class Message:
             assert self.s_shape + self.b_shape == self.weights.shape
             # Check that values are non-negative
             assert torch.all(self.weights > 0), "Found negative values in particle weights"
-            # Check that values sum to 1 across sample dimension
-            weights_sum = weights.sum(dim=0)
-            assert torch.all((torch.ones_like(weights_sum) - self.epsilon) < weights_sum) and \
-                   torch.all((torch.ones_like(weights_sum) + self.epsilon) > weights_sum), \
-                "Particle weights do not sum to 1 across sample dimension. Found: '{}'".format(weights_sum)
+            # Normalize the values so that weights sum to 1 across sample dimension
+            weights_sum = self.weights.sum(dim=0, keepdim=True)
+            self.weights *= (1 / weights_sum)
         if isinstance(self.log_density, torch.Tensor):
             assert self.s_shape + self.b_shape == self.log_density.shape
 
@@ -272,8 +271,6 @@ class Message:
                 "For particle messages, only ones with matching log sampling densities can be added together"
             # Take element-wise product
             new_weights = self.weights * other.weights
-            # Normalize results
-            new_weights *= torch.tensor(1.) / new_weights.sum(dim=0, keepdim=True)
             new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
                               particles=self.particles, weights=new_weights, log_density=self.log_density)
 
@@ -342,9 +339,8 @@ class Message:
             else:
                 # Take weights tensor to the power of the scalar
                 new_weights = torch.pow(self.weights, s_b_other)
-                # Normalize
-                new_weights *= torch.tensor(1.) / new_weights.sum(dim=0, keepdim=True)
-                new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
+                new_msg = Message(self.type,
+                                  sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
                                   particles=self.particles, weights=new_weights, log_density=self.log_density)
 
         return new_msg
