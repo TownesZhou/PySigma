@@ -103,7 +103,7 @@ class Message:
 
         Message shape constraints:
             - sample_shape must have exactly length 1.
-            - batch_shape can have arbitrary positive length, but the size of each dimension must be at least 2.
+            - batch_shape can have arbitrary positive length.
             - event_shape must have exactly length 1.
             - param_shape must have exactly length 1.
 
@@ -145,10 +145,9 @@ class Message:
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
             :param msg_type:    one of MessageType
-            :param param_shape:     torch.Size. Must specify if message type is Parameter. Can be a shape of arbitrary
-                                        length, but the size of each dimension must be at least 2.
+            :param param_shape:     torch.Size. Must specify if message type is Parameter. Must be a shape of length 1.
             :param sample_shape:    torch.Size. Must specify if message type is Particles. Must be a shape of length 1.
-            :param batch_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of length 1.
+            :param batch_shape:     torch.Size. Must specify if message type is Particles.
             :param event_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of length 1.
             :param parameters:  torch.Tensor. Of shape (batch_shape + param_shape) if the parameters do not represent
                                     the identity in the parameter vector space. Alternatively, can be an int of 0 to
@@ -170,7 +169,7 @@ class Message:
         assert isinstance(msg_type, MessageType)
         assert param_shape is None or isinstance(param_shape, torch.Size) and len(param_shape) == 1
         assert sample_shape is None or isinstance(sample_shape, torch.Size) and len(sample_shape) == 1
-        assert batch_shape is None or isinstance(batch_shape, torch.Size) and all(d >= 2 for d in batch_shape)
+        assert batch_shape is None or isinstance(batch_shape, torch.Size)
         assert event_shape is None or isinstance(event_shape, torch.Size) and len(event_shape) == 1
 
         assert parameters is None or (isinstance(parameters, int) and parameters == 0) or \
