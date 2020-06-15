@@ -252,6 +252,10 @@ class Message:
                 "(batch_shape, param_shape) = '{}'".format((self.b_shape, self.p_shape), (other.b_shape, other.p_shape))
             # Tensor addition
             new_parameters = self.parameters + other.parameters
+
+            # edge case when parameter shape is made to Size([]) before, and here to make it back to Size([1])
+            if self.p_shape == torch.Size([]):
+                self.p_shape = torch.Size([1])
             new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
 
         # Addition for Particles type
@@ -263,12 +267,25 @@ class Message:
                     .format((self.s_shape, self.b_shape, self.e_shape), (other.s_shape, other.b_shape, other.e_shape))
             assert torch.all(self.particles.eq(other.particles)), \
                 "For particle messages, only ones with matching particle values can be added together. "
-            assert torch.all(self.log_density.eq(other.log_density)), \
+            assert isinstance(self.log_density, int) and isinstance(other.log_density, int) and \
+                   self.log_density == other.log_density == 0 or \
+                   torch.all(self.log_density.eq(other.log_density)), \
                 "For particle messages, only ones with matching log sampling densities can be added together"
+
             # Take element-wise product
+            # only if both weights are tensor(1), then the new_weights will be tensor(1)
             new_weights = self.weights * other.weights
-            new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                              particles=self.particles, weights=new_weights, log_density=self.log_density)
+
+            # case when the new weight is uniform
+            if isinstance(new_weights, torch.Tensor) and new_weights.size() == torch.Size([]) and \
+                    bool(new_weights == torch.tensor(1)):
+                new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape,
+                                  event_shape=self.e_shape,
+                                  particles=self.particles, weights=1, log_density=self.log_density)
+            else:
+                new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape,
+                                  event_shape=self.e_shape, particles=self.particles,
+                                  weights=new_weights, log_density=self.log_density)
 
         return new_msg
 
@@ -322,6 +339,14 @@ class Message:
                     else:
                         new_weights = torch.pow(torch.ones(*(self.s_shape + self.b_shape)), s_b_other)
                     new_weights *= torch.tensor(1.) / new_weights.sum(dim=0, keepdim=True)
+
+                    # edge case when sample shape is made to Size([]) before, and here to make it back to Size([1])
+                    if self.s_shape == torch.Size([]):
+                        self.s_shape = torch.Size([1])
+
+                    # edge case when event shape is made to Size([]) before, and here to make it back to Size([1])
+                    if self.e_shape == torch.Size([]):
+                        self.e_shape = torch.Size([1])
                     new_msg = Message(self.type, sample_shape=self.s_shape, batch_shape=self.b_shape,
                                       event_shape=self.e_shape,
                                       particles=self.particles, weights=new_weights, log_density=self.log_density)
@@ -467,6 +492,17 @@ class Message:
             # log_density has shape (s_shape + b_shape)
             new_log_density = self.log_density.permute(s_b_dims)
 
+        # edge case when parameter shape is made to Size([]) before, and here to make it back to Size([1])
+        if self.p_shape == torch.Size([]):
+            self.p_shape = torch.Size([1])
+
+        # edge case when sample shape is made to Size([]) before, and here to make it back to Size([1])
+        if self.s_shape == torch.Size([]):
+            self.s_shape = torch.Size([1])
+
+        # edge case when event shape is made to Size([]) before, and here to make it back to Size([1])
+        if self.e_shape == torch.Size([]):
+            self.e_shape = torch.Size([1])
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density)
@@ -513,6 +549,18 @@ class Message:
         if isinstance(self.log_density, torch.Tensor):
             # log_density has shape (s_shape + b_shape)
             new_log_density = torch.unsqueeze(self.log_density, s_dim)
+
+        # edge case when parameter shape is made to Size([]) before, and here to make it back to Size([1])
+        if self.p_shape == torch.Size([]):
+            self.p_shape = torch.Size([1])
+
+        # edge case when sample shape is made to Size([]) before, and here to make it back to Size([1])
+        if self.s_shape == torch.Size([]):
+            self.s_shape = torch.Size([1])
+
+        # edge case when event shape is made to Size([]) before, and here to make it back to Size([1])
+        if self.e_shape == torch.Size([]):
+            self.e_shape = torch.Size([1])
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
