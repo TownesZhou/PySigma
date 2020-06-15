@@ -620,7 +620,10 @@ class Message:
             Note that 'dim1' and 'dim2' are relative to the batch dimension. The appended dimension will be placed as
                 the last batch dimension, but before any event or param dimension.
 
-            This method is a mimic of torch.diagonal()
+            This method is a mimic of torch.diagonal(), with offset default to 0
+
+            :param dim1:    an int. Should be in range [-len(batch_shape), len(batch_shape) - 1]
+            :param dim2.    Same as 'dim1'
         """
         assert isinstance(dim1, int) and -len(self.b_shape) <= dim1 <= len(self.b_shape) - 1
         assert isinstance(dim2, int) and -len(self.b_shape) <= dim2 <= len(self.b_shape) - 1
@@ -660,6 +663,88 @@ class Message:
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
+    def batch_diag_embed(self, diag_dim=-1, target_dim1=-2, target_dim2=-1):
+        """
+            Creates a message whose diagonals of certain 2D planes (dimensions specified by 'target_dim1' and
+                'target_dim2') are filled by vectors of self (dimension specified by 'diag_dim'). The last dimension of
+                self is chosen by default as the diagonal entries to be filled, and the last two dimensions of the new
+                message are chosen by default as the 2D planes where the diagonal entries will be filled in.
+
+            The 2D planes will be shaped as square matrices, with the size of each dimension matches the size of the
+                diag_dim in self.
+
+            The length of returned message's batch shape will be the length of original message's batch shape plus 1.
+
+            This method is a mimic of torch.diag_embed(), with offset default to 0 plus an additional diag_dim argument.
+
+            :param diag_dim:        an int. Specifying a dimension of the original message. Should be in range
+                                        [-len(batch_shape), len(batch_shape) - 1]
+            :param target_dim1:     an int. Specifying a dimension of the returned message. Should be in range
+                                        [-len(batch_shape) - 1, len(batch_shape)]
+            :param target_dim2:     Same as 'target_dim1'
+        """
+        assert isinstance(diag_dim, int) and -len(self.b_shape) <= diag_dim <= len(self.b_shape) - 1
+        assert isinstance(target_dim1, int) and -len(self.b_shape) - 1 <= target_dim1 <= len(self.b_shape)
+        assert isinstance(target_dim2, int) and -len(self.b_shape) - 1 <= target_dim2 <= len(self.b_shape)
+
+        # Translate dim value to positive if it's negative
+        diag_dim = len(self.b_shape) + diag_dim if diag_dim < 0 else diag_dim
+        target_dim1 = len(self.b_shape) + 1 + target_dim1 if target_dim1 < 0 else target_dim1
+        target_dim2 = len(self.b_shape) + 1 + target_dim2 if target_dim2 < 0 else target_dim2
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_diag_dim = diag_dim + 1
+        s_target_dim1 = target_dim1 + 1
+        s_target_dim2 = target_dim2 + 1
+        # Get new batch shape. The size of target_dim1 and target_dim2 is determined by the size of diag_dim
+        diag_size = self.b_shape[diag_dim]
+        other_shape = list(self.b_shape[:diag_dim] + self.b_shape[diag_dim + 1:])
+        first_new_dim, second_new_dim = min(target_dim1, target_dim2), max(target_dim1, target_dim2)
+        other_shape.insert(first_new_dim, diag_size)
+        other_shape.insert(second_new_dim, diag_size)
+        new_b_shape = torch.Size(other_shape)
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        # Tensors fist need to have the diagonal entries dimension (diag_dim) permuted to the last dimension so that it
+        #   will be picked up by torch.diag_embed()
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            perm_order = list(range(len(self.b_shape + self.p_shape)))
+            perm_order.remove(diag_dim)
+            perm_order.append(diag_dim)
+            new_parameters = new_parameters.permute(perm_order)
+            new_parameters = torch.diag_embed(new_parameters, dim1=target_dim1, dim2=target_dim2)
+        if isinstance(self.particles, torch.Tensor):
+            # particles has shape (s_shape + b_shape + e_shape)
+            perm_order = list(range(len(self.s_shape + self.b_shape + self.p_shape)))
+            perm_order.remove(s_diag_dim)
+            perm_order.append(s_diag_dim)
+            new_particles = new_particles.permute(perm_order)
+            new_particles = torch.diag_embed(new_particles, dim1=s_target_dim1, dim2=s_target_dim2)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            perm_order = list(range(len(self.s_shape + self.b_shape)))
+            perm_order.remove(s_diag_dim)
+            perm_order.append(s_diag_dim)
+            new_weights = new_weights.permute(perm_order)
+            new_weights = torch.diag_embed(new_weights, dim1=s_target_dim1, dim2=s_target_dim2)
+        if isinstance(self.log_density, torch.Tensor):
+            # log_density has shape (s_shape + b_shape)
+            perm_order = list(range(len(self.s_shape + self.b_shape)))
+            perm_order.remove(s_diag_dim)
+            perm_order.append(s_diag_dim)
+            new_log_density = new_log_density.permute(perm_order)
+            new_log_density = torch.diag_embed(new_log_density, dim1=s_target_dim1, dim2=s_target_dim2)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+
         return new_msg
 
 
