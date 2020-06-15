@@ -1,5 +1,6 @@
 from pysigma.defs import Message, MessageType
 import torch
+import pytest
 
 
 class TestInitMessage:
@@ -10,7 +11,7 @@ class TestInitMessage:
         vector shapes for batch, param, sample, and event
     """
 
-    def test_bx0_parameter(self):
+    def test_bx1_parameter(self):
         m1 = Message(MessageType.Parameter,
                      batch_shape=torch.Size([2]),
                      param_shape=torch.Size([1]),
@@ -26,21 +27,11 @@ class TestInitMessage:
         ss = str(m1)
         assert m2.size() == torch.Size([4])
 
-    def test_0xp_parameter(self):
-        m1 = Message(MessageType.Parameter,
-                     batch_shape=torch.Size([1]),
-                     param_shape=torch.Size([2]),
-                     parameters=torch.ones(2)
+        m3 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([4]),
+                     param_shape=torch.Size([3]),
+                     parameters=torch.ones(4, 3)
                      )
-
-        m2 = Message(MessageType.Parameter,
-                     batch_shape=torch.Size([1]),
-                     param_shape=torch.Size([2]),
-                     parameters=torch.zeros(2)
-                     )
-        assert m1.size() == torch.Size([2])
-        assert m2.size() == torch.Size([2])
-        assert m1.same_size_as(m2)
 
     def test_bxp_parameter(self):
         m1 = Message(MessageType.Parameter,
@@ -49,25 +40,59 @@ class TestInitMessage:
                      parameters=torch.ones(2, 2)
                      )
 
-        m2 = Message(MessageType.Parameter,
-                     batch_shape=torch.Size([3]),
-                     param_shape=torch.Size([2]),
-                     parameters=torch.zeros(3, 2)
-                     )
-        assert m1.size() == torch.Size([2, 2])
-        assert m2.size() == torch.Size([3, 2])
-        assert not m1.same_size_as(m2)
+    def test_bxp_parameter_wrong_dimension(self):
+        with pytest.raises(AssertionError):
+            m1 = Message(MessageType.Parameter,
+                         batch_shape=torch.Size([1]),
+                         param_shape=torch.Size([2]),
+                         parameters=torch.ones(2)
+                         )
 
-    def test_sx0x0_particles(self):
-        m = Message(MessageType.Particles,
-                    sample_shape=torch.Size([100]),
-                    batch_shape=torch.Size([1]),
-                    event_shape=torch.Size([1]),
-                    particles=torch.rand(100),
-                    weights=torch.tensor([0.01] * 100),
-                    log_density=torch.rand(100)
-                    )
-        assert m.size() == torch.Size([100])
+        with pytest.raises(AssertionError):
+            m = Message(MessageType.Parameter,
+                         batch_shape=torch.Size([2,1]),
+                         param_shape=torch.Size([2]),
+                         parameters=torch.ones(2, 2)
+                         )
+
+        with pytest.raises(AssertionError):
+            m = Message(MessageType.Parameter,
+                         batch_shape=torch.Size([2]),
+                         param_shape=torch.Size([2, 2]),
+                         parameters=torch.ones(2, 2)
+                         )
+
+
+    def test_particles_wrong_dimension(self):
+        with pytest.raises(AssertionError):
+            m = Message(MessageType.Particles,
+                        sample_shape=torch.Size([100]),
+                        batch_shape=torch.Size([1]),
+                        event_shape=torch.Size([1]),
+                        particles=torch.rand(100),
+                        weights=1,
+                        log_density=0
+                        )
+
+        with pytest.raises(AssertionError):
+            m = Message(MessageType.Particles,
+                        sample_shape=torch.Size([100]),
+                        batch_shape=torch.Size([3]),
+                        event_shape=torch.Size([1, 2]),
+                        particles=torch.rand(100),
+                        weights=1,
+                        log_density=0
+                        )
+
+        with pytest.raises(AssertionError):
+            m = Message(MessageType.Particles,
+                        sample_shape=torch.Size([100, 50]),
+                        batch_shape=torch.Size([3, 4]),
+                        event_shape=torch.Size([5]),
+                        particles=torch.rand(100),
+                        weights=1,
+                        log_density=0
+                        )
 
     def test_0xbx0_particles(self):
         m = Message(MessageType.Particles,
@@ -77,17 +102,6 @@ class TestInitMessage:
                     particles=torch.rand(10),
                     weights=torch.tensor([0.1] * 10),
                     log_density=torch.rand(10)
-                    )
-        assert m.size() == torch.Size([10])
-
-    def test_0x0xe_particles(self):
-        m = Message(MessageType.Particles,
-                    sample_shape=torch.Size([1]),
-                    batch_shape=torch.Size([1]),
-                    event_shape=torch.Size([10]),
-                    particles=torch.rand(10),
-                    weights=torch.tensor(1),
-                    log_density=torch.tensor(1)
                     )
         assert m.size() == torch.Size([10])
 
@@ -144,21 +158,20 @@ class TestMessageArithmetic:
 
     def test_addition_parameter_edge(self):
         m1 = Message(MessageType.Parameter,
-                     param_shape=torch.Size([1]),
-                     batch_shape=torch.Size([2]),
-                     parameters=torch.tensor([1, 2])
+                     param_shape=torch.Size([4]),
+                     batch_shape=torch.Size([3, 3]),
+                     parameters=torch.rand(3, 3, 4)
                      )
 
         m2 = Message(MessageType.Parameter,
-                     param_shape=torch.Size([1]),
-                     batch_shape=torch.Size([2]),
-                     parameters=torch.tensor([2, 3])
+                     param_shape=torch.Size([4]),
+                     batch_shape=torch.Size([3, 3]),
+                     parameters=torch.rand(3, 3, 4)
                      )
 
         m3 = m1 + m2
 
         assert m3.size() == m2.size()
-        assert torch.all(m3.parameters.eq(torch.tensor([3, 5])))
 
     def test_addition_particles(self):
         m1 = Message(MessageType.Particles,
@@ -177,6 +190,27 @@ class TestMessageArithmetic:
                      particles=torch.ones(2, 3, 2),
                      weights=torch.tensor([[0.2, 0.3, 0.4], [0.8, 0.7, 0.6]]),
                      log_density=torch.tensor([[1, 2, 3], [4, 5, 6]])
+                     )
+
+        m3 = m1 + m2
+
+    def test_addition_particles_complex(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 5]),
+                     event_shape=torch.Size([4]),
+                     particles=torch.ones(2, 3, 5, 4),
+                     weights=1,
+                     log_density=0
+                     )
+
+        m2 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 5]),
+                     event_shape=torch.Size([4]),
+                     particles=torch.ones(2, 3, 5, 4),
+                     weights=1,
+                     log_density=0
                      )
 
         m3 = m1 + m2
@@ -208,8 +242,8 @@ class TestMessageArithmetic:
         m1 = Message(MessageType.Particles,
                      sample_shape=torch.Size([2]),
                      batch_shape=torch.Size([3,4,5]),
-                     event_shape=torch.Size([2,5]),
-                     particles=torch.rand(2, 3, 4, 5, 2, 5),
+                     event_shape=torch.Size([2]),
+                     particles=torch.rand(2, 3, 4, 5, 2),
                      weights=1,
                      log_density=0
                      )
@@ -399,12 +433,11 @@ class TestMessageDimensionOperation:
         assert m2.b_shape == torch.Size([3, 2, 1, 3])
         assert m2.e_shape == torch.Size([])
 
-    # TODO test once fixed
     def test_parameter_batch_index_select(self):
         m1 = Message(MessageType.Parameter,
                      batch_shape=torch.Size([3, 4]),
-                     param_shape=torch.Size([1]),
-                     parameters=torch.rand(3, 4)
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 4, 2)
                      )
 
         m2 = m1.batch_index_select(0, torch.LongTensor([0, 2]))
