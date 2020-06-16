@@ -11,6 +11,13 @@ class TestInitMessage:
         vector shapes for batch, param, sample, and event
     """
 
+    def test_bx1_parameter_simple(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([2]),
+                     param_shape=torch.Size([1]),
+                     parameters=torch.tensor([2, 3])
+                     )
+
     def test_bx1_parameter(self):
         m1 = Message(MessageType.Parameter,
                      batch_shape=torch.Size([2]),
@@ -42,20 +49,6 @@ class TestInitMessage:
 
     def test_bxp_parameter_wrong_dimension(self):
         with pytest.raises(AssertionError):
-            m1 = Message(MessageType.Parameter,
-                         batch_shape=torch.Size([1]),
-                         param_shape=torch.Size([2]),
-                         parameters=torch.ones(2)
-                         )
-
-        with pytest.raises(AssertionError):
-            m = Message(MessageType.Parameter,
-                         batch_shape=torch.Size([2,1]),
-                         param_shape=torch.Size([2]),
-                         parameters=torch.ones(2, 2)
-                         )
-
-        with pytest.raises(AssertionError):
             m = Message(MessageType.Parameter,
                          batch_shape=torch.Size([2]),
                          param_shape=torch.Size([2, 2]),
@@ -64,16 +57,6 @@ class TestInitMessage:
 
 
     def test_particles_wrong_dimension(self):
-        with pytest.raises(AssertionError):
-            m = Message(MessageType.Particles,
-                        sample_shape=torch.Size([100]),
-                        batch_shape=torch.Size([1]),
-                        event_shape=torch.Size([1]),
-                        particles=torch.rand(100),
-                        weights=1,
-                        log_density=0
-                        )
-
         with pytest.raises(AssertionError):
             m = Message(MessageType.Particles,
                         sample_shape=torch.Size([100]),
