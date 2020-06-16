@@ -1126,6 +1126,10 @@ class ExpSumNode(AlphaFactorNode):
             distribution instance that best "summarizes" the behaviors of an entire space of distribution instances,
             where the dimensions of the space is defined and spanned by the irrelevant relational variables. Depending
             on the user-specified summarization criteria, different semantics can be interpreted for this step.
+
+        A sum_op should be specified during initialization to specify special summarization semantics, such as Max
+            Product semantics or searching. If not specified, will default to Sum-Product alike summarization. Please
+            refer to Message class documentation for more information.
     """
     def __init__(self, name, sum_op=None):
         """
@@ -1139,6 +1143,8 @@ class ExpSumNode(AlphaFactorNode):
         assert sum_op is None or isinstance(sum_op, Summarization)
         if sum_op is not None:
             raise NotImplementedError("Summarization operation using Summarization instance is not yet implemented.")
+
+        self.sum_op = sum_op
 
     def inward_compute(self):
         """
@@ -1183,7 +1189,41 @@ class ExpSumNode(AlphaFactorNode):
             The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
                 uses default summarization semantic defined at the Message level.
         """
+        in_ld, out_ld = self.labeled_ld_pair['outward']
+        msg = in_ld.read()
+        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
+        assert isinstance(msg, Message)
+        in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
 
+        # Check that the set of relational variables of outgoing message is a subset of that of incoming message
+        assert set(out_rel_var_list).issubset(set(in_rel_var_list))
+
+        # Keep a running list of variables
+        mapped_var_list = copy.deepcopy(in_rel_var_list)
+
+        # TODO: Customized summarization operation
+        if self.sum_op is not None:
+            pass
+
+        # Otherwise if sum_op is None, carry out default summarization
+        else:
+            # Iterate over all relational variables not referenced by out_rel_var_list
+            for pt_var in in_rel_var_list:
+                if pt_var not in out_rel_var_list:
+                    dim = mapped_var_list.index(pt_var)
+                    # Summarize over the message batch dimension
+                    msg = msg.batch_summarize(dim)
+                    # Remove the variable from the running list
+                    mapped_var_list.remove(pt_var)
+
+        assert set(mapped_var_list) == set(out_rel_var_list)
+
+        # Permute message dimension so that it matches the order given by out_rel_var_list
+        perm_order = list(mapped_var_list.index(v) for v in out_rel_var_list)
+        msg = msg.permute(perm_order)
+
+        # Send message
+        out_ld.write(msg)
 
 
 class RanTransNode(AlphaFactorNode):
