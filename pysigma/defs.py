@@ -497,7 +497,7 @@ class Message:
             :param index:   torch.LongTensor. The index of entries along 'dim' to be selected
         """
         assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
-        assert isinstance(index, torch.LongTensor) and len(index.shape) == 1
+        assert isinstance(index, torch.LongTensor) and index.dim() == 1
 
         # Translate dim to positive value if it is negative
         if dim < 0:
@@ -518,6 +518,69 @@ class Message:
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             new_weights = torch.index_select(self.weights, s_dim, index)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
+    def batch_index_put(self, dim, index):
+        """
+            Returns a new Message whose entries along the dimension 'dim' are slices from self message and are indexed
+                by 'index'. Effectively, along the dimension 'dim':
+                    result_msg[..., index[i], ...] = val[i]
+
+            For slices in the new message not referenced by 'index', they will be filled with identity values. For
+                Parameter type message, the identity value is 0; for Particles type message, the identity value is 1,
+                up to a normalization factor.
+
+            This method is the inverted version of batch_index_select(). There is no direct counterpart to this method
+                in PyTorch.
+
+            :param dim:     an int. Specifying a dimension of the message. Should be in range
+                                        [-len(batch_shape), len(batch_shape) - 1]
+            :param index:   a LongTensor. Specifying the indices along the specified dimension of the returned message.
+                                Entries must be non-negative.
+        """
+        assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
+        assert isinstance(index, torch.LongTensor) and index.dim() == 1 and torch.all(index >= 0)
+
+        # Translate dim value to positive if it's negative
+        dim = len(self.b_shape) + dim if dim < 0 else dim
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dim = dim + 1
+        # Get new batch shape. The size of dimension dim is determined by the maximum value in index
+        new_b_shape = self.b_shape[:dim] + torch.Size([torch.max(index) + 1]) + self.b_shape[dim + 1:]
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        # To access tensor slice more easily, we swap the target dim with first dim, perform slicing and assignment on
+        #   this new first dim, and swap it back
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            # Identity value tensor
+            to_fill = torch.zeros(new_b_shape + self.p_shape)
+            # Transpose target dimension with the first dimension
+            to_fill = torch.transpose(to_fill, dim0=0, dim1=dim)
+            t_param = torch.transpose(new_parameters, dim0=0, dim1=dim)
+            # Slice and assign
+            to_fill[index] = t_param
+            # Transpose back to get result
+            new_parameters = torch.transpose(to_fill, dim0=0, dim1=dim)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            # Identity value tensor
+            to_fill = torch.ones(self.s_shape + new_b_shape)
+            # Transpose target dimension with the first dimension
+            to_fill = torch.transpose(to_fill, dim0=0, dim1=s_dim)
+            t_weights = torch.transpose(new_weights, dim0=0, dim1=s_dim)
+            # Slice and assign
+            to_fill[index] = t_weights
+            # Transpose back to get result
+            new_weights = torch.transpose(to_fill, dim0=0, dim1=s_dim)
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
@@ -581,6 +644,10 @@ class Message:
 
             The length of returned message's batch shape will be the length of original message's batch shape plus 1.
 
+            For slots not on the diagonal of the resulting message, they will be filled with identity values. For
+                Parameter type message, the identity value is 0 w.r.t. the parameter tensor, and for Particles type
+                message, the identity value is 1 w.r.t. the weights tensor up to a normalization factor.
+
             This method is a mimic of torch.diag_embed(), with offset default to 0 plus an additional diag_dim argument.
 
             :param diag_dim:        an int. Specifying a dimension of the original message. Should be in range
@@ -640,7 +707,94 @@ class Message:
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
 
+    def batch_narrow(self, dim, length):
+        """
+            Returns a new message that is a narrowed version of input tensor along the dimension specified by 'dim'.
+                Effectively, this method is selecting the chunk spanning [:length] along the dimension 'dim' of the
+                original message. The returned message and input message share the same underlying storage.
+
+            This method is a mimic of torch.narrow(), with start default to 0.
+
+            :param dim      an int. Specifying a dimension of the original message. Should be in range
+                                        [-len(batch_shape), len(batch_shape) - 1]
+            :param length   an int. Specifying the length of the message chunk to select. Should be in range
+                                        [0, dim_size - 1]
+        """
+        assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
+        assert isinstance(length, int) and 0 <= length <= self.b_shape[dim] - 1
+
+        # Translate dim value to positive if it's negative
+        dim = len(self.b_shape) + dim if dim < 0 else dim
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dim = dim + 1
+        # Get new batch shape.
+        new_b_shape = self.b_shape[:dim] + torch.Size([length]) + self.b_shape[dim + 1:]
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = torch.narrow(new_parameters, dim=dim, start=0, length=length)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            new_weights = torch.narrow(new_weights, dim=s_dim, start=0, length=length)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
+    def batch_broaden(self, dim, length):
+        """
+            Returns a new message that is a broadened version of the input tensor along the dimension specified by
+                'dim', with identity values filled in [dim_size + 1: length] along the dimension 'dim' of the original
+                message. In other words, this method is concatenating an identity message to the original message along
+                the dimension 'dim' so that the resulting dimension size is 'length'.
+
+            For Parameter type message, the identity values are 0. For Particles type message, the identity values are 1
+                up to a normalization factor.
+
+            This method is the inverted version of batch_narrow(). There is no direct counterpart to this method in
+                PyTorch.
+
+            :param dim      an int. Specifying a dimension of the original message. Should be in range
+                                        [-len(batch_shape), len(batch_shape) - 1]
+            :param length   an int. Specifying the length of the message chunk to select. Should be greater than the
+                                current size of dimension 'dim'
+        """
+        assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
+        assert isinstance(length, int) and length > self.b_shape[dim]
+
+        # Translate dim value to positive if it's negative
+        dim = len(self.b_shape) + dim if dim < 0 else dim
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dim = dim + 1
+        # Get new batch shape.
+        new_b_shape = self.b_shape[:dim] + torch.Size([length]) + self.b_shape[dim + 1:]
+        to_concat_shape = self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + self.b_shape[dim + 1:]
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            to_concat = torch.zeros(to_concat_shape)
+            new_parameters = torch.cat([new_parameters, to_concat], dim=dim)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            to_concat = torch.ones(to_concat_shape)
+            new_weights = torch.cat([new_parameters, to_concat], dim=s_dim)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
 
 
