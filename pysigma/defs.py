@@ -587,7 +587,6 @@ class Message:
                           new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
 
-
     def batch_diagonal(self, dim1, dim2):
         """
             Returns a partial view of self with the its diagonal elements with respect to 'dim1' and 'dim2' appended as
@@ -753,9 +752,9 @@ class Message:
     def batch_broaden(self, dim, length):
         """
             Returns a new message that is a broadened version of the input tensor along the dimension specified by
-                'dim', with identity values filled in [dim_size + 1: dim_size + 1 + length] along the dimension 'dim'
-                of the original message. In other words, this method is concatenating an identity message of size
-                'length' to the original message along the dimension 'dim'.
+                'dim', with identity values filled in [dim_size + 1: length] along the dimension 'dim' of the original
+                message. In other words, this method is concatenating an identity message to the original message along
+                the dimension 'dim' so that the resulting dimension size is 'length'.
 
             For Parameter type message, the identity values are 0. For Particles type message, the identity values are 1
                 up to a normalization factor.
@@ -765,18 +764,19 @@ class Message:
 
             :param dim      an int. Specifying a dimension of the original message. Should be in range
                                         [-len(batch_shape), len(batch_shape) - 1]
-            :param length   an int. Specifying the length of the message chunk to select. Should be positive.
+            :param length   an int. Specifying the length of the message chunk to select. Should be greater than the
+                                current size of dimension 'dim'
         """
         assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
-        assert isinstance(length, int) and length > 0
+        assert isinstance(length, int) and length > self.b_shape[dim]
 
         # Translate dim value to positive if it's negative
         dim = len(self.b_shape) + dim if dim < 0 else dim
         # For message contents who has a sample dimension at front, add 1 to dim
         s_dim = dim + 1
         # Get new batch shape.
-        new_b_shape = self.b_shape[:dim] + torch.Size([self.b_shape[dim] + length]) + self.b_shape[dim + 1:]
-        to_concat_shape = self.b_shape[:dim] + torch.Size([length]) + self.b_shape[dim + 1:]
+        new_b_shape = self.b_shape[:dim] + torch.Size([length]) + self.b_shape[dim + 1:]
+        to_concat_shape = self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + self.b_shape[dim + 1:]
 
         new_parameters = self.parameters
         new_particles = self.particles
