@@ -497,7 +497,7 @@ class Message:
             :param index:   torch.LongTensor. The index of entries along 'dim' to be selected
         """
         assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
-        assert isinstance(index, torch.LongTensor) and len(index.shape) == 1
+        assert isinstance(index, torch.LongTensor) and index.dim() == 1
 
         # Translate dim to positive value if it is negative
         if dim < 0:
@@ -523,6 +523,70 @@ class Message:
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
+
+    def batch_index_put(self, dim, index):
+        """
+            Returns a new Message whose entries along the dimension 'dim' are slices from self message and are indexed
+                by 'index'. Effectively, along the dimension 'dim':
+                    result_msg[..., index[i], ...] = val[i]
+
+            For slices in the new message not referenced by 'index', they will be filled with identity values. For
+                Parameter type message, the identity value is 0; for Particles type message, the identity value is 1,
+                up to a normalization factor.
+
+            This method is the inverted version of batch_index_select(). There is no direct counterpart to this method
+                in PyTorch.
+
+            :param dim:     an int. Specifying a dimension of the message. Should be in range
+                                        [-len(batch_shape), len(batch_shape) - 1]
+            :param index:   a LongTensor. Specifying the indices along the specified dimension of the returned message.
+                                Entries must be non-negative.
+        """
+        assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
+        assert isinstance(index, torch.LongTensor) and index.dim() == 1 and torch.all(index >= 0)
+
+        # Translate dim value to positive if it's negative
+        dim = len(self.b_shape) + dim if dim < 0 else dim
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dim = dim + 1
+        # Get new batch shape. The size of dimension dim is determined by the maximum value in index
+        new_b_shape = self.b_shape[:dim] + torch.Size([torch.max(index) + 1]) + self.b_shape[dim + 1:]
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        # To access tensor slice more easily, we swap the target dim with first dim, perform slicing and assignment on
+        #   this new first dim, and swap it back
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            # Identity value tensor
+            to_fill = torch.zeros(new_b_shape + self.p_shape)
+            # Transpose target dimension with the first dimension
+            to_fill = torch.transpose(to_fill, dim0=0, dim1=dim)
+            t_param = torch.transpose(new_parameters, dim0=0, dim1=dim)
+            # Slice and assign
+            to_fill[index] = t_param
+            # Transpose back to get result
+            new_parameters = torch.transpose(to_fill, dim0=0, dim1=dim)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            # Identity value tensor
+            to_fill = torch.ones(self.s_shape + new_b_shape)
+            # Transpose target dimension with the first dimension
+            to_fill = torch.transpose(to_fill, dim0=0, dim1=s_dim)
+            t_weights = torch.transpose(new_weights, dim0=0, dim1=s_dim)
+            # Slice and assign
+            to_fill[index] = t_weights
+            # Transpose back to get result
+            new_weights = torch.transpose(to_fill, dim0=0, dim1=s_dim)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
 
     def batch_diagonal(self, dim1, dim2):
         """
