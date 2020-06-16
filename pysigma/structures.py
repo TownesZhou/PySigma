@@ -696,7 +696,7 @@ class Conditional:
                                          "associated with arguments '{}'"
                                          .format(sizes, args))
 
-        # 2.a Gather patern variables globally
+        # 2.a Gather pattern variables globally
         all_pat_var_names = set()
         for entry in self.pattern_var2arg.values():
             all_pat_var_names = all_pat_var_names.union(set(entry.keys()))
@@ -710,7 +710,7 @@ class Conditional:
                 pat, pred = self.pat_name2pattern[pat_name], self.pat_name2pred[pat_name]
                 args = entry[pat_var_name]
 
-                # 2.b Check each pattern varaible is associated with arguments of the same metatype across patterns
+                # 2.b Check each pattern variable is associated with arguments of the same metatype across patterns
                 if metatype is None:
                     metatype = pred.arg_name2metatype[args[0]]
                 elif metatype is not pred.arg_name2metatype[args[0]]:

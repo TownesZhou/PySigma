@@ -4,6 +4,8 @@
 import torch
 from torch.distributions.constraints import Constraint
 from enum import Enum
+from collections.abc import Iterable
+import math
 
 
 # Variable Metatypes and Variable for general inference
@@ -796,6 +798,92 @@ class Message:
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
+
+    def batch_summarize(self, dim):
+        """
+            Implements the default Sum-Product summarization semantics. Summarizes over the batch dimension specified by
+                'dim'. Returns a message with one less dimension.
+
+            For Parameter message, the summarization is realized by taking the mean value of the batched parameters
+                across dimension 'dim'. For particles message, this is realized by taking joint addition defined for
+                particle weights, a.k.a. factor product.
+
+            :param dim:     an int. Specifying a dimension of the original message. Should be in range
+                                        [-len(batch_shape), len(batch_shape) - 1]
+        """
+        assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
+
+        # Translate dim value to positive if it's negative
+        dim = len(self.b_shape) + dim if dim < 0 else dim
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dim = dim + 1
+        # Get new batch shape.
+        new_b_shape = self.b_shape[:dim] + self.b_shape[dim + 1:]
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = torch.mean(new_parameters, dim=dim)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            # For weights, since factor product is taken, we first convert weight values to log scale, perform summation
+            #   across the batch dimension, then convert back to exponential scale.
+            # The normalization of resulting weights will be taken care of by message initialization
+            log_weights = torch.log(new_weights)
+            log_weights = torch.sum(log_weights, dim=s_dim)
+            new_weights = torch.exp(log_weights)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
+    def batch_flatten(self, dims=None):
+        """
+            Flattens the set of batch dimensions specified by 'dims' and append the flattened dimension as the last
+                dimension. If 'dims' is None, will flatten all batch dimensions into a single dimension.
+
+            :param dims:    None or an Iterable of ints. Specifying the set of dimensions to be flattened. If given,
+                                each value should be in range   [-len(batch_shape), len(batch_shape) - 1]
+        """
+        assert isinstance(dims, Iterable) and all(isinstance(dim, int) and
+                                                  -len(self.b_shape) <= dim <= len(self.b_shape) - 1 for dim in dims)
+
+        # Translate dim value to positive if it's negative
+        dims = list(len(self.b_shape) + dim if dim < 0 else dim for dim in dims)
+        other_dims = list(i for i in range(len(self.b_shape)) if i not in dims)
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dims = list(dim + 1 for dim in dims)
+        s_other_dims = list(dim + 1 for dim in other_dims)
+        # Get new batch shape.
+        new_b_shape = torch.Size(list(self.b_shape[i] for i in range(len(self.b_shape)) if i not in dims)) + \
+                      torch.Size([math.prod(other_dims)])
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            perm_order = other_dims + dims + [len(self.b_shape)]
+            new_parameters = new_parameters.permute(perm_order)
+            new_parameters = torch.flatten(new_parameters, start_dim=len(other_dims), end_dim=len(self.b_shape))
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            perm_order = s_other_dims + s_dims
+            new_weights = new_weights.permute(perm_order)
+            new_weights = torch.flatten(new_weights, start_dim=len(s_other_dims), end_dim=-1)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
 
 
 # TODO: Enum class of all the inference method
