@@ -37,7 +37,7 @@ class LinkData:
         :param to_fn:   True/False indicating whether this link is pointing toward a factor node
         :param msg_shape    Fixed message shape that this linkdata will carry. Used for checking dimensions
                             For Parameter message, should be (batch_shape + param_shape)
-                            FOr particles message, should be (sample_shape + batch_shape + event_shape)
+                            For particles message, should be (sample_shape + batch_shape + event_shape)
         :param epsilon:     epsilon upper bound for checking message difference using KL divergence
         """
         assert isinstance(vn, VariableNode)
@@ -258,7 +258,7 @@ class VariableNode(Node, ABC):
         self.ran_var_list = ran_var_list
         self.s_shape = torch.Size([index_var.size])
         self.b_shape = torch.Size(list(rel_var.size for rel_var in rel_var_list))
-        self.e_shape = torch.Size(sum(list(ran_var.size for ran_var in ran_var_list)))
+        self.e_shape = torch.Size([sum(list(ran_var.size for ran_var in ran_var_list))])
 
     def add_link(self, linkdata):
         """
