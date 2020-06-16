@@ -797,6 +797,49 @@ class Message:
                           new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
 
+    def batch_summarize(self, dim):
+        """
+            Implements the default Sum-Product summarization semantics. Summarizes over the batch dimension specified by
+                'dim'. Returns a message with one less dimension.
+
+            For Parameter message, the summarization is realized by taking the mean value of the batched parameters
+                across dimension 'dim'. For particles message, this is realized by taking joint addition defined for
+                particle weights, a.k.a. factor product.
+
+            :param dim:     an int. Specifying a dimension of the original message. Should be in range
+                                        [-len(batch_shape), len(batch_shape) - 1]
+        """
+        assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
+
+        # Translate dim value to positive if it's negative
+        dim = len(self.b_shape) + dim if dim < 0 else dim
+        # For message contents who has a sample dimension at front, add 1 to dim
+        s_dim = dim + 1
+        # Get new batch shape.
+        new_b_shape = self.b_shape[:dim] + self.b_shape[dim + 1:]
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = torch.mean(new_parameters, dim=dim)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            # For weights, since factor product is taken, we first convert weight values to log scale, perform summation
+            #   across the batch dimension, then convert back to exponential scale.
+            # The normalization of resulting weights will be taken care of by message initialization
+            log_weights = torch.log(new_weights)
+            log_weights = torch.sum(log_weights, dim=s_dim)
+            new_weights = torch.exp(log_weights)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
 
 # TODO: Enum class of all the inference method
 class InferenceMethod(Enum):

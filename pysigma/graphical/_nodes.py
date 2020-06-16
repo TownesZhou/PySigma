@@ -3,6 +3,7 @@
 """
 import copy
 import torch
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from torch.distributions import Distribution
@@ -10,7 +11,7 @@ from torch.distributions.categorical import Categorical
 from torch.nn.functional import cosine_similarity
 from defs import Variable, MessageType, Message
 from utils import DistributionServer
-import warnings
+from structures import VariableMap, Summarization
 
 
 """
@@ -909,9 +910,12 @@ class RelMapNode(AlphaFactorNode):
         self.pretty_log["node type"] = "Relation Variable Mapping Node"
         
         assert isinstance(name, str)
-        assert isinstance(arg2var, dict)
-        assert isinstance(var2arg, dict)
-        assert isinstance(arg2var_map, dict)
+        assert isinstance(arg2var, dict) and all(isinstance(k, Variable) for k in arg2var.keys()) and \
+               all(isinstance(v, Variable) for v in arg2var.values())
+        assert isinstance(var2arg, dict) and all(isinstance(k, Variable) for k in var2arg.keys()) and \
+               all(isinstance(v, list) and all(isinstance(arg, Variable) for arg in v) for v in var2arg.values())
+        assert isinstance(arg2var_map, dict) and all(isinstance(k, Variable) for k in arg2var_map.keys()) and \
+               all(isinstance(v, VariableMap) for v in arg2var_map.values())
 
         self.arg2var = arg2var
         self.var2arg = var2arg
@@ -1106,7 +1110,7 @@ class ExpSumNode(AlphaFactorNode):
     """
         Expansion / Summarization Node
 
-        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
+        This node is a component of the alpha conditional subgraph, so admits up to two pairs of incoming and outgoing
             links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
             it is pointing toward the conditional gamma factor node or not.
 
@@ -1123,7 +1127,63 @@ class ExpSumNode(AlphaFactorNode):
             where the dimensions of the space is defined and spanned by the irrelevant relational variables. Depending
             on the user-specified summarization criteria, different semantics can be interpreted for this step.
     """
-    pass
+    def __init__(self, name, sum_op=None):
+        """
+            Necessary data structure:
+
+            :param sum_op:      None or a Summarization instance. Default is None.
+        """
+        super(ExpSumNode, self).__init__(name)
+        self.pretty_log["node type"] = "Expansion Summarization Factor Node"
+
+        assert sum_op is None or isinstance(sum_op, Summarization)
+        if sum_op is not None:
+            raise NotImplementedError("Summarization operation using Summarization instance is not yet implemented.")
+
+    def inward_compute(self):
+        """
+            Expansion operation. Expand and permutes the incoming message's relational variable dimensions to match the
+                outgoing relational relational variable dimensions.
+        """
+        in_ld, out_ld = self.labeled_ld_pair['inward']
+        msg = in_ld.read()
+        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
+        assert isinstance(msg, Message)
+        in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
+
+        # Check that the set of relational variables of incoming message is a subset of that of outgoing message
+        assert set(in_rel_var_list).issubset(set(out_rel_var_list))
+
+        # Keep a running list of variables
+        mapped_var_list = copy.deepcopy(in_rel_var_list)
+
+        # For every relational variable in out_rel_var_list that is not in in_rel_var_list, unsqueeze a dimension of the
+        #   message as the last dimension.
+        for pt_var in out_rel_var_list:
+            if pt_var not in in_rel_var_list:
+                # Unsqueeze message
+                msg = msg.batch_unsqueeze(dim=-1)
+                # Append the pt_var to the end of running var list
+                mapped_var_list.append(pt_var)
+
+        assert set(mapped_var_list) == set(out_rel_var_list)
+
+        # Permute message dimension so that it matches the order given by out_rel_var_list
+        perm_order = list(mapped_var_list.index(v) for v in out_rel_var_list)
+        msg = msg.permute(perm_order)
+
+        # Send message
+        out_ld.write(msg)
+
+    def outward_compute(self):
+        """
+            Summarization operation. Summarize over incoming message's relational variable dimensions that are not
+                referenced by outgoing message's relational variables.
+
+            The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
+                uses default summarization semantic defined at the Message level.
+        """
+
 
 
 class RanTransNode(AlphaFactorNode):
