@@ -925,7 +925,7 @@ class Message:
             :param new_batch_shape:     Iterable of python ints, or torch.Size. The target batch shape.
         """
         assert isinstance(new_batch_shape, torch.Size) or \
-               (isinstance(new_batch_shape, Iterable) or all(isinstance(s, int) for s in new_batch_shape))
+               (isinstance(new_batch_shape, Iterable) and all(isinstance(s, int) for s in new_batch_shape))
 
         new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Tensor) else \
             new_batch_shape
