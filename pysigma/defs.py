@@ -906,9 +906,9 @@ class Message:
             new_parameters = new_parameters.contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
-            perm_order = s_other_dims + s_dims
+            perm_order = [0] + s_other_dims + s_dims
             new_weights = new_weights.permute(perm_order)
-            new_weights = torch.flatten(new_weights, start_dim=len(s_other_dims), end_dim=-1)
+            new_weights = torch.flatten(new_weights, start_dim=len(s_other_dims) + 1, end_dim=-1)
             new_weights = new_weights.contiguous()
 
         new_msg = Message(self.type,
