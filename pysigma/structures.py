@@ -5,6 +5,7 @@
 """
 
 import numpy as np
+import torch
 from torch import Size
 from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint
@@ -12,7 +13,7 @@ from collections.abc import Iterable
 from itertools import chain
 import warnings
 from .utils import intern_name, extern_name
-from defs import Variable, VariableMetatype
+from defs import Variable, VariableMetatype, Message, MessageType
 
 
 class VariableMap:
@@ -181,8 +182,145 @@ class Summarization:
     """
         Class type for declaring procedures for summarization over space of distribution instances spanned by relational
             variable dimensions.
+
+        User should provide a functor that can be called to perform the summarization procedure. Generally, the functor
+            should be expecting to receive and process both Parameter representation of message and Particles
+            representation of message, with a flag indicating which type current input is.
+
+        The functor Input/Output specification:
+            :param message_type:    "parameter", "particles", or "both"
+            :param message:         a dict. with the following schema:
+                                    - For "parameter" message type, expect the following:
+                                        {
+                                          "parameter": a torch.Tensor, with dimensions [batch_dim, sum_dim, param_dim]
+                                        }
+                                    - For "particles" message type, expect the following:
+                                        {
+                                          "particles": a dict mapping Random Variable name to torch.Tensor, with the
+                                                       following schema:
+                                                {
+                                                    a str, the random variable name: a torch.Tensor with dimensions
+                                                            [sample_dim, rv_dim]
+                                                }
+                                          "weights": a torch.Tensor, with dimensions [batch_dim, sum_dim, sample_dim],
+                                          "log_density": a torch.Tensor, with dimension [sample_dim]
+                                        }
+                                    - For "both" message type, expect a dictionary containing all of the contents above.
+            :return                 a torch.Tensor. Depending on the type of message:
+                                    - For "parameter" message type, expect the following:
+                                          "parameter": the processed parameter torch.Tensor, with dimension
+                                                    [batch_dim, param_dim]
+                                    - For "particles" message type, expect the following:
+                                          "weights": the processed weights torch.Tensor, with dimensions
+                                                    [batch_dim, sample_dim],
+                                    - For "both" message type, expect a TUPLE of torch.Tensor containing both of the
+                                        contents above. The first element is expected to be the "parameter" and the
+                                        second one is expected to be the "weights"
+
+        Explanation for the shapes:
+            - 'batch_dim': the batch dimension, as in machine learning. This dimension indexes batch of data instances,
+                            and should not be tampered with.
+            - 'sum_dim':   the dimension to be summarized over. This dimension should be reduced during the processing.
+            - 'param_dim': the dimension of the parameter.
+            - 'sample_dim':     the dimension that indexes particles in a particle list. Size of this dimension
+                                    corresponds to the number of particles drawn.
+            - 'rv_dim':      the dimension of the corresponding random variable. Same the same as the size of the RV.
+
+        All input tensors will first be cloned before being fed to the functor, because we don't expect "particles"
+            and "log_density" tensors to be changed during summarization.
     """
-    pass
+    def __init__(self, sum_func):
+        """
+            Initialize a summarization operation.
+
+            :param sum_func:    A python callable that implements the summarization procedure. See class docs for more
+                                    details regarding input/output specifications.
+        """
+        if not callable(sum_func):
+            raise ValueError("The input argument 'sum_func' should be a python callable.")
+
+        self.sum_func = sum_func
+
+    def process(self, msg, ran_var_list):
+        """
+            Should be called by nodes to perform the summarization. Shape checks will be carried out.
+
+            :param msg:     A flattened Message instance. The last batch dimension is the one assumed to be summarized
+                                over.
+            :param ran_var_list:    List of random variables.
+            :return:        A new message
+        """
+        assert isinstance(msg, Message) and len(msg.b_shape) == 2
+        assert isinstance(ran_var_list, list) and all(isinstance(v, Variable) for v in ran_var_list)
+
+        # First clone the message, and preprocess if necessary
+        msg_clone = msg.clone()
+        parameters = msg_clone.param
+        particles = msg_clone.particles
+        weights = msg_clone.weights
+        log_density = msg_clone.log_density
+
+        # Permute weight tensor sample_dim to the last dimension
+        weights = weights.permute(1, 2, 0).contiguous()
+        # Split particles according to the random variables
+        rv_names = list(v.name for v in ran_var_list)
+        split_sizes = list(v.size for v in ran_var_list)
+        split_particles = torch.split(particles, split_sizes, dim=-1)
+        particles = dict(zip(rv_names, split_particles))
+
+        # Generate input dict
+        if msg.parameters is not None and msg.weights is not None:
+            content_type = 'both'
+            input_dict = dict(parameter=parameters, particles=particles, weights=weights, log_density=log_density)
+        elif msg.type is MessageType.Parameter:
+            content_type = 'parameter'
+            input_dict = dict(parameter=parameters)
+        else:
+            content_type = 'particles'
+            input_dict = dict(particles=particles, weights=weights, log_density=log_density)
+
+        # Process and get result
+        output = self.sum_func(content_type, input_dict)
+
+        # Shape check
+        new_param = None
+        new_weights = None
+        if content_type == 'both':
+            if not isinstance(output, tuple):
+                raise ValueError("The Message type is 'both'. In this case, expect output from the summarization "
+                                 "functor to be a 2-tuple of torch.Tensor. Instead found: {}".format(type(output)))
+            if not (len(output) == 2 and all(isinstance(t, torch.Tensor) for t in output)):
+                raise ValueError("The Message type is 'both'. In this case, expect output from the summarization "
+                                 "functor to be a 2-tuple of torch.Tensor. Instead found: {}"
+                                 .format((type(output[0]), type(output[1]))))
+            new_param, new_weights = output
+        elif content_type == 'parameter':
+            if not isinstance(output, torch.Tensor):
+                raise ValueError("The Message type is 'parameter'. In this case, expect output from the summarization "
+                                 "functor to be a torch.Tensor. Instead found: {}".format(type(output)))
+            new_param = output
+        else:
+            if not isinstance(output, torch.Tensor):
+                raise ValueError("The Message type is 'particles'. In this case, expect output from the summarization "
+                                 "functor to be a torch.Tensor. Instead found: {}".format(type(output)))
+            new_weights = output
+
+        if new_param is not None:
+            if not new_param.shape == msg.b_shape[0] + msg.p_shape:
+                raise ValueError("Expect the output parameter to have shape [batch_shape, param_shape] = [{}, {}]. "
+                                 "Instead found shape {}".format(msg.b_shape[0], msg.p_shape, new_param.shape))
+        if new_weights is not None:
+            if not new_weights.shape == msg.b_shape[0] + msg.s_shape:
+                raise ValueError("Expect the output parameter to have shape [batch_shape, sample_shape] = [{}, {}]. "
+                                 "Instead found shape {}".format(msg.b_shape[0], msg.s_shape, new_param.shape))
+
+        # permute shape if necessary
+        new_weights = new_weights.transpose(0, 1).contiguous()
+
+        # Generate new message
+        new_msg = Message(msg.type, msg.p_shape, msg.s_shape, msg.b_shape, msg.e_shape,
+                          new_param, msg.particles, new_weights, msg.log_density)
+        return new_msg
 
 
 class Type:
