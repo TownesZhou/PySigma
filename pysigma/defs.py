@@ -511,7 +511,7 @@ class Message:
         # For message contents who has a sample dimension at front, add 1 to dim
         s_dim = dim + 1
         # Get new batch shape
-        new_b_shape = self.b_shape[:dim] + index.shape + self.b_shape[dim:]
+        new_b_shape = self.b_shape[:dim] + index.shape + self.b_shape[dim + 1:]
 
         new_parameters = self.parameters
         new_particles = self.particles
