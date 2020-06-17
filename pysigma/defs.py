@@ -5,7 +5,7 @@ import torch
 from torch.distributions.constraints import Constraint
 from enum import Enum
 from collections.abc import Iterable
-import math
+from numpy import prod
 
 
 # Variable Metatypes and Variable for general inference
@@ -221,7 +221,7 @@ class Message:
             # Weights tensor should have shape (s_shape + b_shape)
             assert self.s_shape + self.b_shape == self.weights.shape
             # Check that values are non-negative
-            assert torch.all(self.weights > 0), "Found negative values in particle weights. Minimum value: {}"\
+            assert torch.all(self.weights > 0), "Found negative values in particle weights. Minimum value: {}" \
                 .format(torch.min(self.weights))
             # Normalize the values so that weights sum to 1 across sample dimension
             weights_sum = self.weights.sum(dim=0, keepdim=True)
@@ -262,8 +262,8 @@ class Message:
             assert torch.equal(self.particles, other.particles), \
                 "For particle messages, only ones with matching particle values can be added together. "
             assert type(self.log_density) is type(other.log_density) and \
-                    ((isinstance(self.log_density, int) and self.log_density == other.log_density) or
-                     (isinstance(self.log_density, torch.Tensor) and torch.equal(self.log_density, other.log_density))),\
+                   ((isinstance(self.log_density, int) and self.log_density == other.log_density) or
+                    (isinstance(self.log_density, torch.Tensor) and torch.equal(self.log_density, other.log_density))), \
                 "For particle messages, only ones with matching log sampling densities can be added together"
 
             # Take element-wise product
@@ -589,7 +589,7 @@ class Message:
                           new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
 
-    def batch_diagonal(self, dim1, dim2):
+    def batch_diagonal(self, dim1=0, dim2=1):
         """
             Returns a partial view of self with the its diagonal elements with respect to 'dim1' and 'dim2' appended as
                 a dimension at the end of the shape.
@@ -778,7 +778,13 @@ class Message:
         s_dim = dim + 1
         # Get new batch shape.
         new_b_shape = self.b_shape[:dim] + torch.Size([length]) + self.b_shape[dim + 1:]
-        to_concat_shape = self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + self.b_shape[dim + 1:]
+
+        if self.type == MessageType.Parameter:
+            to_concat_shape = self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + \
+                              self.b_shape[dim + 1:] + self.p_shape
+        else:
+            to_concat_shape = self.s_shape + self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + \
+                              self.b_shape[dim + 1:]
 
         new_parameters = self.parameters
         new_particles = self.particles
@@ -792,7 +798,7 @@ class Message:
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             to_concat = torch.ones(to_concat_shape)
-            new_weights = torch.cat([new_parameters, to_concat], dim=s_dim)
+            new_weights = torch.cat([new_weights, to_concat], dim=s_dim)
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
@@ -861,7 +867,7 @@ class Message:
         s_other_dims = list(dim + 1 for dim in other_dims)
         # Get new batch shape.
         new_b_shape = torch.Size(list(self.b_shape[i] for i in range(len(self.b_shape)) if i not in dims)) + \
-                      torch.Size([math.prod(other_dims)])
+                      torch.Size([prod(other_dims)])
 
         new_parameters = self.parameters
         new_particles = self.particles
@@ -883,7 +889,6 @@ class Message:
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
-
 
 
 # TODO: Enum class of all the inference method
