@@ -879,11 +879,12 @@ class Message:
             :param dims:    None or an Iterable of ints. Specifying the set of dimensions to be flattened. If given,
                                 each value should be in range   [-len(batch_shape), len(batch_shape) - 1]
         """
-        assert isinstance(dims, Iterable) and all(isinstance(dim, int) and
-                                                  -len(self.b_shape) <= dim <= len(self.b_shape) - 1 for dim in dims)
+        assert dims is None or (isinstance(dims, Iterable) and all(isinstance(dim, int) and
+                                -len(self.b_shape) <= dim <= len(self.b_shape) - 1 for dim in dims))
 
         # Translate dim value to positive if it's negative
-        dims = list(len(self.b_shape) + dim if dim < 0 else dim for dim in dims)
+        dims = list(len(self.b_shape) + dim if dim < 0 else dim for dim in dims) if dims is not None else \
+               list(range(len(self.b_shape)))
         other_dims = list(i for i in range(len(self.b_shape)) if i not in dims)
         # For message contents who has a sample dimension at front, add 1 to dim
         s_dims = list(dim + 1 for dim in dims)
