@@ -413,6 +413,8 @@ class Message:
             Note that target_dims is relative to the batch dimension. Its values should be within the range
                     [-len(batch_shape), len(batch_shape) - 1]
 
+            contiguous() will be called before return to make sure the resulting content tensors are contiguous
+
             This method is a mimic of torch.Tensor.permute()
 
             :param target_dims:     list of ints. The desired ordering batch dimensions
@@ -439,9 +441,11 @@ class Message:
         if isinstance(self.parameters, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
             new_parameters = self.parameters.permute(b_p_dims)
+            new_parameters = new_parameters.contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             new_weights = self.weights.permute(s_b_dims)
+            new_weights = new_weights.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
@@ -597,6 +601,8 @@ class Message:
             Note that 'dim1' and 'dim2' are relative to the batch dimension. The appended dimension will be placed as
                 the last batch dimension, but before any event or param dimension.
 
+            contiguous() will be called before return to make sure the resulting content tensors are contiguous
+
             This method is a mimic of torch.diagonal(), with offset default to 0
 
             :param dim1:    an int. Should be in range [-len(batch_shape), len(batch_shape) - 1]
@@ -625,9 +631,11 @@ class Message:
             new_parameters = torch.diagonal(new_parameters, dim1=dim1, dim2=dim2)
             # Swap param dimension and appended diagonal batch dimension
             new_parameters = torch.transpose(new_parameters, dim0=-1, dim1=-2)
+            new_parameters = new_parameters.contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             new_weights = torch.diagonal(new_weights, dim1=s_dim1, dim2=s_dim2)
+            new_weights = new_weights.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
@@ -649,6 +657,8 @@ class Message:
             For slots not on the diagonal of the resulting message, they will be filled with identity values. For
                 Parameter type message, the identity value is 0 w.r.t. the parameter tensor, and for Particles type
                 message, the identity value is 1 w.r.t. the weights tensor up to a normalization factor.
+
+            contiguous() will be called before return to make sure the resulting content tensors are contiguous
 
             This method is a mimic of torch.diag_embed(), with offset default to 0 plus an additional diag_dim argument.
 
@@ -692,6 +702,7 @@ class Message:
             perm_order.append(diag_dim)
             new_parameters = new_parameters.permute(perm_order)
             new_parameters = torch.diag_embed(new_parameters, dim1=target_dim1, dim2=target_dim2)
+            new_parameters = new_parameters.contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             # For weights, the default entries to be filled in places other than the diagonal should be 1's, so we
@@ -705,6 +716,7 @@ class Message:
             log_weights = log_weights.permute(perm_order)
             log_weights = torch.diag_embed(log_weights, dim1=s_target_dim1, dim2=s_target_dim2)
             new_weights = torch.exp(log_weights)
+            new_weights = new_weights.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
@@ -716,6 +728,8 @@ class Message:
             Returns a new message that is a narrowed version of input tensor along the dimension specified by 'dim'.
                 Effectively, this method is selecting the chunk spanning [:length] along the dimension 'dim' of the
                 original message. The returned message and input message share the same underlying storage.
+
+            contiguous() will be called before return to make sure the resulting content tensors are contiguous
 
             This method is a mimic of torch.narrow(), with start default to 0.
 
@@ -742,9 +756,11 @@ class Message:
         if isinstance(self.parameters, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
             new_parameters = torch.narrow(new_parameters, dim=dim, start=0, length=length)
+            new_parameters = new_parameters.contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             new_weights = torch.narrow(new_weights, dim=s_dim, start=0, length=length)
+            new_weights = new_weights.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
@@ -760,6 +776,8 @@ class Message:
 
             For Parameter type message, the identity values are 0. For Particles type message, the identity values are 1
                 up to a normalization factor.
+
+            contiguous() will be called before return to make sure the resulting content tensors are contiguous
 
             This method is the inverted version of batch_narrow(). There is no direct counterpart to this method in
                 PyTorch.
@@ -789,10 +807,12 @@ class Message:
             # parameters has shape (b_shape + p_shape)
             to_concat = torch.zeros(to_concat_shape)
             new_parameters = torch.cat([new_parameters, to_concat], dim=dim)
+            new_parameters = new_parameters.contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             to_concat = torch.ones(to_concat_shape)
             new_weights = torch.cat([new_parameters, to_concat], dim=s_dim)
+            new_weights = new_weights.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
@@ -847,6 +867,8 @@ class Message:
             Flattens the set of batch dimensions specified by 'dims' and append the flattened dimension as the last
                 dimension. If 'dims' is None, will flatten all batch dimensions into a single dimension.
 
+            contiguous() will be called before return to make sure the resulting content tensors are contiguous
+
             :param dims:    None or an Iterable of ints. Specifying the set of dimensions to be flattened. If given,
                                 each value should be in range   [-len(batch_shape), len(batch_shape) - 1]
         """
@@ -873,11 +895,13 @@ class Message:
             perm_order = other_dims + dims + [len(self.b_shape)]
             new_parameters = new_parameters.permute(perm_order)
             new_parameters = torch.flatten(new_parameters, start_dim=len(other_dims), end_dim=len(self.b_shape) - 1)
+            new_parameters = new_parameters.contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             perm_order = s_other_dims + s_dims
             new_weights = new_weights.permute(perm_order)
             new_weights = torch.flatten(new_weights, start_dim=len(s_other_dims), end_dim=-1)
+            new_weights = new_weights.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
