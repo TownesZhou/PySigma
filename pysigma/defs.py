@@ -431,7 +431,7 @@ class Message:
         #   Add 1 to values in pos_target_dims because there's a single sample dimensions at front
         s_b_dims = [0, ] + list(i + 1 for i in pos_target_dims)
         # Permute order for batch and parameter dimensions together
-        b_p_dims = pos_target_dims + [0]
+        b_p_dims = pos_target_dims + [len(self.b_shape)]
 
         new_parameters = self.parameters
         new_particles = self.particles
