@@ -536,6 +536,8 @@ class Message:
                 by 'index'. Effectively, along the dimension 'dim':
                     result_msg[..., index[i], ...] = val[i]
 
+            The number of indices provided, i.e. the length of 'index', must be at least the size of dimension 'dim'.
+
             For slices in the new message not referenced by 'index', they will be filled with identity values. For
                 Parameter type message, the identity value is 0; for Particles type message, the identity value is 1,
                 up to a normalization factor.
@@ -550,6 +552,8 @@ class Message:
         """
         assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
         assert isinstance(index, torch.LongTensor) and index.dim() == 1 and torch.all(index >= 0)
+        # Make sure there are enough indices
+        assert index.shape[0] >= self.b_shape[dim]
 
         # Translate dim value to positive if it's negative
         dim = len(self.b_shape) + dim if dim < 0 else dim
