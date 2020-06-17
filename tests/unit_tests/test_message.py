@@ -336,6 +336,9 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_permute([2,0,1])
+        assert m2.s_shape == torch.Size([2])
+        assert m2.b_shape == torch.Size([3, 3, 2])
+        assert m2.e_shape == torch.Size([2])
 
     def test_parameter_batch_unsqueeze(self):
         m1 = Message(MessageType.Parameter,
@@ -345,6 +348,8 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_unsqueeze(2)
+        assert m2.p_shape == torch.Size([1])
+        assert m2.b_shape == torch.Size([2, 3, 1, 4])
 
 
     def test_particles_batch_unsqueeze(self):
@@ -469,7 +474,26 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_diagonal()
+        assert m2.size() == torch.Size([3, 2])
 
+        m3 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([4, 3]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(4, 3, 2)
+                     )
+
+        m4 = m3.batch_diagonal()
+        assert m2.size() == torch.Size([3, 2])
+
+    def test_batch_diagonal_parameter_edge(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 4]),
+                     param_shape=torch.Size([1]),
+                     parameters=torch.rand(3, 4, 1)
+                     )
+
+        m2 = m1.batch_diagonal()
+        assert m2.size() == torch.Size([3, 1])
 
     def test_batch_diagonal_particle(self):
         m1 = Message(MessageType.Particles,
@@ -483,32 +507,158 @@ class TestMessageDimensionOperation:
 
         m2 = m1.batch_diagonal(1, 2)
 
-    def test_bach_diag_embed_parameter(self):
-        pass
+    def test_batch_diag_embed_parameter(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 4]),
+                     param_shape=torch.Size([1]),
+                     parameters=torch.rand(3, 4, 1)
+                     )
+
+        m2 = m1.batch_diag_embed()
+        m3 = m1.batch_diag_embed(0)
+        m4 = m1.batch_diag_embed(1, 1, 2)
 
     def test_batch_diag_embed_particles(self):
-        pass
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 2, 3]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 2),
+                     weights=self.helper_normalize(torch.rand(2, 3, 2, 3)),
+                     log_density=torch.ones(2)
+                     )
 
-    def test_bach_narrow_parameter(self):
-        pass
+        m2 = m1.batch_diag_embed()
+        m3 = m1.batch_diag_embed(0)
+        m4 = m1.batch_diag_embed(1, 1, 2)
+
+    def test_batch_narrow_parameter(self):
+        para = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 3]),
+                     param_shape=torch.Size([1]),
+                     parameters=para.unsqueeze(-1)
+                     )
+
+        m2 = m1.batch_narrow(0, 2)
+        assert m2.size() == torch.Size([2, 3, 1])
+        assert torch.equal(m2.parameters.squeeze(-1), torch.narrow(para, 0, 0, 2))
+
+        m3 = m1.batch_narrow(1, 2)
+        assert m3.size() == torch.Size([3, 2, 1])
 
     def test_batch_narrow_particles(self):
-        pass
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 2, 3]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 2),
+                     weights=self.helper_normalize(torch.rand(2, 3, 2, 3)),
+                     log_density=torch.ones(2)
+                     )
+        m2 = m1.batch_narrow(0, 2)
+        assert m2.size() == torch.Size([2, 2, 2, 3, 2])
 
-    def test_bach_broaden_parameter(self):
-        pass
+        m3 = m1.batch_narrow(2, 1)
+        assert m3.size() == torch.Size([2, 3, 2, 1, 2])
+
+    def test_batch_broaden_parameter(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 3]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 3, 2)
+                     )
+
+        m2 = m1.batch_broaden(0, 5)
+        assert m2.size() == torch.Size([5, 3, 2])
+
+    def test_batch_broaden_parameter_edge(self):
+        para = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=torch.float32)
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 3]),
+                     param_shape=torch.Size([1]),
+                     parameters=para.unsqueeze(-1)
+                     )
+
+        m2 = m1.batch_broaden(0, 5)
+        assert m2.size() == torch.Size([5, 3, 1])
 
     def test_batch_broaden_particles(self):
-        pass
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 2, 3]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 2),
+                     weights=self.helper_normalize(torch.rand(2, 3, 2, 3)),
+                     log_density=torch.ones(2)
+                     )
+        m2 = m1.batch_broaden(1, 5)
+        assert m2.size() == torch.Size([2, 3, 5, 3, 2])
 
-    def test_bach_summarize_parameter(self):
-        pass
+        m2 = m1.batch_broaden(-3, 5)
+        assert m2.size() == torch.Size([2, 5, 2, 3, 2])
+
+    def test_batch_summarize_parameter(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 4]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 4, 2)
+                     )
+
+        m2 = m1.batch_summarize(1)
+        assert m2.size() == torch.Size([3, 2])
+
+        m3 = m1.batch_summarize(-1)
+        assert m3.size() == torch.Size([3, 2])
+
+        m4 = m1.batch_summarize(0)
+        assert m4.size() == torch.Size([4, 2])
 
     def test_batch_summarize_particles(self):
-        pass
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 2, 3]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 2),
+                     weights=self.helper_normalize(torch.rand(2, 3, 2, 3)),
+                     log_density=torch.ones(2)
+                     )
 
-    def test_bach_flatten_parameter(self):
-        pass
+        m2 = m1.batch_summarize(0)
+        assert m2.size() == torch.Size([2, 2, 3, 2])
+
+        m3 = m1.batch_summarize(2)
+        assert m3.size() == torch.Size([2, 3, 2, 2])
+
+        m4 = m1.batch_summarize(-1)
+        assert m4.size() == torch.Size([2, 3, 2, 2])
+
+    def test_batch_flatten_parameter_default(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 3]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 3, 2)
+                     )
+
+        m2 = m1.batch_flatten([])
+
+    def test_batch_flatten_parameter(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 3]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 3, 2)
+                     )
+
+        m2 = m1.batch_flatten([0])
+
+    def test_batch_flatten_parameter_no_zero(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 3]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 3, 2)
+                     )
+
+        m2 = m1.batch_flatten([1])
 
     def test_batch_flatten_particles(self):
         pass
