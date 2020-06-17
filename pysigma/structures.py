@@ -12,7 +12,7 @@ from torch.distributions.constraints import Constraint
 from collections.abc import Iterable
 from itertools import chain
 import warnings
-from .utils import intern_name, extern_name
+from .utils import intern_name, extern_name, KnowledgeTranslator
 from defs import Variable, VariableMetatype, Message, MessageType
 
 
@@ -241,17 +241,19 @@ class Summarization:
 
         self.sum_func = sum_func
 
-    def process(self, msg, ran_var_list):
+    def process(self, msg, ran_var_list, translator):
         """
             Should be called by nodes to perform the summarization. Shape checks will be carried out.
 
             :param msg:     A flattened Message instance. The last batch dimension is the one assumed to be summarized
                                 over.
             :param ran_var_list:    List of random variables.
+            :param translator:      A KnowledgeTranslator instance. To translate the particles tensor.
             :return:        A new message
         """
         assert isinstance(msg, Message) and len(msg.b_shape) == 2
         assert isinstance(ran_var_list, list) and all(isinstance(v, Variable) for v in ran_var_list)
+        assert isinstance(translator, KnowledgeTranslator)
 
         # First clone the message, and preprocess if necessary
         msg_clone = msg.clone()
@@ -262,11 +264,8 @@ class Summarization:
 
         # Permute weight tensor sample_dim to the last dimension
         weights = weights.permute(1, 2, 0).contiguous()
-        # Split particles according to the random variables
-        rv_names = list(v.name for v in ran_var_list)
-        split_sizes = list(v.size for v in ran_var_list)
-        split_particles = torch.split(particles, split_sizes, dim=-1)
-        particles = dict(zip(rv_names, split_particles))
+        # Translate particle tensor to the format consistent with cognitive level knowledge
+        particles = translator.event2pred_event(particles)
 
         # Generate input dict
         if msg.parameters is not None and msg.weights is not None:
