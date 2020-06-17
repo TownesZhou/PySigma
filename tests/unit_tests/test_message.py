@@ -670,7 +670,7 @@ class TestMessageDimensionOperation:
         m3 = m1.batch_flatten([-2, -3])
         assert m3.size() == torch.Size([3, 5, 12, 2])
 
-    def test_batch_flatten_particles_default(self):
+    def test_batch_flatten_particles(self):
         m1 = Message(MessageType.Particles,
                      sample_shape=torch.Size([2]),
                      batch_shape=torch.Size([3, 2, 3]),
@@ -683,24 +683,11 @@ class TestMessageDimensionOperation:
         m2 = m1.batch_flatten(None)
         assert m2.size() == torch.Size([2, 18, 2])
 
-    def test_batch_flatten_particles(self):
-        m1 = Message(MessageType.Particles,
-                     sample_shape=torch.Size([2]),
-                     batch_shape=torch.Size([3, 2, 3]),
-                     event_shape=torch.Size([2]),
-                     particles=torch.ones(2, 2),
-                     weights=self.helper_normalize(torch.rand(2, 3, 2, 3)),
-                     log_density=torch.ones(2)
-                     )
-
-        m2 = m1.batch_flatten([1, 2])
-        assert m2.size() == torch.Size([2, 18, 2])
-
-        m3 = m1.batch_flatten([1, 2])
-        assert m2.size() == torch.Size([2, 18, 2])
+        m3 = m1.batch_flatten([0])
+        assert m3.size() == torch.Size([2, 2, 3, 3, 2])
 
         m4 = m1.batch_flatten([1, 2])
-        assert m2.size() == torch.Size([2, 18, 2])
+        assert m4.size() == torch.Size([2, 3, 6, 2])
 
     def test_batch_reshape_parameter(self):
         m1 = Message(MessageType.Parameter,
