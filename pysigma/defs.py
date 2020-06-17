@@ -5,7 +5,7 @@ import torch
 from torch.distributions.constraints import Constraint
 from enum import Enum
 from collections.abc import Iterable
-from numpy import prod
+import numpy as np
 
 
 # Variable Metatypes and Variable for general inference
@@ -891,7 +891,7 @@ class Message:
         s_other_dims = list(dim + 1 for dim in other_dims)
         # Get new batch shape.
         new_b_shape = torch.Size(list(self.b_shape[i] for i in range(len(self.b_shape)) if i not in dims)) + \
-                      torch.Size([prod(other_dims)])
+                      torch.Size([np.prod(np.array(self.b_shape)[dims])])
 
         new_parameters = self.parameters
         new_particles = self.particles
@@ -913,6 +913,37 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
+    def batch_reshape(self, new_batch_shape):
+        """
+            Returns a message with the same data as self, but with the specified 'new_batch_shape'.
+
+            This method is a mimic of torch.reshape()
+
+            :param new_batch_shape:     Iterable of python ints, or torch.Size. The target batch shape.
+        """
+        assert isinstance(new_batch_shape, torch.Size) or \
+               (isinstance(new_batch_shape, Iterable) or all(isinstance(s, int) for s in new_batch_shape))
+
+        new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Tensor) else \
+            new_batch_shape
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            new_parameters = torch.reshape(new_parameters, new_batch_shape + self.p_shape)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            new_weights = torch.reshape(new_weights, self.s_shape + new_batch_shape)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
 

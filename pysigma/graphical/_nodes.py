@@ -1199,9 +1199,18 @@ class ExpSumNode(AlphaFactorNode):
         # Keep a running list of variables
         mapped_var_list = copy.deepcopy(in_rel_var_list)
 
-        # TODO: Customized summarization operation
+        # Summarize using custom sum_op
         if self.sum_op is not None:
-            pass
+            # Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the
+            #   former as the last dimension and the latter as the first batch dimension
+            sum_dims = list(dim for dim, v in enumerate(in_rel_var_list) if v not in out_rel_var_list)
+            other_dims = list(dim for dim, v in enumerate(in_rel_var_list) if v in out_rel_var_list)
+            # First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim
+            msg = msg.batch_flatten(other_dims)
+            msg = msg.batch_flatten(sum_dims)
+            # Process using the sum_op
+            msg = self.sum_op.process(msg)
+            # Reshape
 
         # Otherwise if sum_op is None, carry out default summarization
         else:
