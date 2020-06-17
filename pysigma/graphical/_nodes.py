@@ -1156,7 +1156,6 @@ class ExpSumNode(AlphaFactorNode):
         assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         assert isinstance(msg, Message)
         in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
-
         # Check that the set of relational variables of incoming message is a subset of that of outgoing message
         assert set(in_rel_var_list).issubset(set(out_rel_var_list))
 
@@ -1194,7 +1193,6 @@ class ExpSumNode(AlphaFactorNode):
         assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         assert isinstance(msg, Message)
         in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
-
         # Check that the set of relational variables of outgoing message is a subset of that of incoming message
         assert set(out_rel_var_list).issubset(set(in_rel_var_list))
 

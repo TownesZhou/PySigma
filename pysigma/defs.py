@@ -5,7 +5,7 @@ import torch
 from torch.distributions.constraints import Constraint
 from enum import Enum
 from collections.abc import Iterable
-import math
+import numpy as np
 
 
 # Variable Metatypes and Variable for general inference
@@ -861,7 +861,7 @@ class Message:
         s_other_dims = list(dim + 1 for dim in other_dims)
         # Get new batch shape.
         new_b_shape = torch.Size(list(self.b_shape[i] for i in range(len(self.b_shape)) if i not in dims)) + \
-                      torch.Size([math.prod(other_dims)])
+                      torch.Size([np.prod(other_dims)])
 
         new_parameters = self.parameters
         new_particles = self.particles
@@ -872,7 +872,7 @@ class Message:
             # parameters has shape (b_shape + p_shape)
             perm_order = other_dims + dims + [len(self.b_shape)]
             new_parameters = new_parameters.permute(perm_order)
-            new_parameters = torch.flatten(new_parameters, start_dim=len(other_dims), end_dim=len(self.b_shape))
+            new_parameters = torch.flatten(new_parameters, start_dim=len(other_dims), end_dim=len(self.b_shape) - 1)
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             perm_order = s_other_dims + s_dims
@@ -883,7 +883,6 @@ class Message:
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density)
         return new_msg
-
 
 
 # TODO: Enum class of all the inference method
