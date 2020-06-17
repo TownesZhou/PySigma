@@ -12,7 +12,7 @@ from torch.distributions.constraints import Constraint
 from collections.abc import Iterable
 from itertools import chain
 import warnings
-from .utils import intern_name, extern_name, KnowledgeTranslator
+from utils import intern_name, extern_name, KnowledgeTranslator
 from defs import Variable, VariableMetatype, Message, MessageType
 
 

@@ -8,7 +8,7 @@ from tqdm import tqdm        # progress bar
 import time
 from prettytable import PrettyTable         # For printing performance statistics in tables
 from ..cognitive._inspector import *
-from ..graphical._nodes import PBFN, LTMFN, GFFN
+# from ..graphical._nodes import PBFN, LTMFN, GFFN
 
 
 def _order_nodes(self):
