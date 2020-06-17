@@ -120,7 +120,6 @@ class DistributionServer:
         assert isinstance(natural_params, torch.Tensor)
         assert issubclass(dist_class, ExponentialFamily)
         assert isinstance(b_shape, torch.Size)
-        assert isinstance(param_shape, torch.Size)
 
         if dist_class not in cls.dict_natural2exp_param.keys():
             raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
@@ -136,8 +135,6 @@ class DistributionServer:
         assert isinstance(exp_params, torch.Tensor)
         assert issubclass(dist_class, ExponentialFamily)
         assert isinstance(b_shape, torch.Size)
-        assert isinstance(param_shape, torch.Size)
-
         if dist_class not in cls.dict_exp_param2natural.keys():
             raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
                                       "distribution class '{}' not yet implemented".format(dist_class))
