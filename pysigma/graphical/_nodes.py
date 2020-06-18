@@ -1175,7 +1175,11 @@ class ExpSumNode(AlphaFactorNode):
 
         # Permute message dimension so that it matches the order given by out_rel_var_list
         perm_order = list(mapped_var_list.index(v) for v in out_rel_var_list)
-        msg = msg.permute(perm_order)
+        msg = msg.batch_permute(perm_order)
+
+        # Expand to full relational variable dimension shape
+        target_shape = torch.Size([v.size for v in out_rel_var_list])
+        msg = msg.batch_expand(target_shape)
 
         # Send message
         out_ld.write(msg)
@@ -1205,12 +1209,14 @@ class ExpSumNode(AlphaFactorNode):
             #   former as the last dimension and the latter as the first batch dimension
             sum_dims = list(dim for dim, v in enumerate(in_rel_var_list) if v not in out_rel_var_list)
             other_dims = list(dim for dim, v in enumerate(in_rel_var_list) if v in out_rel_var_list)
-            # First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim
-            msg = msg.batch_flatten(other_dims)
-            msg = msg.batch_flatten(sum_dims)
-            # Process using the sum_op
-            msg = self.sum_op.process(msg)
-            # Reshape
+            if len(sum_dims) > 0:
+                # First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim
+                msg = msg.batch_flatten(other_dims)
+                msg = msg.batch_flatten(sum_dims)
+                # Process using the sum_op
+                msg = self.sum_op.process(msg)
+                # Reshape
+                msg = msg.batch_reshape(other_dims)
 
         # Otherwise if sum_op is None, carry out default summarization
         else:
@@ -1227,7 +1233,7 @@ class ExpSumNode(AlphaFactorNode):
 
         # Permute message dimension so that it matches the order given by out_rel_var_list
         perm_order = list(mapped_var_list.index(v) for v in out_rel_var_list)
-        msg = msg.permute(perm_order)
+        msg = msg.batch_permute(perm_order)
 
         # Send message
         out_ld.write(msg)
