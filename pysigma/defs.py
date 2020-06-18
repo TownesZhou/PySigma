@@ -536,8 +536,6 @@ class Message:
                 by 'index'. Effectively, along the dimension 'dim':
                     result_msg[..., index[i], ...] = val[i]
 
-            The number of indices provided, i.e. the length of 'index', must be at least the size of dimension 'dim'.
-
             For slices in the new message not referenced by 'index', they will be filled with identity values. For
                 Parameter type message, the identity value is 0; for Particles type message, the identity value is 1,
                 up to a normalization factor.
@@ -552,8 +550,6 @@ class Message:
         """
         assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
         assert isinstance(index, torch.LongTensor) and index.dim() == 1 and torch.all(index >= 0)
-        # Make sure there are enough indices
-        assert index.shape[0] >= self.b_shape[dim]
 
         # Translate dim value to positive if it's negative
         dim = len(self.b_shape) + dim if dim < 0 else dim
@@ -910,9 +906,9 @@ class Message:
             new_parameters = new_parameters.contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
-            perm_order = [0] + s_other_dims + s_dims
+            perm_order = s_other_dims + s_dims
             new_weights = new_weights.permute(perm_order)
-            new_weights = torch.flatten(new_weights, start_dim=len(s_other_dims) + 1, end_dim=-1)
+            new_weights = torch.flatten(new_weights, start_dim=len(s_other_dims), end_dim=-1)
             new_weights = new_weights.contiguous()
 
         new_msg = Message(self.type,
@@ -929,7 +925,7 @@ class Message:
             :param new_batch_shape:     Iterable of python ints, or torch.Size. The target batch shape.
         """
         assert isinstance(new_batch_shape, torch.Size) or \
-               (isinstance(new_batch_shape, Iterable) and all(isinstance(s, int) for s in new_batch_shape))
+               (isinstance(new_batch_shape, Iterable) or all(isinstance(s, int) for s in new_batch_shape))
 
         new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Tensor) else \
             new_batch_shape
@@ -945,6 +941,51 @@ class Message:
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             new_weights = torch.reshape(new_weights, self.s_shape + new_batch_shape)
+
+        new_msg = Message(self.type,
+                          self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
+                          new_parameters, new_particles, new_weights, new_log_density)
+        return new_msg
+
+    def batch_expand(self, new_batch_shape):
+        """
+            Returns a new view of the self message with singleton batch dimensions expanded to a larger size.
+
+            Passing a -1 as the size for a dimension means not changing the size of that dimension.
+
+            Expanding a message would not allocate new memory for the tensor contents, but create a new view on the
+                existing tensor. Any dimension of size 1 can be expanded to an arbitrary value without allocating new
+                memory.
+
+            Note that more than one element of an expanded message may refer to a single memory location. As a result,
+                in-place operations may result in incorrect behavior. Clone first before needing to write in-place to
+                the message tensor contents.
+
+            This method is a mimic of torch.expand()
+
+            :param new_batch_shape:     Iterable of python ints, or torch.Size. The target expanded batch shape. Must
+                                            have the same length as self's current batch shape.
+        """
+        assert isinstance(new_batch_shape, torch.Size) or \
+               (isinstance(new_batch_shape, Iterable) or all(isinstance(s, int) for s in new_batch_shape))
+        assert len(list(new_batch_shape)) == len(self.b_shape)
+
+        new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Tensor) else \
+            new_batch_shape
+
+        new_parameters = self.parameters
+        new_particles = self.particles
+        new_weights = self.weights
+        new_log_density = self.log_density
+
+        if isinstance(self.parameters, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
+            new_shape = new_batch_shape + self.p_shape
+            new_parameters = new_parameters.expand(new_shape)
+        if isinstance(self.weights, torch.Tensor):
+            # weights has shape (s_shape + b_shape)
+            new_shape = self.s_shape + new_batch_shape
+            new_weights = new_weights.expand(new_shape)
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
