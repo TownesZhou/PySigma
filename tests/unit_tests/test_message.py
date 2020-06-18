@@ -444,14 +444,26 @@ class TestMessageDimensionOperation:
 
     def test_index_put_parameter(self):
         m1 = Message(MessageType.Parameter,
-                     batch_shape=torch.Size([3, 4, 5]),
-                     param_shape=torch.Size([2]),
-                     parameters=torch.rand(3, 4, 5, 2)
+                     batch_shape=torch.Size([3, 3]),
+                     param_shape=torch.Size([1]),
+                     parameters=torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=torch.float32).unsqueeze(-1)
                      )
 
-        m2 = m1.batch_index_put(0, torch.LongTensor([0, 2]))
-        m3 = m1.batch_index_put(1, torch.LongTensor([1, 2]))
-        m4 = m1.batch_index_put(2, torch.LongTensor([1]))
+        m2 = m1.batch_index_put(0, torch.LongTensor([2, 0, 5]))
+        assert m2.size() == torch.Size([6, 3, 1])
+
+    def test_index_put_parameter_more(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 6]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 6, 2)
+                     )
+
+        m2 = m1.batch_index_put(0, torch.LongTensor([0, 2, 7]))
+        assert m2.size() == torch.Size([8, 6, 2])
+
+        m3 = m1.batch_index_put(1, torch.LongTensor([4, 1, 8, 7, 5, 9]))
+        assert m3.size() == torch.Size([3, 10, 2])
 
     def test_index_put_particles(self):
         m1 = Message(MessageType.Particles,
@@ -463,9 +475,8 @@ class TestMessageDimensionOperation:
                      log_density=torch.ones(2)
                      )
 
-        m2 = m1.batch_index_put(0, torch.LongTensor([0, 2]))
-        m3 = m1.batch_index_put(1, torch.LongTensor([1, 2]))
-        m4 = m1.batch_index_put(2, torch.LongTensor([1]))
+        m2 = m1.batch_index_put(0, torch.LongTensor([0, 2, 3]))
+        assert m2.size() == torch.Size([2, 4, 2, 3, 2])
 
     def test_batch_diagonal_parameter(self):
         m1 = Message(MessageType.Parameter,
