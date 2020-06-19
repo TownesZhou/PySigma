@@ -1,9 +1,12 @@
 from pysigma.graphical._nodes import *
 import torch
+
 import pytest
+
 from torch.distributions.normal import Normal
 from pysigma.defs import Variable
 from pysigma.structures import *
+
 
 
 # some testing parameters that might be used frequently in multiple place
@@ -12,6 +15,7 @@ var = Variable("test", VariableMetatype.Indexing, 2) # s_shape == 2
 rel_var_l = [Variable("rel", VariableMetatype.Relational, 3)] # b_shape == 3
 ran_var_l = [Variable("ran", VariableMetatype.Random, 4, {c})] # e_shape == 4
 var_node_param = [var, rel_var_l, ran_var_l]
+
 
 class TestInitialization:
 
@@ -63,6 +67,7 @@ class TestAddLink:
 
         wmvn_in.add_link(LinkData(wmvn_in, ltmfn, False, torch.Size([5, 5, 5]), 0.0003))
         ltmfn.add_link(LinkData(wmvn_out, ltmfn, False, torch.Size([5, 5, 5]), 0.0003))
+
 
 class TestFactorNode():
     """
@@ -200,3 +205,9 @@ class TestExpSumNode:
         ExpSumNode.inward_compute() and ExpSumNode.outward_compute()
     """
     pass
+
+
+
+class TestCompute:
+    pass
+
