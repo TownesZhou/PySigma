@@ -998,11 +998,11 @@ class Message:
         if isinstance(self.parameters, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
             new_shape = new_batch_shape + self.p_shape
-            new_parameters = new_parameters.expand(new_shape)
+            new_parameters = new_parameters.expand(new_shape).contiguous()
         if isinstance(self.weights, torch.Tensor):
             # weights has shape (s_shape + b_shape)
             new_shape = self.s_shape + new_batch_shape
-            new_weights = new_weights.expand(new_shape)
+            new_weights = new_weights.expand(new_shape).contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
