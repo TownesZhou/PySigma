@@ -3,7 +3,7 @@
 """
 import torch
 from torch.distributions.constraints import Constraint
-from enum import Enum
+from enum import Flag, auto
 from collections.abc import Iterable
 import numpy as np
 
@@ -78,12 +78,21 @@ class Variable:
 
 
 # Generalized message type and message representation
-class MessageType(Enum):
+class MessageType(Flag):
     """
         Enum class to represent message types
+
+        The True-valued boolean relationship between types, using the 'in' operator:
+            - Undefined in Undefined == Undefined in Parameter == Undefined in Particles == Undefined in Both == True
+            - Parameter in Parameter == Undefined in Both == True
+            - Particles in Particles == Undefined in Both == True
+        All other relations are False.
+
     """
-    Parameter = 0
-    Particles = 1
+    Undefined = 0
+    Parameter = auto()
+    Particles = auto()
+    Both = Parameter | Particles
 
 
 class Message:
@@ -201,10 +210,10 @@ class Message:
         self.e_shape = event_shape
 
         # Check whether necessary arguments are provided
-        if self.type is MessageType.Parameter:
+        if MessageType.Parameter in self.type:
             assert self.b_shape is not None and self.p_shape is not None
             assert self.parameters is not None
-        if self.type is MessageType.Particles:
+        if MessageType.Particles in self.type:
             assert self.s_shape is not None and self.b_shape is not None and self.e_shape is not None
             assert self.particles is not None
             assert self.weights is not None
@@ -239,10 +248,22 @@ class Message:
             Overloading addition operation '+'
         """
         assert isinstance(other, Message), "Message can only be added with another Message"
-        assert self.type == other.type, "Only the same type of messages can be added. First operand has type '{}', " \
-                                        "while the second one has type '{}'".format(self.type, other.type)
+        assert self.type in other.type or other.type in self.type, \
+            "Only compatible types of messages can be added. First operand has type '{}',  while the second one has " \
+            "type '{}'".format(self.type, other.type)
+        # Get the small type and large type
+        if self.type in other.type:
+            s_type, l_type = self.type, other.type
+        else:
+            s_type, l_type = other.type, self.type
+        # Undefined type cannot be added
+        assert s_type is not MessageType.Undefined, \
+            "Message of undefined type cannot be added. First operand has type '{}', while the second one has type " \
+            "'{}'".format(self.type, other.type)
+
         # Addition for Parameter type
-        if self.type == MessageType.Parameter:
+        new_msg = None
+        if MessageType.Parameter in s_type:
             assert self.b_shape == other.b_shape and self.p_shape == other.p_shape, \
                 "Only Messages with the same shape can be added together. The messages being added are of Parameter " \
                 "type. Found first message with (batch_shape, param_shape) = '{}', and second message with " \
@@ -253,7 +274,7 @@ class Message:
             new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
 
         # Addition for Particles type
-        else:
+        if MessageType.Particles in s_type:
             assert self.s_shape == other.s_shape and self.b_shape == other.b_shape and self.e_shape == other.e_shape, \
                 "Only Messages with the same shape can be added together. The messages being added are of Particles " \
                 "type. Found first message with (sample_shape, batch_shape, event_shape) = '{}', and second message " \
@@ -295,6 +316,10 @@ class Message:
             assert other.shape == torch.Size([]) or other.shape == self.b_shape, \
                 "If the scalar is a torch.Tensor, must be either a singleton tensor or a tensor with the same shape " \
                 "as the Message's batch shape: '{}'. Instead found: '{}'".format(self.b_shape, other.shape)
+        # Undefined type cannot be scalar multiplied
+        assert self.type is not MessageType.Undefined, \
+            "Message of undefined type cannot be scalar multiplied. The message has type '{}'" \
+            .format(self.type, other.type)
 
         # Expand scalar tensor dimension if it is a batched scalars
         b_p_other = other
@@ -307,12 +332,13 @@ class Message:
                 s_b_other = torch.unsqueeze(s_b_other, dim=0)
 
         # Scalar multiplication for Parameter messages
-        if self.type == MessageType.Parameter:
+        new_msg = None
+        if MessageType.Parameter in self.type:
             new_parameters = b_p_other * self.parameters
             new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
 
         # Scalar multiplication for Particles messages
-        else:
+        if MessageType.Particles in self.type:
             # The result of scalar multiplication with uniform weights is still uniform, so only process non-uniform
             #   weights
             new_weights = self.weights
@@ -358,26 +384,17 @@ class Message:
 
     def size(self):
         """
-            Return the shape of the mssage.
-            For Parameter message, returns  (batch_shape + param_shape)
-            For Particles message, returns  (sample_shape + batch_shape + event_shape)
+            Returns a tuple of the message's shapes:
+                (sample_shape, batch_shape, param_shape, event_shape)
         """
-        if self.type == MessageType.Parameter:
-            return self.b_shape + self.p_shape
-        else:
-            return self.s_shape + self.b_shape + self.e_shape
+        return self.s_shape, self.b_shape, self.p_shape, self.e_shape
 
     def same_size_as(self, other):
         """
             Check if self has the same shape as the other message. Return True if so.
         """
         assert isinstance(other, Message)
-        if self.type != other.type:
-            return False
-        elif self.type == MessageType.Parameter:
-            return self.b_shape == other.b_shape and self.p_shape == other.p_shape
-        else:
-            return self.s_shape == other.s_shape and self.b_shape == other.b_shape and self.e_shape == other.e_shape
+        return self.size() == other.size()
 
     def clone(self):
         """
