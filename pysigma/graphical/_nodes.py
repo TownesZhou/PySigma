@@ -44,7 +44,7 @@ class LinkData:
         """
         assert isinstance(vn, VariableNode)
         assert isinstance(fn, FactorNode)
-        assert isinstance(msg_shape, torch.Size)
+        assert isinstance(msg_shape, tuple) and all(isinstance(s, torch.Size) for s in msg_shape)
         assert isinstance(to_fn, bool)
         assert isinstance(epsilon, float)
 
@@ -78,8 +78,10 @@ class LinkData:
         """
             Reset shape for the Message
             CAUTION: will clear memory buffer and set self.new to False
+
+            :param msg_shape:       A tuple of torch.Size. Represents all four message shapes.
         """
-        assert isinstance(msg_shape, torch.Size)
+        assert isinstance(msg_shape, tuple) and all(isinstance(s, torch.Size) for s in msg_shape)
         self.msg_shape = msg_shape
         self.memory = None
         self.new = False
@@ -205,8 +207,15 @@ class Node(ABC):
             Compute method to be called to propagate message during decision phase.
 
             Note that super() must be called within compute() method in any child class, because all abstract node-level
-                statistics logging is taken care of herein. 
+                statistics logging is taken care of herein.
+
+            The default quiescence behavior for compute() is to return directly if check_quiesce() returns True, without
+                logging anything or carrying out further computation. Note that such behavior may or may not be desired
+                by child node class.
         """
+        # Return directly if quiesced
+        if self.check_quiesce():
+            return
         # TODO: Other general logging regarding node computation statistics to be added here
         self.visited = True
 
