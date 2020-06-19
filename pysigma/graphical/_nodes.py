@@ -836,7 +836,7 @@ class AlphaFactorNode(FactorNode, ABC):
         compute() is implemented so that it execute inward_compute() and/or outward_compute() based on the presence of
             linkdata pairs.
 
-        inward_compute() and outward_compute() are now abstract methods that must be implemeted by child classes, but
+        inward_compute() and outward_compute() are now abstract methods that must be implemented by child classes, but
             compute() should not be override.
     """
     def __init__(self, name):
@@ -1286,9 +1286,59 @@ class BetaNode(Node, ABC):
     """
         Abstract base class for nodes belonging to the beta subgraph of a conditional.
 
-        Captures the commonality of Beta nodes, include link connectivity and inward & outward compute pattern.
+        Captures the commonality of Beta nodes, including link connectivity and inward & outward compute pattern:
+            - Groups links in terms of whether the messages moves inward to the Gamma Factor node or not.
+            - During compute, perform inward and outward computation separately in turn by calling inward_compute() and
+                outward_compute()
+
+        Different from Alpha nodes, there's no restriction on the number of incoming or outgoing linkdata, as long as
+            they can be identified in terms of their messaging directionality.
+
+        Need to specify "direction" attribute in linkdata
     """
-    pass
+    def __init__(self, name, *args, **kwargs):
+        super(BetaNode, self).__init__(name, *args, **kwargs)
+
+        # Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure
+        self.labeled_ld_list_pair = {
+            'inward': ([], []),
+            'outward': ([], [])
+        }
+
+    def add_link(self, linkdata):
+        assert isinstance(linkdata, LinkData)
+        assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
+
+        if linkdata.to_fn:
+            self.labeled_ld_list_pair[linkdata.attr['direction']][0].append(linkdata)
+        else:
+            self.labeled_ld_list_pair[linkdata.attr['direction']][1].append(linkdata)
+
+        super(BetaNode, self).add_link(linkdata)
+
+    def compute(self):
+        super(BetaNode, self).compute()
+
+        for direction, (in_ld_list, out_ld_list) in self.labeled_ld_list_pair.items():
+            if len(in_ld_list) > 0 and len(out_ld_list) > 0:
+                if direction == 'inward':
+                    self.inward_compute(in_ld_list, out_ld_list)
+                else:
+                    self.outward_compute(in_ld_list, out_ld_list)
+
+    @abstractmethod
+    def inward_compute(self, in_ld_list, out_ld_list):
+        """
+            Inward message computation. To be implemented by child class.
+        """
+        pass
+
+    @abstractmethod
+    def outward_compute(self, in_ld_list, out_ld_list):
+        """
+            Outward message computation. To be implemented by child class.
+        """
+        pass
 
 
 class EventSplitVarNode(BetaNode, VariableNode):
