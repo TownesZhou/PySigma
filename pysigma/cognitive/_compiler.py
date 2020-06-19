@@ -4,7 +4,7 @@
     Compiler implementation - compile predicates and conditionals into underlying factor subgraph
 """
 from ..graphical._nodes import *
-from ..graphical._structures import *
+from defs import *
 
 
 def _compile_predicate(self, predicate):

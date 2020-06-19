@@ -3,7 +3,7 @@
 """
 
 import networkx
-from ._structures import *
+from defs import *
 from ._nodes import *
 
 
