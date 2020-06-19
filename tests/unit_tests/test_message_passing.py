@@ -1,8 +1,5 @@
-import pytest
-import torch
-from pysigma import Sigma
 from pysigma.graphical import Graph
-from pysigma.graphical._structures import *
+from defs import *
 from pysigma.graphical._nodes import *
 
 

@@ -4,480 +4,920 @@
     Author of this file: Jincheng Zhou, University of Southern California
 """
 
+import numpy as np
 import torch
-from collections import namedtuple
+from torch import Size
+from torch.distributions import Distribution
+from torch.distributions.constraints import Constraint
 from collections.abc import Iterable
-from .utils import *
-from .graphical._structures import Variable
+from itertools import chain
+import warnings
+from utils import intern_name, extern_name, KnowledgeTranslator
+from defs import Variable, VariableMetatype, Message, MessageType
 
 
-class PredicateArgument:
+class VariableMap:
     """
-        Argument in a Predicate
-    """
+        Class type for declaring mappings on relational variables in pattern elements
 
-    def __init__(self, argument_name, argument_type, probabilistic=False, unique_symbol=None, normalize=False, **kwargs):
+        Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance
+            therefore declares an integer-valued mapping with finite domain.
+
+        Every VariableMap instance should be able to tell the map's domain, codomain, and the mapping itself, with the
+            former two in the format of set of integers, and the latter one in the format of dictionary mapping integers
+            to integers.
+
+        The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
+            be computed lazily at runtime and returned by get_map(). This is to allow dynamic mappings such as
+            neural attention modules.
+
+        Only injective mapping can be accepted. This is because the semantic of mapping two relational variable's values
+            to a single value can be ill-defined. The injectivity is checked during set_map() by comparing the
+            cardinality of the image and the cardinality of the domain.
+    """
+    def __init__(self, mapping_func, domain, codomain, dynamic=False):
         """
-            Declare an Argument in a Predicate
-        :param argument_name:   'str'. Name of the predicate argument (working memory variable)
-        :param argument_type:   'Type'. The "type" of the working memory variable
-        :param probabilistic:   True or False. Whether this working memory variable is probabilistic, i.e., semantically
-                                    its individual values represent probabilistic scores within the interval [0, 1].
-                                If False, this variable will be treated as a vector variable.
-                                Note that if normalize is True, then probabilistic must be True
-        :param unique_symbol:   'str' or None. If None, this variable will be treated as universal.
-                                  - '!'` Select best
-                                  - '$': Select expected value (Currently disabled)
-                                  - '^': Maintain exponential transform of distribution (Currently disabled)
-                                  - '=': Select by probability matching
-                                  = '%': Maintain distribution
-                                Note:
-                                    - It is not allowed to specify multiple arguments with different unique symbols in a
-                                    unique predicate, except for the '%' symbol. Variables specified with '%' will be
-                                    treated with default selection behavior, i.e., maintain values along this dimension.
-                                    - Therefore, once the predicate becomes unique, i.e., as long as one of its
-                                    variables comes with any one of the unique symbols listed above, specifying '%'
-                                    symbol or simply leave the 'unique_symbol' field None for other variables does not
-                                    make any difference.
-                                    - While multiple arguments are specified with the same unique symbol other than '%',
-                                    the corresponding selection method will be performed on these variable dimensions
-                                    jointly. For example, for two variables with '!', will select the max value across
-                                    both variable dimensions.
-        :param normalize:       True or False. Whether this variable represents a discrete distribution and to normalize
-                                    messages over this variable dimension.
+            Initialize a VariableMap instance. Wraps around a user-specified function that implements the mapping
+                mechanism.
+
+            :param  mapping_func:   a user-specified function. Takes a numpy array of integers as input, and returns a
+                                        numpy array of integers of the same size. Each entry in the output array
+                                        corresponds to the value of f(x) of input x at the same index in the input array
+            :param  domain:         A set of integers. Declares the domain of the mapping.
+            :param  codomain:       A set of integers. Declares the codomain of the mapping.
+            :param  dynamic:        True or False. Defaults to False. Indicates whether the mapping is dynamic. If True,
+                                        then mapping_func will be called each time a mapping dictionary is desired.
+                                        Otherwise, mapping_func will only be called once during initialization of this
+                                        VariableMap instance, and the result will reused.
         """
-        if not isinstance(argument_name, str):
-            raise ValueError("1st argument 'argument_name' of a PredicateArgument must be a 'str'")
-        if not isinstance(argument_type, Type):
-            raise ValueError("2nd argument 'argument_type' of a PredicateArgument must be a 'Type'")
-        if not isinstance(probabilistic, bool):
-            raise ValueError("argument 'probabilistic' of a PredicateArgument bust be a 'bool'")
-        if unique_symbol is not None and not isinstance(unique_symbol, str):
-            raise ValueError("argument 'unique_symbol' of a PredicateArgument must be a 'str'")
-        if unique_symbol is not None and unique_symbol not in ['!', '=', '%']:
-            raise ValueError("Unknown unique symbol: '{}'".format(unique_symbol))
-        if not isinstance(normalize, bool):
-            raise ValueError("argument 'normalize' or a PredicateArgument must be a 'bool'")
-        # Check that if normalize is True, then probabilistic is also true
-        if normalize and not probabilistic:
-            raise ValueError("If 'normalize' is True for a PredicateArgument, then it must also be probabilistic.")
+        # Argument validation
+        if not callable(mapping_func):
+            raise ValueError("The 1st argument 'mapping_func' should be a python callable, accepting a list of "
+                             "integers as the batched input to the mapping and produces a list of integers of the same "
+                             "size as the batched output")
+        if not isinstance(domain, set) or not all(isinstance(i, int) and i >= 0 for i in domain):
+            raise ValueError("The 2nd argument 'domain' must be a set of non-negative integers, denoting the domain "
+                             "of the specified mapping")
+        if not isinstance(codomain, set) or not all(isinstance(i, int) and i >= 0 for i in codomain):
+            raise ValueError("The 3rd argument 'codomain' must be a set of non-negative integers, denoting the "
+                             "codomain of the specified mapping")
+        if not isinstance(dynamic, bool):
+            raise ValueError("The 4th argument 'dynamic' must be of type bool")
 
-        self.argument_name = argument_name
-        self.type = argument_type
-        self.probabilistic = probabilistic
-        self.unique_symbol = unique_symbol
-        self.normalize = normalize
+        self.mapping_func = mapping_func
+        self.domain = domain
+        self.codomain = codomain
+        self.dynamic = dynamic
+        # mapping chache. This field will be looked up later as definition of the mapping
+        self.map = None
+        # The image of the map, i.e., the set of values who has a corresponding input. It should be a subset of codomain
+        self.image = None
 
-        # Create working memory variable
-        self.wmvar = Variable(argument_name, argument_type.size, probabilistic, unique_symbol is not None, normalize)
+        # Set the map cache if not dynamic
+        if not dynamic:
+            self.set_map()
 
-
-class PredicatePattern:
-    """
-        Predicate Pattern in a Conditional
-    """
-
-    def __init__(self, predicate_name, elements, negation=False, nonlinearity=None):
+    def set_map(self):
         """
-            Declare a Predicate Pattern in a Conditional
-        :param predicate_name:      'str'. name of the predicate in question
-        :param elements:            Iterable of 'PatternElement'.
-        :param negation:            True or False. Whether message for this pattern will be negated. Negation semantic
-                                        depends on whether the corresponding predicate is probabilistic. If so, will
-                                        take probabilistic negation, otherwise take arithmetic negation.
-                                    Default to False.
-        :param nonlinearity:        None or one of the following: `'negation'` or `'-'`, `'exponential'` or `'^'`,
-                                        `'sigmoid'` or `'s'`, `'relu'` or `'r'`, `'tanh'` or `'t'`, `'exp'` or `'e'`
-                                        (true exponential), or customized torch nonlinearity functions
+            Set self.map by obtaining the mapping dictionary from self.mapping_func
         """
-        if not isinstance(predicate_name, str):
-            raise ValueError("1st argument 'predicate_name' of a PredicatePattern must be a 'str'")
-        if not isinstance(elements, Iterable) or not all(isinstance(e, PatternElement) for e in elements):
-            raise ValueError("2nd argument 'elements' of a PredicatePattern must be an iterable of 'PatternElement's")
-        if not isinstance(negation, bool):
-            raise ValueError("the argument 'negation' of a PredicatePattern must be a 'bool'")
-        if nonlinearity is not None and nonlinearity not in ['negation', '-', 'exponential', '^', 'sigmoid', 's',
-                                                             'relu', 'r', 'tanh', 't', 'exp', 'e']:
-            raise ValueError("Unknown nonlinearity: '{}'".format(nonlinearity))
-        # TODO: allow customized nonlinearity declaration in future iterations
+        # Input list
+        input = np.array(list(self.domain))
+        output = self.mapping_func(input)
+        # Check output format and if its entries are in codomain range
+        if not isinstance(output, np.ndarray) or not all(isinstance(i, np.int64) and i >= 0 for i in output):
+            raise ValueError("The provided mapping python callable should return a numpy array of non-negative "
+                             "np.int64. Instead, found: '{}'".format(output))
+        if input.size != output.size:
+            raise ValueError("The output list from the provided mapping python callable should be of the same size as "
+                             "the input list. Expecting size '{}', instead found size '{}'"
+                             .format(len(input), len(output)))
+        for i in output:
+            if i not in self.codomain:
+                raise ValueError("The output from the provided mapping python callable should be within the specified "
+                                 "codomain: '{}'. Instead, found entry in the output list: '{}'"
+                                 .format(self.codomain, i))
+        # Set mapping
+        self.map = dict(zip(input, output))
+        # Set mapping image
+        self.image = set(self.map.values())
+        # Check injectivity
+        if len(self.image) != len(self.domain):
+            raise ValueError("The specified mapping should be injective. However, found that the cardinality of the "
+                             "mapping's image is '{}', whereas the cardinality of the specified domain is '{}'"
+                             .format(len(self.image), len(self.domain)))
 
-        self.predicate_name = predicate_name
-        self.elements = list(elements)
-        self.negation = negation
-        self.nonlinearity = nonlinearity
+    def get_map(self):
+        """
+            Return the mapping dictionary, the map's domain, and the map's image.
+
+            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.
+        """
+        if self.dynamic:
+            self.set_map()
+        return self.map, self.domain, self.image
+
+    def get_inverse_map(self):
+        """
+            Return the inverse map's mapping dictionary, the inverse map's domain (original map's image), and the
+                inverse map's image (should be the same as the original map's domain)
+
+            Note that because injectivity is guaranteed, computing an inverse map is possible.
+
+            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.
+        """
+        if self.dynamic:
+            self.set_map()
+
+        inverse_map = dict(zip(self.map.values(), self.map.keys()))
+        return inverse_map, self.image, self.domain
 
 
-class PatternElement:
+class FactorFunction:
     """
-        Element in a PredicatePattern
-          Each element is of the f
-                  - A Constant Region, which is:      # TODO: to implement in v1
-                      - An `int` if the variable is discrete, or an 'str' (a symbol) in this variable's symbol list if the
-                              variable is symbolic.
-                      - A iterable of `int` (if discrete) or 'str' (if symbolic) within the value range of this variable. This
-                              would yield a list of intervals at the specified values in the given list.
-                      - None: This would yield the entire scope of the dimension
-                  - A `Filter` or a `list` of `Filter`s. # TODO: to implement in future iterations
-                  - A `PatternVariable`.              # TODO: to implement in v1
+        Class type for factor node function
+
+        A FactorFunction instance can be thought of as a function object that takes in a group of batched tensors, each
+            corresponding to a batched value assignments to a random variable, and produces a single batched tensor that
+            represents the joint probability density, i.e.,
+                    val = Prob(X_1, X_2, ..., X_n)
+            where val, X_1, X_2, ..., X_n are all batched over the first dimension.
+
+        The first dimension of all tensors indexes the group of value assignments to the random variables. Therefore, it
+            should be ignored by the factor function procedure and simply treated as the "batched" dimension.
+
+        Defines different types of factor functions:
+            a. Tabular factor function
+                Returns a full-dimensional tensor at once representing the entire factor function table, each dimension
+                    corresponds to a random variable's support. Suitable when all random variables X_1, ..., X_n have
+                    finite discrete domains and the size is manageable.
+                For this type of factor function, no inputs regarding the R.V. values are necessary, because the
+                    returned factor table should cover all combinations of inputs.
+                This is the same as the legacy Lisp Sigma's factor node function
+
+            b. General form generative joint-probability density function
+                Given a batched group of RV value assignments as inputs, returns a batched tensor array representing the
+                    probability density. To enforce the probabilistic semantics, i.e.,
+                        val = Prob(X_1, X_2, ..., X_n)
+                    The entries in the returned tensor should be within the range [0, 1].
+                Compatible with all particle-based inference methods
+
+            c. Exponential form joint-probability density function
+                Explicitly defines an exponential distribution. Encodes an exponential distribution class as the
+                    factor node conditional distribution. Returns the PARAMETERS to the distribution.
+                Must declare this type if want architecture to recognize conjugate-exponential model structure and
+                    carries out closed-form message updates.
+
+            d. Deterministic factor function
+                Returns one or multiple batched VALUE tensors corresponding to one or multiple R.V.s given a batched
+                    value assignments to other variables. Enforce the semantics of
+                        Y_1, Y_2, ..., Y_m = Func(X_1, X_2, ..., X_n)
+                Conceptually identical to (b) type factor function with a delta distribution, but due to concerns of
+                    sample efficiency, this type should be used in practice if the factor function is deterministic.
+                Note that once defined, the directionality of the corresponding Conditional is also assumed and fixed.
+                In other words, X_1, ..., X_n should only appear in condition patterns, and Y_1, ..., Y_m only in action
+                patterns.
     """
+    pass
 
-    def __init__(self, argument_name, value=None):
-        if not isinstance(argument_name, str):
-            raise ValueError("1st argument 'argument_name' of a PatternElement must be a 'str'")
-        if value is not None and not isinstance(value, (int, str, Iterable, Filter, PatternVariable)):
-            raise ValueError("If not None, 2nd argument 'value' of a PatternElement must be an 'int', 'str', "
-                             "an iterable of 'int' or 'str', a 'Filter', or a 'PatternVariable'")
-        if isinstance(value, Iterable) and \
-                not (all(isinstance(v, int) for v in value) or
-                     all(isinstance(v, str) for v in value) or
-                     all(isinstance(v, Filter) for v in value)):
-            raise ValueError("If an iterable, the 2nd argument 'value' of a PatternElement must be an iterable "
-                             "of 'int', 'str', or 'Filter's")
 
-        self.argument_name = argument_name
-        if isinstance(value, PatternVariable):
-            self.value = value
+class Summarization:
+    """
+        Class type for declaring procedures for summarization over space of distribution instances spanned by relational
+            variable dimensions.
+
+        User should provide a functor that can be called to perform the summarization procedure. Generally, the functor
+            should be expecting to receive and process both Parameter representation of message and Particles
+            representation of message, with a flag indicating which type current input is.
+
+        The functor Input/Output specification:
+            :param message_type:    "parameter", "particles", or "both"
+            :param message:         a dict. with the following schema:
+                                    - For "parameter" message type, expect the following:
+                                        {
+                                          "parameter": a torch.Tensor, with dimensions [batch_dim, sum_dim, param_dim]
+                                        }
+                                    - For "particles" message type, expect the following:
+                                        {
+                                          "particles": a dict mapping Random Variable name to torch.Tensor, with the
+                                                       following schema:
+                                                {
+                                                    a str, the random variable name: a torch.Tensor with dimensions
+                                                            [sample_dim, rv_dim]
+                                                }
+                                          "weights": a torch.Tensor, with dimensions [batch_dim, sum_dim, sample_dim],
+                                          "log_density": a torch.Tensor, with dimension [sample_dim]
+                                        }
+                                    - For "both" message type, expect a dictionary containing all of the contents above.
+            :return                 a torch.Tensor. Depending on the type of message:
+                                    - For "parameter" message type, expect the following:
+                                          "parameter": the processed parameter torch.Tensor, with dimension
+                                                    [batch_dim, param_dim]
+                                    - For "particles" message type, expect the following:
+                                          "weights": the processed weights torch.Tensor, with dimensions
+                                                    [batch_dim, sample_dim],
+                                    - For "both" message type, expect a TUPLE of torch.Tensor containing both of the
+                                        contents above. The first element is expected to be the "parameter" and the
+                                        second one is expected to be the "weights"
+
+        Explanation for the shapes:
+            - 'batch_dim': the batch dimension, as in machine learning. This dimension indexes batch of data instances,
+                            and should not be tampered with.
+            - 'sum_dim':   the dimension to be summarized over. This dimension should be reduced during the processing.
+            - 'param_dim': the dimension of the parameter.
+            - 'sample_dim':     the dimension that indexes particles in a particle list. Size of this dimension
+                                    corresponds to the number of particles drawn.
+            - 'rv_dim':      the dimension of the corresponding random variable. Same the same as the size of the RV.
+
+        All input tensors will first be cloned before being fed to the functor, because we don't expect "particles"
+            and "log_density" tensors to be changed during summarization.
+    """
+    def __init__(self, sum_func):
+        """
+            Initialize a summarization operation.
+
+            :param sum_func:    A python callable that implements the summarization procedure. See class docs for more
+                                    details regarding input/output specifications.
+        """
+        if not callable(sum_func):
+            raise ValueError("The input argument 'sum_func' should be a python callable.")
+
+        self.sum_func = sum_func
+
+    def process(self, msg, ran_var_list, translator):
+        """
+            Should be called by nodes to perform the summarization. Shape checks will be carried out.
+
+            :param msg:     A flattened Message instance. The last batch dimension is the one assumed to be summarized
+                                over.
+            :param ran_var_list:    List of random variables.
+            :param translator:      A KnowledgeTranslator instance. To translate the particles tensor.
+            :return:        A new message
+        """
+        assert isinstance(msg, Message) and len(msg.b_shape) == 2
+        assert isinstance(ran_var_list, list) and all(isinstance(v, Variable) for v in ran_var_list)
+        assert isinstance(translator, KnowledgeTranslator)
+
+        # First clone the message, and preprocess if necessary
+        msg_clone = msg.clone()
+        parameters = msg_clone.param
+        particles = msg_clone.particles
+        weights = msg_clone.weights
+        log_density = msg_clone.log_density
+
+        # Permute weight tensor sample_dim to the last dimension
+        weights = weights.permute(1, 2, 0).contiguous()
+        # Translate particle tensor to the format consistent with cognitive level knowledge
+        particles = translator.event2pred_event(particles)
+
+        # Generate input dict
+        if msg.parameters is not None and msg.weights is not None:
+            content_type = 'both'
+            input_dict = dict(parameter=parameters, particles=particles, weights=weights, log_density=log_density)
+        elif msg.type is MessageType.Parameter:
+            content_type = 'parameter'
+            input_dict = dict(parameter=parameters)
         else:
-            self.value = list(value) if isinstance(value, Iterable) else [value]    # turn into list anyway
+            content_type = 'particles'
+            input_dict = dict(particles=particles, weights=weights, log_density=log_density)
 
+        # Process and get result
+        output = self.sum_func(content_type, input_dict)
 
-class PatternVariable:
-    """
-        Pattern Variable to be defined in a predicate pattern
-          Each pattern variable is of the form `(variable_name, relation)`
-              - `variable_name`: `str` type. The name of the pattern variable. This is to be distinguished from the variable's
-                      working memory variable, or `argument_name`. These are the actual variables used to determine various
-                      forms of variable bindings in a conditional. Bindings are assumed when same pattern variable is referred
-                      in multiple places in a conditional. It's like the distinction between the actual argument and the
-                      formal argument in a procedural programming language.
-              - `relation`: an optional parameter
-                  - `None`: default value
-                  - an `int`: declaring offset
-                  - an `Affine`: declaring an affine transformation
-                  - a `Filter` or an iterable of `Filter`s.    # TODO: to implement in future iterations
-                  TODO: The `not-equal test` and "highly experimental" `:explicit` are not included here.
-    """
+        # Shape check
+        new_param = None
+        new_weights = None
+        if content_type == 'both':
+            if not isinstance(output, tuple):
+                raise ValueError("The Message type is 'both'. In this case, expect output from the summarization "
+                                 "functor to be a 2-tuple of torch.Tensor. Instead found: {}".format(type(output)))
+            if not (len(output) == 2 and all(isinstance(t, torch.Tensor) for t in output)):
+                raise ValueError("The Message type is 'both'. In this case, expect output from the summarization "
+                                 "functor to be a 2-tuple of torch.Tensor. Instead found: {}"
+                                 .format((type(output[0]), type(output[1]))))
+            new_param, new_weights = output
+        elif content_type == 'parameter':
+            if not isinstance(output, torch.Tensor):
+                raise ValueError("The Message type is 'parameter'. In this case, expect output from the summarization "
+                                 "functor to be a torch.Tensor. Instead found: {}".format(type(output)))
+            new_param = output
+        else:
+            if not isinstance(output, torch.Tensor):
+                raise ValueError("The Message type is 'particles'. In this case, expect output from the summarization "
+                                 "functor to be a torch.Tensor. Instead found: {}".format(type(output)))
+            new_weights = output
 
-    def __init__(self, variable_name, relation=None):
-        if not isinstance(variable_name, str):
-            raise ValueError("The 1st argument 'variable_name' of a PatternVariable must be a 'str'")
-        if variable_name[0] == '_':
-            raise ValueError("The 1st argument 'variable_name' of a PatternVariable cannot start with '_'")
-        if relation is not None and not isinstance(relation, (int, Affine, Filter, Iterable)):
-            raise ValueError("If not None, the 2nd argument 'relation' of a PatternVariable must be an 'int', "
-                             "an 'Affine', a 'Filter', or an iterable of 'Filter's")
-        if isinstance(relation, Iterable) and not all(isinstance(r, Filter) for r in relation):
-            raise ValueError("If an iterable, the 2bd argument 'relation' of a PatternVariable must be an iterable "
-                             "of Filters")
+        if new_param is not None:
+            if not new_param.shape == msg.b_shape[0] + msg.p_shape:
+                raise ValueError("Expect the output parameter to have shape [batch_shape, param_shape] = [{}, {}]. "
+                                 "Instead found shape {}".format(msg.b_shape[0], msg.p_shape, new_param.shape))
+        if new_weights is not None:
+            if not new_weights.shape == msg.b_shape[0] + msg.s_shape:
+                raise ValueError("Expect the output parameter to have shape [batch_shape, sample_shape] = [{}, {}]. "
+                                 "Instead found shape {}".format(msg.b_shape[0], msg.s_shape, new_param.shape))
 
-        self.variable_name = variable_name
-        self.relation = list(relation) if isinstance(relation, Iterable) else relation
+        # permute shape if necessary
+        new_weights = new_weights.transpose(0, 1).contiguous()
 
-
-class Affine:
-    """
-        Affine transformation to be defined alongside a pattern variable
-          Each affine transformation is of the form `(from, offset, coefficient, pad)`
-              - `from`: default to the current variable.
-              - `offset`: default to 0
-              - `coefficient`: default to 1
-              - `pad`: 0 for closed-world predicates and 1 for open-world predicates
-        TODO: Define a more generalized notion of 'mapping' in place of Affine in future iterations
-    """
-
-    def __init__(self, from_var=None, offset=0, coefficient=1, pad=0):
-        if from_var is not None and not isinstance(from_var, str):
-            raise ValueError("If not None, The 1st argument 'from_var' of an Affine must be a 'str'")
-        if not isinstance(offset, int):
-            raise ValueError("The 2nd argument 'offset' of an Affine must be an 'int'")
-        if not isinstance(coefficient, (int, float)):
-            raise ValueError("The 3rd argument 'coefficient' of an Affine must be an 'int' or a 'float'")
-        if not isinstance(pad, int):
-            raise ValueError("The 4th argument 'pad' of an Affine must be an 'int'")
-
-        self.from_var = from_var
-        self.offset = offset
-        self.coefficient = coefficient
-        self.pad = pad
-
-
-# TODO: Filters NOT TO IMPLEMENT IN SHORT TERM
-# Filter to be defined in a PredicatePattern
-#   Each filter is of the form `(constant_region, constant, coefficient)`
-Filter = namedtuple('Filter', ['constant_region', 'constant', 'coefficient'])
+        # Generate new message
+        new_msg = Message(msg.type, msg.p_shape, msg.s_shape, msg.b_shape, msg.e_shape,
+                          new_param, msg.particles, new_weights, msg.log_density)
+        return new_msg
 
 
 class Type:
-    def __init__(self, type_name, value_type, min=None, max=None, symbol_list=None):
+    def __init__(self, type_name, symbolic=False, size=None, symbol_list=None, value_constraint=None):
         """
-            Specify a Sigma type. Can be symbolic or discrete (will not support continuous type at this point). If
-            symbolic, must provide a list of symbols. If discrete, must specify the range of values through `min` and
-            `max`. Note that `min` is inclusive while `max` is exclusive, i.e., the actual range would be $[min, max)$
-        :param type_name: `str` type. Name of the Sigma type
-        :param value_type: `str` type. `"symbolic"` or `"discrete"`.
-        :param min: `int` type. The lowest value of a discrete type. Must specify if type is `"discrete"`.
-        :param max: `int` type. The highest value + 1 of a discrete type. Must specify if type is `"discrete"`.
-        :param symbol_list: An iterable of 'str' representing symbols. Must specify if type is `"symbol"`.
+            Specify a Type for a predicate's relational/random argument.
+
+            For both relational and random arguments, a Type declares the size of the corresponding tensor dimension of
+                the predicate's event particle messages. For a random argument, additionally, a Type also defines its
+                valid value range and/or value type (e.g. real or integer values)
+
+            If symbolic, must declare a 'symbol_list', and the 'size' field will be inferred from the length of the
+                'symbol_list'. Otherwise must declare the 'size' value.
+
+            value_constraint must be provided if and only if the Type is to be associated with random predicate
+                arguments. Otherwise an exception will be thrown
+
+        :param type_name: 'str' type. Name of the Sigma type
+        :param symbolic: 'bool' type. Declares if the type comes with a symbol list
+        :param size: 'int' type. The size of the argument's corresponding message dimension. Must specify if 'symbolic'
+                     is False
+        :param symbol_list: An iterable of 'str' representing symbols. Must specify if 'symbolic' is True
+        :param value_constraint: A 'torch.distributions.constraints.Constraints' instance. Must specify if and only if
+                                 this Type is to be associated with random predicate arguments
         """
+
         # Argument validation
         if not isinstance(type_name, str):
             raise ValueError("The 1st argument 'type_name' of a Type must be a 'str'")
-        if value_type not in ['symbolic', 'discrete']:
-            raise ValueError("The 2nd argument 'value_type' of a Type must be either 'symbolic' or 'discrete'")
-        if min is not None and (not isinstance(min, int) or min < 0):
-            raise ValueError("The argument 'min' of a Type must be a nonnegative integer")
-        if max is not None and (not isinstance(max, int) or max < 0):
-            raise ValueError("The argument 'max' of a Type must be a nonnegative integer")
-        if symbol_list is not None and \
-                (not isinstance(symbol_list, Iterable) or not all(isinstance(s, str) for s in symbol_list)):
-            raise ValueError("If not None, the argument 'symbol_list' of a Type must be an iterable of 'str's")
-        if value_type == 'symbolic' and symbol_list is None:
-            raise ValueError("A symbol list must be specified via symbol_list when value_type is 'symbolic'")
-        if value_type == 'discrete' and (min is None or max is None):
-            raise ValueError("Both min and max must be specified when value_type is 'discrete'")
-        if value_type == 'discrete' and min >= max:
-            raise ValueError("min value must be less than max value")
+        if not isinstance(symbolic, bool):
+            raise ValueError("The 2nd argument 'symbolic' must be of 'bool' type")
+        if symbolic is (symbol_list is None):
+            raise ValueError("'symbolic' should be True if and only if 'symbol_list' is provided")
+        if symbolic is (size is not None):
+            raise ValueError("'symbolic' should be False if and only if 'size' is provided")
+        if size is not None and (not isinstance(size, int) or size < 1):
+            raise ValueError("'size' must be of type 'int' and value be greater than 0")
+        if symbol_list is not None and (not isinstance(symbol_list, Iterable) or
+                                        not all(isinstance(s, str) for s in symbol_list)):
+            raise ValueError("'symbol_list' must be an iterable of 'str'")
+        if value_constraint is not None and not isinstance(value_constraint, Constraint):
+            raise ValueError("If specified, 'value_constraint' must be an instance of 'torch.distributions.constraints."
+                             "Constraint'. Instead found '{}'".format(type(value_constraint)))
 
+        # Declare attributes
         self.name = intern_name(type_name, "type")  # Prepend substring 'TYPE_' and send name to upper case
-        self.value_type = value_type
-        self.min = min
-        self.max = max
-        self.value_list = symbol_list if self.value_type == 'symbolic' else [i for i in range(min, max)]
+        self.symbolic = symbolic
+        self.value_list = list(symbol_list) if self.symbolic else list(range(size))
         self.size = len(self.value_list)
+        self.constraint = value_constraint
 
         # Set mapping between type values and actual axis values along message tensor's dimension.
-        self.value2axis = dict(zip(self.value_list, range(len(self.value_list))))
-        self.axis2value = dict(zip(range(len(self.value_list)), self.value_list))
+        self.value2axis = dict(zip(self.value_list, range(self.size)))
+        self.axis2value = dict(zip(range(self.size), self.value_list))
+
+    def __eq__(self, other):
+        # Two types are equal if ALL of their fields are equal
+        assert isinstance(other, Type)
+        val = self.name == other.name and \
+              self.symbolic == other.symbolic and \
+              self.size == other.size and \
+              self.value_list == other.value_list
+        return val
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        # String representation for display
+        return extern_name(self.name, "type")
+
+    def __hash__(self):
+        # Hash by structure's own name. This assumes its name is unique in the model and therefore can be treated as
+        #   the identity
+        return hash(self.name)
 
 
 class Predicate:
-    def __init__(self, predicate_name, arguments, world='open', perception=False, function=None, *args, **kwargs):
+    def __init__(self, predicate_name, relational_args, random_args, inference_mode, num_particles=128,
+                 distribution_class=None, memorial=False, perceptual=False):
         """
-            Speficy a Sigma predicate.
-        :param predicate_name:  `str` type
-        :param arguments:  An python iterable of 'PredicateArgument's. This is to specify the **working
-            memory variables** (formal arguments) corresponding to this predicate.
-        :param world:  `open` or `closed`. Default to `open`.
-        :param perception:  `bool` type. Whether this predicate can receive perceptual information.
-        :param function:
-                - `None`: no function specified at this predicate
-                - `int` or `float`: a constant function
-                - `torch.tensor`: Use the given tensor as the predicate function. Note that the shape of the tensor must
-                    agree with dimensions of the variables and in the order as they are specified.
-                - `str`: Name of another predicate. In this case they shares the same function.
+            Specify a Sigma predicate.
+
+        :param predicate_name: 'str' type. The name of the predicate.
+        :param relational_args: an Iterable of size-2 tuples. Each tuple specifies one relational argument - The first
+                                element of the tuple should be of 'str' type specifying the argument's name, whereas
+                                the second element should be of 'Type' type specifying the argument's type. The 'Type'
+                                of these arguments can be arbitrary, but the arguments' names should be distinct.
+        :param random_args: an Iterable of size-2 tuples, similar to the previous one. Besides those requirements for
+                            relational arguments, random arguments' types cannot be symbolic
+        :param inference_mode: one of "BP", "VMP", or "EP". Choosing the inference method to be used at this predicate.
+                               This will also influence the choice of inference method used at related conditionals.
+        :param num_particles: 'int' type. The number of particles to be drawn each cognitive cycle. Also the size of the
+                              predicate's particle indexing dimension. If left for None, then this field will be decided
+                              by the architecture.
+        :param distribution_class:  A subclass of 'torch.distributions.Distribution'. Specify the assumed distribution
+                                    of this predicate's knowledge. If specified, the predicate will be a "distribution"
+                                    predicate, and a number of "num_particles" particles will be actively drawn at the
+                                    start of each cognitive cycle. Otherwise, it will be assumed a "vector" predicate,
+                                    and no particles will be actively drawn.
+        :param memorial: 'bool' type. If True, the predicate is "memorial", meaning its knowledge will be latched to the
+                         next cognitive cycle. Otherwise it is "memory-less", and its knowledge will be immediately
+                         replaced with new information at each cycle.
+        :param perceptual: 'bool' type. If True, the predicate is "perceptual", and so can perceive observations.
         """
+
         # Argument validation
         if not isinstance(predicate_name, str):
-            raise ValueError("The 1st argument 'predicate_name' of a Predicate must be a 'str'")
-        if not isinstance(arguments, Iterable) or not all(isinstance(arg, PredicateArgument) for arg in arguments):
-            raise ValueError("The 2nd argument 'arguments' of a Predicate must be an iterable of 'PredicateArgument's")
-        if world not in ['open', 'closed']:
-            raise ValueError("The 3rd argument 'world' of a Predicate must be either 'open' or 'closed'")
-        if not isinstance(perception, bool):
-            raise ValueError("The 6th argument 'perception' must be either 'True' or 'False'")
-        if function is not None and not isinstance(function, (int, float, torch.Tensor, str)):
-            raise ValueError("If not None, the 7th argument 'function' of a predicate must be 'int', 'float', "
-                             "'torch.Tensor', or 'str'")
+            raise ValueError("The 1st field 'predicate_name' must be of 'str' type")
+        if not isinstance(relational_args, Iterable) or \
+                not all((isinstance(arg, tuple) and len(arg) == 2) for arg in relational_args):
+            raise ValueError("The 2nd field 'relational_args' must be an Iterable of size-2 tuples")
+        if not isinstance(random_args, Iterable) or \
+                not all((isinstance(arg, tuple) and len(arg) == 2) for arg in random_args):
+            raise ValueError("The 3nd field 'random_args' must be an Iterable of size-2 tuples")
+        if not isinstance(inference_mode, str) or inference_mode.upper() not in ["BP", "VMP", "EP"]:
+            raise ValueError("Must declare the inference method to be used at the predicate using the 4nd field "
+                             "'inference_mode', one of 'BP', 'VMP', or 'EP'")
+        if num_particles is not None and not (isinstance(num_particles, int) and num_particles > 0):
+            raise ValueError("If specified, the 4th field 'num_particles' must be a positive integer")
+        if distribution_class is not None and not issubclass(distribution_class, Distribution):
+            raise ValueError("If specified, the 5th field 'distribution' must provide a subclass of 'torch."
+                             "distributions.Distribution")
+        if not isinstance(memorial, bool):
+            raise ValueError("The 6th field 'memorial' must be of 'bool' type")
+        if not isinstance(perceptual, bool):
+            raise ValueError("The 7th field 'perception' must be of 'bool' type")
 
-        self.var_list = []  # List of Variables
-        self.var_name2var = {}  # Map from variable name to actual Variable instance
-        self.wm_var_types = []
+        # Declare attributes
+        self.name = intern_name(predicate_name, "predicate")
 
-        # check if this predicate is unique, i.e., involves selection.
-        # If so, also checks that no different unique symbols have been specified, except for '%' symbol
-        # Final predicate unique symbol for the predicate recorded in self.pred_unique_sym, with the variables
-        #   self.pred_unique_vars over which the selection will be performed.
-        # If the final predicate unique symbol is '%', i.e., no arguments come with unique symbols other than '%' and
-        #   None, then it is treated with default selection behavior, i.e., maintain entire distribution. At this point,
-        #   it does not matter which argument was specified with '%' and which one was no
-        self.selection = False  # Whether this predicate performs selection
-        self.pred_unique_sym = None
-        self.pred_unique_vars = []
-        for argument in arguments:
-            assert isinstance(argument, PredicateArgument)
-            # Check duplicate argument names
-            if argument.wmvar in self.var_list:
-                raise ValueError("arguments in a Predicate cannot duplicate. Duplicate name: {}"
-                                 .format(argument.argument_name))
+        self.relational_args = []
+        self.relarg_name2relarg = {}
+        self.relarg_name2type = {}
 
-            self.var_list.append(argument.wmvar)
-            self.var_name2var[argument.argument_name] = argument.wmvar
-            self.wm_var_types.append(argument.type)
+        self.random_args = []
+        self.ranarg_name2ranarg = {}
+        self.ranarg_name2type = {}
 
-            if argument.unique_symbol is not None:
-                self.selection = True
-                if argument.unique_symbol != '%' and self.pred_unique_sym is not None \
-                        and argument.unique_symbol != self.pred_unique_sym:
-                    raise ValueError("Cannot specify multiple arguments with different unique symbols other than '%' "
-                                     "in a predicate. Already discovered unique symbol '{}' in arguments '{}', but "
-                                     "found unique symbol '{}' in the argument '{}."
-                                     .format(self.pred_unique_sym, self.pred_unique_vars,
-                                             argument.unique_symbol, argument.argument_name))
-                if argument.unique_symbol != '%':
-                    self.pred_unique_sym = argument.unique_symbol
-                    self.pred_unique_vars.append(argument.wmvar)
-        # If no special unique symbol (any symbol other than '%') detected, then set predicate unique symbol to '%'
-        if self.selection and self.pred_unique_sym is None:
-            self.pred_unique_sym = '%'
+        self.arg_name2metatype = {}
 
-        if self.selection:
-            if world is not 'closed':
-                raise ValueError("When any of the predicate's variables involves selection, the predicate must be "
-                                 "closed-world.")
+        self.inf_mode = inference_mode.upper()
+        self.index_arg = Variable("INDEX", VariableMetatype.Indexing, num_particles)
+        self.dist_class = distribution_class
+        self.memorial = memorial
+        self.perceptual = perceptual
+        self.event_dims = None  # Event dimensions. Parameter dims may be different and dependent on distribution class
 
-        self.name = intern_name(predicate_name,
-                                "predicate")  # Prepend name with substring 'PRED_' and send to upper case
-        self.arguments = list(arguments)
-        self.world = world
-        self.perception = perception
-        self.function = function
+        for rel_arg in relational_args:
+            arg_name = rel_arg[0]
+            arg_type = rel_arg[1]
+            if not isinstance(arg_name, str) or not isinstance(arg_type, Type):
+                raise ValueError("The first element of an argument tuple must be of 'str' type to declare the "
+                                 "argument's name, and the second one be an instance of 'Type'. Instead, found: "
+                                 "({}, {})".format(type(arg_name), type(arg_type)))
+
+            # Check that arguments' names are distinct
+            if arg_name in self.relarg_name2relarg.keys():
+                raise ValueError("Relational arguments' names must be distinct. Instead found repetition: {}"
+                                 .format(arg_name))
+            # Check if variable's type specifies a value constraint. If specified, throw a user warning notifying that
+            #   the value constraint will be ignored
+            if arg_type.constraint is not None:
+                warnings.warn("A value constraint '{}' is found in the type '{}' associated with relational argument "
+                              "'{}'. The value constraint is ignored for now, but please check if the type should be "
+                              "used to address a relational predicate argument."
+                              .format(arg_type.constraint, arg_type, arg_name))
+
+            rel_var = Variable(arg_name, VariableMetatype.Relational, arg_type.size, None)
+            self.relational_args.append(rel_var)
+            self.relarg_name2relarg[arg_name] = rel_var
+            self.relarg_name2type[arg_name] = arg_type
+
+        for ran_arg in random_args:
+            arg_name = ran_arg[0]
+            arg_type = ran_arg[1]
+            if not isinstance(arg_name, str) or not isinstance(arg_type, Type):
+                raise ValueError("The first element of an argument tuple must be of 'str' type to declare the "
+                                 "argument's name, and the second one be an instance of 'Type'. Instead, found: "
+                                 "({}, {})".format(type(arg_name), type(arg_type)))
+
+            # Check that arguments' names are distinct
+            if arg_name in chain(self.relarg_name2relarg.keys(), self.ranarg_name2ranarg.keys()):
+                raise ValueError("Random arguments' names must be distinct, including from relational arguments. "
+                                 "Instead found repetition: {}".format(arg_name))
+            # Check that RV's type is not symbolic
+            if arg_type.symbolic:
+                raise ValueError("Random argument's type cannot be symbolic")
+            # Check that RV's type specifies value constraint
+            if arg_type.constraint is None:
+                raise ValueError("A value constraint must be specified for a random variable's type. Instead found "
+                                 "random variable '{}' with type '{}' where no value constraint is specified."
+                                 .format(arg_name, arg_type))
+
+            ran_var = Variable(arg_name, VariableMetatype.Random, arg_type.size, arg_type.constraint)
+            self.random_args.append(ran_var)
+            self.ranarg_name2ranarg[arg_name] = ran_var
+            self.ranarg_name2type[arg_name] = arg_type
+
+        for arg_name in self.relarg_name2relarg.keys():
+            self.arg_name2metatype[arg_name] = VariableMetatype.Relational
+        for arg_name in self.ranarg_name2ranarg.keys():
+            self.arg_name2metatype[arg_name] = VariableMetatype.Random
+
+        # TODO: Check knowledge format. e.g. if RV type compatible with declared predicate's distribution class
+
+        # Dimensions of event tensor: [N, B_1, ..., B_n, (S_1+...+S_m)]
+        self.event_dims = Size([self.index_arg.size] +
+                         [v.size for v in self.relational_args] +
+                         [sum([v.size for v in self.random_args])])
+
+    def __str__(self):
+        # String representation for display
+        return self.name
+
+    def __hash__(self):
+        # Hash by structure's own name. This assumes its name is unique in the model and therefore can be treated as
+        #   the identity
+        return hash(self.name)
 
 
 class Conditional:
     def __init__(self, conditional_name, conditions=None, condacts=None, actions=None,
-                 function_var_names=None, function=None, normal=None, *args, **kwargs):
+                 function=None, function_var_names=None):
         """
             Specify a Sigma conditional
-        :param conditions:  an iterable of instances of PredicatePatterns
-        :param condacts:  an iterable of instances of PredicatePatterns
-        :param actions:  an iterable of instances of PredicatePatterns
-        :param function_var_names:  an iterable of `str`, specifying the variable names in the function. The dimensions
-                    of the function will be ordered in agreement with the given order of the variable names.
-                Note: function_var_names must consist of pattern variables already declared in the conditions, actions,
-                    & condacts.
-        :param function:  an `int` or `float` or a `torch.tensor` or 'str', specifying the conditional function defined
-                    over function_var_names.
-                If None, default to 1 everywhere.
-                If 'str', should be the name of another conditional, linking that conditional's function
-        :param normal:  an iterable of `str`, specifying which variables to normalize over in gradient descent learning
-            #TODO: leave to implement in future iterations
 
-            #TODO: Allow user to define customized summarization step for pattern variables
+            Each of conditions, condacts, and actions field consists of an Iterable of "predicate patterns", where each
+                "predicate pattern" is represented by a size-2 tuple. The first element of the tuple is a Predicate
+                instance, representing a predicate. The second element is an Iterbale of "pattern elements", where each
+                "pattern element" is a size-2 or size-3 tuple. The first element of such tuple is of 'str' type,
+                corresponds to one of the predicate's argument. The second element is either a 'str' (representing a
+                pattern variable), an Iterable of 'int' (list of constant integer values), or an Iterable of 'str'
+                (also constant but matches symbolic values). Finally, the third element is OPTIONAL, of
+                'PatternTransformation' type, representing a transformation on the predicate variable's values.
+
+            In short, a predicate pattern should look like:
+                    (pred, [(arg_1, var_1, trans_1), (arg_2, var_2, trans_2), ..., (arg_n, var_n, trans_n)])
+
+            The purpose of declaring pattern variables is to match predicate arguments within or across predicates,
+                i.e., variable binding, or (only for random arguments) to be picked up and recognized by the factor
+                function. Therefore, if matching is not necessary for a predicate argument, or if it is ignored by the
+                factor function, its corresponding pattern element can be left empty, and the architecture will declare
+                a default pattern variable that is uniquely associated this predicate argument.
+            Thus, it is acceptable to declare the following pattern:
+                    (pred, None)
+                in which case none of the arguments will be matched with others, and the factor function should ignore
+                all of the random arguments.
+
+            Note that for condact and action predicate patterns, it is expected that no transformation is declared on
+                any of the variables, All element tuples are size-2 tuples.
+
+            The 'function' field specifies a factor function that semantically operates on the events represented by
+                random variables from the incoming messages. Therefore, only random variables are visible to the factor
+                function, and the dimensions corresponding to relational variables should be treated as the "batch
+                dimensions" of the incoming messages.
+
+        :param conditional_name: 'str' type. The name of this conditional
+        :param conditions: an Iterable of size-2 tuples.
+        :param condacts: same as 'conditions'
+        :param actions: same as 'conditions'
+        :param function: 'FactorFunction' type. Declares a factor function at this conditional. If left as None, will
+                         default to a constant factor function
+        :param function_var_names: an Iterable of 'str'. The list of random variables that the factor function concerns.
+                                   The order of the random variables will be respected in accordance to the order given
+                                   by the supplied iterable. The list of messages will be given to the factor function
+                                   w.r.t. this order at inference time. If left for None, will default to all random
+                                   variables
         """
-        # Check conditions, actions, & condacts
+        # TODO: Implement new Conditional
+
+        # Argument validation #
         if not isinstance(conditional_name, str):
-            raise ValueError("1st argument 'conditional_name' of a Conditional must be a 'str'")
-        if conditions is not None and \
-                (not isinstance(conditions, Iterable) or not all(isinstance(p, PredicatePattern) for p in conditions)):
-            raise ValueError("If not None, 2nd argument 'conditions' of a Conditional must be an iterable of "
-                             "'PredicatePattern's")
-        if condacts is not None and \
-                (not isinstance(condacts, Iterable) or not all(isinstance(p, PredicatePattern) for p in condacts)):
-            raise ValueError("If not None, 3rd argument 'condacts' of a Conditional must be an iterable of "
-                             "'PredicatePattern's")
-        if actions is not None and \
-                (not isinstance(actions, Iterable) or not all(isinstance(p, PredicatePattern) for p in actions)):
-            raise ValueError("If not None, 4th argument 'actions' of a Conditional must be an iterable of "
-                             "'PredicatePattern's")
-
-        if [conditions, actions, condacts] == [None, None, None]:
-            raise ValueError("Cannot specify an empty conditional")
-
-        if conditions is not None:
-            if [actions, condacts] == [None, None]:
-                raise ValueError("Cannot specify a conditional that consists of only conditions")
-
-        # Check rest of the arguments
+            raise ValueError("1st argument 'conditional_name' must be of 'str' type")
+        # cannot have only conditions or only actions
+        if condacts is None and (conditions is None or actions is None):
+            raise ValueError("A conditional cannot have only condition patterns or only action patterns")
+        # function must be specified if function_var_names is specified
+        if function is None and function_var_names is not None:
+            raise ValueError("5th argument 'function' must be specified if 'function_var_names' is specified")
+        if function is not None and not isinstance(function, FactorFunction):
+            raise ValueError("If specified, 5th argument 'function' must be of 'FactorFunction' type")
         if function_var_names is not None and \
-                (not isinstance(function_var_names, Iterable) or not all(
-                    isinstance(v, str) for v in function_var_names)):
-            raise ValueError(
-                "If not None, argument 'function_var_names' of a Conditional must be an iterable of 'str's")
+                not (isinstance(function_var_names, Iterable) and all(isinstance(v, str) for v in function_var_names)):
+            raise ValueError("If specified, 6th argument 'function_var_names' must be an Iterable of 'str', "
+                             "representing the list of pattern random variables to be picked up and recognized by the "
+                             "factor function.")
 
-        if function is not None and not isinstance(function, (int, float, torch.Tensor, str)):
-            raise ValueError("If not None, argument 'function' of a Conditional must be 'int', 'float', 'torch.Tensor',"
-                             " or 'str'")
-        if normal is not None and \
-                (not isinstance(normal, Iterable) or not all(isinstance(v, str) for v in normal)):
-            raise ValueError("If not None, argument 'normal' of a Conditional must be an iterable of 'str's")
+        # Check predicate pattern formats
+        if conditions is not None and \
+                not (isinstance(conditions, Iterable) and all(isinstance(p, tuple) for p in conditions)):
+            raise ValueError("When specified, 2nd argument 'conditions' must be an Iterable of tuples")
+        if condacts is not None and \
+                not (isinstance(condacts, Iterable) and all(isinstance(p, tuple) for p in condacts)):
+            raise ValueError("When specified, 3rd argument 'condacts' must be an Iterable of tuples")
+        if actions is not None and \
+                not (isinstance(actions, Iterable) and all(isinstance(p, tuple) for p in actions)):
+            raise ValueError("When specified, 4th argument 'actions' must be an Iterable of tuples")
 
         conditions = [] if conditions is None else list(conditions)
         condacts = [] if condacts is None else list(condacts)
         actions = [] if actions is None else list(actions)
 
-        # Change pattern's predicate names into internal names
-        #   Note that since Python's namedtuple is immutable, need to recreate namedtuple here. Maybe better way to do this?
-        for pt in conditions + condacts + actions:
-            pt.predicate_name = intern_name(pt.predicate_name, "predicate")
+        for pat_type, pat_group in zip([0, 1, 2], [conditions, condacts, actions]):
+            for pat in pat_group:
+                if not len(pat) == 2:
+                    raise ValueError("Expect each predicate pattern to be a size-2 tuple, instead found {}".format(pat))
+                pred, pat_elements = pat
+                if not isinstance(pred, Predicate):
+                    raise ValueError("Expect the first element of each predicate pattern tuple to be an instance of "
+                                     "'Predicate' class. Instead found {} in pattern {}" .format(pred, pat))
+                if pat_elements is not None and not (isinstance(pat_elements, Iterable) and all(isinstance(e, tuple)
+                                                                                              for e in pat_elements)):
+                    raise ValueError("If specified, expect the second element of each predicate pattern tuple to be an "
+                                     "Iterable of  tuples, each tuple represent a single pattern element. Instead "
+                                     "found {}".format(pat_elements))
+                if pat_elements is not None:
+                    for ele in pat_elements:
+                        if len(ele) != 2 and len(ele) != 3:
+                            raise ValueError("Expect each pattern element to be either a size-2 or size-3 tuple. "
+                                             "Instead found {}".format(ele))
+                        if pat_type in [1, 2] and len(ele) == 3:
+                            raise ValueError("Expect only size-2 element tuple in condact and/or action predicate "
+                                             "patterns. Instead found {} in {}"
+                                             .format(ele, "condact" if pat_type == 1 else "action"))
+                        if len(ele) == 2:
+                            arg_name, pat_var = ele
+                        else:
+                            arg_name, pat_var, trans = ele
+                            if not isinstance(trans, VariableMap):
+                                raise ValueError("If provided, the third entry of a pattern element should be of "
+                                                 "'VariableMap' type, representing a transformation on the "
+                                                 "corresponding pattern variable. Instead found {} in element tuple {}"
+                                                 .format(type(trans), ele))
+                        if not isinstance(arg_name, str):
+                            raise ValueError("The first entry of a pattern element should be of 'str' type, "
+                                             "representing an argument of the corresponding predicate. Instead found "
+                                             "{} in element tuple {}".format(type(arg_name), ele))
+                        if not isinstance(pat_var, str) and \
+                                not (isinstance(pat_var, Iterable) and (all(isinstance(val, int) for val in pat_var)
+                                                                    or all(isinstance(val, str) for val in pat_var))):
+                            raise ValueError("The second entry of a pattern element must either be of 'str' type, "
+                                             "representing a pattern variable, or an Iterable of 'int' or 'str', the "
+                                             "former representing a list of constant discrete variable values while "
+                                             "the latter representing a list of constant symbolic variable values. "
+                                             "Instead found {} in element tuple {}".format(pat_var, ele))
 
-        # Name the predicate patterns for indexing various lookup tables
-        self.name2pattern = {"pattern_" + str(i): pattern for i, pattern in enumerate(conditions + condacts + actions)}
-        self.name2condition_pattern = {"pattern_" + str(i): pattern for i, pattern in enumerate(conditions)}
-        self.name2condact_pattern = {"pattern_" + str(i + len(conditions)): pattern for i, pattern in
-                                     enumerate(condacts)}
-        self.name2action_pattern = {"pattern_" + str(i + len(conditions) + len(condacts)): pattern for i, pattern in
-                                    enumerate(actions)}
-        self.pt_names = list(self.name2pattern.keys())
-        self.condition_pt_names = list(self.name2condition_pattern.keys())
-        self.condact_pt_names = list(self.name2condact_pattern.keys())
-        self.action_pt_names = list(self.name2action_pattern.keys())
-
-        # Set up pattern var list for future lookup
-        # Set up internal WM var -- pattern var map per predicate pattern for future lookup.
-        #       pattern_pt_vals = { pattern_name :
-        #                            { wm_var_name :
-        #                               { "name" : pt_var_name
-        #                                 "type" : "var" or "const"
-        #                                 "vals" : int/str values if type is const or None otherwise
-        #                                 "rel"  : relation, if specified, otherwise None} } }
-        # Map from pattern variable to wm variables that is associated with it
-        #       ptv2wmv = { pattern_name :
-        #                    { pt_var_name : list of corresponding wm vars } }
-        # Global dictionary of pattern variable info. To be registered once passed into a Sigma program (because need to
-        #   look up various Type sizes
-        #   For the size field, take the max over the size of all wm vars associated with it if it is of 'var' type.
-        #       Else if 'const' type, take the number of elements / values in 'vals' field.
-        #       global_pt_vals = { pt_var_name :
-        #                           { "type" : "var" or "const",
-        #                             "size" : max size over associated wm vars
-        #                             "sum_op": Which summarization operation to take in beta branching subnet
-        #                                       currently support "sum" and "max"
-        #                             # TODO: extend this to support more summarization operations
-        #                             } }
-        # constant pattern is assigned a unique constant variable name
-        self.ptvar_list = []
-        self.pattern_pt_vals = {}
-        self.global_pt_vals = {}  # To be filled after passed into a Sigma program
-        self.ptv2wmv = {}
-        const_count = 0
-
-        for pt_name, pattern in self.name2pattern.items():
-            self.pattern_pt_vals[pt_name] = {}
-            self.ptv2wmv[pt_name] = {}
-            for element in pattern.elements:
-                pt_var_info = {}
-                if type(element.value) is PatternVariable:
-                    pt_var_info["name"] = element.value.variable_name
-                    pt_var_info["type"] = "var"
-                    pt_var_info["vals"] = None
-                    pt_var_info["rel"] = element.value.relation
-                else:
-                    # Assign a unique internal pattern variable name to a pattern w/ constant values
-                    pt_var_info["name"] = "_CONST_" + str(const_count)
-                    pt_var_info["type"] = "const"
-                    pt_var_info["vals"] = element.value
-                    pt_var_info["rel"] = None
-                    const_count += 1
-
-                if pt_var_info["name"] not in self.ptvar_list:
-                    self.ptvar_list.append(pt_var_info["name"])
-                self.pattern_pt_vals[pt_name][element.argument_name] = pt_var_info
-                if pt_var_info["name"] not in self.ptv2wmv.keys():
-                    self.ptv2wmv[pt_name][pt_var_info["name"]] = [element.argument_name]
-                else:
-                    self.ptv2wmv[pt_name][pt_var_info["name"]].append(element.argument_name)
-
-        # Check that function_var_names agree with pattern variables declared in conditions, actions, & condacts
-        if function_var_names is not None:
-            for func_var in function_var_names:
-                if func_var not in self.ptvar_list:
-                    raise ValueError("The function variable '{}' is not one of the pattern variable declared in any "
-                                     "predicate pattern".format(func_var))
-
+        # Declare attributes
         self.name = intern_name(conditional_name, "conditional")
         self.conditions = conditions
         self.condacts = condacts
         self.actions = actions
-        self.function_var_names = [var for var in function_var_names] if function_var_names is not None else None
-        self.normal = normal
+        self.function_var_names = list(function_var_names) if function_var_names is not None else None
         self.function = function
+
+        # Name the predicate patterns for indexing various lookup tables.
+        # Map from pattern name to pattern tuple
+        self.pat_name2pattern = {"pattern_" + str(i): pat for i, pat in enumerate(conditions + condacts + actions)}
+
+        self.condition_name2pattern = {"pattern_" + str(i): pat for i, pat in enumerate(conditions)}
+        self.condact_name2pattern = {"pattern_" + str(i + len(conditions)): pat
+                                     for i, pat in enumerate(condacts)}
+        self.action_name2pattern = {"pattern_" + str(i + len(conditions + condacts)): pat
+                                    for i, pat in enumerate(actions)}
+
+        # Map from pattern name to the corresponding predicate instance
+        self.pat_name2pred = {pat_name: pat[0] for pat_name, pat in self.pat_name2pattern.items()}
+        self.condition_name2pred = {pat_name: pat[0] for pat_name, pat in self.condition_name2pattern.items()}
+        self.condact_name2pred = {pat_name: pat[0] for pat_name, pat in self.condact_name2pattern.items()}
+        self.action_name2pred = {pat_name: pat[0] for pat_name, pat in self.action_name2pattern.items()}
+
+        # List of pattern names
+        self.pt_names = list(self.pat_name2pattern.keys())
+        self.condition_names = list(self.condition_name2pattern.keys())
+        self.condact_names = list(self.condact_name2pattern.keys())
+        self.action_names = list(self.action_name2pattern.keys())
+
+        # set up LOOKUP TABLES:
+        # TODO: several things to be checked and set up at this stage:
+        #       1. For each pattern:
+        #               a. For each element:
+        #                   - Check that element's arg agree with the predicate's argument.
+        #                   - Prepend prefix to element's variable name. "VAR_" for pattern variable. "CONST_" for
+        #                     constants.
+        #                   - Check that trans are not declared on constant values
+        #                !! - Check that element's trans agree with the argument's metatype. !! Left for future work
+        #                   - Fill in 'pattern_arg2var'
+        #               b. For the entire pattern:
+        #                   - For undeclared predicate arguments, declare pattern variable with name "DEFAULT_{}"
+        #                   - Fill in 'pattern_var2arg'
+        #                   - Check that all arguments has been covered
+        #                   - Check that each pattern variable is associated with arguments of the same metatype.
+        #                   - Check that each Random variable is associated with arguments with the same type size
+        #       2. Across the patterns:
+        #               a. Gather pattern variables:
+        #                   - Check that each pattern variable is associated with arguments of the same metatype.
+        #                   - For relational pattern variables, determine its size by taking the max over the sizes of
+        #                     all its associated predicate arguments.
+        #                   - For random pattern variables, check that associated arguments' type sizes are the same
+        #                   - For random pattern variables, gather all value constraints
+        #                   - Generate variable instance and fill in 'rel_var_list', and 'ran_var_list'
+        #               b. Check that 'function_var_names' agrees with 'ran_var_list'
+        #               c. Check that predicate types are compatible with pattern type / pattern directionality
+        #                   - At most one vector predicate among all condition and condact patterns that have a matching
+        #                     random variable
+        #                !! - If Factor function is deterministic, check pattern directionality
+        #               d. Determine the global relational pattern variable order and corresponding joint relational
+        #                  dimensions
+        #
+        # Map from predicate argument name to pattern variable info, for each predicate pattern
+        #       pattern_arg2var = { pattern_name :
+        #                               { pred_arg_name :
+        #                                   { "name" : pt_var_name
+        #                                     "const" : True/False
+        #                                     "vals" : int/str values if const is True or None otherwise
+        #                                     "map"  : VariableMap instance, if specified, otherwise None} } }
+        # Map from pattern variable name back to predicate argument names, for each predicate pattern
+        #       pattern_var2arg = { pattern_name :
+        #                               { pt_var_name : list of corresponding predicate argument names } }
+        # constant pattern is assigned a unique constant variable name
+        self.pattern_arg2var = {}
+        self.pattern_var2arg = {}
+        self.rel_var_list, self.ran_var_list = [], []
+        self.var_list = []      # Determines global pattern variable order
+        self.dims = []          # Determines global joint relational dimension (i.e., joint dimensions of all relational
+                                #   pattern variables in the order given by 'var_list'
+
+        const_count = 0
+        default_count = 0
+        for pat_name, pat in self.pat_name2pattern.items():
+            pred, elements = pat
+            assert isinstance(pred, Predicate)
+            self.pattern_arg2var[pat_name] = {}
+            self.pattern_var2arg[pat_name] = {}
+            if elements is not None:
+                for ele in elements:
+                    arg_name, pat_var = ele[0], ele[1]
+                    var_map = ele[2] if len(ele) == 3 else None
+
+                    # 1.a Check element's arg agree with predicate's arguments
+                    if arg_name not in chain(pred.relarg_name2relarg.keys(), pred.ranarg_name2ranarg.keys()):
+                        raise ValueError("Unknown argument '{}' declared in the predicate pattern '{}'. The list of "
+                                         "declared arguments for predicate '{}' is {}"
+                                         .format(arg_name, pat, pred.name, list(chain(pred.relarg_name2relarg.keys(),
+                                                                                      pred.ranarg_name2ranarg.keys()))))
+
+                    if isinstance(pat_var, str):        # A pattern variable
+                        # 1.a. Prepend prefix to pattern variable's name and fill in look-up tables
+                        pat_var = "VAR_" + pat_var
+                        self.pattern_arg2var[pat_name][arg_name] = {
+                            'name': pat_var,
+                            'const': False,
+                            'vals': None,
+                            'map': var_map
+                        }
+                        # 1.b Fill in 'pattern_var2arg'
+                        if pat_var not in self.pattern_var2arg[pat_name].keys():
+                            self.pattern_var2arg[pat_name][pat_var] = [arg_name]
+                        else:
+                            self.pattern_var2arg[pat_name][pat_var].append(arg_name)
+                    else:                               # Constant
+                        pat_var_name = "CONST_" + str(const_count)
+                        const_count += 1
+
+                        if var_map is not None:
+                            raise ValueError("Transformation (VariableMap) should not be declared on constant pattern "
+                                             "variable. Found {} in element {}".format(var_map, ele))
+
+                        self.pattern_arg2var[pat_name][arg_name] = {
+                            'name': pat_var_name,
+                            'const': True,
+                            'vals': pat_var,
+                            'map': None
+                        }
+                        self.pattern_var2arg[pat_name][pat_var_name] = [arg_name]
+                    # TODO: 1.a. Check that element's trans agree with argument's metatype.
+
+            # 1.b Across the entire pattern, find undeclared arguments, and declare with default name
+            for arg_name in chain(pred.relarg_name2relarg.keys(), pred.ranarg_name2ranarg.keys()):
+                if arg_name not in self.pattern_arg2var[pat_name].keys():
+                    pat_var = "DEFAULT_" + str(default_count)
+                    default_count += 1
+                    self.pattern_arg2var[pat_name][arg_name] = {
+                        'name': pat_var,
+                        'const': False,
+                        'vals': None,
+                        'map': None
+                    }
+                    # 1.b Fill in 'pattern_var2arg'
+                    self.pattern_var2arg[pat_name][pat_var] = [arg_name]
+
+            # 1.b Check that all arguments has been covered
+            assert set(self.pattern_arg2var[pat_name].keys()) == \
+                   set(chain(pred.relarg_name2relarg.keys(), pred.ranarg_name2ranarg.keys()))
+
+            for pat_var, args in self.pattern_var2arg[pat_name].items():
+                # 1.b Check that each pattern variable is associated with arguments of the same metatype
+                if not all(arg_name in pred.relarg_name2relarg.keys() for arg_name in args) and \
+                        not all(arg_name in pred.ranarg_name2ranarg.keys() for arg_name in args):
+                    raise ValueError("Expect all predicate arguments associated with a pattern variable to be of the "
+                                     "same metatype. However, for the pattern variable '{}' in pattern '{}', its "
+                                     "associated arguments {} has metatypes {}"
+                                     .format(pat_var, pat, args, list(pred.arg_name2metatype[arg] for arg in args)))
+
+                # 1.b Check that each Random variable is associated with arguments with the same type size
+                if pred.arg_name2metatype[args[0]] == VariableMetatype.Random:
+                    sizes = list(pred.ranarg_name2type[arg].size for arg in args)
+                    if min(sizes) != max(sizes):
+                        raise ValueError("Expect all predicate arguments associated with a Random metatype pattern "
+                                         "variable to have the same type size. Instead, found type sizes '{}' "
+                                         "associated with arguments '{}'"
+                                         .format(sizes, args))
+
+        # 2.a Gather pattern variables globally
+        all_pat_var_names = set()
+        for entry in self.pattern_var2arg.values():
+            all_pat_var_names = all_pat_var_names.union(set(entry.keys()))
+        for pat_var_name in all_pat_var_names:
+            metatype = None
+            size = 0         # find max if metatype is Relational, make sure same if metatype is Random
+            constraint_set = set()    # to be filled if metatype is Random
+            for pat_name, entry in self.pattern_var2arg.items():
+                if pat_var_name not in entry.keys():
+                    continue
+                pat, pred = self.pat_name2pattern[pat_name], self.pat_name2pred[pat_name]
+                args = entry[pat_var_name]
+
+                # 2.b Check each pattern variable is associated with arguments of the same metatype across patterns
+                if metatype is None:
+                    metatype = pred.arg_name2metatype[args[0]]
+                elif metatype is not pred.arg_name2metatype[args[0]]:
+                    raise ValueError("A pattern variable should be associated with predicate arguments of the same "
+                                         "metatype across patterns. Found pattern variable '{}' associated with "
+                                         "predicate argument '{}' with metatype '{}', when the metatype inferred from "
+                                         "other arguments is '{}"
+                                         .format(pat_var_name, args[0], pred.arg_name2metatype[args[0]], metatype))
+
+                # 2.b For relational variables, find maximal type size
+                if metatype is VariableMetatype.Relational:
+                    tmp = max(pred.relarg_name2type[arg].size for arg in args)
+                    size = max(tmp, size)
+
+                # 2.b For random variables, make sure the type of associated arguments is the same
+                if metatype is VariableMetatype.Random:
+                    if size == 0:
+                        size = pred.ranarg_name2type[args[0]].size
+                    elif size != pred.ranarg_name2type[args[0]].size:
+                        raise ValueError("A Random metatype pattern variable should be associated with predicate "
+                                         "arguments of the same type size across patterns. Found pattern variable '{}' "
+                                         "associated with predicate argument '{}' of type size '{}', while the correct "
+                                         "type size inferred from other arguments is '{}'"
+                                         .format(pat_var_name, args[0], pred.ranarg_name2type[args[0]].size, size))
+                    constraint_set = constraint_set.union(set(pred.ranarg_name2type[arg].constraint for arg in args))
+
+            # Generate Variable instance and add to lists
+            pat_var = Variable(pat_var_name, metatype, size,
+                               constraint_set if metatype is VariableMetatype.Random else None)
+            if metatype is VariableMetatype.Relational:
+                self.rel_var_list.append(pat_var)
+            else:
+                self.ran_var_list.append(pat_var)
+
+        # 2.b Check that 'function_var_names' agrees with 'ran_var_list'
+        if function_var_names is not None:
+            for ran_var in function_var_names:
+                if ran_var not in self.ran_var_list:
+                    raise ValueError("Unknown random pattern variable '{}' in 'function_var_names'. Existing declared "
+                                     "random pattern variables are: {}".format(ran_var, self.ran_var_list))
+
+        # 2.c Check that predicate types are compatible with pattern type / pattern directionality
+        for ran_var in self.ran_var_list:
+            # 2.c. At most one vector predicate among all condition and condact patterns that have a matching random
+            #      variable
+            vec_pred = None
+            for pat_name in self.condition_names + self.condact_names:
+                if ran_var.name in self.pattern_var2arg[pat_name].keys() and \
+                        self.pat_name2pred[pat_name].dist_class == None:
+                    if vec_pred is not None:
+                        raise ValueError("Expect at most one vector predicate among all condition and condact patterns "
+                                         "that have a matching random variable. Instead found at least two vector "
+                                         "predicates: '{}' and '{}' that matches on the random pattern variable '{}' "
+                                         .format(vec_pred, self.pat_name2pred[pat_name], ran_var))
+                    vec_pred = self.pat_name2pred[pat_name]
+
+        # TODO: 2.c Check pattern directionality for deterministic factor function
+
+        # 2.d Determine the global relational pattern variable order and corresponding joint relational dimensions
+        self.rel_dims = Size(pat_var.size for pat_var in self.rel_var_list)
+
+    def __str__(self):
+        # String representation for display
+        return self.name
+
+    def __hash__(self):
+        # Hash by structure's own name. This assumes its name is unique in the model and therefore can be treated as
+        #   the identity
+        return hash(self.name)
+
