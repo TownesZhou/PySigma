@@ -817,9 +817,8 @@ class WMFN(FactorNode):
 
 
 """
-    Nodes relating to Conditional subgraph structures
-        - Alpha subgraph: AlphaFactorNode, RelMapNode, ExpSumNode, RanTransNode
-        - Gamma factor node: GFN
+    Nodes relating to Conditional Alpha subgraph structures
+        - AlphaFactorNode, RelMapNode, ExpSumNode, RanTransNode
 """
 
 
@@ -1270,10 +1269,33 @@ class RanTransNode(AlphaFactorNode):
             bijective. The forward transformation will be used for inward message propagation, whereas the backward
             transformation will be used for outward message propagation.
 
-        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
+        This node is a component of the alpha conditional subgraph, so admits up to two pairs of incoming and outgoing
             links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
             it is pointing toward the conditional gamma factor node or not.
     """
+    pass
+
+
+"""
+    Nodes relating to Conditional Beta subgraph Structures
+        - BetaNode, EventSplitVarNode, PartCombNode
+"""
+
+
+class BetaNode(Node, ABC):
+    """
+        Abstract base class for nodes belonging to the beta subgraph of a conditional.
+
+        Captures the commonality of Beta nodes, include link connectivity and inward & outward compute pattern.
+    """
+    pass
+
+
+class EventSplitVarNode(BetaNode, VariableNode):
+    pass
+
+
+class PartCombNode(BetaNode, FactorNode):
     pass
 
 
