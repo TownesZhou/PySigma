@@ -873,21 +873,21 @@ class AlphaFactorNode(FactorNode, ABC):
         assert len(self.in_linkdata) == len(self.out_linkdata) and len(self.in_linkdata) > 0
 
         # Carry out directional computation based on presence of link in self.labeled_ld_pair
-        for direction in self.labeled_ld_pair.keys():
+        for direction, (in_ld, out_ld) in self.labeled_ld_pair.items():
             if direction == 'inward':
-                self.inward_compute()
+                self.inward_compute(in_ld, out_ld)
             else:
-                self.outward_compute()
+                self.outward_compute(in_ld, out_ld)
 
     @abstractmethod
-    def inward_compute(self):
+    def inward_compute(self, in_ld, out_ld):
         """
             Inward message computation. To be implemented by child class.
         """
         pass
 
     @abstractmethod
-    def outward_compute(self):
+    def outward_compute(self, in_ld, out_ld):
         """
             Outward message computation. To be implemented by child class.
         """
@@ -939,7 +939,7 @@ class RelMapNode(AlphaFactorNode):
         self.arg2var_map_tuple = {arg: var_map.get_map() for arg, var_map in self.arg2var_map.items()}
         self.arg2var_map_inv_tuple = {arg: var_map.get_inverse_map() for arg, var_map in self.arg2var_map.items()}
 
-    def inward_compute(self):
+    def inward_compute(self, in_ld, out_ld):
         """
             Inward computation. Convert predicate relational arguments to pattern relational variables. Apply mappings
                 to relational variable's values, if specified.
@@ -956,7 +956,6 @@ class RelMapNode(AlphaFactorNode):
 
             The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, & permute
         """
-        in_ld, out_ld = self.labeled_ld_pair['inward']
         assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         msg = in_ld.read()
         assert isinstance(msg, Message)
@@ -1027,7 +1026,7 @@ class RelMapNode(AlphaFactorNode):
         # Send message
         out_ld.write(msg)
 
-    def outward_compute(self):
+    def outward_compute(self, in_ld, out_ld):
         """
             Outward computation. Convert pattern relational variables to predicate relational arguments. Apply mappings
                 to relational variable's values, if specified.
@@ -1044,7 +1043,6 @@ class RelMapNode(AlphaFactorNode):
 
             The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, & permute
         """
-        in_ld, out_ld = self.labeled_ld_pair['outward']
         assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         msg = in_ld.read()
         assert isinstance(msg, Message)
@@ -1160,12 +1158,11 @@ class ExpSumNode(AlphaFactorNode):
 
         self.sum_op = sum_op
 
-    def inward_compute(self):
+    def inward_compute(self, in_ld, out_ld):
         """
             Expansion operation. Expand and permutes the incoming message's relational variable dimensions to match the
                 outgoing relational relational variable dimensions.
         """
-        in_ld, out_ld = self.labeled_ld_pair['inward']
         msg = in_ld.read()
         assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         assert isinstance(msg, Message)
@@ -1198,7 +1195,7 @@ class ExpSumNode(AlphaFactorNode):
         # Send message
         out_ld.write(msg)
 
-    def outward_compute(self):
+    def outward_compute(self, in_ld, out_ld):
         """
             Summarization operation. Summarize over incoming message's relational variable dimensions that are not
                 referenced by outgoing message's relational variables.
@@ -1206,7 +1203,6 @@ class ExpSumNode(AlphaFactorNode):
             The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
                 uses default summarization semantic defined at the Message level.
         """
-        in_ld, out_ld = self.labeled_ld_pair['outward']
         msg = in_ld.read()
         assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         assert isinstance(msg, Message)
