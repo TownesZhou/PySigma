@@ -251,25 +251,30 @@ class VariableNode(Node, ABC):
         Guarantees that all incident nodes are factor nodes
     """
 
-    def __init__(self, name, index_var, rel_var_list, ran_var_list):
+    def __init__(self, name, index_var, rel_var_list, param_var=None, ran_var_list=None):
         """
             Decalre a VariableNode
         :param name:        name of the variable node
         :param index_var:      Particle indexing variable
         :param rel_var_list:   list of Variables representing the relational variables of this variable nodes
-        :param ran_var_list:   list of Variables representing the random variables of this variable nodes
+        :param ran_var_list:   Optional. list of Variables representing the random variables of this variable nodes
+        :param param_var:      Optional. The parameter variable.
         """
         super(VariableNode, self).__init__(name)
         assert isinstance(index_var, Variable)
         assert isinstance(rel_var_list, Iterable) and all(isinstance(v, Variable) for v in rel_var_list)
-        assert isinstance(ran_var_list, Iterable) and all(isinstance(v, Variable) for v in ran_var_list)
+        assert ran_var_list is not None or (isinstance(ran_var_list, Iterable) and
+                                            all(isinstance(v, Variable) for v in ran_var_list))
+        assert param_var is not None or isinstance(param_var, Variable)
 
         self.index_var = index_var
         self.rel_var_list = rel_var_list
         self.ran_var_list = ran_var_list
         self.s_shape = torch.Size([index_var.size])
         self.b_shape = torch.Size(list(rel_var.size for rel_var in rel_var_list))
-        self.e_shape = torch.Size([sum(list(ran_var.size for ran_var in ran_var_list))])
+        self.p_shape = torch.Size([param_var.size]) if param_var is not None else None
+        self.e_shape = torch.Size([sum(list(ran_var.size for ran_var in ran_var_list))]) if ran_var_list is not None \
+            else None
 
     def add_link(self, linkdata):
         """
@@ -277,7 +282,8 @@ class VariableNode(Node, ABC):
             Check that the variable list specified in linkdata agrees with that pre-specified at this variable node
         """
         assert isinstance(linkdata, LinkData)
-        assert linkdata.msg_shape == self.s_shape + self.b_shape + self.e_shape
+        assert linkdata.vn is self
+        assert linkdata.msg_shape == (self.s_shape, self.b_shape, self.p_shape, self.e_shape)
         if linkdata in self.in_linkdata + self.out_linkdata:
             return
 
@@ -342,8 +348,8 @@ class DVN(VariableNode):
         No special computation. Simply relay message to one or multiple factor nodes
         Only admit one incoming link but can connect with multiple outgoing links
     """
-    def __init__(self, name, index_var, rel_var_list, ran_var_list):
-        super(DVN, self).__init__(name, index_var, rel_var_list, ran_var_list)
+    def __init__(self, name, index_var, rel_var_list, param_var=None, ran_var_list=None):
+        super(DVN, self).__init__(name, index_var, rel_var_list, param_var, ran_var_list)
         self.pretty_log["node type"] = "Default Variable Node"
 
     def add_link(self, linkdata):
@@ -542,9 +548,9 @@ class WMVN(VariableNode):
         Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
             share the same set of incoming links that provide the messages, previously computed result will be reused
     """
-    def __init__(self, name, index_var, rel_var_list, ran_var_list, dist_class):
+    def __init__(self, name, dist_class, index_var, rel_var_list, param_var=None, ran_var_list=None):
         assert issubclass(dist_class, Distribution)
-        super(WMVN, self).__init__(name, index_var, rel_var_list, ran_var_list)
+        super(WMVN, self).__init__(name, index_var, rel_var_list, param_var, ran_var_list)
         self.pretty_log["node type"] = "Working Memory Variable Node"
 
         # Distribution class the Predicate self belongs to is assuming
