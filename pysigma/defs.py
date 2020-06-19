@@ -3,7 +3,7 @@
 """
 import torch
 from torch.distributions.constraints import Constraint
-from enum import Flag, auto
+from enum import Enum, Flag, auto
 from collections.abc import Iterable
 import numpy as np
 
