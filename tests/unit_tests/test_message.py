@@ -2,6 +2,16 @@ from pysigma.defs import Message, MessageType
 import torch
 import pytest
 
+def message_size(s_shape, b_shape, p_shape, e_shape):
+    if s_shape is not None:
+        s_shape = torch.Size([s_shape]) if isinstance(s_shape, int) else torch.Size(s_shape)
+    if b_shape is not None:
+        b_shape = torch.Size([b_shape]) if isinstance(b_shape, int) else torch.Size(b_shape)
+    if p_shape is not None:
+        p_shape = torch.Size([p_shape]) if isinstance(p_shape, int) else torch.Size(p_shape)
+    if e_shape is not None:
+        e_shape = torch.Size([e_shape]) if isinstance(e_shape, int) else torch.Size(e_shape)
+    return s_shape, b_shape, p_shape, e_shape
 
 class TestInitMessage:
     """
@@ -30,9 +40,9 @@ class TestInitMessage:
                      param_shape=torch.Size([1]),
                      parameters=torch.ones(4).unsqueeze(-1)
                      )
-        assert m1.size() == torch.Size([2, 1])
+        assert m1.size() == message_size(None, 2, 1, None)
         ss = str(m1)
-        assert m2.size() == torch.Size([4, 1])
+        assert m2.size() == message_size(None, 4, 1, None)
 
         m3 = Message(MessageType.Parameter,
                      batch_shape=torch.Size([4]),
@@ -86,7 +96,7 @@ class TestInitMessage:
                     weights=torch.tensor([0.1] * 10).unsqueeze(0),
                     log_density=torch.rand(1)
                     )
-        assert m.size() == torch.Size([1, 10, 1])
+        assert m.size() == message_size(1, 10, None, 1)
 
     def test_sxbx0_particles(self):
         m = Message(MessageType.Particles,
@@ -97,7 +107,7 @@ class TestInitMessage:
                     weights=torch.tensor([[0.1] * 10] * 10),
                     log_density=torch.rand(10)
                     )
-        assert m.size() == torch.Size([10, 10, 1])
+        assert m.size() == message_size(10, 10, None, 1)
 
     def test_sxbxe_particles(self):
         m = Message(MessageType.Particles,
@@ -108,7 +118,7 @@ class TestInitMessage:
                     weights=torch.tensor([[0.1] * 10] * 10),
                     log_density=torch.rand(10)
                     )
-        assert m.size() == torch.Size([10, 10, 10])
+        assert m.size() == message_size(10, 10, None, 10)
 
 
 class TestMessageArithmetic:
@@ -450,7 +460,7 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_index_put(0, torch.LongTensor([2, 0, 5]))
-        assert m2.size() == torch.Size([6, 3, 1])
+        assert m2.size() == message_size(None, [6, 3], 1, None)
 
     def test_index_put_parameter_more(self):
         m1 = Message(MessageType.Parameter,
@@ -460,10 +470,10 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_index_put(0, torch.LongTensor([0, 2, 7]))
-        assert m2.size() == torch.Size([8, 6, 2])
+        assert m2.size() == message_size(None, [8, 6], 2, None)
 
         m3 = m1.batch_index_put(1, torch.LongTensor([4, 1, 8, 7, 5, 9]))
-        assert m3.size() == torch.Size([3, 10, 2])
+        assert m3.size() == message_size(None, [3, 10], 2, None)
 
     def test_index_put_particles(self):
         m1 = Message(MessageType.Particles,
@@ -476,7 +486,7 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_index_put(0, torch.LongTensor([0, 2, 3]))
-        assert m2.size() == torch.Size([2, 4, 2, 3, 2])
+        assert m2.size() == message_size(2, [4, 2, 3], None, 2)
 
     def test_batch_diagonal_parameter(self):
         m1 = Message(MessageType.Parameter,
@@ -486,7 +496,7 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_diagonal()
-        assert m2.size() == torch.Size([3, 2])
+        assert m2.size() == message_size(None, 3, 2, None)
 
         m3 = Message(MessageType.Parameter,
                      batch_shape=torch.Size([4, 3]),
@@ -495,7 +505,7 @@ class TestMessageDimensionOperation:
                      )
 
         m4 = m3.batch_diagonal()
-        assert m2.size() == torch.Size([3, 2])
+        assert m2.size() == message_size(None, 3, 2, None)
 
     def test_batch_diagonal_parameter_edge(self):
         m1 = Message(MessageType.Parameter,
@@ -505,7 +515,7 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_diagonal()
-        assert m2.size() == torch.Size([3, 1])
+        assert m2.size() == message_size(None, 3, 1, None)
 
     def test_batch_diagonal_particle(self):
         m1 = Message(MessageType.Particles,
@@ -553,11 +563,11 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_narrow(0, 2)
-        assert m2.size() == torch.Size([2, 3, 1])
+        assert m2.size() == message_size(None, [2, 3], 1, None)
         assert torch.equal(m2.parameters.squeeze(-1), torch.narrow(para, 0, 0, 2))
 
         m3 = m1.batch_narrow(1, 2)
-        assert m3.size() == torch.Size([3, 2, 1])
+        assert m3.size() == message_size(None, [3, 2], 1, None)
 
     def test_batch_narrow_particles(self):
         m1 = Message(MessageType.Particles,
@@ -569,10 +579,9 @@ class TestMessageDimensionOperation:
                      log_density=torch.ones(2)
                      )
         m2 = m1.batch_narrow(0, 2)
-        assert m2.size() == torch.Size([2, 2, 2, 3, 2])
-
+        assert m2.size() == message_size(2, [2, 2, 3], None, 2)
         m3 = m1.batch_narrow(2, 1)
-        assert m3.size() == torch.Size([2, 3, 2, 1, 2])
+        assert m3.size() == message_size(2, [3, 2, 1], None, 2)
 
     def test_batch_broaden_parameter(self):
         m1 = Message(MessageType.Parameter,
@@ -582,7 +591,7 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_broaden(0, 5)
-        assert m2.size() == torch.Size([5, 3, 2])
+        assert m2.size() == message_size(None, [5, 3], 2, None)
 
     def test_batch_broaden_parameter_edge(self):
         para = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=torch.float32)
@@ -593,7 +602,7 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_broaden(0, 5)
-        assert m2.size() == torch.Size([5, 3, 1])
+        assert m2.size() == message_size(None, [5, 3], 1, None)
 
     def test_batch_broaden_particles(self):
         m1 = Message(MessageType.Particles,
@@ -605,10 +614,10 @@ class TestMessageDimensionOperation:
                      log_density=torch.ones(2)
                      )
         m2 = m1.batch_broaden(1, 5)
-        assert m2.size() == torch.Size([2, 3, 5, 3, 2])
+        assert m2.size() == message_size(2, [3, 5, 3], None, 2)
 
         m2 = m1.batch_broaden(-3, 5)
-        assert m2.size() == torch.Size([2, 5, 2, 3, 2])
+        assert m2.size() == message_size(2, [5, 2, 3], None, 2)
 
     def test_batch_summarize_parameter(self):
         m1 = Message(MessageType.Parameter,
@@ -618,13 +627,13 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_summarize(1)
-        assert m2.size() == torch.Size([3, 2])
+        assert m2.size() == message_size(None, 3, 2, None)
 
         m3 = m1.batch_summarize(-1)
-        assert m3.size() == torch.Size([3, 2])
+        assert m3.size() == message_size(None, 3, 2, None)
 
         m4 = m1.batch_summarize(0)
-        assert m4.size() == torch.Size([4, 2])
+        assert m4.size() == message_size(None, 4, 2, None)
 
     def test_batch_summarize_particles(self):
         m1 = Message(MessageType.Particles,
@@ -637,13 +646,13 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_summarize(0)
-        assert m2.size() == torch.Size([2, 2, 3, 2])
+        assert m2.size() == message_size(2, [2, 3], None, 2)
 
         m3 = m1.batch_summarize(2)
-        assert m3.size() == torch.Size([2, 3, 2, 2])
+        assert m3.size() == message_size(2, [3, 2], None, 2)
 
         m4 = m1.batch_summarize(-1)
-        assert m4.size() == torch.Size([2, 3, 2, 2])
+        assert m4.size() == message_size(2, [3, 2], None, 2)
 
     def test_batch_flatten_parameter_default(self):
         m1 = Message(MessageType.Parameter,
@@ -653,10 +662,10 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_flatten(None)
-        assert m2.size() == torch.Size([9, 2])
+        assert m2.size() == message_size(None, 9, 2, None)
 
         m3 = m2.batch_flatten(None)
-        assert m3.size() == torch.Size([9, 2])
+        assert m3.size() == message_size(None, 9, 2, None)
 
     def test_batch_flatten_parameter(self):
         m1 = Message(MessageType.Parameter,
@@ -666,7 +675,7 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_flatten([0])
-        assert m2.size() == torch.Size([3, 2, 5])
+        assert m2.size() == message_size(None, [3, 2], 5, None)
 
     def test_batch_flatten_parameter_no_zero(self):
         m1 = Message(MessageType.Parameter,
@@ -676,10 +685,10 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_flatten([1, 2, 3])
-        assert m2.size() == torch.Size([3, 60, 2])
+        assert m2.size() == message_size(None, [3, 60], 2, None)
 
         m3 = m1.batch_flatten([-2, -3])
-        assert m3.size() == torch.Size([3, 5, 12, 2])
+        assert m3.size() == message_size(None, [3, 5, 12], 2, None)
 
     def test_batch_flatten_particles(self):
         m1 = Message(MessageType.Particles,
@@ -692,13 +701,13 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_flatten(None)
-        assert m2.size() == torch.Size([2, 18, 2])
+        assert m2.size() == message_size(2, 18, None, 2)
 
         m3 = m1.batch_flatten([0])
-        assert m3.size() == torch.Size([2, 2, 3, 3, 2])
+        assert m3.size() == message_size(2, [2, 3, 3], None, 2)
 
         m4 = m1.batch_flatten([1, 2])
-        assert m4.size() == torch.Size([2, 3, 6, 2])
+        assert m4.size() == message_size(2, [3, 6], None, 2)
 
     def test_batch_reshape_parameter(self):
         m1 = Message(MessageType.Parameter,
@@ -708,16 +717,16 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_reshape([4, 5, 9])
-        assert m2.size() == torch.Size([4, 5, 9, 2])
+        assert m2.size() == message_size(None, [4, 5, 9], 2, None)
 
         m3 = m1.batch_reshape(torch.Size([180]))
-        assert m3.size() == torch.Size([180, 2])
+        assert m3.size() == message_size(None, 180, 2, None)
 
         m4 = m1.batch_reshape(torch.Size([3, 5, 4, 3, 1]))
-        assert m4.size() == torch.Size([3, 5, 4, 3, 1, 2])
+        assert m4.size() == message_size(None, [3, 5, 4, 3, 1], 2, None)
 
         m5 = m1.batch_reshape([1, 3, 2, 1, 3, 5, 2, 1])
-        assert m5.size() == torch.Size([1, 3, 2, 1, 3, 5, 2, 1, 2])
+        assert m5.size() == message_size(None, [1, 3, 2, 1, 3, 5, 2, 1], 2, None)
 
     def test_batch_reshape_particles(self):
         m1 = Message(MessageType.Particles,
@@ -730,13 +739,59 @@ class TestMessageDimensionOperation:
                      )
 
         m2 = m1.batch_reshape([2, 3, 4, 6, 1])
-        assert m2.size() == torch.Size([2, 2, 3, 4, 6, 1, 2])
+        assert m2.size() == message_size(2, [2, 3, 4, 6, 1], None, 2)
 
         m3 = m1.batch_reshape([12, 12])
-        assert m3.size() == torch.Size([2, 12, 12, 2])
+        assert m3.size() == message_size(2, [12, 12], None, 2)
 
         m4 = m1.batch_reshape([144])
-        assert m4.size() == torch.Size([2, 144, 2])
+        assert m4.size() == message_size(2, 144, None, 2)
 
         m5 = m1.batch_reshape([1, 2, 3, 2, 3, 1, 2, 2, 1])
-        assert m5.size() == torch.Size([2, 1, 2, 3, 2, 3, 1, 2, 2, 1, 2])
+        assert m5.size() == message_size(2, [1, 2, 3, 2, 3, 1, 2, 2, 1], None, 2)
+
+    def test_batch_expand_parameters(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 1]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 1, 2)
+                     )
+
+        m2 = m1.batch_expand([3, 4])
+        assert m2.size() == message_size(None, [3, 4], 2, None)
+
+    def test_batch_expand_parameters_negative_1(self):
+        m1 = Message(MessageType.Parameter,
+                     batch_shape=torch.Size([3, 1]),
+                     param_shape=torch.Size([2]),
+                     parameters=torch.rand(3, 1, 2)
+                     )
+
+        m2 = m1.batch_expand([-1, 4])
+        assert m2.size() == message_size(None, [3, 4], 2, None)
+
+    def test_batch_expand_particles(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 1]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 2),
+                     weights=self.helper_normalize(torch.rand(2, 3, 1)),
+                     log_density=torch.ones(2)
+                     )
+
+        m2 = m1.batch_expand([3, 4])
+        assert m2.size() == message_size(2, [3, 4], None, 2)
+
+    def test_batch_expand_particles_negative_1(self):
+        m1 = Message(MessageType.Particles,
+                     sample_shape=torch.Size([2]),
+                     batch_shape=torch.Size([3, 1]),
+                     event_shape=torch.Size([2]),
+                     particles=torch.ones(2, 2),
+                     weights=self.helper_normalize(torch.rand(2, 3, 1)),
+                     log_density=torch.ones(2)
+                     )
+
+        m2 = m1.batch_expand([-1, 4])
+        assert m2.size() == message_size(2, [3, 4], None, 2)
