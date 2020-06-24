@@ -6,6 +6,7 @@ from torch.distributions.constraints import Constraint
 from enum import Enum, Flag, auto
 from collections.abc import Iterable
 import numpy as np
+from copy import deepcopy
 
 
 # Variable Metatypes and Variable for general inference
@@ -271,7 +272,8 @@ class Message:
             # Tensor addition
             new_parameters = self.parameters + other.parameters
 
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters,
+                              **self.attr)
 
         # Addition for Particles type
         if MessageType.Particles in s_type:
@@ -292,7 +294,7 @@ class Message:
 
             new_msg = Message(self.type,
                               sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                              particles=self.particles, weights=new_weights, log_density=self.log_density)
+                              particles=self.particles, weights=new_weights, log_density=self.log_density, **self.attr)
 
         return new_msg
 
@@ -335,7 +337,8 @@ class Message:
         new_msg = None
         if MessageType.Parameter in self.type:
             new_parameters = b_p_other * self.parameters
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters,
+                              **self.attr)
 
         # Scalar multiplication for Particles messages
         if MessageType.Particles in self.type:
@@ -351,7 +354,7 @@ class Message:
 
             new_msg = Message(self.type,
                               sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                              particles=self.particles, weights=new_weights, log_density=self.log_density)
+                              particles=self.particles, weights=new_weights, log_density=self.log_density, **self.attr)
 
         return new_msg
 
@@ -398,12 +401,14 @@ class Message:
 
     def clone(self):
         """
-            Return a cloned message from self. Guarantees that every tensor that constitutes self is cloned
+            Return a cloned message from self. Guarantees that every content is deep-copied. Tensors will be cloned and
+                dictionaries will be deep-copied.
         """
         parameters = self.parameters
         particles = self.particles
         weights = self.weights
         log_density = self.log_density
+        attr = self.attr
 
         if isinstance(parameters, torch.Tensor):
             parameters = parameters.clone()
@@ -413,10 +418,12 @@ class Message:
             weights = weights.clone()
         if isinstance(log_density, torch.Tensor):
             log_density = log_density.clone()
+        if self.attr is not None:
+            attr = deepcopy(self.attr)
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, self.b_shape, self.e_shape,
-                          parameters, particles, weights, log_density)
+                          parameters, particles, weights, log_density, **attr)
         return new_msg
 
     """
@@ -466,7 +473,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_unsqueeze(self, dim):
@@ -504,7 +511,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_index_select(self, dim, index):
@@ -544,7 +551,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_index_put(self, dim, index):
@@ -607,7 +614,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_diagonal(self, dim1=0, dim2=1):
@@ -656,7 +663,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_diag_embed(self, diag_dim=-1, target_dim1=-2, target_dim2=-1):
@@ -737,7 +744,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_narrow(self, dim, length):
@@ -781,7 +788,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_broaden(self, dim, length):
@@ -837,10 +844,9 @@ class Message:
             new_weights = torch.cat([new_weights, to_concat], dim=s_dim)
             new_weights = new_weights.contiguous()
 
-
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_summarize(self, dim):
@@ -883,7 +889,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_flatten(self, dims=None):
@@ -930,7 +936,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_reshape(self, new_batch_shape):
@@ -961,7 +967,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
     def batch_expand(self, new_batch_shape):
@@ -1006,7 +1012,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density)
+                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
         return new_msg
 
 
