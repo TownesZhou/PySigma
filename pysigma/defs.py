@@ -990,7 +990,7 @@ class Message:
                                             have the same length as self's current batch shape.
         """
         assert isinstance(new_batch_shape, torch.Size) or \
-               (isinstance(new_batch_shape, Iterable) or all(isinstance(s, int) for s in new_batch_shape))
+               (isinstance(new_batch_shape, Iterable) and all(isinstance(s, int) for s in new_batch_shape))
         assert len(list(new_batch_shape)) == len(self.b_shape)
 
         new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Tensor) else \
