@@ -230,6 +230,14 @@ class DistributionServer:
         kl_norm = kl.norm()
         return kl_norm
 
+    @classmethod
+    def transform_param(cls, param, dist_class, trans):
+        """
+            TODO: implement
+            Return the parameter of the transformed distribution
+        """
+        pass
+
     """
         DEFAULT methods that may be applicable to multiple general distribution classes
     """

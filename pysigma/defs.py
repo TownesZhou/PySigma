@@ -2,11 +2,13 @@
     Basic structures in the graphical architecture
 """
 import torch
+from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from enum import Enum, Flag, auto
 from collections.abc import Iterable
 import numpy as np
 from copy import deepcopy
+from utils import DistributionServer
 
 
 # Variable Metatypes and Variable for general inference
@@ -427,7 +429,7 @@ class Message:
         return new_msg
 
     """
-        Tensor manipulation utility methods
+        Methods for batch dimension manipulations. 
     """
 
     def batch_permute(self, target_dims):
@@ -1013,6 +1015,80 @@ class Message:
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
                           new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+        return new_msg
+
+    """
+        Methods for Manipulations on message events / distributions
+    """
+    def transform(self, trans):
+        """
+            Apply a transformation on the event values. Return the transformed message.
+
+            Message contents will be cloned.
+
+            For particles:
+                - Apply the transformation directly on the particle values
+                - Log sampling densities will be adjusted by adding the log abs determinant of the Jacobian of the
+                    transformation:
+                            log P(Y) = log P(X) + log |det (dX / dY)|
+                - Weights are kept the same, but the tensor will be cloned.
+
+            For parameters:
+                - Raise an alert if 'dist_class' attribute is missing in self.attr
+                - Query DistributionServer to obtained the transformed parameter.
+
+            :param trans:     torch.distributions.transforms.Transform. The transformation functor.
+        """
+        assert isinstance(trans, Transform)
+
+        # First clone
+        cloned_msg = self.clone()
+        new_parameters = cloned_msg.parameters
+        new_particles = cloned_msg.particles
+        new_log_density = cloned_msg.log_density
+
+        if MessageType.Parameter in cloned_msg.type:
+            assert 'dist_class' in cloned_msg.attr, \
+                "Missing 'dist_class' message attribute when transforming a message that contains parameters."
+            new_parameters = DistributionServer.transform_param(new_parameters, cloned_msg.attr['dist_class'], trans)
+        if MessageType.Particles in cloned_msg.type:
+            new_particles = trans(new_particles)
+            new_log_density += trans.log_abs_det_jacobian(cloned_msg.particles, new_particles)
+
+        new_msg = Message(cloned_msg.type,
+                          cloned_msg.p_shape, cloned_msg.s_shape, cloned_msg.b_shape, cloned_msg.e_shape,
+                          new_parameters, new_particles, cloned_msg.weights, new_log_density, **cloned_msg.attr)
+        return new_msg
+
+    """
+        Methods for operations on the message instance itself.
+    """
+    def reduce_type(self, msg_type):
+        """
+            Return a 'msg_type' type reduced self message, where irrelevant components w.r.t. 'msg_type' is removed, and
+                the relevant components are retained and cloned.
+
+            Return self and do nothing if msg_type is self type.
+
+            :param msg_type:        MessageType.Parameter or MessageType.Particles.
+        """
+        assert msg_type in self.type, \
+            "Target message type '{}' is not compatible with self message type '{}'".format(msg_type, self.type)
+        assert msg_type is MessageType.Parameter or msg_type is MessageType.Particles, \
+            "The target message type can only be Parameter or Particles. "
+
+        if msg_type == self.type:
+            return self
+
+        # First clone content
+        cloned_msg = self.clone()
+        if msg_type == MessageType.Parameter:
+            new_msg = Message(cloned_msg.type, param_shape=cloned_msg.p_shape, batch_shape=cloned_msg.b_shape,
+                              parameters=cloned_msg.parameters, **cloned_msg.attr)
+        else:
+            new_msg = Message(cloned_msg.type, sample_shape=cloned_msg.s_shape, batch_shape=cloned_msg.b_shape,
+                              event_shape=cloned_msg.e_shape, particles=cloned_msg.particles,
+                              weights=cloned_msg.weights, log_density=cloned_msg.log_density, **cloned_msg.attr)
         return new_msg
 
 

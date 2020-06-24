@@ -6,8 +6,8 @@ import torch
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from torch.distributions import Distribution
-from torch.distributions.categorical import Categorical
+from torch.distributions import Distribution, Transform
+from torch.distributions.constraints import Constraint
 from torch.nn.functional import cosine_similarity
 from defs import Variable, MessageType, Message
 from utils import DistributionServer
@@ -1253,24 +1253,93 @@ class RanTransNode(AlphaFactorNode):
     """
         Random Variable Transformation Node
 
-        Apply a user-specified transformation procedure defined in torch.distributions.transforms on the random
-            variables of the incoming message. In other words, this nodes transforms the values of the particle events
-            of the message distributions.
+        Carry out three core functionality:
 
-        By transforming the RV values, it also induces new value constraints for the generated messages. For the inward
-            direction, the new induced value constraints will be used by the gamma factor node to carry out value check
-            for the matching RVs.
+        1. Manipulate batch dimensions:
+            - For inward direction: flatten batch dimensions into a single dimension
+            - for outward direction: reshape the flattened batch dimension into full batch dimensions of the conditional
 
-        Note that if this node belongs to a Condact predicate pattern, the transformation specified by user MUST be
-            bijective. The forward transformation will be used for inward message propagation, whereas the backward
-            transformation will be used for outward message propagation.
+        2. Apply transformation on events:
+            - For inward direction: apply pre-specified transformation on event.
+            - For outward direction: apply the INVERSE of the pre-specified transformation on events.
 
-        This node is a component of the alpha conditional subgraph, so admits up to two pairs of incoming and outgoing
-            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
-            it is pointing toward the conditional gamma factor node or not.
+        3. Check if event values meets the pre-specified constraints.
+            - This step will be automatically skipped if it's outward direction and/or the message does not contain
+                event particles.
+            - If constraints not satisfied and replaceable == False, raise an alert.
+            - If constraints not satisfied and replaceable == True, check if the incoming message type is Both.
+                - If yes, then reduce the message into Parameter message and send it to outgoing link.
+                - Otherwise, raise an alert.
+
     """
-    pass
+    def __init__(self, name, trans, constraints, replaceable=True):
+        """
+            :param trans:       torch.distributions.transforms.Transform. The transformation functor
+            :param constraints  a set of torch.distributions.constraints.Constraint. The value constraints of the target
+                                    conditional's pattern random variable.
+        """
+        super(RanTransNode, self).__init__(name)
+        self.pretty_log["node type"] = "Random Variable Transformation Node"
 
+        assert isinstance(trans, Transform)
+        assert isinstance(constraints, set) and all(isinstance(c, Constraint) for c in constraints)
+        assert isinstance(replaceable, bool)
+
+        self.trans = trans
+        self.constraints = constraints
+        self.replaceable = replaceable
+
+    def inward_compute(self, in_ld, out_ld):
+        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
+        msg = in_ld.read()
+        assert isinstance(msg, Message)
+
+        # 1. Flatten batch dimensions into a single dimension
+        msg = msg.batch_flatten()
+
+        # 2. Apply forward transformation.
+        msg = msg.transform(self.trans)
+
+        # 3. Check value constraints only if message involves even particles
+        if MessageType.Particles in msg.type:
+            valid = True
+            for constraint in self.constraints:
+                valid *= constraint.check(msg.particles).all()
+
+            # Raise an alert if not valid and particles not replaceable.
+            assert valid or self.replaceable, \
+                "At {}: It has been specified that particles in incoming messages are not replaceable, but encountered " \
+                "a message where the particle values do not meet pre-specified constraints: {}"\
+                .format(self.name, self.constraints)
+
+            # Check message type if not valid but replaceable is True
+            if not valid and self.replaceable:
+                assert MessageType.Parameter in msg.type, \
+                    "At {}: Message must contain parameter if it's particles are to be replaced when its own particles " \
+                    "do not meet the constraints. Instead, found one incoming message of type {} whose particles do " \
+                    "not meet the constraints.".format(self.name, msg.type)
+                # Reduce the message into only parameters
+                msg = msg.reduce_type(MessageType.Parameter)
+
+        # Send message
+        out_ld.write(msg)
+
+    def outward_compute(self, in_ld, out_ld):
+        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
+        out_rel_var_list = out_ld.vn.rel_var_list
+        msg = in_ld.read()
+        assert isinstance(msg, Message)
+
+        # 1. Reshape batch dimension into full conditional relational pattern variable dimensions
+        out_dims = list(v.size for v in out_rel_var_list)
+        assert len(msg.b_shape) == 1
+        msg = msg.batch_reshape(out_dims)
+
+        # 2. Apply inverse transformation.
+        msg = msg.transform(self.trans.inv)
+
+        # Send message
+        out_ld.write(msg)
 
 """
     Nodes relating to Conditional Beta subgraph Structures
