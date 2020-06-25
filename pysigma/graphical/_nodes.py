@@ -894,7 +894,7 @@ class AlphaFactorNode(FactorNode, ABC):
         pass
 
 
-class RelMapNode(AlphaFactorNode):
+class RMFN(AlphaFactorNode):
     """
         Relation Variable Mapping Node
 
@@ -1118,7 +1118,7 @@ class RelMapNode(AlphaFactorNode):
         out_ld.write(msg)
 
 
-class ExpSumNode(AlphaFactorNode):
+class ESFN(AlphaFactorNode):
     """
         Expansion / Summarization Node
 
@@ -1249,7 +1249,7 @@ class ExpSumNode(AlphaFactorNode):
         out_ld.write(msg)
 
 
-class RanTransNode(AlphaFactorNode):
+class RTFN(AlphaFactorNode):
     """
         Random Variable Transformation Node
 
@@ -1298,7 +1298,7 @@ class RanTransNode(AlphaFactorNode):
         msg = msg.batch_flatten()
 
         # 2. Apply forward transformation.
-        msg = msg.transform(self.trans)
+        msg = msg.event_transform(self.trans)
 
         # 3. Check value constraints only if message involves even particles
         if MessageType.Particles in msg.type:
@@ -1406,11 +1406,14 @@ class BetaNode(Node, ABC):
         pass
 
 
-class EventSplitVarNode(BetaNode, VariableNode):
+class EDVN(BetaNode, VariableNode):
+    """
+
+    """
     pass
 
 
-class PartCombNode(BetaNode, FactorNode):
+class PCFN(BetaNode, FactorNode):
     pass
 
 

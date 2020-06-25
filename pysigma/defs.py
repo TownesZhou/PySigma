@@ -401,6 +401,38 @@ class Message:
         assert isinstance(other, Message)
         return self.size() == other.size()
 
+    """
+            Methods for operations on the message instance itself.
+        """
+
+    def reduce_type(self, msg_type):
+        """
+            Return a 'msg_type' type reduced self message, where irrelevant components w.r.t. 'msg_type' is removed, and
+                the relevant components are retained and cloned.
+
+            Return self and do nothing if msg_type is self type.
+
+            :param msg_type:        MessageType.Parameter or MessageType.Particles.
+        """
+        assert msg_type in self.type, \
+            "Target message type '{}' is not compatible with self message type '{}'".format(msg_type, self.type)
+        assert msg_type is MessageType.Parameter or msg_type is MessageType.Particles, \
+            "The target message type can only be Parameter or Particles. "
+
+        if msg_type == self.type:
+            return self
+
+        # First clone content
+        cloned_msg = self.clone()
+        if msg_type == MessageType.Parameter:
+            new_msg = Message(cloned_msg.type, param_shape=cloned_msg.p_shape, batch_shape=cloned_msg.b_shape,
+                              parameters=cloned_msg.parameters, **cloned_msg.attr)
+        else:
+            new_msg = Message(cloned_msg.type, sample_shape=cloned_msg.s_shape, batch_shape=cloned_msg.b_shape,
+                              event_shape=cloned_msg.e_shape, particles=cloned_msg.particles,
+                              weights=cloned_msg.weights, log_density=cloned_msg.log_density, **cloned_msg.attr)
+        return new_msg
+
     def clone(self):
         """
             Return a cloned message from self. Guarantees that every content is deep-copied. Tensors will be cloned and
@@ -1018,9 +1050,9 @@ class Message:
         return new_msg
 
     """
-        Methods for Manipulations on message events / distributions
+        Methods for Manipulations on message events 
     """
-    def transform(self, trans):
+    def event_transform(self, trans):
         """
             Apply a transformation on the event values. Return the transformed message.
 
@@ -1060,36 +1092,10 @@ class Message:
                           new_parameters, new_particles, cloned_msg.weights, new_log_density, **cloned_msg.attr)
         return new_msg
 
-    """
-        Methods for operations on the message instance itself.
-    """
-    def reduce_type(self, msg_type):
+    def event_split(self, split_sizes):
         """
-            Return a 'msg_type' type reduced self message, where irrelevant components w.r.t. 'msg_type' is removed, and
-                the relevant components are retained and cloned.
 
-            Return self and do nothing if msg_type is self type.
-
-            :param msg_type:        MessageType.Parameter or MessageType.Particles.
         """
-        assert msg_type in self.type, \
-            "Target message type '{}' is not compatible with self message type '{}'".format(msg_type, self.type)
-        assert msg_type is MessageType.Parameter or msg_type is MessageType.Particles, \
-            "The target message type can only be Parameter or Particles. "
-
-        if msg_type == self.type:
-            return self
-
-        # First clone content
-        cloned_msg = self.clone()
-        if msg_type == MessageType.Parameter:
-            new_msg = Message(cloned_msg.type, param_shape=cloned_msg.p_shape, batch_shape=cloned_msg.b_shape,
-                              parameters=cloned_msg.parameters, **cloned_msg.attr)
-        else:
-            new_msg = Message(cloned_msg.type, sample_shape=cloned_msg.s_shape, batch_shape=cloned_msg.b_shape,
-                              event_shape=cloned_msg.e_shape, particles=cloned_msg.particles,
-                              weights=cloned_msg.weights, log_density=cloned_msg.log_density, **cloned_msg.attr)
-        return new_msg
 
 
 # TODO: Enum class of all the inference method
