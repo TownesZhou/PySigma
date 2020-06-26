@@ -920,7 +920,7 @@ class RMFN(AlphaFactorNode):
                                     Variable instance(s)
             :param  arg2var_map:    dictionary mapping predicate argument Variable instance to VariableMap instance
         """
-        super(RelMapNode, self).__init__(name)
+        super(RMFN, self).__init__(name)
         self.pretty_log["node type"] = "Relation Variable Mapping Node"
         
         assert isinstance(name, str)
@@ -1149,7 +1149,7 @@ class ESFN(AlphaFactorNode):
 
             :param sum_op:      None or a Summarization instance. Default is None.
         """
-        super(ExpSumNode, self).__init__(name)
+        super(ESFN, self).__init__(name)
         self.pretty_log["node type"] = "Expansion Summarization Factor Node"
 
         assert sum_op is None or isinstance(sum_op, Summarization)
@@ -1278,7 +1278,7 @@ class RTFN(AlphaFactorNode):
             :param constraints  a set of torch.distributions.constraints.Constraint. The value constraints of the target
                                     conditional's pattern random variable.
         """
-        super(RanTransNode, self).__init__(name)
+        super(RTFN, self).__init__(name)
         self.pretty_log["node type"] = "Random Variable Transformation Node"
 
         assert isinstance(trans, Transform)
@@ -1408,6 +1408,18 @@ class BetaNode(Node, ABC):
 
 class EDVN(BetaNode, VariableNode):
     """
+        Event Dispatch Variable Node.
+
+        For inward direction:
+            - Assume one incoming link and multiple outgoing links.
+            - If the incoming message has particles, transform the events from PyTorch distribution event format to
+                PySigma cognitive level event format. If there are multiple referenced pattern random variables, events
+                will be split w.r.t. the random variable sizes, and each split message sent to the corresponding PCFN
+                that processes the corresponding random variable.
+            - If the incoming message does not have particles, simply send the Parameter message to all connected PCFN.
+        For outgoing direction:
+            - Assume one outgoing link and multiple incoming links.
+            - If the incoming links have particles,
 
     """
     pass

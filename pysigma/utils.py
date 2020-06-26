@@ -177,11 +177,12 @@ class DistributionServer:
     @classmethod
     def draw_particles(cls, dist, num_particles, b_shape, e_shape):
         """
-            Draw a given number of particles from the given distribution instance. Return a tuple:
+            TODO: Gibbs sampling procedure
+            Draw a given number of particles from the given batch of distribution instances. Return a tuple:
                     (particles, weights, sampling_log_densities)
 
-            Special handling for certain distribution classes on an individual basis, for example for finite discrete
-                distributions.
+            The Gibbs' Sampling procedure is used to draw a single list of particles that will be used by each
+                distribution instance in the batch to derive individual weights by importance weighting.
 
             Particles drawn are in the format compatible with PyTorch's distribution class
         """
