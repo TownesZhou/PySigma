@@ -8,7 +8,7 @@ from enum import Enum, Flag, auto
 from collections.abc import Iterable
 import numpy as np
 from copy import deepcopy
-from utils import DistributionServer
+from utils import DistributionServer, KnowledgeTranslator
 
 
 # Variable Metatypes and Variable for general inference
@@ -116,6 +116,12 @@ class Message:
                 - sample log density is a tensor array with shape (sample_shape) if the log densities are not uniform,
                     i.e., if the particle values were not drawn from a uniform distribution. Otherwise if uniform, it
                     can be represented by an int of 0.
+
+        Message content shape (when they are torch tensors):
+            - parameter:        (batch_shape + param_shape)
+            - particles:        (sample_shape + event_shape)
+            - weights:          (sample_shape + batch_shape)
+            - log_density:      (sample_shape)
 
         Message shape constraints:
             - sample_shape must have exactly length 1.
@@ -1092,10 +1098,65 @@ class Message:
                           new_parameters, new_particles, cloned_msg.weights, new_log_density, **cloned_msg.attr)
         return new_msg
 
-    def event_split(self, split_sizes):
+    @staticmethod
+    def event_translate_2pred(msg, translator):
         """
+            Translate msg's particles from PyTorch format to Cognitive format, using the given translator.
 
+            If there are multiple r.v., will return a tuple of translated messages, elements corresponding to each r.v.
+                specified in the translator. In this case, the particle weights and log sampling densities will be
+                copied for each split event particles to form new messages.
+
+            :param msg:             a Message instance. The message to be translated.
+            :param translator:      a KnowledgeTranslator instance.
         """
+        assert isinstance(msg, Message)
+        assert isinstance(translator, KnowledgeTranslator)
+        assert MessageType.Particles in msg.type
+
+        result_particles = translator.event2pred_event(msg.particles)
+
+        result_msgs = []
+        if not isinstance(result_particles, tuple):
+            assert isinstance(result_particles, torch.Tensor)
+            result_particles = tuple([result_particles])
+        for particles in result_particles:
+            # Shape check
+            assert isinstance(particles, torch.Tensor) and particles.dim() == 2 and particles.shape[0] == msg.s_shape
+            # Clone message
+            cloned_msg = msg.clone()
+            new_msg = Message(cloned_msg.type,
+                              cloned_msg.p_shape, cloned_msg.s_shape, cloned_msg.b_shape, particles.shape[1],
+                              cloned_msg.parameters, particles, cloned_msg.weights, cloned_msg.log_density,
+                              **cloned_msg.attr)
+            result_msgs.append(new_msg)
+
+        return tuple(result_msgs)
+
+    @staticmethod
+    def event_translate_2torch(msgs, translator):
+        """
+            Translate provided iterable of messages' particles from Cognitive format to form a message with particles in
+                PyTorch format, using the given translator.
+
+            The message order in the given iterable should conform to the random variable order specified in the
+                translator.
+
+            Return a single message.
+
+            :param msgs:        an iterable of Message instances. Order should be compatible with the order of random
+                                    variables specified in the given translator.
+            :param translator:  a KnowledgeTranslator instance.
+        """
+        assert isinstance(msgs, Iterable) and all(isinstance(msg, Message) for msg in msgs)
+        assert isinstance(translator, KnowledgeTranslator)
+        assert all(MessageType.Particles in msg.type for msg in msgs)
+
+        result_particles = translator.event2torch_event(tuple(msgs))
+
+
+
+
 
 
 # TODO: Enum class of all the inference method

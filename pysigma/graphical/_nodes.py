@@ -818,7 +818,7 @@ class WMFN(FactorNode):
 
 """
     Nodes relating to Conditional Alpha subgraph structures
-        - AlphaFactorNode, RelMapNode, ExpSumNode, RanTransNode
+        - AlphaFactorNode: RMFN, ESFN
 """
 
 
@@ -1249,6 +1249,149 @@ class ESFN(AlphaFactorNode):
         out_ld.write(msg)
 
 
+"""
+    Nodes relating to Conditional Beta subgraph Structures
+        - BetaFactorNode: ESCFN, RVTFN, BJTFN
+"""
+
+
+class BetaFactorNode(FactorNode, ABC):
+    """
+            Abstract base class for nodes belonging to the beta subgraph of a conditional.
+
+            Captures the commonality of Beta factor nodes, including link connectivity and inward & outward message
+                propagation pattern:
+                - Groups links in terms of whether the messages moves inward to the Gamma Factor node or not.
+                - During compute, perform inward and outward computation separately in turn by calling inward_compute()
+                    and outward_compute()
+
+            Different from Alpha nodes, there's no restriction on the number of incoming or outgoing linkdata, as long as
+                they can be identified in terms of their messaging directionality.
+
+            Need to specify "direction" attribute in linkdata
+        """
+
+    def __init__(self, name):
+        super(BetaFactorNode, self).__init__(name)
+
+        # Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure
+        self.labeled_ld_list_pair = {
+            'inward': ([], []),
+            'outward': ([], [])
+        }
+
+    def add_link(self, linkdata):
+        assert isinstance(linkdata, LinkData)
+        assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
+
+        if linkdata.to_fn:
+            self.labeled_ld_list_pair[linkdata.attr['direction']][0].append(linkdata)
+        else:
+            self.labeled_ld_list_pair[linkdata.attr['direction']][1].append(linkdata)
+
+        super(BetaFactorNode, self).add_link(linkdata)
+
+    def compute(self):
+        super(BetaFactorNode, self).compute()
+
+        for direction, (in_ld_list, out_ld_list) in self.labeled_ld_list_pair.items():
+            if len(in_ld_list) > 0 and len(out_ld_list) > 0:
+                if direction == 'inward':
+                    self.inward_compute(in_ld_list, out_ld_list)
+                else:
+                    self.outward_compute(in_ld_list, out_ld_list)
+
+    @abstractmethod
+    def inward_compute(self, in_ld_list, out_ld_list):
+        """
+            Inward message computation. To be implemented by child class.
+        """
+        pass
+
+    @abstractmethod
+    def outward_compute(self, in_ld_list, out_ld_list):
+        """
+            Outward message computation. To be implemented by child class.
+        """
+        pass
+
+
+class ESCFN(BetaFactorNode):
+    """
+        Event Split / Combination Node
+
+        add link:
+            - check that for inward direction, there's only one incoming link; for outward direction, only one outgoing
+                link.
+
+        Inward direction compute:
+            1. Flatten batch dimensions into a single dimension
+            2. If there are multiple referenced random variables, ensure that incoming message contains Particles,
+                otherwise raise an alert.
+            3. Translate event particles from PyTorch format to Cognitive format. If multiple pattern random variables
+                are referenced, the events will/should be split in accordance to the size of each pattern r.v.
+            4. If 'reference' is True, then will cache the incoming message after each inward compute.
+            5. If there is only one referenced pattern random variable, send translated message as is to the outgoing
+                link. Otherwise, send split event messages to each outgoing link with corresponding pattern r.v.
+                respectively.
+
+        Outward direction compute:
+            1. If there is inward propagation direction, check that the cache is not None. Check that incoming messages
+                holds the same particles as the cached message. Otherwise, raise an alert.
+            2. If there are multiple incoming links, check that messages from all incoming links have Particles. In
+                this case, if there is cached message, combine incoming messages' event particles with alignment to
+                the cached message's event particles. Otherwise, combine incoming messages' event particles randomly /
+                without alignment.
+            3. Reshape the single batch dimensions into full conditional batch dimensions.
+    """
+    def __init__(self, name, reference=True):
+        super(ESCFN, self).__init__(name)
+
+        assert isinstance(reference, bool)
+        # Whether to cache referenced event particle message
+        self.reference = reference
+        self.cache = None
+
+    def add_link(self, linkdata):
+        super(ESCFN, self).add_link(linkdata)
+        if linkdata.attr['direction'] == 'inward' and linkdata.to_fn:
+            assert len(self.labeled_ld_list_pair['inward'][0]) <= 1
+        elif linkdata.attr['direction'] == 'outward' and not linkdata.to_fn:
+            assert len(self.labeled_ld_list_pair['outward'][1]) <= 1
+
+    def inward_compute(self, in_ld_list, out_ld_list):
+        assert len(in_ld_list) == 1
+        in_ld = in_ld_list[0]
+        ran_var_list = in_ld.vn.ran_var_list
+        # Check that the number of outgoing links equal the number of random variables from the incoming link, and that
+        # there's one-to-one correspondence
+        assert len(out_ld_list) == len(ran_var_list) and \
+            set(out_ld.vn.ran_var_list[0] for out_ld in out_ld_list) == set(ran_var_list)
+
+        msg = in_ld_list[0].read()
+        assert isinstance(msg, Message)
+
+        # 1. Flatten batch dimension
+        msg = msg.batch_flatten()
+
+        # 2. Ensure incoming message contain particles if multiple referenced r.v.
+        if len(ran_var_list) > 1:
+            assert MessageType.Particles in msg.type, \
+                "In {}: Pattern has multiple referenced random variables: {}, however the incoming message {} does " \
+                "not contain particles. "
+
+        # 3. Translate event format
+        pass
+
+
+class RVTFN(BetaFactorNode):
+    pass
+
+
+class BJTFN(BetaFactorNode):
+    pass
+
+
 class RTFN(AlphaFactorNode):
     """
         Random Variable Transformation Node
@@ -1300,7 +1443,7 @@ class RTFN(AlphaFactorNode):
         # 2. Apply forward transformation.
         msg = msg.event_transform(self.trans)
 
-        # 3. Check value constraints only if message involves even particles
+        # 3. Check value constraints only if message involves particles
         if MessageType.Particles in msg.type:
             valid = True
             for constraint in self.constraints:
@@ -1341,69 +1484,7 @@ class RTFN(AlphaFactorNode):
         # Send message
         out_ld.write(msg)
 
-"""
-    Nodes relating to Conditional Beta subgraph Structures
-        - BetaNode, EventSplitVarNode, PartCombNode
-"""
 
-
-class BetaNode(Node, ABC):
-    """
-        Abstract base class for nodes belonging to the beta subgraph of a conditional.
-
-        Captures the commonality of Beta nodes, including link connectivity and inward & outward compute pattern:
-            - Groups links in terms of whether the messages moves inward to the Gamma Factor node or not.
-            - During compute, perform inward and outward computation separately in turn by calling inward_compute() and
-                outward_compute()
-
-        Different from Alpha nodes, there's no restriction on the number of incoming or outgoing linkdata, as long as
-            they can be identified in terms of their messaging directionality.
-
-        Need to specify "direction" attribute in linkdata
-    """
-    def __init__(self, name, *args, **kwargs):
-        super(BetaNode, self).__init__(name, *args, **kwargs)
-
-        # Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure
-        self.labeled_ld_list_pair = {
-            'inward': ([], []),
-            'outward': ([], [])
-        }
-
-    def add_link(self, linkdata):
-        assert isinstance(linkdata, LinkData)
-        assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
-
-        if linkdata.to_fn:
-            self.labeled_ld_list_pair[linkdata.attr['direction']][0].append(linkdata)
-        else:
-            self.labeled_ld_list_pair[linkdata.attr['direction']][1].append(linkdata)
-
-        super(BetaNode, self).add_link(linkdata)
-
-    def compute(self):
-        super(BetaNode, self).compute()
-
-        for direction, (in_ld_list, out_ld_list) in self.labeled_ld_list_pair.items():
-            if len(in_ld_list) > 0 and len(out_ld_list) > 0:
-                if direction == 'inward':
-                    self.inward_compute(in_ld_list, out_ld_list)
-                else:
-                    self.outward_compute(in_ld_list, out_ld_list)
-
-    @abstractmethod
-    def inward_compute(self, in_ld_list, out_ld_list):
-        """
-            Inward message computation. To be implemented by child class.
-        """
-        pass
-
-    @abstractmethod
-    def outward_compute(self, in_ld_list, out_ld_list):
-        """
-            Outward message computation. To be implemented by child class.
-        """
-        pass
 
 
 class EDVN(BetaNode, VariableNode):
