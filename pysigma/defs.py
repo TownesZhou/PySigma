@@ -37,13 +37,14 @@ class Variable:
             :param metatype:            VariableMetatype. The metatype of this variable: Indexing, Relational, Random,
                                             or Parameter
             :param size:                an int. The size of the dimension this variable corresponds to
-            :param value_constraints:   a set of torch.distributions.constraints.Constraint instances. The set of value
-                                            constraints that determine the value range (domain) of this variable
+            :param value_constraints:   an Iterable of torch.distributions.constraints.Constraint instances. The set of
+                                            value constraints that determine the value range (support) of this random
+                                            variable. Should specify if and only if metatype is Random.
         """
         assert isinstance(name, str)
         assert isinstance(metatype, VariableMetatype)
         assert isinstance(size, int)
-        assert value_constraints is None or (isinstance(value_constraints, set) and
+        assert value_constraints is None or (isinstance(value_constraints, Iterable) and
                                              all(isinstance(c, Constraint) for c in value_constraints))
         assert (value_constraints is not None) is (metatype is VariableMetatype.Random)
 
@@ -103,31 +104,41 @@ class Message:
         Message structure to support general inference.
 
         Two basic message types:
-            - Parameter: parameters to some batched distributions
+            - Parameter: parameters to a batch of distributions that this message is encoding
                 - Contains a batched parameter tensor, of shape (batch_shape + param_shape)
 
-            - Particles: A particle list with a single list of non-uniformly drawn particle values and batched weights
-                to encode a batch of distribution instances.
-                - Contains three components: particle value, particle weight, and sampling log density
-                - particle value is a tensor with shape (sample_shape + event_shape)
-                - particle weight is a batched tensor with shape (sample_shape + batch_shape) if the weights are not
-                    uniform. In this case, the entries should be non-negative values, and sum to 1 across 'sample_shape'
-                    dimension. Otherwise if the weights are uniform, it can be represented by an int of 1.
-                - sample log density is a tensor array with shape (sample_shape) if the log densities are not uniform,
-                    i.e., if the particle values were not drawn from a uniform distribution. Otherwise if uniform, it
-                    can be represented by an int of 0.
+            - Particles: Lists of marginally drawn particles w.r.t. each single random variable. The combination of
+                particles approximates the batch of joint target distributions this message is encoding via importance
+                weighting. Comprise of the following components:
+                - Particle Value Tensors List:
+                    Each one corresponds to particles marginally drawn w.r.t. one random variable.
+                    With shape [sample_size_j, event_size_j] for the jth random variable.
+                - Weight Tensor:
+                    A single, positively valued tensor that encodes the importance weighting of each joint combination
+                        of particles w.r.t. each joint distribution in the batch. The values should sum up to 1 across
+                        the tensor subspace spanned by all sample dimensions.
+                    If all weights are uniform, can use an int of 1 as the abbreviation.
+                    With shape (batch_shape + sample_shape) where batch_shape is the concatenation of of batch sizes,
+                        and sample_shape is the concatenation of all sample sizes.
+                - Log Sampling Density Tensors List:
+                    Each one corresponds to the log sampling density of the corresponding particles in the Particle
+                        Value Tensors List.
+                    If a particle value tensor was drawn uniformly, its corresponding log sampling density can be
+                        abbreviated by an int of 1.
+                    With shape [sample_size_j] for the jth random variable.
 
-        Message content shape (when they are torch tensors):
-            - parameter:        (batch_shape + param_shape)
-            - particles:        (sample_shape + event_shape)
-            - weights:          (sample_shape + batch_shape)
-            - log_density:      (sample_shape)
+        Message content shape (when they are torch tensors), assuming there are N relational variables and M random
+            variables:
+            - Parameter:                    [batch_size_0, ..., batch_size_N, param_size]
+            - Particle Value Tensor:        each of shape [sample_size_j, event_size_j]
+            - Weight Tensor:                [batch_size_0, ..., batch_size_N, sample_size_0, ..., sample_size_M]
+            - Log Sampling Density Tensor:  each of shape [sample_size_j]
 
         Message shape constraints:
-            - sample_shape must have exactly length 1.
-            - batch_shape must have at least length 1.
-            - event_shape must have exactly length 1.
-            - param_shape must have exactly length 1.
+            - sample_shape must have AT LEAST length 1, the same length as event_shape.
+            - batch_shape must have AT LEAST length 1.
+            - event_shape must have AT LEAST length 1, the same length as sample_shape.
+            - param_shape must have EXACTLY length 1.
 
         The semantics of a Message is determined not only by its type, but by its context as well. In other words,
             which distribution or distribution class a Message represents, or whether a Parameter type message
