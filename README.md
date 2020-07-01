@@ -1,3 +1,6 @@
+[![Documentation Status](https://readthedocs.org/projects/pysigma/badge/?version=latest)](https://pysigma.readthedocs.io/en/latest/?badge=latest)
+
+
 # PySigma
 
 Python implementation of the Sigma cognitive and graphical architecture grounded on PyTorch tensor processing.
