@@ -1,0 +1,347 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Message &mdash; PySigma 0.0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Utils" href="../utils/index.html" />
+    <link rel="prev" title="Graphical" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/intro.html">Introduction to the PySigma Cognitive Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">References</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../cognitive/index.html">Cognitive</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive/predicate.html">Predicate</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Message</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/index.html">Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">References</a> &raquo;</li>
+        
+          <li><a href="index.html">Graphical</a> &raquo;</li>
+        
+      <li>Message</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/references/graphical/message.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="message">
+<h1>Message<a class="headerlink" href="#message" title="Permalink to this headline">¶</a></h1>
+<p>The Message class constitutes the most fundamental data structure in PySigma Graphical Architecture.</p>
+<dl class="py class">
+<dt id="pysigma.defs.Message">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">Message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_type</span></em>, <em class="sig-param"><span class="n">batch_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">param_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sample_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">event_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parameters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">particles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weights</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">log_densities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.defs.Message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Message structure to support general inference.</p>
+<dl>
+<dt>Two basic message types:</dt><dd><ul>
+<li><dl class="simple">
+<dt>Parameter: parameters to a batch of distributions that this message is encoding</dt><dd><ul class="simple">
+<li><p>Contains a batched parameter tensor, of shape (batch_shape + param_shape)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>Particles: Lists of marginally drawn particles w.r.t. each single random variable. The combination of</dt><dd><p>particles approximates the batch of joint target distributions this message is encoding via importance
+weighting. Comprise of the following components:
+- Particle Value Tensors List:</p>
+<blockquote>
+<div><p>Each one corresponds to particles marginally drawn w.r.t. one random variable.
+With shape [sample_size_j, event_size_j] for the jth random variable.</p>
+</div></blockquote>
+<ul>
+<li><dl>
+<dt>Weight Tensor:</dt><dd><dl class="simple">
+<dt>A single, positively valued tensor that encodes the importance weighting of each joint combination</dt><dd><p>of particles w.r.t. each joint distribution in the batch. The values should sum up to 1 across
+the tensor subspace spanned by all sample dimensions.</p>
+</dd>
+</dl>
+<p>If all weights are uniform, can use an int of 1 as the abbreviation.
+With shape (batch_shape + sample_shape) where batch_shape is the concatenation of of batch sizes,</p>
+<blockquote>
+<div><p>and sample_shape is the concatenation of all sample sizes.</p>
+</div></blockquote>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>Log Sampling Density Tensors List:</dt><dd><dl class="simple">
+<dt>Each one corresponds to the log sampling density of the corresponding particles in the Particle</dt><dd><p>Value Tensors List.</p>
+</dd>
+<dt>If a particle value tensor was drawn uniformly, its corresponding log sampling density can be</dt><dd><p>abbreviated by an int of 1.</p>
+</dd>
+</dl>
+<p>With shape [sample_size_j] for the jth random variable.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>Message content shape (when they are torch tensors), assuming there are N relational variables and M random</dt><dd><p>variables:
+- Parameter:                    [batch_size_0, …, batch_size_N, param_size]
+- Particle Value Tensor:        each of shape [sample_size_j, event_size_j]
+- Weight Tensor:                [batch_size_0, …, batch_size_N, sample_size_0, …, sample_size_M]
+- Log Sampling Density Tensor:  each of shape [sample_size_j]</p>
+</dd>
+<dt>Message shape constraints:</dt><dd><ul class="simple">
+<li><p>sample_shape must have AT LEAST length 1, the same length as event_shape.</p></li>
+<li><p>batch_shape must have AT LEAST length 1.</p></li>
+<li><p>event_shape must have AT LEAST length 1, the same length as sample_shape.</p></li>
+<li><p>param_shape must have EXACTLY length 1.</p></li>
+</ul>
+</dd>
+<dt>The semantics of a Message is determined not only by its type, but by its context as well. In other words,</dt><dd><p>which distribution or distribution class a Message represents, or whether a Parameter type message
+represents a Natural parameter to an exponential distribution or a distribution-class specific parameter to
+PyTorch’s distribution class interface, is of no concern to the Message structure itself.</p>
+</dd>
+<dt>Both types of messages are endowed with certain arithmetic structures:</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>For Parameter messages,</dt><dd><ul>
+<li><p>Addition operation is defined as addition on the parameter tensors.</p></li>
+<li><p>Scalar multiplication is defined as scalar multiplication with the parameter tensors</p></li>
+<li><p>0 is treated as the identity element.</p></li>
+<li><p>Parameter message structure therefore constructs and defines the “parameter space”.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>For Particles messages:</dt><dd><ul>
+<li><dl class="simple">
+<dt>The following two operations are defined as operations on the particle weights, and meaningful only</dt><dd><p>for Particle messages that share the same particle values and the same sampling log density of the
+particles. In addition, results from these two operations are normalized so that the weight tensor
+sum to 1 across the sample dimension.</p>
+</dd>
+</dl>
+</li>
+<li><p>“Addition” operation is defined as element-wise multiplication of particle weights tensors.</p></li>
+<li><dl class="simple">
+<dt>“Scalar multiplication” is defined as taking elements of the particle weights tensor to the power</dt><dd><p>of the scalar.</p>
+</dd>
+</dl>
+</li>
+<li><p>1 is treated as the identity element for the element-wise multiplication operation.</p></li>
+<li><dl class="simple">
+<dt>It turns out that the “addition” and “scalar multiplication” as defined above satisfy associativity</dt><dd><p>and distributivity. With the set of possible weights closed under both operations, a vector space
+is therefore constructed and defined.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<p>Accordingly, the ‘+’ and ‘*’ operator are overloaded according the to the specifications above.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../utils/index.html" class="btn btn-neutral float-right" title="Utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Graphical" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

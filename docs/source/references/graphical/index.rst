@@ -1,0 +1,6 @@
+Graphical
+=========
+
+.. toctree::
+
+   message

@@ -1,4 +1,0 @@
-Message Class
-=============
-
-Hello World!

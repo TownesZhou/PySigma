@@ -1,0 +1,6 @@
+Cognitive
+=========
+
+.. toctree::
+
+   predicate

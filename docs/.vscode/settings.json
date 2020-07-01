@@ -1,0 +1,4 @@
+{
+    "restructuredtext.confPath": "${workspaceFolder}/source",
+    "python.pythonPath": "/home/jincheng/.conda/envs/sigma/bin/python"
+}
