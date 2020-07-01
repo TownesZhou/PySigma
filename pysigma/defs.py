@@ -168,47 +168,52 @@ class Message:
         Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
     """
 
-    def __init__(self, msg_type: MessageType,
-                 param_shape: torch.Size = None,
-                 sample_shape: torch.Size = None, batch_shape: torch.Size = None, event_shape: torch.Size = None,
-                 parameters: torch.Tensor = None,
-                 particles: torch.Tensor = None, weights: [torch.Tensor, int] = None,
-                 log_density: [torch.Tensor, int] = None, **kwargs):
+    def __init__(self, msg_type,
+                 batch_shape=None, param_shape=None, sample_shape=None, event_shape=None,
+                 parameters=None, particles=None, weights=None, log_densities=None, **kwargs):
         """
             Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
 
             :param msg_type:    one of MessageType
             :param param_shape:     torch.Size. Must specify if message type is Parameter. Must be a shape of length 1.
-            :param sample_shape:    torch.Size. Must specify if message type is Particles. Must be a shape of length 1.
+            :param sample_shape:    torch.Size. Must specify if message type is Particles. Must be a shape of at least
+                                        length 1, and same length as the number of particle tensors.
             :param batch_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of at least
                                         length 1.
-            :param event_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of length 1.
+            :param event_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of at least
+                                        length 1, and same length as the number of particle tensors.
             :param parameters:  torch.Tensor. Of shape (batch_shape + param_shape) if the parameters do not represent
                                     the identity in the parameter vector space. Alternatively, can be an int of 0 to
-                                    represent the identity. Must present if message type is Parameters.
-            :param particles:   torch.Tensor. Of shape (sample_shape + event_shape). Must present if message type is
-                                    Particles.
-            :param weights:     torch.Tensor. Of shape (sample_shape + batch_shape) if weights are not uniform. In this
-                                    case the weights tensor will be normalize over sample_shape dimension so that it
-                                    sums to 1 over this dimension. Alternatively, can be an int of 1 to represent
-                                    uniform weights. Must present if message type is Particles.
-            :param log_density: torch.Tensor. Of shape (sample_shape) if log densities are not uniform, i.e. if the
-                                    particles were not drawn from a uniform distribution. Alternatively, it can be an
-                                    int of 0 to represent uniform densities. Note that this field generally should not
-                                    be changed at any time during message propagation after the particles are drawn,
-                                    since they directly represent the original sampling distribution from which the
-                                    particles were originally drawn. Must present if message type is Particles.
+                                    represent the identity.
+                                Must present if message type is Parameters.
+            :param particles:   an Iterable of torch.Tensor. The jth entry should have shape
+                                    (sample_shape[j] + event_shape[j]). Must present if message type is Particles.
+            :param weights:     torch.Tensor. Of shape (batch_shape + sample_shape) if weights are not uniform. In this
+                                    case the weights tensor will be normalize over sample_shape dimensions so that it
+                                    sums to 1 over the subspace spanned by all sample dimensions. Alternatively, can be
+                                    an int of 1 to represent uniform weights.
+                                Must present if message type is Particles.
+            :param log_density: an Iterable of torch.Tensor. The jth entry should have shape (sample_shape[j]) if log
+                                    densities are not uniform, i.e. if the particles were not drawn from a uniform
+                                    distribution. Alternatively, it can be an int of 0 to represent uniform densities.
+                                Note that this field generally should not be changed at any time during message
+                                    propagation after the particles are drawn, since they directly represent the
+                                    original sampling distribution from which the particles were originally drawn.
+                                    One exception is when the particle values themselves are modified, for example when
+                                    a transformation is applied on the random events.
+                                Must present if message type is Particles.
             :param kwargs:      Additional optional attributes
         """
         assert isinstance(msg_type, MessageType)
-        assert param_shape is None or isinstance(param_shape, torch.Size) and len(param_shape) == 1
-        assert sample_shape is None or isinstance(sample_shape, torch.Size) and len(sample_shape) == 1
         assert batch_shape is None or isinstance(batch_shape, torch.Size) and len(batch_shape) >= 1
-        assert event_shape is None or isinstance(event_shape, torch.Size) and len(event_shape) == 1
+        assert param_shape is None or isinstance(param_shape, torch.Size) and len(param_shape) == 1
+        assert sample_shape is None or isinstance(sample_shape, torch.Size) and len(sample_shape) >= 1
+        assert event_shape is None or isinstance(event_shape, torch.Size) and len(event_shape) == len(sample_shape)
 
         assert parameters is None or (isinstance(parameters, int) and parameters == 0) or \
-               isinstance(parameters, torch.Tensor)
-        assert particles is None or isinstance(particles, torch.Tensor)
+            isinstance(parameters, torch.Tensor)
+        assert particles is None or (isinstance(particles, Iterable) and
+                                     all(isinstance(p, torch.Tensor) for p in particles))
         assert weights is None or (isinstance(weights, int) and weights == 1) or isinstance(weights, torch.Tensor)
         assert log_density is None or (isinstance(log_density, int) and log_density == 0) or \
                isinstance(log_density, torch.Tensor)

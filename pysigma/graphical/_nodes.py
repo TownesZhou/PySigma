@@ -1487,7 +1487,7 @@ class RTFN(AlphaFactorNode):
 
 
 
-class EDVN(BetaNode, VariableNode):
+class EDVN(BetaFactorNode, VariableNode):
     """
         Event Dispatch Variable Node.
 
@@ -1506,11 +1506,11 @@ class EDVN(BetaNode, VariableNode):
     pass
 
 
-class PCFN(BetaNode, FactorNode):
+class PCFN(BetaFactorNode, FactorNode):
     pass
 
 
-class GFN(AlphaFactorNode):
+class GFN:
     """
         Gamma Factor Node
 
