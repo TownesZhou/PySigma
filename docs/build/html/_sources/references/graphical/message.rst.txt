@@ -4,3 +4,5 @@ Message
 The Message class constitutes the most fundamental data structure in PySigma Graphical Architecture.
 
 .. autoclass:: pysigma.defs.Message
+   :members:
+   :special-members: __add__, __mul__
