@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pysigma.graphical package &mdash; PySigma 0.0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../references/index.html">References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../references/cognitive/index.html">Cognitive</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../references/cognitive/predicate.html">Predicate</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../references/graphical/index.html">Graphical</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../references/graphical/message.html">Message</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../references/utils/index.html">Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>pysigma.graphical package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/module/pysigma.graphical.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pysigma-graphical-package">
+<h1>pysigma.graphical package<a class="headerlink" href="#pysigma-graphical-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-pysigma.graphical">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pysigma.graphical" title="Permalink to this headline">¶</a></h2>
+<p>Graphical architecture submodule init file. Include main class of the Graphical architecture</p>
+<dl class="py class">
+<dt id="pysigma.graphical.Graph">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.</code><code class="sig-name descname">Graph</code><a class="headerlink" href="#pysigma.graphical.Graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">networkx.classes.digraph.DiGraph</span></code></p>
+<dl class="simple">
+<dt>The actual graph instance representing a compiled graphical architecture. Can be manipulated directly as a</dt><dd><p><cite>networkx.DiGraph</cite> but store extra bookkeeping information. use <cite>networkx.DiGraph</cite> as super class to support
+directed links.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="pysigma.graphical.Graph.add_bilink">
+<code class="sig-name descname">add_bilink</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">node1</span></em>, <em class="sig-param"><span class="n">node2</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.Graph.add_bilink" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Add a bidrectional link between node 1 and node2. Note that one of the nodes should be a variable node and</dt><dd><p>the other a factor node</p>
+</dd>
+</dl>
+<p>Additional attributes in kwargs will be set in the linkdata</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.Graph.add_unilink">
+<code class="sig-name descname">add_unilink</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">node1</span></em>, <em class="sig-param"><span class="n">node2</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.Graph.add_unilink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a unidirectional link FROM node1 TO node2, and create and register corresponding LinkData
+Note that one of the nodes should be a variable node and the other a factor node</p>
+<p>Additional attributes in kwargs will be set in the linkdata</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.Graph.get_linkdata">
+<code class="sig-name descname">get_linkdata</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">node1</span></em>, <em class="sig-param"><span class="n">node2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.Graph.get_linkdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the linkdata on the edge from node1 to node2</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.Graph.new_node">
+<code class="sig-name descname">new_node</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">node_type</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.Graph.new_node" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>A node factory method. Generate new node based on node_type, add it to DiGraph, and return it.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>node_type</strong> – str or class. Specifying the node type, such as ‘WMVN’ or WMVN</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the newly generated node instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="pysigma.graphical.cosine_similarity">
+<code class="sig-prename descclassname">pysigma.graphical.</code><code class="sig-name descname">cosine_similarity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x1</span></em>, <em class="sig-param"><span class="n">x2</span></em>, <em class="sig-param"><span class="n">dim</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">eps</span><span class="o">=</span><span class="default_value">1e-08</span></em><span class="sig-paren">)</span> &#x2192; Tensor<a class="headerlink" href="#pysigma.graphical.cosine_similarity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cosine similarity between x1 and x2, computed along dim.</p>
+<div class="math notranslate nohighlight">
+\[\text{similarity} = \dfrac{x_1 \cdot x_2}{\max(\Vert x_1 \Vert _2 \cdot \Vert x_2 \Vert _2, \epsilon)}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x1</strong> (<em>Tensor</em>) – First input.</p></li>
+<li><p><strong>x2</strong> (<em>Tensor</em>) – Second input (of size matching x1).</p></li>
+<li><p><strong>dim</strong> (<em>int</em><em>, </em><em>optional</em>) – Dimension of vectors. Default: 1</p></li>
+<li><p><strong>eps</strong> (<em>float</em><em>, </em><em>optional</em>) – Small value to avoid division by zero.
+Default: 1e-8</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Shape:</dt><dd><ul class="simple">
+<li><p>Input: <span class="math notranslate nohighlight">\((\ast_1, D, \ast_2)\)</span> where D is at position <cite>dim</cite>.</p></li>
+<li><p>Output: <span class="math notranslate nohighlight">\((\ast_1, \ast_2)\)</span> where 1 is at position <cite>dim</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">input1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">input2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cosine_similarity</span><span class="p">(</span><span class="n">input1</span><span class="p">,</span> <span class="n">input2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

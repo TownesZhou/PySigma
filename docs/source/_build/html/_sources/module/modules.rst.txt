@@ -1,0 +1,7 @@
+pysigma
+=======
+
+.. toctree::
+   :maxdepth: 4
+
+   pysigma

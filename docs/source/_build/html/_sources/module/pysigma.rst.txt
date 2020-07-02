@@ -1,0 +1,55 @@
+pysigma package
+===============
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pysigma.cognitive
+   pysigma.graphical
+
+Submodules
+----------
+
+pysigma.defs module
+-------------------
+
+.. automodule:: pysigma.defs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pysigma.sigmaboard module
+-------------------------
+
+.. automodule:: pysigma.sigmaboard
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pysigma.structures module
+-------------------------
+
+.. automodule:: pysigma.structures
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pysigma.utils module
+--------------------
+
+.. automodule:: pysigma.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: pysigma
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,10 @@
+pysigma.graphical package
+=========================
+
+Module contents
+---------------
+
+.. automodule:: pysigma.graphical
+   :members:
+   :undoc-members:
+   :show-inheritance:

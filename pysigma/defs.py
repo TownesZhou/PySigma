@@ -100,169 +100,209 @@ class MessageType(Flag):
 
 
 class Message:
+    """Message to be propagated between nodes in the graphical architecture.
+
+    The `Message` class is the most fundamental data structure in PySigma that carries the knowledge of a batch of
+    distributions to be processed by downstream graphs.
+
+    Parameters
+    ----------
+    msg_type : {MessageType.Undefined, MessageType.Parameter, MessageType.Particles, MessageType.Both}
+        The type of this message.
+    batch_shape : torch.Size
+        The size of the batch dimensions. Must be a shape of **at least** length 1.
+    param_shape : torch.Size, optional
+        The size of the parameter dimension of `parameter`. Must specify if `msg_type` is `MessageType.Parameter`. Must
+        be a shape of **exactly** length 1.
+    sample_shape : torch.Size, optional
+        The size of the sample dimensions of each particle tensor in `particles` respectively in order. Must specify if
+        message type is `MessageType.Particle`. Must be a shape of **at least** length 1.
+    event_shape : torch.Size, optional
+        The size of the event dimensions of each particle tensor in `particles` respectively in order. Must specify if
+        message type is `MessageType.Particle`. Must be a shape of **at least** length 1.
+    parameter : torch.Tensor or an int of 0, optional
+        The parameter tensor to the batch of distributions this message is encoding. Must specify if the message type is
+        `MessageType.Parameter`. A torch.Tensor of shape `batch_shape + param_shape` if the parameters do not represent
+        the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity. Default
+        to an int of 0.
+    particles : iterable of torch.Tensor, optional
+        The list of particles representing events w.r.t. each random variable respectively whose collective joint
+        distribution this message is encoding. Must specify if the message type is `MessageType.Particles`. The jth
+        entry of the iterable should have shape `sample_shape[j] + event_shape[j]`.
+    weights : torch.Tensor or an int of 1, optional
+        The importance weight tensor that, when multiplied with the exponential of the cross product of the log sampling
+        densities in `log_densities`, yields the pdf of each combined particle w.r.t. the target distribution that this
+        message is encoding. Must specify if the message type is `MessageType.Particles`. If the weights are
+        non-uniform, must be a **positively valued** tensor of shape `batch_shape + sample_shape`. The supplied tensor
+        will be normalized during initialization so that it sums to 1 across the subspace spanned by the sample
+        dimensions. Alternatively, can be an int of 1 to specify the uniform weight. Default to 1.
+    log_densities : iterable of torch.Tensor, optional
+        The jth entry in the iterable represents the log pdf of the jth particle in `particles` w.r.t. the (marginal)
+        sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
+        `MessageType.Particles`. The jth entry must have shape `sample_shape[j]`.
+    **kwargs
+        Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
+        cloned.
+
+    Attributes
+    ----------
+    type : {MessageType.Undefined, MessageType.Parameter, MessageType.Particles, MessageType.Both}
+        Message type.
+    b_shape : torch.Size
+        Batch shape.
+    p_shape : torch.Size
+        Parameter shape.
+    s_shape : torch.Size
+        Sample shape.
+    e_shape : torch.Size
+        Event shape.
+    parameter : torch.Tensor or None
+        Parameter tensor
+    particles : list of torch.Tensor or None
+        List of particle value tensors
+    weight : torch.Tensor or None
+        Particle weight tensor
+    log_densities : list of torch.Tensor or None
+        List of particles log sampling tensors
+    attr : dict
+        Miscellaneous optional attributes, specified by **kwargs in the constructor.
+
+    Notes
+    _____
+    In PySigma Graphical Architecture, a message can represent not only a single joint distribution w.r.t. multiple
+    random variables, but a *batch* of such joint distribution instances. The distribution instances in the batch are
+    mutually independent, but may or may not be identically distributed. This batch is managed and indexed by the batch
+    dimensions, specified by `batch_shape`.
+
+    Depending on how each of the distribution instance is represented, a message can be roughly categorized into two
+    types: *Parameter* type or *Particles* type.
+
+    1. *Parameter* type: a message of this type encodes a batch of distributions by holding their parameter tensors. The
+       semantics of the parameters depends on the context, e.g. whether they are natural parameters to exponential
+       family distributions or conventional parameters to PyTorch distribution class. For the latter one, the semantics
+       may even be distribution class dependent.
+
+       Specifying the `parameter` argument only in the constructor is sufficient in terms of the message contents.
+
+    2. *Particles* type: a message of this type encodes a batch of distributions by a particle list, with the particles
+       being importantly weighted to correctly reflect their pdf w.r.t. to each of the target distribution in the
+       distribution batch. In other words, conceptually, each entry in the particle list is a 3-tuple:
+       ``(x, w_x, log_p(x))`` where ``x`` is the event value, ``log_p(x)`` is the log pdf of ``x`` w.r.t. its sampling
+       distribution ``P(x)``, and ``w_x`` is defined as the ratio of ``Q(x)``, the target distribution pdf, over
+       ``P(x)``. Therefore, the target pdf of ``x`` can be recovered by::
+
+           Q(x) = w_x * exp(log_p(x))
+           log Q(x) = log(w_X) + log_p(x)
+
+       Note that a message uses a single list of particles to encode and approximate each and every distribution in the
+       batch. In other words, the set of event values used to represent each distribution instance is the same, but the
+       importance weights assigned to each event value by different distribution instances are different. This is the
+       reason that `weight` tensor should include batch dimensions, whereas particle tensors in `particles` and log
+       sampling density tensors in `log_densities` should not.
+
+       When there are multiple random variables, each distribution instance in the batch is a joint distribution
+       over all random variables. In this case, each of the entry in the provided `particles` are events w.r.t. each
+       random variable *only*. To represent the joint distributions, a list of *joint* particles will be formed by
+       concatenating the event tensors in `particles` combinatorially, or so to speak, by taking the tensor product.
+       Accordingly, the log sampling density vectors in `log_densities` will be taken cross product to form a higher
+       dimensional sampling density tensors. In this way, the joint particles are effectively arranged in a lattice in
+       the joint event space, therefore easing the marginalization process because we can simply *summarize* over one
+       dimension to achieve the effect of marginalizing over the corresponding random variable.
+
+       To support the above semantics and computations, all of the arguments `particles`, `weight`, and `log_densities`
+       must be specified in the constructor.
+
+    A message can encode both type of contents, in which case the message type is `MessageType.Both`.
+
+    Both types of messages are assumed to reside in certain vector space, and thus the appropriate arithmetic
+    operations -- *Addition* and *Scalar Multiplication* -- are defined and implemented:
+
+    * For Parameter messages,
+
+        * *Addition* operation is defined as arithmetic addition on the parameter tensors.
+        * *Scalar multiplication* is defined as arithmetic scalar multiplication with the parameter tensors.
+        * 0 is treated as the identity element.
+
+    * For Particles messages:
+
+        * The following two operations are defined as operations on the particle weights, and meaningful only
+          for Particle messages that share the same particle values and the same sampling log densities of the
+          particles. In addition, results from these two operations are normalized so that the weight tensor
+          sums to 1 across the sample dimensions.
+        * *Addition* operation is defined as element-wise multiplication of particle weights tensors, up to a
+          normalization factor.
+        * *Scalar Multiplication* is defined as taking elements of the particle weights tensor to the power
+          of the scalar, up to a normalization factor.
+        * 1 is treated as the identity element for the operations.
+        * Note that it is provably correct that the weighs with above operations form a vector space. The proof idea is
+          to consider the log quotient space over one dimension, which reduces to standard real space with one less
+          dimension.
+
+    Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
     """
-        Message structure to support general inference.
-
-        Two basic message types:
-            - Parameter: parameters to a batch of distributions that this message is encoding
-                - Contains a batched parameter tensor, of shape (batch_shape + param_shape)
-
-            - Particles: Lists of marginally drawn particles w.r.t. each single random variable. The combination of
-                particles approximates the batch of joint target distributions this message is encoding via importance
-                weighting. Comprise of the following components:
-                - Particle Value Tensors List:
-                    Each one corresponds to particles marginally drawn w.r.t. one random variable.
-                    With shape [sample_size_j, event_size_j] for the jth random variable.
-                - Weight Tensor:
-                    A single, positively valued tensor that encodes the importance weighting of each joint combination
-                        of particles w.r.t. each joint distribution in the batch. The values should sum up to 1 across
-                        the tensor subspace spanned by all sample dimensions.
-                    If all weights are uniform, can use an int of 1 as the abbreviation.
-                    With shape (batch_shape + sample_shape) where batch_shape is the concatenation of of batch sizes,
-                        and sample_shape is the concatenation of all sample sizes.
-                - Log Sampling Density Tensors List:
-                    Each one corresponds to the log sampling density of the corresponding particles in the Particle
-                        Value Tensors List.
-                    If a particle value tensor was drawn uniformly, its corresponding log sampling density can be
-                        abbreviated by an int of 1.
-                    With shape [sample_size_j] for the jth random variable.
-
-        Message content shape (when they are torch tensors), assuming there are N relational variables and M random
-            variables:
-            - Parameter:                    [batch_size_0, ..., batch_size_N, param_size]
-            - Particle Value Tensor:        each of shape [sample_size_j, event_size_j]
-            - Weight Tensor:                [batch_size_0, ..., batch_size_N, sample_size_0, ..., sample_size_M]
-            - Log Sampling Density Tensor:  each of shape [sample_size_j]
-
-        Message shape constraints:
-            - sample_shape must have AT LEAST length 1, the same length as event_shape.
-            - batch_shape must have AT LEAST length 1.
-            - event_shape must have AT LEAST length 1, the same length as sample_shape.
-            - param_shape must have EXACTLY length 1.
-
-        The semantics of a Message is determined not only by its type, but by its context as well. In other words,
-            which distribution or distribution class a Message represents, or whether a Parameter type message
-            represents a Natural parameter to an exponential distribution or a distribution-class specific parameter to
-            PyTorch's distribution class interface, is of no concern to the Message structure itself.
-
-        Both types of messages are endowed with certain arithmetic structures:
-            - For Parameter messages,
-                - Addition operation is defined as addition on the parameter tensors.
-                - Scalar multiplication is defined as scalar multiplication with the parameter tensors
-                - 0 is treated as the identity element.
-                - Parameter message structure therefore constructs and defines the "parameter space".
-
-            - For Particles messages:
-                - The following two operations are defined as operations on the particle weights, and meaningful only
-                    for Particle messages that share the same particle values and the same sampling log density of the
-                    particles. In addition, results from these two operations are normalized so that the weight tensor
-                    sum to 1 across the sample dimension.
-                - "Addition" operation is defined as element-wise multiplication of particle weights tensors.
-                - "Scalar multiplication" is defined as taking elements of the particle weights tensor to the power
-                    of the scalar.
-                - 1 is treated as the identity element for the element-wise multiplication operation.
-                - It turns out that the "addition" and "scalar multiplication" as defined above satisfy associativity
-                    and distributivity. With the set of possible weights closed under both operations, a vector space
-                    is therefore constructed and defined.
-
-        Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
-    """
-
     def __init__(self, msg_type,
                  batch_shape=None, param_shape=None, sample_shape=None, event_shape=None,
-                 parameters=None, particles=None, weights=None, log_densities=None, **kwargs):
-        """
-            Instantiate a message. An empty shape (i.e. torch.Size([]) ) is equivalent to a shape of 1.
-
-            :param msg_type:    one of MessageType
-            :param param_shape:     torch.Size. Must specify if message type is Parameter. Must be a shape of length 1.
-            :param sample_shape:    torch.Size. Must specify if message type is Particles. Must be a shape of at least
-                                        length 1, and same length as the number of particle tensors.
-            :param batch_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of at least
-                                        length 1.
-            :param event_shape:     torch.Size. Must specify if message type is Particles. Must be a shape of at least
-                                        length 1, and same length as the number of particle tensors.
-            :param parameters:  torch.Tensor. Of shape (batch_shape + param_shape) if the parameters do not represent
-                                    the identity in the parameter vector space. Alternatively, can be an int of 0 to
-                                    represent the identity.
-                                Must present if message type is Parameters.
-            :param particles:   an Iterable of torch.Tensor. The jth entry should have shape
-                                    (sample_shape[j] + event_shape[j]). Must present if message type is Particles.
-            :param weights:     torch.Tensor. Of shape (batch_shape + sample_shape) if weights are not uniform. In this
-                                    case the weights tensor will be normalize over sample_shape dimensions so that it
-                                    sums to 1 over the subspace spanned by all sample dimensions. Alternatively, can be
-                                    an int of 1 to represent uniform weights.
-                                Must present if message type is Particles.
-            :param log_density: an Iterable of torch.Tensor. The jth entry should have shape (sample_shape[j]) if log
-                                    densities are not uniform, i.e. if the particles were not drawn from a uniform
-                                    distribution. Alternatively, it can be an int of 0 to represent uniform densities.
-                                Note that this field generally should not be changed at any time during message
-                                    propagation after the particles are drawn, since they directly represent the
-                                    original sampling distribution from which the particles were originally drawn.
-                                    One exception is when the particle values themselves are modified, for example when
-                                    a transformation is applied on the random events.
-                                Must present if message type is Particles.
-            :param kwargs:      Additional optional attributes
-        """
+                 parameter=0, particles=None, weight=1, log_densities=None, **kwargs):
         assert isinstance(msg_type, MessageType)
         assert batch_shape is None or isinstance(batch_shape, torch.Size) and len(batch_shape) >= 1
         assert param_shape is None or isinstance(param_shape, torch.Size) and len(param_shape) == 1
         assert sample_shape is None or isinstance(sample_shape, torch.Size) and len(sample_shape) >= 1
         assert event_shape is None or isinstance(event_shape, torch.Size) and len(event_shape) == len(sample_shape)
 
-        assert parameters is None or (isinstance(parameters, int) and parameters == 0) or \
-            isinstance(parameters, torch.Tensor)
+        assert parameter == 0 or isinstance(parameter, torch.Tensor)
         assert particles is None or (isinstance(particles, Iterable) and
                                      all(isinstance(p, torch.Tensor) for p in particles))
-        assert weights is None or (isinstance(weights, int) and weights == 1) or isinstance(weights, torch.Tensor)
-        assert log_density is None or (isinstance(log_density, int) and log_density == 0) or \
-               isinstance(log_density, torch.Tensor)
+        assert weight == 1 or isinstance(weight, torch.Tensor)
+        assert log_densities is None or (isinstance(log_densities, Iterable) and
+                                         all(isinstance(d, torch.Tensor) for d in log_densities))
 
         # Message type, of type MessageType
         self.type = msg_type
         # Parameter
-        self.parameters = parameters
+        self.parameter = parameter
         # Particle list
-        self.particles = particles
-        self.weights = weights
-        self.log_density = log_density
+        self.particles = list(particles) if particles is not None else None
+        self.weight = weight
+        self.log_densities = list(log_densities) if log_densities is not None else None
         # Additional important attributes
         self.attr = kwargs
         # Shapes.
+        self.b_shape = batch_shape
         self.p_shape = param_shape
         self.s_shape = sample_shape
-        self.b_shape = batch_shape
         self.e_shape = event_shape
 
         # Check whether necessary arguments are provided
         if MessageType.Parameter in self.type:
             assert self.b_shape is not None and self.p_shape is not None
-            assert self.parameters is not None
+            assert self.parameter is not None
         if MessageType.Particles in self.type:
             assert self.s_shape is not None and self.b_shape is not None and self.e_shape is not None
             assert self.particles is not None
-            assert self.weights is not None
-            assert self.log_density is not None
+            assert self.weight is not None
+            assert self.log_densities is not None
 
         # Check shape and values. Adjust if necessary
-        if isinstance(self.parameters, torch.Tensor):
+        if isinstance(self.parameter, torch.Tensor):
             # Parameter tensor should have shape (b_shape + p_shape)
-            assert self.b_shape + self.p_shape == self.parameters.shape
-        if isinstance(self.particles, torch.Tensor):
-            # Particles tensor should have shape (s_shape + e_shape)
-            assert self.s_shape + self.e_shape == self.particles.shape
-        if isinstance(self.weights, torch.Tensor):
-            # Weights tensor should have shape (s_shape + b_shape)
-            assert self.s_shape + self.b_shape == self.weights.shape
+            assert self.b_shape + self.p_shape == self.parameter.shape
+        if particles is not None:
+            # jth particle tensor should have shape (s_shape[j] + e_shape[j])
+            assert len(self.particles) == len(self.s_shape) == len(self.e_shape)
+            assert all(self.s_shape[j] + self.e_shape[j] == p.shape for j, p in enumerate(self.particles))
+        if isinstance(self.weight, torch.Tensor):
+            # Weights tensor should have shape (b_shape + s_shape)
+            assert self.b_shape + self.s_shape == self.weight.shape
             # Check that values are non-negative
-            assert torch.all(self.weights > 0), "Found negative values in particle weights. Minimum value: {}" \
-                .format(torch.min(self.weights))
+            assert torch.all(self.weight > 0), "Found negative values in particle weights. Minimum value: {}" \
+                .format(torch.min(self.weight))
             # Normalize the values so that weights sum to 1 across sample dimension
-            weights_sum = self.weights.sum(dim=0, keepdim=True)
-            self.weights /= weights_sum
-        if isinstance(self.log_density, torch.Tensor):
-            # Log density tensor array should have shape (s_shape)
-            assert self.s_shape == self.log_density.shape
+            sample_dims = list(range(len(self.b_shape), len(self.b_shape) + len(self.s_shape)))
+            self.weight /= self.weight.sum(dim=sample_dims, keepdim=True)
+        if self.log_densities is not None:
+            # jth log density tensor vector should have shape (s_shape[j])
+            assert len(self.log_densities) == len(self.s_shape) == len(self.e_shape)
+            assert all(self.s_shape[j] == d.shape for j, d in enumerate(self.log_densities))
 
     """
         Overload arithmetic operators

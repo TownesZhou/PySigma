@@ -175,114 +175,225 @@
 <p>The Message class constitutes the most fundamental data structure in PySigma Graphical Architecture.</p>
 <dl class="py class">
 <dt id="pysigma.defs.Message">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">Message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_type</span></em>, <em class="sig-param"><span class="n">batch_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">param_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sample_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">event_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parameters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">particles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weights</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">log_densities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.defs.Message" title="Permalink to this definition">¶</a></dt>
-<dd><p>Message structure to support general inference.</p>
-<dl>
-<dt>Two basic message types:</dt><dd><ul>
-<li><dl class="simple">
-<dt>Parameter: parameters to a batch of distributions that this message is encoding</dt><dd><ul class="simple">
-<li><p>Contains a batched parameter tensor, of shape (batch_shape + param_shape)</p></li>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">Message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_type</span></em>, <em class="sig-param"><span class="n">batch_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">param_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sample_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">event_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parameter</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">particles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weight</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">log_densities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.defs.Message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Message to be propagated between nodes in the graphical architecture.</p>
+<p>The <cite>Message</cite> class is the most fundamental data structure in PySigma that carries the knowledge of a batch of
+distributions to be processed by downstream graphs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg_type</strong> (<em>{MessageType.Undefined</em><em>, </em><em>MessageType.Parameter</em><em>, </em><em>MessageType.Particles</em><em>, </em><em>MessageType.Both}</em>) – The type of this message.</p></li>
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – The size of the batch dimensions. Must be a shape of <strong>at least</strong> length 1.</p></li>
+<li><p><strong>param_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the parameter dimension of <cite>parameter</cite>. Must specify if <cite>msg_type</cite> is <cite>MessageType.Parameter</cite>. Must
+be a shape of <strong>exactly</strong> length 1.</p></li>
+<li><p><strong>sample_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the sample dimensions of each particle tensor in <cite>particles</cite> respectively in order. Must specify if
+message type is <cite>MessageType.Particle</cite>. Must be a shape of <strong>at least</strong> length 1.</p></li>
+<li><p><strong>event_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the event dimensions of each particle tensor in <cite>particles</cite> respectively in order. Must specify if
+message type is <cite>MessageType.Particle</cite>. Must be a shape of <strong>at least</strong> length 1.</p></li>
+<li><p><strong>parameter</strong> (<em>torch.Tensor</em><em> or </em><em>an int of 0</em><em>, </em><em>optional</em>) – The parameter tensor to the batch of distributions this message is encoding. Must specify if the message type is
+<cite>MessageType.Parameter</cite>. A torch.Tensor of shape <cite>batch_shape + param_shape</cite> if the parameters do not represent
+the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity. Default
+to an int of 0.</p></li>
+<li><p><strong>particles</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>optional</em>) – The list of particles representing events w.r.t. each random variable respectively whose collective joint
+distribution this message is encoding. Must specify if the message type is <cite>MessageType.Particles</cite>. The jth
+entry of the iterable should have shape <cite>sample_shape[j] + event_shape[j]</cite>.</p></li>
+<li><p><strong>weights</strong> (<em>torch.Tensor</em><em> or </em><em>an int of 1</em><em>, </em><em>optional</em>) – The importance weight tensor that, when multiplied with the exponential of the cross product of the log sampling
+densities in <cite>log_densities</cite>, yields the pdf of each combined particle w.r.t. the target distribution that this
+message is encoding. Must specify if the message type is <cite>MessageType.Particles</cite>. If the weights are
+non-uniform, must be a <strong>positively valued</strong> tensor of shape <cite>batch_shape + sample_shape</cite>. The supplied tensor
+will be normalized during initialization so that it sums to 1 across the subspace spanned by the sample
+dimensions. Alternatively, can be an int of 1 to specify the uniform weight. Default to 1.</p></li>
+<li><p><strong>log_densities</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>optional</em>) – The jth entry in the iterable represents the log pdf of the jth particle in <cite>particles</cite> w.r.t. the (marginal)
+sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
+<cite>MessageType.Particles</cite>. The jth entry must have shape <cite>sample_shape[j]</cite>.</p></li>
+<li><p><strong>**kwargs</strong> – Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
+cloned.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.type">
+<code class="sig-name descname">type</code><a class="headerlink" href="#pysigma.defs.Message.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Message type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>{MessageType.Undefined, MessageType.Parameter, MessageType.Particles, MessageType.Both}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.defs.Message.b_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Batch shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.p_shape">
+<code class="sig-name descname">p_shape</code><a class="headerlink" href="#pysigma.defs.Message.p_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameter shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.s_shape">
+<code class="sig-name descname">s_shape</code><a class="headerlink" href="#pysigma.defs.Message.s_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.defs.Message.e_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Event shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.parameter">
+<code class="sig-name descname">parameter</code><a class="headerlink" href="#pysigma.defs.Message.parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameter tensor</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Tensor or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.particles">
+<code class="sig-name descname">particles</code><a class="headerlink" href="#pysigma.defs.Message.particles" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of particle value tensors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of torch.Tensor or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.weight">
+<code class="sig-name descname">weight</code><a class="headerlink" href="#pysigma.defs.Message.weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Particle weight tensor</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Tensor or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.log_densities">
+<code class="sig-name descname">log_densities</code><a class="headerlink" href="#pysigma.defs.Message.log_densities" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of particles log sampling tensors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of torch.Tensor or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.attr">
+<code class="sig-name descname">attr</code><a class="headerlink" href="#pysigma.defs.Message.attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Miscellaneous optional attributes, specified by <a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs in the constructor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<p>In PySigma Graphical Architecture, a message can represent not only a single joint distribution w.r.t. multiple
+random variables, but a <em>batch</em> of such joint distribution instances. The distribution instances in the batch are
+mutually independent, but may or may not be identically distributed. This batch is managed and indexed by the batch
+dimensions, specified by <cite>batch_shape</cite>.</p>
+<p>Depending on how each of the distribution instance is represented, a message can be roughly categorized into two
+types: <em>Parameter</em> type or <em>Particles</em> type.</p>
+<ol class="arabic">
+<li><p><em>Parameter</em> type: a message of this type encodes a batch of distributions by holding their parameter tensors. The
+semantics of the parameters depends on the context, e.g. whether they are natural parameters to exponential
+family distributions or conventional parameters to PyTorch distribution class. For the latter one, the semantics
+may even be distribution class dependent.</p>
+<p>Specifying the <cite>parameter</cite> argument only in the constructor is sufficient in terms of the message contents.</p>
 </li>
-<li><dl>
-<dt>Particles: Lists of marginally drawn particles w.r.t. each single random variable. The combination of</dt><dd><p>particles approximates the batch of joint target distributions this message is encoding via importance
-weighting. Comprise of the following components:
-- Particle Value Tensors List:</p>
-<blockquote>
-<div><p>Each one corresponds to particles marginally drawn w.r.t. one random variable.
-With shape [sample_size_j, event_size_j] for the jth random variable.</p>
-</div></blockquote>
+<li><p><em>Particles</em> type: a message of this type encodes a batch of distributions by a particle list, with the particles
+being importantly weighted to correctly reflect their pdf w.r.t. to each of the target distribution in the
+distribution batch. In other words, conceptually, each entry in the particle list is a 3-tuple:
+<code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">w_x,</span> <span class="pre">log_p(x))</span></code> where <code class="docutils literal notranslate"><span class="pre">x</span></code> is the event value, <code class="docutils literal notranslate"><span class="pre">log_p(x)</span></code> is the log pdf of <code class="docutils literal notranslate"><span class="pre">x</span></code> w.r.t. its sampling
+distribution <code class="docutils literal notranslate"><span class="pre">P(x)</span></code>, and <code class="docutils literal notranslate"><span class="pre">w_x</span></code> is defined as the ratio of <code class="docutils literal notranslate"><span class="pre">Q(x)</span></code>, the target distribution pdf, over
+<code class="docutils literal notranslate"><span class="pre">P(x)</span></code>. Therefore, the target pdf of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be recovered by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Q</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">w_x</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="n">log_p</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="n">log</span> <span class="n">Q</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">w_X</span><span class="p">)</span> <span class="o">+</span> <span class="n">log_p</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that a message uses a single list of particles to encode and approximate each and every distribution in the
+batch. In other words, the set of event values used to represent each distribution instance is the same, but the
+importance weights assigned to each event value by different distribution instances are different. This is the
+reason that <cite>weight</cite> tensor should include batch dimensions, whereas particle tensors in <cite>particles</cite> and log
+sampling density tensors in <cite>log_densities</cite> should not.</p>
+<p>When there are multiple random variables, each distribution instance in the batch is a joint distribution
+over all random variables. In this case, each of the entry in the provided <cite>particles</cite> are events w.r.t. each
+random variable <em>only</em>. To represent the joint distributions, a list of <em>joint</em> particles will be formed by
+concatenating the event tensors in <cite>particles</cite> combinatorially, or so to speak, by taking the tensor product.
+Accordingly, the log sampling density vectors in <cite>log_densities</cite> will be taken cross product to form a higher
+dimensional sampling density tensors. In this way, the joint particles are effectively arranged in a lattice in
+the joint event space, therefore easing the marginalization process because we can simply <em>summarize</em> over one
+dimension to achieve the effect of marginalizing over the corresponding random variable.</p>
+<p>To support the above semantics and computations, all of the arguments <cite>particles</cite>, <cite>weight</cite>, and <cite>log_densities</cite>
+must be specified in the constructor.</p>
+</li>
+</ol>
+<p>A message can encode both type of contents, in which case the message type is <cite>MessageType.Both</cite>.</p>
+<p>Both types of messages are assumed to reside in certain vector space, and thus the appropriate arithmetic
+operations – <em>Addition</em> and <em>Scalar Multiplication</em> – are defined and implemented:</p>
 <ul>
-<li><dl>
-<dt>Weight Tensor:</dt><dd><dl class="simple">
-<dt>A single, positively valued tensor that encodes the importance weighting of each joint combination</dt><dd><p>of particles w.r.t. each joint distribution in the batch. The values should sum up to 1 across
-the tensor subspace spanned by all sample dimensions.</p>
-</dd>
-</dl>
-<p>If all weights are uniform, can use an int of 1 as the abbreviation.
-With shape (batch_shape + sample_shape) where batch_shape is the concatenation of of batch sizes,</p>
+<li><p>For Parameter messages,</p>
 <blockquote>
-<div><p>and sample_shape is the concatenation of all sample sizes.</p>
-</div></blockquote>
-</dd>
-</dl>
-</li>
-<li><dl>
-<dt>Log Sampling Density Tensors List:</dt><dd><dl class="simple">
-<dt>Each one corresponds to the log sampling density of the corresponding particles in the Particle</dt><dd><p>Value Tensors List.</p>
-</dd>
-<dt>If a particle value tensor was drawn uniformly, its corresponding log sampling density can be</dt><dd><p>abbreviated by an int of 1.</p>
-</dd>
-</dl>
-<p>With shape [sample_size_j] for the jth random variable.</p>
-</dd>
-</dl>
-</li>
-</ul>
-</dd>
-</dl>
-</li>
-</ul>
-</dd>
-<dt>Message content shape (when they are torch tensors), assuming there are N relational variables and M random</dt><dd><p>variables:
-- Parameter:                    [batch_size_0, …, batch_size_N, param_size]
-- Particle Value Tensor:        each of shape [sample_size_j, event_size_j]
-- Weight Tensor:                [batch_size_0, …, batch_size_N, sample_size_0, …, sample_size_M]
-- Log Sampling Density Tensor:  each of shape [sample_size_j]</p>
-</dd>
-<dt>Message shape constraints:</dt><dd><ul class="simple">
-<li><p>sample_shape must have AT LEAST length 1, the same length as event_shape.</p></li>
-<li><p>batch_shape must have AT LEAST length 1.</p></li>
-<li><p>event_shape must have AT LEAST length 1, the same length as sample_shape.</p></li>
-<li><p>param_shape must have EXACTLY length 1.</p></li>
-</ul>
-</dd>
-<dt>The semantics of a Message is determined not only by its type, but by its context as well. In other words,</dt><dd><p>which distribution or distribution class a Message represents, or whether a Parameter type message
-represents a Natural parameter to an exponential distribution or a distribution-class specific parameter to
-PyTorch’s distribution class interface, is of no concern to the Message structure itself.</p>
-</dd>
-<dt>Both types of messages are endowed with certain arithmetic structures:</dt><dd><ul class="simple">
-<li><dl class="simple">
-<dt>For Parameter messages,</dt><dd><ul>
-<li><p>Addition operation is defined as addition on the parameter tensors.</p></li>
-<li><p>Scalar multiplication is defined as scalar multiplication with the parameter tensors</p></li>
+<div><ul class="simple">
+<li><p><em>Addition</em> operation is defined as arithmetic addition on the parameter tensors.</p></li>
+<li><p><em>Scalar multiplication</em> is defined as arithmetic scalar multiplication with the parameter tensors.</p></li>
 <li><p>0 is treated as the identity element.</p></li>
-<li><p>Parameter message structure therefore constructs and defines the “parameter space”.</p></li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 </li>
-<li><dl class="simple">
-<dt>For Particles messages:</dt><dd><ul>
-<li><dl class="simple">
-<dt>The following two operations are defined as operations on the particle weights, and meaningful only</dt><dd><p>for Particle messages that share the same particle values and the same sampling log density of the
+<li><p>For Particles messages:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The following two operations are defined as operations on the particle weights, and meaningful only
+for Particle messages that share the same particle values and the same sampling log densities of the
 particles. In addition, results from these two operations are normalized so that the weight tensor
-sum to 1 across the sample dimension.</p>
-</dd>
-</dl>
-</li>
-<li><p>“Addition” operation is defined as element-wise multiplication of particle weights tensors.</p></li>
-<li><dl class="simple">
-<dt>“Scalar multiplication” is defined as taking elements of the particle weights tensor to the power</dt><dd><p>of the scalar.</p>
-</dd>
-</dl>
-</li>
-<li><p>1 is treated as the identity element for the element-wise multiplication operation.</p></li>
-<li><dl class="simple">
-<dt>It turns out that the “addition” and “scalar multiplication” as defined above satisfy associativity</dt><dd><p>and distributivity. With the set of possible weights closed under both operations, a vector space
-is therefore constructed and defined.</p>
-</dd>
-</dl>
+sums to 1 across the sample dimensions.</p></li>
+<li><p><em>Addition</em> operation is defined as element-wise multiplication of particle weights tensors, up to a
+normalization factor.</p></li>
+<li><p><em>Scalar Multiplication</em> is defined as taking elements of the particle weights tensor to the power
+of the scalar, up to a normalization factor.</p></li>
+<li><p>1 is treated as the identity element for the operations.</p></li>
+<li><p>Note that it is provably correct that the weighs with above operations form a vector space. The proof idea is
+to consider the log quotient space over one dimension, which reduces to standard real space with one less
+dimension.</p></li>
+</ul>
+</div></blockquote>
 </li>
 </ul>
-</dd>
-</dl>
-</li>
-</ul>
-</dd>
-</dl>
 <p>Accordingly, the ‘+’ and ‘*’ operator are overloaded according the to the specifications above.</p>
 </dd></dl>
 

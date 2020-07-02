@@ -1,0 +1,10 @@
+pysigma.cognitive package
+=========================
+
+Module contents
+---------------
+
+.. automodule:: pysigma.cognitive
+   :members:
+   :undoc-members:
+   :show-inheritance:
