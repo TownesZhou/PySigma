@@ -5,4 +5,5 @@ The Message class constitutes the most fundamental data structure in PySigma Gra
 
 .. autoclass:: pysigma.defs.Message
    :members:
+   :undoc-members:
    :special-members: __add__, __iadd__, __mul__, __imul__

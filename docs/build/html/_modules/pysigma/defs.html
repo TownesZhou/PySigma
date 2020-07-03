@@ -476,9 +476,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Message.__add__"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.__add__">[docs]</a>    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;  Overloads the addition operation &#39;+&#39;</span>
+        <span class="sd">&quot;&quot;&quot;Overloads the addition operation ``+``.</span>
 
-<span class="sd">        Implements the semantics of addition operation as in vector spaces, but the computational operations used to</span>
+<span class="sd">        Implements the semantics of addition operation as in vector spaces. The computational operations used to</span>
 <span class="sd">        implement the semantics are different for different message contents. See</span>
 <span class="sd">        :ref:`Message class notes regarding arithmetic structures&lt;message-arithmetic-structures-notes&gt;`</span>
 <span class="sd">        for more details.</span>
@@ -520,7 +520,7 @@
 <span class="sd">        Warnings</span>
 <span class="sd">        --------</span>
 <span class="sd">        Note that all auxiliary attributes stored in ``attr``, supplied via additional keyword arguments in the Message</span>
-<span class="sd">        class constructor, of both `self` and `other` will be discarded in the returning message.</span>
+<span class="sd">        class constructor, of both `self` and `other` will be discarded in the returned message.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Message</span><span class="p">),</span> <span class="s2">&quot;Message can only be added with another Message&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> \
@@ -544,9 +544,9 @@
                 <span class="s2">&quot;type. Found first message with (batch_shape, param_shape) = &#39;</span><span class="si">{}</span><span class="s2">&#39;, and second message with &quot;</span> \
                 <span class="s2">&quot;(batch_shape, param_shape) = &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">),</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">p_shape</span><span class="p">))</span>
             <span class="c1"># Tensor addition</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">parameter</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">parameter</span>
 
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">new_parameters</span><span class="p">)</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">new_parameter</span><span class="p">)</span>
 
         <span class="c1"># Addition for Particles type</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">s_type</span><span class="p">:</span>
@@ -566,29 +566,51 @@
             <span class="c1"># Clone self tensor contents</span>
             <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
             <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
-
             <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                               <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                               <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">)</span>
-
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.__iadd__"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.__iadd__">[docs]</a>    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Overloads self-addition operator &#39;+=&#39;</span>
+        <span class="sd">&quot;&quot;&quot;Overloads self-addition operator ``+=``.</span>
 
-<span class="sd">            See Also</span>
-<span class="sd">            --------</span>
-<span class="sd">            __add__</span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        __add__</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Message.__mul__"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.__mul__">[docs]</a>    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Overloading multiplication operator &#39;*&#39;. Implements scalar multiplication semantics.</span>
+        <span class="sd">&quot;&quot;&quot;Overloads multiplication operator ``*``.</span>
 
-<span class="sd">            The scalar can be of type int, float, or torch.Tensor. If it is a torch.Tensor, can be a singleton tensor</span>
-<span class="sd">                representing a single scalar, or a tensor of shape batch_shape representing a batched scalars.</span>
+<span class="sd">        Implements the semantics of scalar multiplication operation as in vector spaces. The computational operations</span>
+<span class="sd">        used to implement the semantics are different for different message contents. See</span>
+<span class="sd">        :ref:`Message class notes regarding arithmetic structures&lt;message-arithmetic-structures-notes&gt;`</span>
+<span class="sd">        for more details.</span>
+
+<span class="sd">        Message of type ``MessageType.Undefined`` cannot be scalar multiplied.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : int, float, or torch.Tensor</span>
+<span class="sd">            The scalar to the multiplication. If a torch.Tensor, can be a singleton tensor representing a single scalar,</span>
+<span class="sd">            or a tensor of shape ``batch_shape`` representing a batched scalars, assigning a different scalar value to</span>
+<span class="sd">            each distribution instance in the batch.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The new message as a result of the scalar multiplication.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            Attempting to scalar multiply a message of type ``MessageType.Undefined``.</span>
+
+<span class="sd">        Warnings</span>
+<span class="sd">        --------</span>
+<span class="sd">        Note that all auxiliary attributes stored in ``attr`` of `self`, supplied via additional keyword arguments in</span>
+<span class="sd">        the Message class constructor, will be discarded in the returned message.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)),</span> \
             <span class="s2">&quot;Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. &quot;</span> \
@@ -604,42 +626,47 @@
 
         <span class="c1"># Expand scalar tensor dimension if it is a batched scalars</span>
         <span class="n">b_p_other</span> <span class="o">=</span> <span class="n">other</span>
-        <span class="n">s_b_other</span> <span class="o">=</span> <span class="n">other</span>
+        <span class="n">b_s_other</span> <span class="o">=</span> <span class="n">other</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
                 <span class="n">b_p_other</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">b_p_other</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">:</span>
-                <span class="n">s_b_other</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">s_b_other</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)):</span>
+                    <span class="n">b_s_other</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">b_s_other</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="c1"># Scalar multiplication for Parameter messages</span>
         <span class="n">new_msg</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">b_p_other</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">new_parameters</span><span class="p">,</span>
-                              <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">b_p_other</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">new_parameter</span><span class="p">)</span>
 
         <span class="c1"># Scalar multiplication for Particles messages</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
             <span class="c1"># The result of scalar multiplication with uniform weights is still uniform, so only process non-uniform</span>
             <span class="c1">#   weights</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
                 <span class="c1"># Extract int/float from singleton scalar tensor</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s_b_other</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s_b_other</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">s_b_other</span> <span class="o">=</span> <span class="n">s_b_other</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b_s_other</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">b_s_other</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">b_s_other</span> <span class="o">=</span> <span class="n">b_s_other</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
                 <span class="c1"># Take weights tensor to the power of the scaler</span>
-                <span class="n">new_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">s_b_other</span><span class="p">)</span>
+                <span class="n">new_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">b_s_other</span><span class="p">)</span>
 
+            <span class="c1"># Clone tensor contents</span>
+            <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
+            <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
             <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                               <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                              <span class="n">particles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_density</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
-
+                              <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.__imul__"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.__imul__">[docs]</a>    <span class="k">def</span> <span class="nf">__imul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Overloading self-multiplication operator &#39;*=&#39;</span>
+        <span class="sd">&quot;&quot;&quot;Overloads self-multiplication operator ``*=``.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        __mul__</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__mul__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
 

@@ -311,9 +311,9 @@ class Message:
     """
 
     def __add__(self, other):
-        """  Overloads the addition operation '+'
+        """Overloads the addition operation ``+``.
 
-        Implements the semantics of addition operation as in vector spaces, but the computational operations used to
+        Implements the semantics of addition operation as in vector spaces. The computational operations used to
         implement the semantics are different for different message contents. See
         :ref:`Message class notes regarding arithmetic structures<message-arithmetic-structures-notes>`
         for more details.
@@ -355,7 +355,7 @@ class Message:
         Warnings
         --------
         Note that all auxiliary attributes stored in ``attr``, supplied via additional keyword arguments in the Message
-        class constructor, of both `self` and `other` will be discarded in the returning message.
+        class constructor, of both `self` and `other` will be discarded in the returned message.
         """
         assert isinstance(other, Message), "Message can only be added with another Message"
         assert self.type in other.type or other.type in self.type, \
@@ -379,9 +379,9 @@ class Message:
                 "type. Found first message with (batch_shape, param_shape) = '{}', and second message with " \
                 "(batch_shape, param_shape) = '{}'".format((self.b_shape, self.p_shape), (other.b_shape, other.p_shape))
             # Tensor addition
-            new_parameters = self.parameter + other.parameter
+            new_parameter = self.parameter + other.parameter
 
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter)
 
         # Addition for Particles type
         if MessageType.Particles in s_type:
@@ -401,29 +401,51 @@ class Message:
             # Clone self tensor contents
             cloned_particles = list(p.clone() for p in self.particles)
             cloned_log_densities = list(d.clone() for d in self.log_densities)
-
             new_msg = Message(self.type,
                               sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
                               particles=cloned_particles, weights=new_weights, log_density=cloned_log_densities)
-
         return new_msg
 
     def __iadd__(self, other):
-        """
-            Overloads self-addition operator '+='
+        """Overloads self-addition operator ``+=``.
 
-            See Also
-            --------
-            __add__
+        See Also
+        --------
+        __add__
         """
         return self.__add__(other)
 
     def __mul__(self, other):
-        """
-            Overloading multiplication operator '*'. Implements scalar multiplication semantics.
+        """Overloads multiplication operator ``*``.
 
-            The scalar can be of type int, float, or torch.Tensor. If it is a torch.Tensor, can be a singleton tensor
-                representing a single scalar, or a tensor of shape batch_shape representing a batched scalars.
+        Implements the semantics of scalar multiplication operation as in vector spaces. The computational operations
+        used to implement the semantics are different for different message contents. See
+        :ref:`Message class notes regarding arithmetic structures<message-arithmetic-structures-notes>`
+        for more details.
+
+        Message of type ``MessageType.Undefined`` cannot be scalar multiplied.
+
+        Parameters
+        ----------
+        other : int, float, or torch.Tensor
+            The scalar to the multiplication. If a torch.Tensor, can be a singleton tensor representing a single scalar,
+            or a tensor of shape ``batch_shape`` representing a batched scalars, assigning a different scalar value to
+            each distribution instance in the batch.
+
+        Returns
+        -------
+        Message
+            The new message as a result of the scalar multiplication.
+
+        Raises
+        ------
+        AssertionError
+            Attempting to scalar multiply a message of type ``MessageType.Undefined``.
+
+        Warnings
+        --------
+        Note that all auxiliary attributes stored in ``attr`` of `self`, supplied via additional keyword arguments in
+        the Message class constructor, will be discarded in the returned message.
         """
         assert isinstance(other, (int, float, torch.Tensor)), \
             "Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. " \
@@ -439,42 +461,47 @@ class Message:
 
         # Expand scalar tensor dimension if it is a batched scalars
         b_p_other = other
-        s_b_other = other
+        b_s_other = other
         if isinstance(other, torch.Tensor) and other.dim() > 0:
-            if self.type is MessageType.Parameter:
+            if MessageType.Parameter in self.type:
                 b_p_other = torch.unsqueeze(b_p_other, dim=-1)
 
-            if self.type is MessageType.Particles:
-                s_b_other = torch.unsqueeze(s_b_other, dim=0)
+            if MessageType.Particles in self.type:
+                for i in range(len(self.s_shape)):
+                    b_s_other = torch.unsqueeze(b_s_other, dim=-1)
 
         # Scalar multiplication for Parameter messages
         new_msg = None
         if MessageType.Parameter in self.type:
-            new_parameters = b_p_other * self.parameters
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters,
-                              **self.attr)
+            new_parameter = b_p_other * self.parameter
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter)
 
         # Scalar multiplication for Particles messages
         if MessageType.Particles in self.type:
             # The result of scalar multiplication with uniform weights is still uniform, so only process non-uniform
             #   weights
-            new_weights = self.weights
-            if isinstance(new_weights, torch.Tensor):
+            new_weight = self.weight
+            if isinstance(new_weight, torch.Tensor):
                 # Extract int/float from singleton scalar tensor
-                if isinstance(s_b_other, torch.Tensor) and s_b_other.dim() == 0:
-                    s_b_other = s_b_other.item()
+                if isinstance(b_s_other, torch.Tensor) and b_s_other.dim() == 0:
+                    b_s_other = b_s_other.item()
                 # Take weights tensor to the power of the scaler
-                new_weights = torch.pow(new_weights, s_b_other)
+                new_weights = torch.pow(new_weight, b_s_other)
 
+            # Clone tensor contents
+            cloned_particles = list(p.clone() for p in self.particles)
+            cloned_log_densities = list(d.clone() for d in self.log_densities)
             new_msg = Message(self.type,
                               sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                              particles=self.particles, weights=new_weights, log_density=self.log_density, **self.attr)
-
+                              particles=cloned_particles, weights=new_weight, log_density=cloned_log_densities)
         return new_msg
 
     def __imul__(self, other):
-        """
-            Overloading self-multiplication operator '*='
+        """Overloads self-multiplication operator ``*=``.
+
+        See Also
+        --------
+        __mul__
         """
         return self.__mul__(other)
 

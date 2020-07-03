@@ -42,7 +42,8 @@ extensions = [
 	'sphinx.ext.autodoc',
 	'sphinx_rtd_theme',
 	'sphinx.ext.napoleon',
-	'sphinx.ext.viewcode'
+	'sphinx.ext.viewcode', 
+	'sphinx.ext.autosummary'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,6 +56,9 @@ exclude_patterns = []
 
 # Explicitly fix the master doc to index.rst
 master_doc = 'index'
+
+# For autodoc: Output entities in the order specified in the source code
+autodoc_member_order = 'bysource'
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -75,3 +79,7 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# html_sidebars = {
+# 	'**': ['localtoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html']
+# }
