@@ -566,7 +566,7 @@ class Message:
         Returns
         -------
         Message
-            The reduced message
+            The reduced message from `self`.
 
         Raises
         ------
@@ -600,7 +600,7 @@ class Message:
         Returns
         -------
         Message
-            A cloned and deep-copied message of self.
+            A cloned and deep-copied message of `self`.
         """
         parameters = self.parameter
         particles = self.particles
@@ -699,7 +699,7 @@ class Message:
         Returns
         -------
         Message
-            The unsqueezed message from self.
+            The unsqueezed message from `self`.
 
         See Also
         --------
@@ -752,7 +752,7 @@ class Message:
         Returns
         -------
         Message
-            The returned index-selected and concatenated message.
+            The returned index-selected and concatenated message from `self`.
 
         See Also
         --------
@@ -810,7 +810,7 @@ class Message:
         Returns
         -------
         Message
-            The returned index-put message.
+            The returned index-put message of `self`.
 
         See Also
         --------
@@ -883,7 +883,7 @@ class Message:
         Returns
         -------
         Message
-            The diagonalized message.
+            The diagonalized message of `self`.
 
         See Also
         --------
@@ -958,7 +958,7 @@ class Message:
         Returns
         -------
         Message
-            The diagonally embedded message.
+            The diagonally embedded message from `self`.
 
         See Also
         --------
@@ -1018,68 +1018,90 @@ class Message:
         return new_msg
 
     def batch_narrow(self, dim, length):
-        """
-            Returns a new message that is a narrowed version of input tensor along the dimension specified by 'dim'.
-                Effectively, this method is selecting the chunk spanning [:length] along the dimension 'dim' of the
-                original message. The returned message and input message share the same underlying storage.
+        """Returns a message that is a narrowed version of `self` along the dimension specified by `dim`.
 
-            contiguous() will be called before return to make sure the resulting content tensors are contiguous
+        Effectively, this method selects the chunk spanning ``[:length]`` along the dimension `dim` of `self`. The
+        returned message and `self` share the same underlying storage.
 
-            This method is a mimic of torch.narrow(), with start default to 0.
+        `contiguous() <https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous>`_
+        will be called so that the returning content tensors are contiguous.
 
-            :param dim      an int. Specifying a dimension of the original message. Should be in range
-                                        [-len(batch_shape), len(batch_shape) - 1]
-            :param length   an int. Specifying the length of the message chunk to select. Should be in range
-                                        [0, dim_size - 1]
+        Parameters
+        ----------
+        dim : int
+            The dimension of along which `self` will be narrowed.
+        length : int
+            The length of the message chunk to select. It must be no greater than the size of the `dim` dimension in
+            `self`.
+
+        Returns
+        -------
+        Message
+            A narrowed message of `self`.
+
+        See Also
+        --------
+        This method is a mimic of
+        `torch.narrow() <https://pytorch.org/docs/stable/torch.html?highlight=narrow#torch.narrow>`_
+        , with `start` default to 0.
         """
         assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
         assert isinstance(length, int) and 0 <= length <= self.b_shape[dim] - 1
 
         # Translate dim value to positive if it's negative
         dim = len(self.b_shape) + dim if dim < 0 else dim
-        # For message contents who has a sample dimension at front, add 1 to dim
-        s_dim = dim + 1
         # Get new batch shape.
         new_b_shape = self.b_shape[:dim] + torch.Size([length]) + self.b_shape[dim + 1:]
 
-        new_parameters = self.parameters
+        new_parameter = self.parameter
         new_particles = self.particles
-        new_weights = self.weights
-        new_log_density = self.log_density
+        new_weight = self.weight
+        new_log_densities = self.log_densities
 
-        if isinstance(self.parameters, torch.Tensor):
+        if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
-            new_parameters = torch.narrow(new_parameters, dim=dim, start=0, length=length)
-            new_parameters = new_parameters.contiguous()
-        if isinstance(self.weights, torch.Tensor):
-            # weights has shape (s_shape + b_shape)
-            new_weights = torch.narrow(new_weights, dim=s_dim, start=0, length=length)
-            new_weights = new_weights.contiguous()
+            new_parameter = torch.narrow(new_parameter, dim=dim, start=0, length=length)
+            new_parameter = new_parameter.contiguous()
+        if isinstance(new_weight, torch.Tensor):
+            # weights has shape (b_shape + s_shape)
+            new_weight = torch.narrow(new_weight, dim=dim, start=0, length=length)
+            new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
         return new_msg
 
     def batch_broaden(self, dim, length):
-        """
-            Returns a new message that is a broadened version of the input tensor along the dimension specified by
-                'dim', with identity values filled in [dim_size + 1: length] along the dimension 'dim' of the original
-                message. In other words, this method is concatenating an identity message to the original message along
-                the dimension 'dim' so that the resulting dimension size is 'length'.
+        """Returns a message that is a broadened version of `self` along the dimension specified by `dim`, with identity
+        values filled in ``[dim_size + 1: length]`` along the dimension `dim` in the returned message.
 
-            For Parameter type message, the identity values are 0. For Particles type message, the identity values are 1
-                up to a normalization factor.
+        In other words, this method is concatenating an identity message to `self` along dimension `dim` so that the
+        resulting dimension size is `length`.
 
-            contiguous() will be called before return to make sure the resulting content tensors are contiguous
+        For parameter tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive
+        uniform constant such that the sum across the sample dimensions is 1.
 
-            This method is the inverted version of batch_narrow(). There is no direct counterpart to this method in
-                PyTorch.
+        `contiguous() <https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous>`_
+        will be called so that the returning content tensors are contiguous.
 
-            :param dim      an int. Specifying a dimension of the original message. Should be in range
-                                        [-len(batch_shape), len(batch_shape) - 1]
-            :param length   an int. Specifying the length of the message chunk to select. Should be greater than the
-                                current size of dimension 'dim'
+        Parameters
+        ----------
+        dim : int
+            The dimension of `self` which will be broadened in the returned message.
+        length : int
+            The length of the broadened dimension of the returned message. It must be greater than the size of the `dim`
+            dimension in `self`.
+
+        Returns
+        -------
+        Message
+            A broadened message of `self`.
+
+        See Also
+        --------
+        batch_narrow() :
+            The inverse of batch_broaden(). There is no direct counterpart to this method in PyTorch.
         """
         assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
         assert isinstance(length, int) and length > self.b_shape[dim]

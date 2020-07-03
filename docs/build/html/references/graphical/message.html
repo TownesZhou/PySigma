@@ -530,7 +530,7 @@ the Message class constructor, will be discarded in the returned message.</p>
 <dd class="field-odd"><p><strong>msg_type</strong> ({<code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>}) – The message type of the returned reduced message.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The reduced message</p>
+<dd class="field-even"><p>The reduced message from <cite>self</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
@@ -548,7 +548,7 @@ the Message class constructor, will be discarded in the returned message.</p>
 <p>Guarantees that every content is deep-copied. Tensors will be cloned and dictionaries will be deep-copied.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>A cloned and deep-copied message of self.</p>
+<dd class="field-odd"><p>A cloned and deep-copied message of <cite>self</cite>.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
@@ -594,7 +594,7 @@ will be called so that the returning message’s tensor contents are contiguous<
 <dd class="field-odd"><p><strong>dim</strong> (<em>int</em>) – The position where the new singleton dimension (a dim of size 1) is to be inserted.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The unsqueezed message from self.</p>
+<dd class="field-even"><p>The unsqueezed message from <cite>self</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
@@ -625,7 +625,7 @@ relative to the batch dimension only.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The returned index-selected and concatenated message.</p>
+<dd class="field-even"><p>The returned index-selected and concatenated message from <cite>self</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
@@ -659,7 +659,7 @@ relative to the batch dimension only.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The returned index-put message.</p>
+<dd class="field-even"><p>The returned index-put message of <cite>self</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
@@ -694,7 +694,7 @@ batch dimension.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The diagonalized message.</p>
+<dd class="field-even"><p>The diagonalized message of <cite>self</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
@@ -733,7 +733,7 @@ will be called so that the returning content tensors are contiguous.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The diagonally embedded message.</p>
+<dd class="field-even"><p>The diagonally embedded message from <cite>self</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
@@ -750,41 +750,67 @@ will be called so that the returning content tensors are contiguous.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_narrow">
 <code class="sig-name descname">batch_narrow</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dim</span></em>, <em class="sig-param"><span class="n">length</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_narrow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_narrow" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Returns a new message that is a narrowed version of input tensor along the dimension specified by ‘dim’.</dt><dd><p>Effectively, this method is selecting the chunk spanning [:length] along the dimension ‘dim’ of the
-original message. The returned message and input message share the same underlying storage.</p>
+<dd><p>Returns a message that is a narrowed version of <cite>self</cite> along the dimension specified by <cite>dim</cite>.</p>
+<p>Effectively, this method selects the chunk spanning <code class="docutils literal notranslate"><span class="pre">[:length]</span></code> along the dimension <cite>dim</cite> of <cite>self</cite>. The
+returned message and <cite>self</cite> share the same underlying storage.</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous">contiguous()</a>
+will be called so that the returning content tensors are contiguous.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim</strong> (<em>int</em>) – The dimension of along which <cite>self</cite> will be narrowed.</p></li>
+<li><p><strong>length</strong> (<em>int</em>) – The length of the message chunk to select. It must be no greater than the size of the <cite>dim</cite> dimension in
+<cite>self</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A narrowed message of <cite>self</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
-<p>contiguous() will be called before return to make sure the resulting content tensors are contiguous</p>
-<p>This method is a mimic of torch.narrow(), with start default to 0.</p>
-<dl class="simple">
-<dt>:param dim      an int. Specifying a dimension of the original message. Should be in range</dt><dd><p>[-len(batch_shape), len(batch_shape) - 1]</p>
-</dd>
-<dt>:param length   an int. Specifying the length of the message chunk to select. Should be in range</dt><dd><p>[0, dim_size - 1]</p>
-</dd>
-</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>This method is a mimic of
+<a class="reference external" href="https://pytorch.org/docs/stable/torch.html?highlight=narrow#torch.narrow">torch.narrow()</a>
+, with <cite>start</cite> default to 0.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_broaden">
 <code class="sig-name descname">batch_broaden</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dim</span></em>, <em class="sig-param"><span class="n">length</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_broaden"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_broaden" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Returns a new message that is a broadened version of the input tensor along the dimension specified by</dt><dd><p>‘dim’, with identity values filled in [dim_size + 1: length] along the dimension ‘dim’ of the original
-message. In other words, this method is concatenating an identity message to the original message along
-the dimension ‘dim’ so that the resulting dimension size is ‘length’.</p>
+<dd><p>Returns a message that is a broadened version of <cite>self</cite> along the dimension specified by <cite>dim</cite>, with identity
+values filled in <code class="docutils literal notranslate"><span class="pre">[dim_size</span> <span class="pre">+</span> <span class="pre">1:</span> <span class="pre">length]</span></code> along the dimension <cite>dim</cite> in the returned message.</p>
+<p>In other words, this method is concatenating an identity message to <cite>self</cite> along dimension <cite>dim</cite> so that the
+resulting dimension size is <cite>length</cite>.</p>
+<p>For parameter tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive
+uniform constant such that the sum across the sample dimensions is 1.</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous">contiguous()</a>
+will be called so that the returning content tensors are contiguous.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim</strong> (<em>int</em>) – The dimension of <cite>self</cite> which will be broadened in the returned message.</p></li>
+<li><p><strong>length</strong> (<em>int</em>) – The length of the broadened dimension of the returned message. It must be greater than the size of the <cite>dim</cite>
+dimension in <cite>self</cite>.</p></li>
+</ul>
 </dd>
-<dt>For Parameter type message, the identity values are 0. For Particles type message, the identity values are 1</dt><dd><p>up to a normalization factor.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A broadened message of <cite>self</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
-<p>contiguous() will be called before return to make sure the resulting content tensors are contiguous</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
 <dl class="simple">
-<dt>This method is the inverted version of batch_narrow(). There is no direct counterpart to this method in</dt><dd><p>PyTorch.</p>
-</dd>
-<dt>:param dim      an int. Specifying a dimension of the original message. Should be in range</dt><dd><p>[-len(batch_shape), len(batch_shape) - 1]</p>
-</dd>
-<dt>:param length   an int. Specifying the length of the message chunk to select. Should be greater than the</dt><dd><p>current size of dimension ‘dim’</p>
+<dt><a class="reference internal" href="#pysigma.defs.Message.batch_narrow" title="pysigma.defs.Message.batch_narrow"><code class="xref py py-meth docutils literal notranslate"><span class="pre">batch_narrow()</span></code></a></dt><dd><p>The inverse of batch_broaden(). There is no direct counterpart to this method in PyTorch.</p>
 </dd>
 </dl>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -865,7 +891,7 @@ have the same length as self’s current batch shape.</p>
 <li><p>Apply the transformation directly on the particle values</p></li>
 <li><dl class="simple">
 <dt>Log sampling densities will be adjusted by adding the log abs determinant of the Jacobian of the</dt><dd><dl class="simple">
-<dt>transformation:</dt><dd><p>log P(Y) = log P(X) + log <a href="#id5"><span class="problematic" id="id6">|det (dX / dY)|</span></a></p>
+<dt>transformation:</dt><dd><p>log P(Y) = log P(X) + log <a href="#id7"><span class="problematic" id="id8">|det (dX / dY)|</span></a></p>
 </dd>
 </dl>
 </dd>
