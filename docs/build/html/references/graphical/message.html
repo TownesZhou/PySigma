@@ -816,17 +816,20 @@ dimension in <cite>self</cite>.</p></li>
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_summarize">
 <code class="sig-name descname">batch_summarize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dim</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_summarize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_summarize" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Implements the default Sum-Product summarization semantics. Summarizes over the batch dimension specified by</dt><dd><p>‘dim’. Returns a message with one less dimension.</p>
-</dd>
-<dt>For Parameter message, the summarization is realized by taking the mean value of the batched parameters</dt><dd><p>across dimension ‘dim’. For particles message, this is realized by taking joint addition defined for
-particle weights, a.k.a. factor product.</p>
-</dd>
-</dl>
+<dd><p>Implements the default Sum-Product summarization semantics. Summarizes over the batch dimension specified by
+<cite>dim</cite>. Returns a message with one less dimension.</p>
+<p>For Parameter message, the summarization is realized by taking the mean of the parameter tensor along dimension
+<cite>dim</cite>. For particles message, this is realized by taking addition defined for particle weights along dimension
+<cite>dim</cite>, a.k.a. factor product.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>dim</strong> – an int. Specifying a dimension of the original message. Should be in range
-[-len(batch_shape), len(batch_shape) - 1]</p>
+<dd class="field-odd"><p><strong>dim</strong> (<em>int</em>) – The dimension of <cite>self</cite> to be summarized over.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The summarized message from <cite>self</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -834,15 +837,19 @@ particle weights, a.k.a. factor product.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_flatten">
 <code class="sig-name descname">batch_flatten</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dims</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_flatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_flatten" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Flattens the set of batch dimensions specified by ‘dims’ and append the flattened dimension as the last</dt><dd><p>dimension. If ‘dims’ is None, will flatten all batch dimensions into a single dimension.</p>
-</dd>
-</dl>
-<p>contiguous() will be called before return to make sure the resulting content tensors are contiguous</p>
+<dd><p>Flattens the set of batch dimensions specified by <cite>dims</cite> and append the flattened dimension as the last
+batch dimension. If <cite>dims</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, will flatten all batch dimensions.</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous">contiguous()</a>
+will be called so that the returning content tensors are contiguous.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>dims</strong> – None or an Iterable of ints. Specifying the set of dimensions to be flattened. If given,
-each value should be in range   [-len(batch_shape), len(batch_shape) - 1]</p>
+<dd class="field-odd"><p><strong>dims</strong> (<em>iterable of ints</em><em>, </em><em>optional</em>) – The set of batch dimensions to be flattened. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The flattened message of <cite>self</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -850,35 +857,51 @@ each value should be in range   [-len(batch_shape), len(batch_shape) - 1]</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_reshape">
 <code class="sig-name descname">batch_reshape</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_batch_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_reshape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_reshape" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a message with the same data as self, but with the specified ‘new_batch_shape’.</p>
-<p>This method is a mimic of torch.reshape()</p>
+<dd><p>Returns a message with the same underlying data as self, but with the specified <cite>new_batch_shape</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>new_batch_shape</strong> – Iterable of python ints, or torch.Size. The target batch shape.</p>
+<dd class="field-odd"><p><strong>new_batch_shape</strong> (<em>iterable of int</em><em>, or </em><em>torch.Size</em>) – The target batch shape.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A reshaped message from <cite>self</cite> with new batch shape.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>This method is a mimic of
+<a class="reference external" href="https://pytorch.org/docs/stable/torch.html?highlight=reshape#torch.reshape">torch.reshape()</a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_expand">
 <code class="sig-name descname">batch_expand</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_batch_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_expand" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a new view of the self message with singleton batch dimensions expanded to a larger size.</p>
-<p>Passing a -1 as the size for a dimension means not changing the size of that dimension.</p>
-<dl class="simple">
-<dt>Expanding a message would not allocate new memory for the tensor contents, but create a new view on the</dt><dd><p>existing tensor. Any dimension of size 1 can be expanded to an arbitrary value without allocating new
-memory.</p>
-</dd>
-<dt>Note that more than one element of an expanded message may refer to a single memory location. As a result,</dt><dd><p>in-place operations may result in incorrect behavior. Clone first before needing to write in-place to
-the message tensor contents.</p>
-</dd>
-</dl>
-<p>This method is a mimic of torch.expand()</p>
+<dd><p>Returns a new view of <cite>self</cite> with singleton batch dimensions expanded to a larger size.</p>
+<p>Passing a -1 as the size for a batch dimension means not changing the size of that batch dimension.</p>
+<p>Expanding <cite>self</cite> would not allocate new memory for <cite>self</cite>’s tensor contents, but would create a new view on the
+existing tensors. Any dimension of size 1 can be expanded to an arbitrary value without allocating new memory.</p>
+<p>Note that <cite>new_batch_shape</cite> is relative to the batch dimensions only.</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous">contiguous()</a>
+will be called so that the returning content tensors are contiguous.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>new_batch_shape</strong> – Iterable of python ints, or torch.Size. The target expanded batch shape. Must
-have the same length as self’s current batch shape.</p>
+<dd class="field-odd"><p><strong>new_batch_shape</strong> (<em>iterable of int</em><em>, or </em><em>torch.Size</em>) – The target expanded batch shape. Must have the same length as <cite>self</cite>’s current batch shape.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An expanded message from <cite>self</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>This method is a mimic of
+<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html?highlight=expand#torch.Tensor.expand">torch.Tensor.expand()</a>.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -891,7 +914,7 @@ have the same length as self’s current batch shape.</p>
 <li><p>Apply the transformation directly on the particle values</p></li>
 <li><dl class="simple">
 <dt>Log sampling densities will be adjusted by adding the log abs determinant of the Jacobian of the</dt><dd><dl class="simple">
-<dt>transformation:</dt><dd><p>log P(Y) = log P(X) + log <a href="#id7"><span class="problematic" id="id8">|det (dX / dY)|</span></a></p>
+<dt>transformation:</dt><dd><p>log P(Y) = log P(X) + log <a href="#id9"><span class="problematic" id="id10">|det (dX / dY)|</span></a></p>
 </dd>
 </dl>
 </dd>

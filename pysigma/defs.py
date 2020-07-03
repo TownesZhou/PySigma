@@ -1137,169 +1137,196 @@ class Message:
         return new_msg
 
     def batch_summarize(self, dim):
-        """
-            Implements the default Sum-Product summarization semantics. Summarizes over the batch dimension specified by
-                'dim'. Returns a message with one less dimension.
+        """Implements the default Sum-Product summarization semantics. Summarizes over the batch dimension specified by
+        `dim`. Returns a message with one less dimension.
 
-            For Parameter message, the summarization is realized by taking the mean value of the batched parameters
-                across dimension 'dim'. For particles message, this is realized by taking joint addition defined for
-                particle weights, a.k.a. factor product.
+        For Parameter message, the summarization is realized by taking the mean of the parameter tensor along dimension
+        `dim`. For particles message, this is realized by taking addition defined for particle weights along dimension
+        `dim`, a.k.a. factor product.
 
-            :param dim:     an int. Specifying a dimension of the original message. Should be in range
-                                        [-len(batch_shape), len(batch_shape) - 1]
+        Parameters
+        ----------
+        dim : int
+            The dimension of `self` to be summarized over.
+
+        Returns
+        -------
+        Message
+            The summarized message from `self`.
         """
         assert isinstance(dim, int) and -len(self.b_shape) <= dim <= len(self.b_shape) - 1
 
         # Translate dim value to positive if it's negative
         dim = len(self.b_shape) + dim if dim < 0 else dim
-        # For message contents who has a sample dimension at front, add 1 to dim
-        s_dim = dim + 1
         # Get new batch shape.
         new_b_shape = self.b_shape[:dim] + self.b_shape[dim + 1:]
 
-        new_parameters = self.parameters
+        new_parameter = self.parameter
         new_particles = self.particles
-        new_weights = self.weights
-        new_log_density = self.log_density
+        new_weight = self.weight
+        new_log_densities = self.log_densities
 
-        if isinstance(self.parameters, torch.Tensor):
+        if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
-            new_parameters = torch.mean(new_parameters, dim=dim)
-        if isinstance(self.weights, torch.Tensor):
-            # weights has shape (s_shape + b_shape)
+            new_parameter = torch.mean(new_parameter, dim=dim)
+        if isinstance(new_weight, torch.Tensor):
+            # weights has shape (b_shape + s_shape)
             # For weights, since factor product is taken, we first convert weight values to log scale, perform summation
             #   across the batch dimension, then convert back to exponential scale.
             # The normalization of resulting weights will be taken care of by message initialization
-            log_weights = torch.log(new_weights)
-            log_weights = torch.sum(log_weights, dim=s_dim)
-            new_weights = torch.exp(log_weights)
+            log_weight = torch.log(new_weight)
+            log_weight = torch.sum(log_weight, dim=dim)
+            new_weight = torch.exp(log_weight)
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
         return new_msg
 
     def batch_flatten(self, dims=None):
-        """
-            Flattens the set of batch dimensions specified by 'dims' and append the flattened dimension as the last
-                dimension. If 'dims' is None, will flatten all batch dimensions into a single dimension.
+        """Flattens the set of batch dimensions specified by `dims` and append the flattened dimension as the last
+        batch dimension. If `dims` is ``None``, will flatten all batch dimensions.
 
-            contiguous() will be called before return to make sure the resulting content tensors are contiguous
+        `contiguous() <https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous>`_
+        will be called so that the returning content tensors are contiguous.
 
-            :param dims:    None or an Iterable of ints. Specifying the set of dimensions to be flattened. If given,
-                                each value should be in range   [-len(batch_shape), len(batch_shape) - 1]
+        Parameters
+        ----------
+        dims : iterable of ints, optional
+            The set of batch dimensions to be flattened. Defaults to ``None``.
+
+        Returns
+        -------
+        Message
+            The flattened message of `self`.
         """
         assert dims is None or (isinstance(dims, Iterable) and all(isinstance(dim, int) and
                                 -len(self.b_shape) <= dim <= len(self.b_shape) - 1 for dim in dims))
 
         # Translate dim value to positive if it's negative
         dims = list(len(self.b_shape) + dim if dim < 0 else dim for dim in dims) if dims is not None else \
-               list(range(len(self.b_shape)))
+            list(range(len(self.b_shape)))
         other_dims = list(i for i in range(len(self.b_shape)) if i not in dims)
-        # For message contents who has a sample dimension at front, add 1 to dim
-        s_dims = list(dim + 1 for dim in dims)
-        s_other_dims = list(dim + 1 for dim in other_dims)
         # Get new batch shape.
-        new_b_shape = torch.Size(list(self.b_shape[i] for i in range(len(self.b_shape)) if i not in dims)) + \
-                      torch.Size([np.prod(np.array(self.b_shape)[dims])])
+        new_b_shape = torch.Size(list(self.b_shape[i] for i in other_dims)) + \
+            torch.Size([np.prod(np.array(self.b_shape)[dims])])
 
-        new_parameters = self.parameters
+        new_parameter = self.parameter
         new_particles = self.particles
-        new_weights = self.weights
-        new_log_density = self.log_density
+        new_weight = self.weight
+        new_log_densities = self.log_densities
 
-        if isinstance(self.parameters, torch.Tensor):
+        if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
             perm_order = other_dims + dims + [len(self.b_shape)]
-            new_parameters = new_parameters.permute(perm_order)
-            new_parameters = torch.flatten(new_parameters, start_dim=len(other_dims), end_dim=len(self.b_shape) - 1)
-            new_parameters = new_parameters.contiguous()
-        if isinstance(self.weights, torch.Tensor):
-            # weights has shape (s_shape + b_shape)
-            perm_order = s_other_dims + s_dims
-            new_weights = new_weights.permute(perm_order)
-            new_weights = torch.flatten(new_weights, start_dim=len(s_other_dims), end_dim=-1)
-            new_weights = new_weights.contiguous()
+            new_parameter = new_parameter.permute(perm_order)
+            new_parameter = torch.flatten(new_parameter, start_dim=len(other_dims), end_dim=len(self.b_shape) - 1)
+            new_parameter = new_parameter.contiguous()
+        if isinstance(new_weight, torch.Tensor):
+            # weights has shape (b_shape + s_shape)
+            perm_order = other_dims + dims + list(range(len(self.b_shape), len(self.b_shape) + len(self.s_shape)))
+            new_weight = new_weight.permute(perm_order)
+            new_weight = torch.flatten(new_weight, start_dim=len(other_dims), end_dim=len(self.b_shape) - 1)
+            new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
         return new_msg
 
     def batch_reshape(self, new_batch_shape):
-        """
-            Returns a message with the same data as self, but with the specified 'new_batch_shape'.
+        """Returns a message with the same underlying data as self, but with the specified `new_batch_shape`.
 
-            This method is a mimic of torch.reshape()
+        Parameters
+        ----------
+        new_batch_shape : iterable of int, or torch.Size
+            The target batch shape.
 
-            :param new_batch_shape:     Iterable of python ints, or torch.Size. The target batch shape.
+        Returns
+        --------
+        Message
+            A reshaped message from `self` with new batch shape.
+
+        See Also
+        --------
+        This method is a mimic of
+        `torch.reshape() <https://pytorch.org/docs/stable/torch.html?highlight=reshape#torch.reshape>`_
         """
         assert isinstance(new_batch_shape, torch.Size) or \
-               (isinstance(new_batch_shape, Iterable) or all(isinstance(s, int) for s in new_batch_shape))
+            (isinstance(new_batch_shape, Iterable) and all(isinstance(s, int) for s in new_batch_shape))
 
-        new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Tensor) else \
+        new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Size) else \
             new_batch_shape
 
-        new_parameters = self.parameters
+        new_parameter = self.parameter
         new_particles = self.particles
-        new_weights = self.weights
-        new_log_density = self.log_density
+        new_weight = self.weight
+        new_log_densities = self.log_densities
 
-        if isinstance(self.parameters, torch.Tensor):
+        if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
-            new_parameters = torch.reshape(new_parameters, new_batch_shape + self.p_shape)
-        if isinstance(self.weights, torch.Tensor):
-            # weights has shape (s_shape + b_shape)
-            new_weights = torch.reshape(new_weights, self.s_shape + new_batch_shape)
+            new_parameter = torch.reshape(new_parameter, new_batch_shape + self.p_shape)
+        if isinstance(new_weight, torch.Tensor):
+            # weights has shape (b_shape + s_shape)
+            new_weight = torch.reshape(new_weight, new_batch_shape + self.s_shape)
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
         return new_msg
 
     def batch_expand(self, new_batch_shape):
-        """
-            Returns a new view of the self message with singleton batch dimensions expanded to a larger size.
+        """Returns a new view of `self` with singleton batch dimensions expanded to a larger size.
 
-            Passing a -1 as the size for a dimension means not changing the size of that dimension.
+        Passing a -1 as the size for a batch dimension means not changing the size of that batch dimension.
 
-            Expanding a message would not allocate new memory for the tensor contents, but create a new view on the
-                existing tensor. Any dimension of size 1 can be expanded to an arbitrary value without allocating new
-                memory.
+        Expanding `self` would not allocate new memory for `self`'s tensor contents, but would create a new view on the
+        existing tensors. Any dimension of size 1 can be expanded to an arbitrary value without allocating new memory.
 
-            Note that more than one element of an expanded message may refer to a single memory location. As a result,
-                in-place operations may result in incorrect behavior. Clone first before needing to write in-place to
-                the message tensor contents.
+        Note that `new_batch_shape` is relative to the batch dimensions only.
 
-            This method is a mimic of torch.expand()
+        `contiguous() <https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous>`_
+        will be called so that the returning content tensors are contiguous.
 
-            :param new_batch_shape:     Iterable of python ints, or torch.Size. The target expanded batch shape. Must
-                                            have the same length as self's current batch shape.
+        Parameters
+        ----------
+        new_batch_shape : iterable of int, or torch.Size
+            The target expanded batch shape. Must have the same length as `self`'s current batch shape.
+
+        Returns
+        -------
+        Message
+            An expanded message from `self`.
+
+        See Also
+        --------
+        This method is a mimic of
+        `torch.Tensor.expand() <https://pytorch.org/docs/stable/tensors.html?highlight=expand#torch.Tensor.expand>`_.
         """
         assert isinstance(new_batch_shape, torch.Size) or \
-               (isinstance(new_batch_shape, Iterable) and all(isinstance(s, int) for s in new_batch_shape))
+            (isinstance(new_batch_shape, Iterable) and all(isinstance(s, int) for s in new_batch_shape))
         assert len(list(new_batch_shape)) == len(self.b_shape)
 
-        new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Tensor) else \
+        new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Size) else \
             new_batch_shape
 
-        new_parameters = self.parameters
+        new_parameter = self.parameter
         new_particles = self.particles
-        new_weights = self.weights
-        new_log_density = self.log_density
+        new_weight = self.weight
+        new_log_densities = self.log_densities
 
-        if isinstance(self.parameters, torch.Tensor):
+        if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
             new_shape = new_batch_shape + self.p_shape
-            new_parameters = new_parameters.expand(new_shape).contiguous()
-        if isinstance(self.weights, torch.Tensor):
-            # weights has shape (s_shape + b_shape)
-            new_shape = self.s_shape + new_batch_shape
-            new_weights = new_weights.expand(new_shape).contiguous()
+            new_parameter = new_parameter.expand(new_shape).contiguous()
+        if isinstance(new_weight, torch.Tensor):
+            # weights has shape (b_shape + s_shape)
+            new_shape = new_batch_shape + self.s_shape
+            new_weight = new_weight.expand(new_shape).contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
         return new_msg
 
     """
