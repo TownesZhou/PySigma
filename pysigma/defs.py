@@ -635,7 +635,8 @@ class Message:
         The dimensions specified in `target_dims` are relative to the batch dimensions only. Its values should be in
         range ``[-len(batch_shape), len(batch_shape) - 1]``
 
-        contiguous() will be called so that the returning message's tensor contents are contiguous
+        `contiguous() <https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous>`_
+        will be called so that the returning message's tensor contents are contiguous
 
         Parameters
         ----------
@@ -860,19 +861,35 @@ class Message:
         return new_msg
 
     def batch_diagonal(self, dim1=0, dim2=1):
-        """
-            Returns a partial view of self with the its diagonal elements with respect to 'dim1' and 'dim2' appended as
-                a dimension at the end of the shape.
-            dim values within the range [-len(batch_shape), len(batch_shape) - 1] can be used.
-            Note that 'dim1' and 'dim2' are relative to the batch dimension. The appended dimension will be placed as
-                the last batch dimension, but before any event or param dimension.
+        """Returns a partial view of self with the its diagonal elements with respect to `dim1` and `dim2` appended as
+        a dimension at the end of the shape.
 
-            contiguous() will be called before return to make sure the resulting content tensors are contiguous
+        dim values in the range ``[-len(batch_shape), len(batch_shape) - 1]`` can be used. Note that `dim1` and `dim2`
+        are relative to the batch dimensions only. The appended dimension will be placed as the last batch dimension,
+        but before any sample or param dimensions.
 
-            This method is a mimic of torch.diagonal(), with offset default to 0
+        `contiguous() <https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous>`_
+        will be called so that the returning content tensors are contiguous.
 
-            :param dim1:    an int. Should be in range [-len(batch_shape), len(batch_shape) - 1]
-            :param dim2.    Same as 'dim1'
+        Parameters
+        ----------
+        dim1 : int, optional
+            The first dimension of the 2D subspace where diagonal entries will be taken. Defaults to 0, the first batch
+            dimension.
+        dim2 : int, optional
+            The second dimension of the 2D subspace where diagonal entries will be taken. Defaults to 1, the second
+            batch dimension.
+
+        Returns
+        -------
+        Message
+            The diagonalized message.
+
+        See Also
+        --------
+        This method is a mimic of
+        `torch.diagonal() <https://pytorch.org/docs/stable/torch.html?highlight=diagonal#torch.diagonal>`_
+        , with `offset` defaults to 0
         """
         assert isinstance(dim1, int) and -len(self.b_shape) <= dim1 <= len(self.b_shape) - 1
         assert isinstance(dim2, int) and -len(self.b_shape) <= dim2 <= len(self.b_shape) - 1
@@ -880,59 +897,74 @@ class Message:
         # Translate dim value to positive if it's negative
         dim1 = len(self.b_shape) + dim1 if dim1 < 0 else dim1
         dim2 = len(self.b_shape) + dim2 if dim2 < 0 else dim2
-        # For message contents who has a sample dimension at front, add 1 to dim
-        s_dim1 = dim1 + 1
-        s_dim2 = dim2 + 1
         # Get new batch shape. The size of the appended diagonalized dimension should be the min of dim1 and dim2
         new_b_shape = self.b_shape[:min(dim1, dim2)] + self.b_shape[min(dim1, dim2) + 1: max(dim1, dim2)] + \
-                      self.b_shape[max(dim1, dim2) + 1:] + torch.Size([min(self.b_shape[dim1], self.b_shape[dim2])])
+            self.b_shape[max(dim1, dim2) + 1:] + torch.Size([min(self.b_shape[dim1], self.b_shape[dim2])])
 
-        new_parameters = self.parameters
+        new_parameter = self.parameter
         new_particles = self.particles
-        new_weights = self.weights
-        new_log_density = self.log_density
+        new_weight = self.weight
+        new_log_densities = self.log_densities
 
-        if isinstance(self.parameters, torch.Tensor):
+        if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
-            new_parameters = torch.diagonal(new_parameters, dim1=dim1, dim2=dim2)
+            new_parameter = torch.diagonal(new_parameter, dim1=dim1, dim2=dim2)
             # Swap param dimension and appended diagonal batch dimension
-            new_parameters = torch.transpose(new_parameters, dim0=-1, dim1=-2)
-            new_parameters = new_parameters.contiguous()
-        if isinstance(self.weights, torch.Tensor):
-            # weights has shape (s_shape + b_shape)
-            new_weights = torch.diagonal(new_weights, dim1=s_dim1, dim2=s_dim2)
-            new_weights = new_weights.contiguous()
+            new_parameter = torch.transpose(new_parameter, dim0=-1, dim1=-2)
+            new_parameter = new_parameter.contiguous()
+        if isinstance(new_weight, torch.Tensor):
+            # weights has shape (b_shape + s_shape)
+            new_weight = torch.diagonal(new_weight, dim1=dim1, dim2=dim2)
+            # Permute the appended diagonal batch dimension to the end of the existing batch dimensions
+            perm_order = list(range(len(self.b_shape))) + [new_weight.dim() - 1] + \
+                list(range(len(self.b_shape), len(self.b_shape) + len(self.s_shape)))
+            new_weight = new_weight.permute(perm_order)
+            new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
         return new_msg
 
     def batch_diag_embed(self, diag_dim=-1, target_dim1=-2, target_dim2=-1):
-        """
-            Creates a message whose diagonals of certain 2D planes (dimensions specified by 'target_dim1' and
-                'target_dim2') are filled by vectors of self (dimension specified by 'diag_dim'). The last dimension of
-                self is chosen by default as the diagonal entries to be filled, and the last two dimensions of the new
-                message are chosen by default as the 2D planes where the diagonal entries will be filled in.
+        """Returns a message whose diagonals of certain 2D planes (dimensions specified by `target_dim1` and
+        `target_dim2`) are filled by slices of self along the dimension specified by `diag_dim`).
 
-            The 2D planes will be shaped as square matrices, with the size of each dimension matches the size of the
-                diag_dim in self.
+        The last dimension of self is chosen by default as the diagonal entries to be filled, and the last two
+        dimensions of the new message are chosen by default as the 2D planes where the diagonal entries will be filled
+        in.
 
-            The length of returned message's batch shape will be the length of original message's batch shape plus 1.
+        The 2D planes will be shaped as square matrices, with the size of each dimension matches the size of the
+        `diag_dim` dimension in self.
 
-            For slots not on the diagonal of the resulting message, they will be filled with identity values. For
-                Parameter type message, the identity value is 0 w.r.t. the parameter tensor, and for Particles type
-                message, the identity value is 1 w.r.t. the weights tensor up to a normalization factor.
+        The length of returned message's batch shape will be the length of original message's batch shape plus 1.
 
-            contiguous() will be called before return to make sure the resulting content tensors are contiguous
+        For slots not on the diagonals of the resulting message, they will be filled with identity values. For parameter
+        tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive uniform
+        constant such that the sum across the sample dimensions is 1.
 
-            This method is a mimic of torch.diag_embed(), with offset default to 0 plus an additional diag_dim argument.
+        `contiguous() <https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous>`_
+        will be called so that the returning content tensors are contiguous.
 
-            :param diag_dim:        an int. Specifying a dimension of the original message. Should be in range
-                                        [-len(batch_shape), len(batch_shape) - 1]
-            :param target_dim1:     an int. Specifying a dimension of the returned message. Should be in range
-                                        [-len(batch_shape) - 1, len(batch_shape)]
-            :param target_dim2:     Same as 'target_dim1'
+        Parameters
+        ----------
+        diag_dim : int, optional
+            The dimension of `self` along which slices will be selected. Defaults to -1.
+        target_dim1 : int, optional
+            The first dimension of the target 2D planes in the target message. Defaults to -2.
+        target_dim2 : int, optional
+            The second dimension of the target 2D planes in the target message. Defaults to -1.
+
+        Returns
+        -------
+        Message
+            The diagonally embedded message.
+
+        See Also
+        --------
+        This method is a mimic of
+        `torch.diag_embed() <https://pytorch.org/docs/stable/torch.html?highlight=diag_embed#torch.diag_embed>`_
+        , with `offset` default to 0 plus an additional diag_dim argument.
         """
         assert isinstance(diag_dim, int) and -len(self.b_shape) <= diag_dim <= len(self.b_shape) - 1
         assert isinstance(target_dim1, int) and -len(self.b_shape) - 1 <= target_dim1 <= len(self.b_shape)
@@ -942,10 +974,6 @@ class Message:
         diag_dim = len(self.b_shape) + diag_dim if diag_dim < 0 else diag_dim
         target_dim1 = len(self.b_shape) + 1 + target_dim1 if target_dim1 < 0 else target_dim1
         target_dim2 = len(self.b_shape) + 1 + target_dim2 if target_dim2 < 0 else target_dim2
-        # For message contents who has a sample dimension at front, add 1 to dim
-        s_diag_dim = diag_dim + 1
-        s_target_dim1 = target_dim1 + 1
-        s_target_dim2 = target_dim2 + 1
         # Get new batch shape. The size of target_dim1 and target_dim2 is determined by the size of diag_dim
         diag_size = self.b_shape[diag_dim]
         other_shape = list(self.b_shape[:diag_dim] + self.b_shape[diag_dim + 1:])
@@ -954,39 +982,39 @@ class Message:
         other_shape.insert(second_new_dim, diag_size)
         new_b_shape = torch.Size(other_shape)
 
-        new_parameters = self.parameters
+        new_parameter = self.parameter
         new_particles = self.particles
-        new_weights = self.weights
-        new_log_density = self.log_density
+        new_weight = self.weight
+        new_log_densities = self.log_densities
 
         # Tensors fist need to have the diagonal entries dimension (diag_dim) permuted to the last dimension so that it
         #   will be picked up by torch.diag_embed()
-        if isinstance(self.parameters, torch.Tensor):
+        if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
             perm_order = list(range(len(self.b_shape + self.p_shape)))
             perm_order.remove(diag_dim)
             perm_order.append(diag_dim)
-            new_parameters = new_parameters.permute(perm_order)
-            new_parameters = torch.diag_embed(new_parameters, dim1=target_dim1, dim2=target_dim2)
-            new_parameters = new_parameters.contiguous()
+            new_parameter = new_parameter.permute(perm_order)
+            new_parameter = torch.diag_embed(new_parameter, dim1=target_dim1, dim2=target_dim2)
+            new_parameter = new_parameter.contiguous()
         if isinstance(self.weights, torch.Tensor):
-            # weights has shape (s_shape + b_shape)
+            # weights has shape (b_shape + s_shape)
             # For weights, the default entries to be filled in places other than the diagonal should be 1's, so we
             #   will first fill the log of input into the diagonal and then take exponential. 0's filled by
             #   torch.diag_embed() will be transformed to 1. Note that for these uniform entries the weights will be
             #   normalized across sample dimension during initialization so no worries.
-            log_weights = torch.log(new_weights)
-            perm_order = list(range(len(self.s_shape + self.b_shape)))
-            perm_order.remove(s_diag_dim)
-            perm_order.append(s_diag_dim)
-            log_weights = log_weights.permute(perm_order)
-            log_weights = torch.diag_embed(log_weights, dim1=s_target_dim1, dim2=s_target_dim2)
-            new_weights = torch.exp(log_weights)
-            new_weights = new_weights.contiguous()
+            log_weight = torch.log(new_weight)
+            perm_order = list(range(len(self.b_shape + self.s_shape)))
+            perm_order.remove(diag_dim)
+            perm_order.append(diag_dim)
+            log_weight = log_weight.permute(perm_order)
+            log_weight = torch.diag_embed(log_weight, dim1=target_dim1, dim2=target_dim1)
+            new_weight = torch.exp(target_dim1)
+            new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
         return new_msg
 
     def batch_narrow(self, dim, length):

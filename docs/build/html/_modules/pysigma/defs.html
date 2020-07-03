@@ -800,7 +800,8 @@
 <span class="sd">        The dimensions specified in `target_dims` are relative to the batch dimensions only. Its values should be in</span>
 <span class="sd">        range ``[-len(batch_shape), len(batch_shape) - 1]``</span>
 
-<span class="sd">        contiguous() will be called so that the returning message&#39;s tensor contents are contiguous</span>
+<span class="sd">        `contiguous() &lt;https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous&gt;`_</span>
+<span class="sd">        will be called so that the returning message&#39;s tensor contents are contiguous</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1025,19 +1026,35 @@
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_diagonal"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diagonal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Returns a partial view of self with the its diagonal elements with respect to &#39;dim1&#39; and &#39;dim2&#39; appended as</span>
-<span class="sd">                a dimension at the end of the shape.</span>
-<span class="sd">            dim values within the range [-len(batch_shape), len(batch_shape) - 1] can be used.</span>
-<span class="sd">            Note that &#39;dim1&#39; and &#39;dim2&#39; are relative to the batch dimension. The appended dimension will be placed as</span>
-<span class="sd">                the last batch dimension, but before any event or param dimension.</span>
+        <span class="sd">&quot;&quot;&quot;Returns a partial view of self with the its diagonal elements with respect to `dim1` and `dim2` appended as</span>
+<span class="sd">        a dimension at the end of the shape.</span>
 
-<span class="sd">            contiguous() will be called before return to make sure the resulting content tensors are contiguous</span>
+<span class="sd">        dim values in the range ``[-len(batch_shape), len(batch_shape) - 1]`` can be used. Note that `dim1` and `dim2`</span>
+<span class="sd">        are relative to the batch dimensions only. The appended dimension will be placed as the last batch dimension,</span>
+<span class="sd">        but before any sample or param dimensions.</span>
 
-<span class="sd">            This method is a mimic of torch.diagonal(), with offset default to 0</span>
+<span class="sd">        `contiguous() &lt;https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous&gt;`_</span>
+<span class="sd">        will be called so that the returning content tensors are contiguous.</span>
 
-<span class="sd">            :param dim1:    an int. Should be in range [-len(batch_shape), len(batch_shape) - 1]</span>
-<span class="sd">            :param dim2.    Same as &#39;dim1&#39;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dim1 : int, optional</span>
+<span class="sd">            The first dimension of the 2D subspace where diagonal entries will be taken. Defaults to 0, the first batch</span>
+<span class="sd">            dimension.</span>
+<span class="sd">        dim2 : int, optional</span>
+<span class="sd">            The second dimension of the 2D subspace where diagonal entries will be taken. Defaults to 1, the second</span>
+<span class="sd">            batch dimension.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The diagonalized message.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        This method is a mimic of</span>
+<span class="sd">        `torch.diagonal() &lt;https://pytorch.org/docs/stable/torch.html?highlight=diagonal#torch.diagonal&gt;`_</span>
+<span class="sd">        , with `offset` defaults to 0</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">dim1</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim2</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">dim2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
@@ -1045,59 +1062,74 @@
         <span class="c1"># Translate dim value to positive if it&#39;s negative</span>
         <span class="n">dim1</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">dim1</span> <span class="k">if</span> <span class="n">dim1</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">dim1</span>
         <span class="n">dim2</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">dim2</span> <span class="k">if</span> <span class="n">dim2</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">dim2</span>
-        <span class="c1"># For message contents who has a sample dimension at front, add 1 to dim</span>
-        <span class="n">s_dim1</span> <span class="o">=</span> <span class="n">dim1</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="n">s_dim2</span> <span class="o">=</span> <span class="n">dim2</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="c1"># Get new batch shape. The size of the appended diagonalized dimension should be the min of dim1 and dim2</span>
         <span class="n">new_b_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[:</span><span class="nb">min</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="p">)]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="p">)]</span> <span class="o">+</span> \
-                      <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim2</span><span class="p">])])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim2</span><span class="p">])])</span>
 
-        <span class="n">new_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span>
-        <span class="n">new_log_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_density</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># parameters has shape (b_shape + p_shape)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">new_parameters</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">dim2</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">dim2</span><span class="p">)</span>
             <span class="c1"># Swap param dimension and appended diagonal batch dimension</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">new_parameters</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">new_parameters</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="c1"># weights has shape (s_shape + b_shape)</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">s_dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">s_dim2</span><span class="p">)</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">new_weights</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">new_parameter</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="c1"># weights has shape (b_shape + s_shape)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">dim2</span><span class="p">)</span>
+            <span class="c1"># Permute the appended diagonal batch dimension to the end of the existing batch dimensions</span>
+            <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)))</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> \
+                <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)))</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_parameters</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weights</span><span class="p">,</span> <span class="n">new_log_density</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+                          <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_diag_embed"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_diag_embed">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diag_embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">diag_dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">target_dim1</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">target_dim2</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Creates a message whose diagonals of certain 2D planes (dimensions specified by &#39;target_dim1&#39; and</span>
-<span class="sd">                &#39;target_dim2&#39;) are filled by vectors of self (dimension specified by &#39;diag_dim&#39;). The last dimension of</span>
-<span class="sd">                self is chosen by default as the diagonal entries to be filled, and the last two dimensions of the new</span>
-<span class="sd">                message are chosen by default as the 2D planes where the diagonal entries will be filled in.</span>
+        <span class="sd">&quot;&quot;&quot;Returns a message whose diagonals of certain 2D planes (dimensions specified by `target_dim1` and</span>
+<span class="sd">        `target_dim2`) are filled by slices of self along the dimension specified by `diag_dim`).</span>
 
-<span class="sd">            The 2D planes will be shaped as square matrices, with the size of each dimension matches the size of the</span>
-<span class="sd">                diag_dim in self.</span>
+<span class="sd">        The last dimension of self is chosen by default as the diagonal entries to be filled, and the last two</span>
+<span class="sd">        dimensions of the new message are chosen by default as the 2D planes where the diagonal entries will be filled</span>
+<span class="sd">        in.</span>
 
-<span class="sd">            The length of returned message&#39;s batch shape will be the length of original message&#39;s batch shape plus 1.</span>
+<span class="sd">        The 2D planes will be shaped as square matrices, with the size of each dimension matches the size of the</span>
+<span class="sd">        `diag_dim` dimension in self.</span>
 
-<span class="sd">            For slots not on the diagonal of the resulting message, they will be filled with identity values. For</span>
-<span class="sd">                Parameter type message, the identity value is 0 w.r.t. the parameter tensor, and for Particles type</span>
-<span class="sd">                message, the identity value is 1 w.r.t. the weights tensor up to a normalization factor.</span>
+<span class="sd">        The length of returned message&#39;s batch shape will be the length of original message&#39;s batch shape plus 1.</span>
 
-<span class="sd">            contiguous() will be called before return to make sure the resulting content tensors are contiguous</span>
+<span class="sd">        For slots not on the diagonals of the resulting message, they will be filled with identity values. For parameter</span>
+<span class="sd">        tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive uniform</span>
+<span class="sd">        constant such that the sum across the sample dimensions is 1.</span>
 
-<span class="sd">            This method is a mimic of torch.diag_embed(), with offset default to 0 plus an additional diag_dim argument.</span>
+<span class="sd">        `contiguous() &lt;https://pytorch.org/docs/stable/tensors.html?highlight=contiguous#torch.Tensor.contiguous&gt;`_</span>
+<span class="sd">        will be called so that the returning content tensors are contiguous.</span>
 
-<span class="sd">            :param diag_dim:        an int. Specifying a dimension of the original message. Should be in range</span>
-<span class="sd">                                        [-len(batch_shape), len(batch_shape) - 1]</span>
-<span class="sd">            :param target_dim1:     an int. Specifying a dimension of the returned message. Should be in range</span>
-<span class="sd">                                        [-len(batch_shape) - 1, len(batch_shape)]</span>
-<span class="sd">            :param target_dim2:     Same as &#39;target_dim1&#39;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        diag_dim : int, optional</span>
+<span class="sd">            The dimension of `self` along which slices will be selected. Defaults to -1.</span>
+<span class="sd">        target_dim1 : int, optional</span>
+<span class="sd">            The first dimension of the target 2D planes in the target message. Defaults to -2.</span>
+<span class="sd">        target_dim2 : int, optional</span>
+<span class="sd">            The second dimension of the target 2D planes in the target message. Defaults to -1.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The diagonally embedded message.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        This method is a mimic of</span>
+<span class="sd">        `torch.diag_embed() &lt;https://pytorch.org/docs/stable/torch.html?highlight=diag_embed#torch.diag_embed&gt;`_</span>
+<span class="sd">        , with `offset` default to 0 plus an additional diag_dim argument.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">diag_dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">diag_dim</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_dim1</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">target_dim1</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span>
@@ -1107,10 +1139,6 @@
         <span class="n">diag_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">diag_dim</span> <span class="k">if</span> <span class="n">diag_dim</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">diag_dim</span>
         <span class="n">target_dim1</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">target_dim1</span> <span class="k">if</span> <span class="n">target_dim1</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">target_dim1</span>
         <span class="n">target_dim2</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">target_dim2</span> <span class="k">if</span> <span class="n">target_dim2</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">target_dim2</span>
-        <span class="c1"># For message contents who has a sample dimension at front, add 1 to dim</span>
-        <span class="n">s_diag_dim</span> <span class="o">=</span> <span class="n">diag_dim</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="n">s_target_dim1</span> <span class="o">=</span> <span class="n">target_dim1</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="n">s_target_dim2</span> <span class="o">=</span> <span class="n">target_dim2</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="c1"># Get new batch shape. The size of target_dim1 and target_dim2 is determined by the size of diag_dim</span>
         <span class="n">diag_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">diag_dim</span><span class="p">]</span>
         <span class="n">other_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[:</span><span class="n">diag_dim</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">diag_dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:])</span>
@@ -1119,39 +1147,39 @@
         <span class="n">other_shape</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">second_new_dim</span><span class="p">,</span> <span class="n">diag_size</span><span class="p">)</span>
         <span class="n">new_b_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">other_shape</span><span class="p">)</span>
 
-        <span class="n">new_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span>
-        <span class="n">new_log_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_density</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span>
 
         <span class="c1"># Tensors fist need to have the diagonal entries dimension (diag_dim) permuted to the last dimension so that it</span>
         <span class="c1">#   will be picked up by torch.diag_embed()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># parameters has shape (b_shape + p_shape)</span>
             <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)))</span>
             <span class="n">perm_order</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">diag_dim</span><span class="p">)</span>
             <span class="n">perm_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">diag_dim</span><span class="p">)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">new_parameters</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag_embed</span><span class="p">(</span><span class="n">new_parameters</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">target_dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">target_dim2</span><span class="p">)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">new_parameters</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">new_parameter</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag_embed</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">target_dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">target_dim2</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">new_parameter</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="c1"># weights has shape (s_shape + b_shape)</span>
+            <span class="c1"># weights has shape (b_shape + s_shape)</span>
             <span class="c1"># For weights, the default entries to be filled in places other than the diagonal should be 1&#39;s, so we</span>
             <span class="c1">#   will first fill the log of input into the diagonal and then take exponential. 0&#39;s filled by</span>
             <span class="c1">#   torch.diag_embed() will be transformed to 1. Note that for these uniform entries the weights will be</span>
             <span class="c1">#   normalized across sample dimension during initialization so no worries.</span>
-            <span class="n">log_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">new_weights</span><span class="p">)</span>
-            <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)))</span>
-            <span class="n">perm_order</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">s_diag_dim</span><span class="p">)</span>
-            <span class="n">perm_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s_diag_dim</span><span class="p">)</span>
-            <span class="n">log_weights</span> <span class="o">=</span> <span class="n">log_weights</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
-            <span class="n">log_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag_embed</span><span class="p">(</span><span class="n">log_weights</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">s_target_dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">s_target_dim2</span><span class="p">)</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_weights</span><span class="p">)</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">new_weights</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+            <span class="n">log_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">new_weight</span><span class="p">)</span>
+            <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)))</span>
+            <span class="n">perm_order</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">diag_dim</span><span class="p">)</span>
+            <span class="n">perm_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">diag_dim</span><span class="p">)</span>
+            <span class="n">log_weight</span> <span class="o">=</span> <span class="n">log_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+            <span class="n">log_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag_embed</span><span class="p">(</span><span class="n">log_weight</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">target_dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">target_dim1</span><span class="p">)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">target_dim1</span><span class="p">)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_parameters</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weights</span><span class="p">,</span> <span class="n">new_log_density</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+                          <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_narrow"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_narrow">[docs]</a>    <span class="k">def</span> <span class="nf">batch_narrow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
