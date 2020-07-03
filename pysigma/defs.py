@@ -1108,37 +1108,32 @@ class Message:
 
         # Translate dim value to positive if it's negative
         dim = len(self.b_shape) + dim if dim < 0 else dim
-        # For message contents who has a sample dimension at front, add 1 to dim
-        s_dim = dim + 1
         # Get new batch shape.
         new_b_shape = self.b_shape[:dim] + torch.Size([length]) + self.b_shape[dim + 1:]
 
-        if self.type == MessageType.Parameter:
+        new_parameter = self.parameter
+        new_particles = self.particles
+        new_weight = self.weight
+        new_log_densities = self.log_densities
+
+        if isinstance(new_parameter, torch.Tensor):
+            # parameters has shape (b_shape + p_shape)
             to_concat_shape = self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + \
                               self.b_shape[dim + 1:] + self.p_shape
-        else:
-            to_concat_shape = self.s_shape + self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + \
-                              self.b_shape[dim + 1:]
-
-        new_parameters = self.parameters
-        new_particles = self.particles
-        new_weights = self.weights
-        new_log_density = self.log_density
-
-        if isinstance(self.parameters, torch.Tensor):
-            # parameters has shape (b_shape + p_shape)
             to_concat = torch.zeros(to_concat_shape)
-            new_parameters = torch.cat([new_parameters, to_concat], dim=dim)
-            new_parameters = new_parameters.contiguous()
-        if isinstance(self.weights, torch.Tensor):
-            # weights has shape (s_shape + b_shape)
+            new_parameter = torch.cat([new_parameter, to_concat], dim=dim)
+            new_parameter = new_parameter.contiguous()
+        if isinstance(new_weight, torch.Tensor):
+            # weights has shape (b_shape + s_shape)
+            to_concat_shape = self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + \
+                              self.b_shape[dim + 1:] + self.s_shape
             to_concat = torch.ones(to_concat_shape)
-            new_weights = torch.cat([new_weights, to_concat], dim=s_dim)
-            new_weights = new_weights.contiguous()
+            new_weight = torch.cat([new_weight, to_concat], dim=dim)
+            new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameters, new_particles, new_weights, new_log_density, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
         return new_msg
 
     def batch_summarize(self, dim):
