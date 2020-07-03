@@ -107,46 +107,46 @@ class Message:
 
     Parameters
     ----------
-    msg_type : {MessageType.Undefined, MessageType.Parameter, MessageType.Particles, MessageType.Both}
+    msg_type : {``MessageType.Undefined``, ``MessageType.Parameter``, ``MessageType.Particles``, ``MessageType.Both``}
         The type of this message.
     batch_shape : torch.Size
         The size of the batch dimensions. Must be a shape of **at least** length 1.
     param_shape : torch.Size, optional
-        The size of the parameter dimension of `parameter`. Must specify if `msg_type` is `MessageType.Parameter`. Must
-        be a shape of **exactly** length 1.
+        The size of the parameter dimension of `parameter`. Must specify if `msg_type` is ``MessageType.Parameter``.
+        Must be a shape of **exactly** length 1.
     sample_shape : torch.Size, optional
         The size of the sample dimensions of each particle tensor in `particles` respectively in order. Must specify if
-        message type is `MessageType.Particle`. Must be a shape of **at least** length 1.
+        message type is ``MessageType.Particle``. Must be a shape of **at least** length 1.
     event_shape : torch.Size, optional
         The size of the event dimensions of each particle tensor in `particles` respectively in order. Must specify if
-        message type is `MessageType.Particle`. Must be a shape of **at least** length 1.
+        message type is ``MessageType.Particle``. Must be a shape of **at least** length 1.
     parameter : torch.Tensor or an int of 0, optional
         The parameter tensor to the batch of distributions this message is encoding. Must specify if the message type is
-        `MessageType.Parameter`. A torch.Tensor of shape `batch_shape + param_shape` if the parameters do not represent
-        the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity. Default
-        to an int of 0.
+        ``MessageType.Parameter``. A torch.Tensor of shape ``batch_shape + param_shape`` if the parameters do not
+        represent the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity.
+        Default to an int of 0.
     particles : iterable of torch.Tensor, optional
         The list of particles representing events w.r.t. each random variable respectively whose collective joint
-        distribution this message is encoding. Must specify if the message type is `MessageType.Particles`. The jth
-        entry of the iterable should have shape `sample_shape[j] + event_shape[j]`.
+        distribution this message is encoding. Must specify if the message type is ``MessageType.Particles``. The jth
+        entry of the iterable should have shape ``sample_shape[j] + event_shape[j]``.
     weights : torch.Tensor or an int of 1, optional
         The importance weight tensor that, when multiplied with the exponential of the cross product of the log sampling
         densities in `log_densities`, yields the pdf of each combined particle w.r.t. the target distribution that this
-        message is encoding. Must specify if the message type is `MessageType.Particles`. If the weights are
-        non-uniform, must be a **positively valued** tensor of shape `batch_shape + sample_shape`. The supplied tensor
+        message is encoding. Must specify if the message type is ``MessageType.Particles``. If the weights are
+        non-uniform, must be a **positively valued** tensor of shape ``batch_shape + sample_shape``. The supplied tensor
         will be normalized during initialization so that it sums to 1 across the subspace spanned by the sample
         dimensions. Alternatively, can be an int of 1 to specify the uniform weight. Default to 1.
     log_densities : iterable of torch.Tensor, optional
         The jth entry in the iterable represents the log pdf of the jth particle in `particles` w.r.t. the (marginal)
         sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
-        `MessageType.Particles`. The jth entry must have shape `sample_shape[j]`.
+        ``MessageType.Particles``. The jth entry must have shape ``sample_shape[j]``.
     **kwargs
         Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
         cloned.
 
     Attributes
     ----------
-    type : {MessageType.Undefined, MessageType.Parameter, MessageType.Particles, MessageType.Both}
+    type : {``MessageType.Undefined``, ``MessageType.Parameter``, ``MessageType.Particles``, ``MessageType.Both``}
         Message type.
     b_shape : torch.Size
         Batch shape.
@@ -212,7 +212,9 @@ class Message:
        To support the above semantics and computations, all of the arguments `particles`, `weight`, and `log_densities`
        must be specified in the constructor.
 
-    A message can encode both type of contents, in which case the message type is `MessageType.Both`.
+    A message can encode both type of contents, in which case the message type is ``MessageType.Both``.
+
+    .. _message-arithmetic-structures-notes:
 
     Both types of messages are assumed to reside in certain vector space, and thus the appropriate arithmetic
     operations -- *Addition* and *Scalar Multiplication* -- are defined and implemented:
@@ -309,8 +311,51 @@ class Message:
     """
 
     def __add__(self, other):
-        """
-            Overloading addition operation '+'
+        """  Overloads the addition operation '+'
+
+        Implements the semantics of addition operation as in vector spaces, but the computational operations used to
+        implement the semantics are different for different message contents. See
+        :ref:`Message class notes regarding arithmetic structures<message-arithmetic-structures-notes>`
+        for more details.
+
+        Only messages with compatible types can be added. This means a ``MessageType.Parameter`` type message can only
+        be added with one of type ``MessageType.Parameter`` or ``MessageType.Both``, and similarly a
+        ``MessageType.Particles`` type message can only be added with one of type ``MessageType.Particles`` or
+        ``MessageType.Both``. ``MessageType.Both`` type message can be added with any other type except
+        ``MessageType.Undefined``, and in any case a ``MessageType.Undefined`` type message cannot be added.
+
+        There are more restrictions for ``MessageType.Particles`` type messages. Messages of such type can only be
+        added together if their ``particles`` and ``log_densities`` fields are equal.
+
+        All contents are first cloned before taking the operations and returning the result.
+
+        Parameters
+        ----------
+        other : Message
+            The other message instance to be added together with `self`. It should have a compatible message type with
+            `self`.
+
+        Returns
+        -------
+        Message
+            The new message as a result of the summation.
+
+        Raises
+        ------
+        AssertionError
+            If `other`'s message type is incompatible with `self`.
+        AssertionError
+            If either `self` or `other`'s message type is ``MessageType.Undefined``.
+        AssertionError
+            If contents of `self` and `other` have conflicting shapes.
+        AssertionError
+            If `self` and `other` have particles message contents to be added, but their particle values do not match,
+            or their log sampling density tensors do not match.
+
+        Warnings
+        --------
+        Note that all auxiliary attributes stored in ``attr``, supplied via additional keyword arguments in the Message
+        class constructor, of both `self` and `other` will be discarded in the returning message.
         """
         assert isinstance(other, Message), "Message can only be added with another Message"
         assert self.type in other.type or other.type in self.type, \
@@ -334,31 +379,32 @@ class Message:
                 "type. Found first message with (batch_shape, param_shape) = '{}', and second message with " \
                 "(batch_shape, param_shape) = '{}'".format((self.b_shape, self.p_shape), (other.b_shape, other.p_shape))
             # Tensor addition
-            new_parameters = self.parameters + other.parameters
+            new_parameters = self.parameter + other.parameter
 
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters,
-                              **self.attr)
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameters)
 
         # Addition for Particles type
         if MessageType.Particles in s_type:
-            assert self.s_shape == other.s_shape and self.b_shape == other.b_shape and self.e_shape == other.e_shape, \
+            assert self.b_shape == other.b_shape and self.s_shape == other.s_shape and self.e_shape == other.e_shape, \
                 "Only Messages with the same shape can be added together. The messages being added are of Particles " \
-                "type. Found first message with (sample_shape, batch_shape, event_shape) = '{}', and second message " \
-                "with (sample_shape, batch_shape, event_shape) = '{}'" \
-                    .format((self.s_shape, self.b_shape, self.e_shape), (other.s_shape, other.b_shape, other.e_shape))
-            assert torch.equal(self.particles, other.particles), \
+                "type. Found first message with (batch_shape, sample_shape, event_shape) = '{}', and second message " \
+                "with (batch_shape, sample_shape, event_shape) = '{}'" \
+                    .format((self.b_shape, self.s_shape, self.e_shape), (other.b_shape, other.s_shape, other.e_shape))
+            assert all(torch.equal(self_p, other_p) for self_p, other_p in zip(self.particles, other.particles)), \
                 "For particle messages, only ones with matching particle values can be added together. "
-            assert type(self.log_density) is type(other.log_density) and \
-                   ((isinstance(self.log_density, int) and self.log_density == other.log_density) or
-                    (isinstance(self.log_density, torch.Tensor) and torch.equal(self.log_density, other.log_density))), \
+            assert all(torch.equal(self_d, other_d) for self_d, other_d in
+                       zip(self.log_densities, other.log_densities)), \
                 "For particle messages, only ones with matching log sampling densities can be added together"
 
             # Take element-wise product
-            new_weights = self.weights * other.weights
+            new_weights = self.weight * other.weight
+            # Clone self tensor contents
+            cloned_particles = list(p.clone() for p in self.particles)
+            cloned_log_densities = list(d.clone() for d in self.log_densities)
 
             new_msg = Message(self.type,
                               sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                              particles=self.particles, weights=new_weights, log_density=self.log_density, **self.attr)
+                              particles=cloned_particles, weights=new_weights, log_density=cloned_log_densities)
 
         return new_msg
 

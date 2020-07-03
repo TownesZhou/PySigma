@@ -182,30 +182,30 @@ distributions to be processed by downstream graphs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>msg_type</strong> (<em>{MessageType.Undefined</em><em>, </em><em>MessageType.Parameter</em><em>, </em><em>MessageType.Particles</em><em>, </em><em>MessageType.Both}</em>) – The type of this message.</p></li>
+<li><p><strong>msg_type</strong> ({<code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>}) – The type of this message.</p></li>
 <li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – The size of the batch dimensions. Must be a shape of <strong>at least</strong> length 1.</p></li>
-<li><p><strong>param_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the parameter dimension of <cite>parameter</cite>. Must specify if <cite>msg_type</cite> is <cite>MessageType.Parameter</cite>. Must
-be a shape of <strong>exactly</strong> length 1.</p></li>
+<li><p><strong>param_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the parameter dimension of <cite>parameter</cite>. Must specify if <cite>msg_type</cite> is <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>.
+Must be a shape of <strong>exactly</strong> length 1.</p></li>
 <li><p><strong>sample_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the sample dimensions of each particle tensor in <cite>particles</cite> respectively in order. Must specify if
-message type is <cite>MessageType.Particle</cite>. Must be a shape of <strong>at least</strong> length 1.</p></li>
+message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Particle</span></code>. Must be a shape of <strong>at least</strong> length 1.</p></li>
 <li><p><strong>event_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the event dimensions of each particle tensor in <cite>particles</cite> respectively in order. Must specify if
-message type is <cite>MessageType.Particle</cite>. Must be a shape of <strong>at least</strong> length 1.</p></li>
+message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Particle</span></code>. Must be a shape of <strong>at least</strong> length 1.</p></li>
 <li><p><strong>parameter</strong> (<em>torch.Tensor</em><em> or </em><em>an int of 0</em><em>, </em><em>optional</em>) – The parameter tensor to the batch of distributions this message is encoding. Must specify if the message type is
-<cite>MessageType.Parameter</cite>. A torch.Tensor of shape <cite>batch_shape + param_shape</cite> if the parameters do not represent
-the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity. Default
-to an int of 0.</p></li>
+<code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>. A torch.Tensor of shape <code class="docutils literal notranslate"><span class="pre">batch_shape</span> <span class="pre">+</span> <span class="pre">param_shape</span></code> if the parameters do not
+represent the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity.
+Default to an int of 0.</p></li>
 <li><p><strong>particles</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>optional</em>) – The list of particles representing events w.r.t. each random variable respectively whose collective joint
-distribution this message is encoding. Must specify if the message type is <cite>MessageType.Particles</cite>. The jth
-entry of the iterable should have shape <cite>sample_shape[j] + event_shape[j]</cite>.</p></li>
+distribution this message is encoding. Must specify if the message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>. The jth
+entry of the iterable should have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span> <span class="pre">+</span> <span class="pre">event_shape[j]</span></code>.</p></li>
 <li><p><strong>weights</strong> (<em>torch.Tensor</em><em> or </em><em>an int of 1</em><em>, </em><em>optional</em>) – The importance weight tensor that, when multiplied with the exponential of the cross product of the log sampling
 densities in <cite>log_densities</cite>, yields the pdf of each combined particle w.r.t. the target distribution that this
-message is encoding. Must specify if the message type is <cite>MessageType.Particles</cite>. If the weights are
-non-uniform, must be a <strong>positively valued</strong> tensor of shape <cite>batch_shape + sample_shape</cite>. The supplied tensor
+message is encoding. Must specify if the message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>. If the weights are
+non-uniform, must be a <strong>positively valued</strong> tensor of shape <code class="docutils literal notranslate"><span class="pre">batch_shape</span> <span class="pre">+</span> <span class="pre">sample_shape</span></code>. The supplied tensor
 will be normalized during initialization so that it sums to 1 across the subspace spanned by the sample
 dimensions. Alternatively, can be an int of 1 to specify the uniform weight. Default to 1.</p></li>
 <li><p><strong>log_densities</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>optional</em>) – The jth entry in the iterable represents the log pdf of the jth particle in <cite>particles</cite> w.r.t. the (marginal)
 sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
-<cite>MessageType.Particles</cite>. The jth entry must have shape <cite>sample_shape[j]</cite>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>. The jth entry must have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span></code>.</p></li>
 <li><p><strong>**kwargs</strong> – Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
 cloned.</p></li>
 </ul>
@@ -217,7 +217,7 @@ cloned.</p></li>
 <dd><p>Message type.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>{MessageType.Undefined, MessageType.Parameter, MessageType.Particles, MessageType.Both}</p>
+<dd class="field-odd"><p>{<code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>}</p>
 </dd>
 </dl>
 </dd></dl>
@@ -362,8 +362,8 @@ dimension to achieve the effect of marginalizing over the corresponding random v
 must be specified in the constructor.</p>
 </li>
 </ol>
-<p>A message can encode both type of contents, in which case the message type is <cite>MessageType.Both</cite>.</p>
-<p>Both types of messages are assumed to reside in certain vector space, and thus the appropriate arithmetic
+<p>A message can encode both type of contents, in which case the message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>.</p>
+<p id="message-arithmetic-structures-notes">Both types of messages are assumed to reside in certain vector space, and thus the appropriate arithmetic
 operations – <em>Addition</em> and <em>Scalar Multiplication</em> – are defined and implemented:</p>
 <ul>
 <li><p>For Parameter messages,</p>
@@ -398,7 +398,45 @@ dimension.</p></li>
 <dl class="py method">
 <dt id="pysigma.defs.Message.__add__">
 <code class="sig-name descname">__add__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__add__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__add__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overloading addition operation ‘+’</p>
+<dd><p>Overloads the addition operation ‘+’</p>
+<p>Implements the semantics of addition operation as in vector spaces, but the computational operations used to
+implement the semantics are different for different message contents. See
+<a class="reference internal" href="#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes regarding arithmetic structures</span></a>
+for more details.</p>
+<p>Only messages with compatible types can be added. This means a <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message can only
+be added with one of type <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, and similarly a
+<code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message can only be added with one of type <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> or
+<code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>. <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type message can be added with any other type except
+<code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code>, and in any case a <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code> type message cannot be added.</p>
+<p>There are more restrictions for <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type messages. Messages of such type can only be
+added together if their <code class="docutils literal notranslate"><span class="pre">particles</span></code> and <code class="docutils literal notranslate"><span class="pre">log_densities</span></code> fields are equal.</p>
+<p>All contents are first cloned before taking the operations and returning the result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message"><em>Message</em></a>) – The other message instance to be added together with <cite>self</cite>. It should have a compatible message type with
+<cite>self</cite>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The new message as a result of the summation.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If <cite>other</cite>’s message type is incompatible with <cite>self</cite>.</p></li>
+<li><p><strong>AssertionError</strong> – If either <cite>self</cite> or <cite>other</cite>’s message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code>.</p></li>
+<li><p><strong>AssertionError</strong> – If contents of <cite>self</cite> and <cite>other</cite> have conflicting shapes.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>self</cite> and <cite>other</cite> have particles message contents to be added, but their particle values do not match,
+    or their log sampling density tensors do not match.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Note that all auxiliary attributes stored in <code class="docutils literal notranslate"><span class="pre">attr</span></code>, supplied via additional keyword arguments in the Message
+class constructor, of both <cite>self</cite> and <cite>other</cite> will be discarded in the returning message.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">

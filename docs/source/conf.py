@@ -34,6 +34,10 @@ import sphinx_rtd_theme
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# sphinx.ext.autodoc - Automatically importing docstrings from source module
+# sphinx_rtd_theme - The official Read-the-Docs theme
+# sphinx.ext.napoleon - Preprocess Numpy/Google style docstrings
+# sphinx.ext.viewcode - Insert links to generated source code HTML 
 extensions = [
 	'sphinx.ext.autodoc',
 	'sphinx_rtd_theme',
