@@ -494,8 +494,13 @@ the Message class constructor, will be discarded in the returned message.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.size">
 <code class="sig-name descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.size" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Returns a tuple of the message’s shapes:</dt><dd><p>(sample_shape, batch_shape, param_shape, event_shape)</p>
+<dd><p>Returns a tuple of the message’s shapes: <code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>tuple of torch.Size</p>
 </dd>
 </dl>
 </dd></dl>
@@ -503,7 +508,15 @@ the Message class constructor, will be discarded in the returned message.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.same_size_as">
 <code class="sig-name descname">same_size_as</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.same_size_as"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.same_size_as" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check if self has the same shape as the other message. Return True if so.</p>
+<dd><p>Check if self has the same shape as the other message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if self has the same shape as the other message.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

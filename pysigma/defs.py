@@ -506,36 +506,44 @@ class Message:
         return self.__mul__(other)
 
     def __str__(self):
-        if self.type == MessageType.Parameter:
-            b_shape_str = str(list(self.b_shape))
-            p_shape_str = str(list(self.p_shape))
-            parameters_str = str(list(self.parameters.tolist()))
-
-            return f"Type: Parameter\nBatch_Shape: {b_shape_str}\nParameter_Shape: {p_shape_str}\n" \
-                   f"Parameters{parameters_str}"
-
-        else:
-            s_shape_str = str(list(self.s_shape))
-            b_shape_str = str(list(self.b_shape))
-            e_shape_str = str(list(self.e_shape))
-            particles_str = str(list(self.particles.tolist()))
-            weights_str = str(list(self.weights.tolist()))
-            log_density_str = str(list(self.log_density.tolist()))
-
-            return f"Type: Particles\nSample_Shape: {s_shape_str}\nBatch_Shape: {b_shape_str}\n" \
-                   f"Event_Shape: {e_shape_str}\nParticles: {particles_str}\n" \
-                   f"Weights: {weights_str}\nLog_Density: {log_density_str}"
+        # if self.type == MessageType.Parameter:
+        #     b_shape_str = str(list(self.b_shape))
+        #     p_shape_str = str(list(self.p_shape))
+        #     parameters_str = str(list(self.parameter.tolist()))
+        #
+        #     return f"Type: Parameter\nBatch_Shape: {b_shape_str}\nParameter_Shape: {p_shape_str}\n" \
+        #            f"Parameters{parameters_str}"
+        #
+        # else:
+        #     s_shape_str = str(list(self.s_shape))
+        #     b_shape_str = str(list(self.b_shape))
+        #     e_shape_str = str(list(self.e_shape))
+        #     particles_str = str(list(self.particles.tolist()))
+        #     weights_str = str(list(self.weights.tolist()))
+        #     log_density_str = str(list(self.log_density.tolist()))
+        #
+        #     return f"Type: Particles\nSample_Shape: {s_shape_str}\nBatch_Shape: {b_shape_str}\n" \
+        #            f"Event_Shape: {e_shape_str}\nParticles: {particles_str}\n" \
+        #            f"Weights: {weights_str}\nLog_Density: {log_density_str}"
+        raise NotImplementedError("String representation for Message instance is yet to be implemented.")
 
     def size(self):
+        """Returns a tuple of the message's shapes: ``(batch_shape, param_shape, sample_shape, event_shape)``
+
+        Returns
+        -------
+        tuple of torch.Size
+            A tuple of the message's shapes
         """
-            Returns a tuple of the message's shapes:
-                (sample_shape, batch_shape, param_shape, event_shape)
-        """
-        return self.s_shape, self.b_shape, self.p_shape, self.e_shape
+        return self.b_shape, self.p_shape, self.s_shape, self.e_shape
 
     def same_size_as(self, other):
-        """
-            Check if self has the same shape as the other message. Return True if so.
+        """Check if self has the same shape as the other message.
+
+        Returns
+        -------
+        bool
+            True if self has the same shape as the other message.
         """
         assert isinstance(other, Message)
         return self.size() == other.size()
