@@ -794,100 +794,134 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Message.batch_permute"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_permute">[docs]</a>    <span class="k">def</span> <span class="nf">batch_permute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_dims</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Returns a permuted message whose tensor attributes are permuted from the original ones w.r.t. &#39;target_dims&#39;</span>
-<span class="sd">                in the batch dimensions.</span>
-<span class="sd">            Note that target_dims is relative to the batch dimension. Its values should be within the range</span>
-<span class="sd">                    [-len(batch_shape), len(batch_shape) - 1]</span>
+        <span class="sd">&quot;&quot;&quot;Returns a permuted message whose tensor contents that include batch dimensions (e.g. parameters and particle</span>
+<span class="sd">        values) are permuted w.r.t. `target_dims`.</span>
 
-<span class="sd">            contiguous() will be called before return to make sure the resulting content tensors are contiguous</span>
+<span class="sd">        The dimensions specified in `target_dims` are relative to the batch dimensions only. Its values should be in</span>
+<span class="sd">        range ``[-len(batch_shape), len(batch_shape) - 1]``</span>
 
-<span class="sd">            This method is a mimic of torch.Tensor.permute()</span>
+<span class="sd">        contiguous() will be called so that the returning message&#39;s tensor contents are contiguous</span>
 
-<span class="sd">            :param target_dims:     list of ints. The desired ordering batch dimensions</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_dims : list of ints</span>
+<span class="sd">            The desired ordering of the target batch dimensions. Must have the same length as the message&#39;s batch shape.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The permuted message from `self`.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        This method is a mimic of</span>
+<span class="sd">        `torch.Tensor.permute() &lt;https://pytorch.org/docs/stable/tensors.html#torch.Tensor.permute&gt;`_.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_dims</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">target_dims</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_dims</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="ow">and</span> \
-               <span class="nb">all</span><span class="p">(</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">target_dims</span><span class="p">)</span>
+            <span class="nb">all</span><span class="p">(</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">target_dims</span><span class="p">)</span>
 
-        <span class="c1"># Translate negative dims to nonnegative value</span>
+        <span class="c1"># Translate negative dims to non-negative value</span>
         <span class="n">pos_target_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_dims</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">target_dims</span><span class="p">)</span>
         <span class="c1"># Permuted batch shape</span>
         <span class="n">new_b_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">pos_target_dims</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">))))</span>
-        <span class="c1"># Permute order for sample and batch dimensions together.</span>
-        <span class="c1">#   Add 1 to values in pos_target_dims because there&#39;s a single sample dimensions at front</span>
-        <span class="n">s_b_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pos_target_dims</span><span class="p">)</span>
         <span class="c1"># Permute order for batch and parameter dimensions together</span>
         <span class="n">b_p_dims</span> <span class="o">=</span> <span class="n">pos_target_dims</span> <span class="o">+</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)]</span>
+        <span class="c1"># Permute order for sample and batch dimensions together.</span>
+        <span class="n">b_s_dims</span> <span class="o">=</span> <span class="n">pos_target_dims</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)))</span>
 
-        <span class="n">new_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span>
-        <span class="n">new_log_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_density</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># parameters has shape (b_shape + p_shape)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">b_p_dims</span><span class="p">)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">new_parameters</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="c1"># weights has shape (s_shape + b_shape)</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">s_b_dims</span><span class="p">)</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">new_weights</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">new_parameter</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">b_p_dims</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">new_parameter</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="c1"># weight has shape (b_shape + s_shape)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">b_s_dims</span><span class="p">)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_parameters</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weights</span><span class="p">,</span> <span class="n">new_log_density</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+                          <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_unsqueeze"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_unsqueeze">[docs]</a>    <span class="k">def</span> <span class="nf">batch_unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Returns a new message with a dimension of size one inserted at the specified batch dimension, similar to</span>
-<span class="sd">                torch.unsqueeze().</span>
-<span class="sd">            A &#39;dim&#39; value within the range [-len(batch_shape) - 1, len(batch_shape) + 1] can be used. Note that &#39;dim&#39;</span>
-<span class="sd">                is relative to the batch dimension only.</span>
+        <span class="sd">&quot;&quot;&quot;Returns a new message with a dimension of size one inserted at the target batch dimension specified by `dim`.</span>
 
-<span class="sd">            This method is a mimic of torch.unsqueeze()</span>
+<span class="sd">        The target dimension is relative to the batch dimensions only. It should be in range</span>
+<span class="sd">        ``[-len(batch_shape) - 1, len(batch_shape) + 1]``.</span>
 
-<span class="sd">            :param dim:     an int. The place where the new dimension of size one will be inserted at.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dim : int</span>
+<span class="sd">            The position where the new singleton dimension (a dim of size 1) is to be inserted.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The unsqueezed message from self.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        This method is a mimic of</span>
+<span class="sd">        `torch.unsqueeze() &lt;https://pytorch.org/docs/stable/torch.html?highlight=unsqueeze#torch.unsqueeze&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">dim</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
 
         <span class="c1"># Translate dim to positive value if it is negative</span>
         <span class="k">if</span> <span class="n">dim</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="c1"># For message contents who has a sample dimension at front, add 1 to dim</span>
-        <span class="n">s_dim</span> <span class="o">=</span> <span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="c1"># Get new batch shape</span>
         <span class="n">new_b_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim</span><span class="p">:]</span>
 
-        <span class="n">new_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span>
-        <span class="n">new_log_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_density</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># parameters has shape (b_shape + p_shape)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="c1"># weights has shape (s_shape + b_shape)</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">s_dim</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="c1"># weights has shape (b_shape + s_shape)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_parameters</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weights</span><span class="p">,</span> <span class="n">new_log_density</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+                          <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_index_select"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_index_select">[docs]</a>    <span class="k">def</span> <span class="nf">batch_index_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Returns a new Message which indexes the input message along batch dimension dim using the entries in index</span>
-<span class="sd">                which is a LongTensor.</span>
-<span class="sd">            A &#39;dim&#39; value within the range [-len(batch_shape), len(batch_shape) - 1] can be used. Note that &#39;dim&#39;</span>
-<span class="sd">                is relative to the batch dimension only.</span>
+        <span class="sd">&quot;&quot;&quot;Returns a message that is a concatenation of the slices from `self` along the `dim` batch dimension and</span>
+<span class="sd">        indexed by `index`.</span>
 
-<span class="sd">            This method is a mimic of batch_index_select()</span>
+<span class="sd">        In other words, along `dim` dimension, the ``i`` th slice of the returned message is the ``index[i]`` th slice</span>
+<span class="sd">        of `self`. Consequently, the size of the `dim` dimension of the returned message equals the length of `index`</span>
+<span class="sd">        array.</span>
 
-<span class="sd">            :param dim:     an int. The dimension along which entries will be selected according to &#39;index&#39;</span>
-<span class="sd">            :param index:   torch.LongTensor. The index of entries along &#39;dim&#39; to be selected</span>
+<span class="sd">        A `dim` value within the range ``[-len(batch_shape), len(batch_shape) - 1]`` can be used. Note that `dim` is</span>
+<span class="sd">        relative to the batch dimension only.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dim : int</span>
+<span class="sd">            The dimension along which entries will be selected according to `index`.</span>
+<span class="sd">        index : torch.LongTensor</span>
+<span class="sd">            The array of indices of entries along `dim` to be selected. Entries must be non-negative.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The returned index-selected and concatenated message.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        This method is a mimic of</span>
+<span class="sd">        `torch.index_select() &lt;https://pytorch.org/docs/stable/torch.html?highlight=index_select#torch.index_select&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">dim</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">index</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span>
@@ -895,89 +929,99 @@
         <span class="c1"># Translate dim to positive value if it is negative</span>
         <span class="k">if</span> <span class="n">dim</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">dim</span>
-        <span class="c1"># For message contents who has a sample dimension at front, add 1 to dim</span>
-        <span class="n">s_dim</span> <span class="o">=</span> <span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="c1"># Get new batch shape</span>
         <span class="n">new_b_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="o">+</span> <span class="n">index</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
 
-        <span class="n">new_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span>
-        <span class="n">new_log_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_density</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># parameters has shape (b_shape + p_shape)</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="c1"># weights has shape (s_shape + b_shape)</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">s_dim</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="c1"># weights has shape (b_shape + s_shape)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_parameters</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weights</span><span class="p">,</span> <span class="n">new_log_density</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+                          <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_index_put"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_index_put">[docs]</a>    <span class="k">def</span> <span class="nf">batch_index_put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Returns a new Message whose entries along the dimension &#39;dim&#39; are slices from self message and are indexed</span>
-<span class="sd">                by &#39;index&#39;. Effectively, along the dimension &#39;dim&#39;:</span>
-<span class="sd">                    result_msg[..., index[i], ...] = val[i]</span>
+        <span class="sd">&quot;&quot;&quot;Returns a message whose entries along the dimension `dim` are slices from self message and are put into</span>
+<span class="sd">        the positions along the axis specified by indices in `index`.</span>
 
-<span class="sd">            For slices in the new message not referenced by &#39;index&#39;, they will be filled with identity values. For</span>
-<span class="sd">                Parameter type message, the identity value is 0; for Particles type message, the identity value is 1,</span>
-<span class="sd">                up to a normalization factor.</span>
+<span class="sd">        In other words, along `dim` dimension, the ``index[i]`` th slice of the returned message is the ``i`` th slice</span>
+<span class="sd">        of `self`. Consequently, the size of the `dim` dimension of the returned message equals the maximum value in the</span>
+<span class="sd">        `index` array.</span>
 
-<span class="sd">            This method is the inverted version of batch_index_select(). There is no direct counterpart to this method</span>
-<span class="sd">                in PyTorch.</span>
+<span class="sd">        For slices in the new message not referenced by `index`, they will be filled with identity values. For parameter</span>
+<span class="sd">        tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive uniform</span>
+<span class="sd">        constant such that the sum across the sample dimensions is 1.</span>
 
-<span class="sd">            :param dim:     an int. Specifying a dimension of the message. Should be in range</span>
-<span class="sd">                                        [-len(batch_shape), len(batch_shape) - 1]</span>
-<span class="sd">            :param index:   a LongTensor. Specifying the indices along the specified dimension of the returned message.</span>
-<span class="sd">                                Entries must be non-negative.</span>
+<span class="sd">        A `dim` value within the range ``[-len(batch_shape), len(batch_shape) - 1]`` can be used. Note that `dim` is</span>
+<span class="sd">        relative to the batch dimension only.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dim : int</span>
+<span class="sd">            The dimension along which entries will be put according to `index`.</span>
+<span class="sd">        index : torch.LongTensor</span>
+<span class="sd">            The array of indices of entries along `dim` to be put. Entries must be non-negative.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The returned index-put message.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        batch_index_select() :</span>
+<span class="sd">            The inverse of batch_index_put(). There is no direct counterpart to this method in PyTorch.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">dim</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">index</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
 
         <span class="c1"># Translate dim value to positive if it&#39;s negative</span>
         <span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">dim</span> <span class="k">if</span> <span class="n">dim</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">dim</span>
-        <span class="c1"># For message contents who has a sample dimension at front, add 1 to dim</span>
-        <span class="n">s_dim</span> <span class="o">=</span> <span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="c1"># Get new batch shape. The size of dimension dim is determined by the maximum value in index</span>
         <span class="n">new_b_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
 
-        <span class="n">new_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span>
-        <span class="n">new_log_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_density</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span>
 
         <span class="c1"># To access tensor slice more easily, we swap the target dim with first dim, perform slicing and assignment on</span>
         <span class="c1">#   this new first dim, and swap it back</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># parameters has shape (b_shape + p_shape)</span>
             <span class="c1"># Identity value tensor</span>
             <span class="n">to_fill</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">new_b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span>
             <span class="c1"># Transpose target dimension with the first dimension</span>
             <span class="n">to_fill</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">to_fill</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
-            <span class="n">t_param</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">new_parameters</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+            <span class="n">t_param</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
             <span class="c1"># Slice and assign</span>
             <span class="n">to_fill</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_param</span>
             <span class="c1"># Transpose back to get result</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">to_fill</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="c1"># weights has shape (s_shape + b_shape)</span>
-            <span class="c1"># Identity value tensor</span>
-            <span class="n">to_fill</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">+</span> <span class="n">new_b_shape</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">to_fill</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="c1"># weights has shape (b_shape + s_shape)</span>
+            <span class="c1"># Identity value tensor. Use ones here because we assume Message constructor will take care of normalization</span>
+            <span class="n">to_fill</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">new_b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span>
             <span class="c1"># Transpose target dimension with the first dimension</span>
-            <span class="n">to_fill</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">to_fill</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">s_dim</span><span class="p">)</span>
-            <span class="n">t_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">s_dim</span><span class="p">)</span>
+            <span class="n">to_fill</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">to_fill</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+            <span class="n">t_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
             <span class="c1"># Slice and assign</span>
-            <span class="n">to_fill</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_weights</span>
+            <span class="n">to_fill</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_weight</span>
             <span class="c1"># Transpose back to get result</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">to_fill</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">s_dim</span><span class="p">)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">to_fill</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_parameters</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weights</span><span class="p">,</span> <span class="n">new_log_density</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+                          <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_diagonal"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diagonal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>

@@ -559,83 +559,118 @@ the Message class constructor, will be discarded in the returned message.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_permute">
 <code class="sig-name descname">batch_permute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_dims</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_permute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_permute" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Returns a permuted message whose tensor attributes are permuted from the original ones w.r.t. ‘target_dims’</dt><dd><p>in the batch dimensions.</p>
-</dd>
-<dt>Note that target_dims is relative to the batch dimension. Its values should be within the range</dt><dd><p>[-len(batch_shape), len(batch_shape) - 1]</p>
-</dd>
-</dl>
-<p>contiguous() will be called before return to make sure the resulting content tensors are contiguous</p>
-<p>This method is a mimic of torch.Tensor.permute()</p>
+<dd><p>Returns a permuted message whose tensor contents that include batch dimensions (e.g. parameters and particle
+values) are permuted w.r.t. <cite>target_dims</cite>.</p>
+<p>The dimensions specified in <cite>target_dims</cite> are relative to the batch dimensions only. Its values should be in
+range <code class="docutils literal notranslate"><span class="pre">[-len(batch_shape),</span> <span class="pre">len(batch_shape)</span> <span class="pre">-</span> <span class="pre">1]</span></code></p>
+<p>contiguous() will be called so that the returning message’s tensor contents are contiguous</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>target_dims</strong> – list of ints. The desired ordering batch dimensions</p>
+<dd class="field-odd"><p><strong>target_dims</strong> (<em>list of ints</em>) – The desired ordering of the target batch dimensions. Must have the same length as the message’s batch shape.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The permuted message from <cite>self</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>This method is a mimic of
+<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor.permute">torch.Tensor.permute()</a>.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_unsqueeze">
 <code class="sig-name descname">batch_unsqueeze</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dim</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_unsqueeze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_unsqueeze" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Returns a new message with a dimension of size one inserted at the specified batch dimension, similar to</dt><dd><p>torch.unsqueeze().</p>
-</dd>
-<dt>A ‘dim’ value within the range [-len(batch_shape) - 1, len(batch_shape) + 1] can be used. Note that ‘dim’</dt><dd><p>is relative to the batch dimension only.</p>
-</dd>
-</dl>
-<p>This method is a mimic of torch.unsqueeze()</p>
+<dd><p>Returns a new message with a dimension of size one inserted at the target batch dimension specified by <cite>dim</cite>.</p>
+<p>The target dimension is relative to the batch dimensions only. It should be in range
+<code class="docutils literal notranslate"><span class="pre">[-len(batch_shape)</span> <span class="pre">-</span> <span class="pre">1,</span> <span class="pre">len(batch_shape)</span> <span class="pre">+</span> <span class="pre">1]</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>dim</strong> – an int. The place where the new dimension of size one will be inserted at.</p>
+<dd class="field-odd"><p><strong>dim</strong> (<em>int</em>) – The position where the new singleton dimension (a dim of size 1) is to be inserted.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The unsqueezed message from self.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>This method is a mimic of
+<a class="reference external" href="https://pytorch.org/docs/stable/torch.html?highlight=unsqueeze#torch.unsqueeze">torch.unsqueeze()</a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_index_select">
 <code class="sig-name descname">batch_index_select</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dim</span></em>, <em class="sig-param"><span class="n">index</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_index_select"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_index_select" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Returns a new Message which indexes the input message along batch dimension dim using the entries in index</dt><dd><p>which is a LongTensor.</p>
-</dd>
-<dt>A ‘dim’ value within the range [-len(batch_shape), len(batch_shape) - 1] can be used. Note that ‘dim’</dt><dd><p>is relative to the batch dimension only.</p>
-</dd>
-</dl>
-<p>This method is a mimic of batch_index_select()</p>
+<dd><p>Returns a message that is a concatenation of the slices from <cite>self</cite> along the <cite>dim</cite> batch dimension and
+indexed by <cite>index</cite>.</p>
+<p>In other words, along <cite>dim</cite> dimension, the <code class="docutils literal notranslate"><span class="pre">i</span></code> th slice of the returned message is the <code class="docutils literal notranslate"><span class="pre">index[i]</span></code> th slice
+of <cite>self</cite>. Consequently, the size of the <cite>dim</cite> dimension of the returned message equals the length of <cite>index</cite>
+array.</p>
+<p>A <cite>dim</cite> value within the range <code class="docutils literal notranslate"><span class="pre">[-len(batch_shape),</span> <span class="pre">len(batch_shape)</span> <span class="pre">-</span> <span class="pre">1]</span></code> can be used. Note that <cite>dim</cite> is
+relative to the batch dimension only.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dim</strong> – an int. The dimension along which entries will be selected according to ‘index’</p></li>
-<li><p><strong>index</strong> – torch.LongTensor. The index of entries along ‘dim’ to be selected</p></li>
+<li><p><strong>dim</strong> (<em>int</em>) – The dimension along which entries will be selected according to <cite>index</cite>.</p></li>
+<li><p><strong>index</strong> (<em>torch.LongTensor</em>) – The array of indices of entries along <cite>dim</cite> to be selected. Entries must be non-negative.</p></li>
 </ul>
 </dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The returned index-selected and concatenated message.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>This method is a mimic of
+<a class="reference external" href="https://pytorch.org/docs/stable/torch.html?highlight=index_select#torch.index_select">torch.index_select()</a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.defs.Message.batch_index_put">
 <code class="sig-name descname">batch_index_put</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dim</span></em>, <em class="sig-param"><span class="n">index</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_index_put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_index_put" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Returns a new Message whose entries along the dimension ‘dim’ are slices from self message and are indexed</dt><dd><dl class="simple">
-<dt>by ‘index’. Effectively, along the dimension ‘dim’:</dt><dd><p>result_msg[…, index[i], …] = val[i]</p>
-</dd>
-</dl>
-</dd>
-<dt>For slices in the new message not referenced by ‘index’, they will be filled with identity values. For</dt><dd><p>Parameter type message, the identity value is 0; for Particles type message, the identity value is 1,
-up to a normalization factor.</p>
-</dd>
-<dt>This method is the inverted version of batch_index_select(). There is no direct counterpart to this method</dt><dd><p>in PyTorch.</p>
-</dd>
-</dl>
+<dd><p>Returns a message whose entries along the dimension <cite>dim</cite> are slices from self message and are put into
+the positions along the axis specified by indices in <cite>index</cite>.</p>
+<p>In other words, along <cite>dim</cite> dimension, the <code class="docutils literal notranslate"><span class="pre">index[i]</span></code> th slice of the returned message is the <code class="docutils literal notranslate"><span class="pre">i</span></code> th slice
+of <cite>self</cite>. Consequently, the size of the <cite>dim</cite> dimension of the returned message equals the maximum value in the
+<cite>index</cite> array.</p>
+<p>For slices in the new message not referenced by <cite>index</cite>, they will be filled with identity values. For parameter
+tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive uniform
+constant such that the sum across the sample dimensions is 1.</p>
+<p>A <cite>dim</cite> value within the range <code class="docutils literal notranslate"><span class="pre">[-len(batch_shape),</span> <span class="pre">len(batch_shape)</span> <span class="pre">-</span> <span class="pre">1]</span></code> can be used. Note that <cite>dim</cite> is
+relative to the batch dimension only.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dim</strong> – an int. Specifying a dimension of the message. Should be in range
-[-len(batch_shape), len(batch_shape) - 1]</p></li>
-<li><p><strong>index</strong> – a LongTensor. Specifying the indices along the specified dimension of the returned message.
-Entries must be non-negative.</p></li>
+<li><p><strong>dim</strong> (<em>int</em>) – The dimension along which entries will be put according to <cite>index</cite>.</p></li>
+<li><p><strong>index</strong> (<em>torch.LongTensor</em>) – The array of indices of entries along <cite>dim</cite> to be put. Entries must be non-negative.</p></li>
 </ul>
 </dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The returned index-put message.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#pysigma.defs.Message.batch_index_select" title="pysigma.defs.Message.batch_index_select"><code class="xref py py-meth docutils literal notranslate"><span class="pre">batch_index_select()</span></code></a></dt><dd><p>The inverse of batch_index_put(). There is no direct counterpart to this method in PyTorch.</p>
+</dd>
+</dl>
+</div>
 </dd></dl>
 
 <dl class="py method">
