@@ -410,7 +410,11 @@ class Message:
 
     def __iadd__(self, other):
         """
-            Overloading self-addition operator '+='
+            Overloads self-addition operator '+='
+
+            See Also
+            --------
+            __add__
         """
         return self.__add__(other)
 

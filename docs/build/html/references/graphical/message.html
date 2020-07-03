@@ -440,6 +440,22 @@ class constructor, of both <cite>self</cite> and <cite>other</cite> will be disc
 </dd></dl>
 
 <dl class="py method">
+<dt id="pysigma.defs.Message.__iadd__">
+<code class="sig-name descname">__iadd__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__iadd__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__iadd__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overloads self-addition operator ‘+=’</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pysigma.defs.Message.__add__" title="pysigma.defs.Message.__add__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__add__()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.defs.Message.__imul__">
+<code class="sig-name descname">__imul__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__imul__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__imul__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overloading self-multiplication operator ‘<a href="#id3"><span class="problematic" id="id4">*</span></a>=’</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pysigma.defs.Message.__mul__">
 <code class="sig-name descname">__mul__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__mul__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__mul__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overloading multiplication operator ‘*’. Implements scalar multiplication semantics.</p>
@@ -712,7 +728,7 @@ particle weights, a.k.a. factor product.</p>
 <li><p>Apply the transformation directly on the particle values</p></li>
 <li><dl class="simple">
 <dt>Log sampling densities will be adjusted by adding the log abs determinant of the Jacobian of the</dt><dd><dl class="simple">
-<dt>transformation:</dt><dd><p>log P(Y) = log P(X) + log <a href="#id3"><span class="problematic" id="id4">|det (dX / dY)|</span></a></p>
+<dt>transformation:</dt><dd><p>log P(Y) = log P(X) + log <a href="#id5"><span class="problematic" id="id6">|det (dX / dY)|</span></a></p>
 </dd>
 </dl>
 </dd>
