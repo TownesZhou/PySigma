@@ -2,7 +2,7 @@
     Basic structures in the graphical architecture
 """
 import torch
-from torch.distributions import Transform
+from torch.distributions import Distribution, Transform
 from torch.distributions.constraints import Constraint
 from enum import Enum, Flag, auto
 from collections.abc import Iterable
@@ -1333,104 +1333,134 @@ class Message:
         Methods for Manipulations on message events 
     """
     def event_transform(self, trans):
-        """
-            Apply a transformation on the event values. Return the transformed message.
+        """Applies a transformation on the `self`'s event values. Returns the transformed message.
 
-            Message contents will be cloned.
+        `self` contents will be cloned before being passed to the transformed message.
 
-            For particles:
-                - Apply the transformation directly on the particle values
-                - Log sampling densities will be adjusted by adding the log abs determinant of the Jacobian of the
-                    transformation:
-                            log P(Y) = log P(X) + log |det (dX / dY)|
-                - Weights are kept the same, but the tensor will be cloned.
+        For particles:
 
-            For parameters:
-                - Raise an alert if 'dist_class' attribute is missing in self.attr
-                - Query DistributionServer to obtained the transformed parameter.
+        * Apply the transformation directly on the particle tensors in ``self.particles``.
+        * Log sampling density tensors in ``self.log_densities`` will be adjusted by adding the log absolute determinant
+          of the Jacobian of the transformation::
 
-            :param trans:     torch.distributions.transforms.Transform. The transformation functor.
+             log P(Y) = log P(X) + log |det (dX / dY)|
+
+        * Weights are kept the same, but the tensor will be cloned.
+
+        For parameters:
+
+        * `dist_class` attribute must be present in ``self.attr``, and the attribute value must be a subclass of
+          `torch.distribution.Distribution <https://pytorch.org/docs/stable/distributions.html#torch.distributions.distribution.Distribution>`_.
+        * Query `DistributionServer` to obtained the transformed parameter.
+
+        Parameters
+        ----------
+        trans : torch.distributions.transforms.Transform
+            The transformation object
+
+        Returns
+        -------
+        Message
+            The transformed message.
+
+        Raises
+        ------
+        AssertionError
+            If `dist_class` attribute is not present in ``self.attr``, or its value is not a subclass of
+            `torch.distribution.Distribution`
+
+        See Also
+        --------
+        `torch.distributions.Transform <https://pytorch.org/docs/stable/distributions.html#torch.distributions.transforms.Transform>`_
         """
         assert isinstance(trans, Transform)
 
         # First clone
         cloned_msg = self.clone()
-        new_parameters = cloned_msg.parameters
+        new_parameter = cloned_msg.parameter
         new_particles = cloned_msg.particles
-        new_log_density = cloned_msg.log_density
+        new_log_densities = cloned_msg.log_densities
 
         if MessageType.Parameter in cloned_msg.type:
             assert 'dist_class' in cloned_msg.attr, \
                 "Missing 'dist_class' message attribute when transforming a message that contains parameters."
-            new_parameters = DistributionServer.transform_param(new_parameters, cloned_msg.attr['dist_class'], trans)
+            assert issubclass(cloned_msg.attr['dist_class'], Distribution)
+            new_parameter = DistributionServer.transform_param(new_parameter, cloned_msg.attr['dist_class'], trans)
         if MessageType.Particles in cloned_msg.type:
             new_particles = trans(new_particles)
-            new_log_density += trans.log_abs_det_jacobian(cloned_msg.particles, new_particles)
+            new_log_densities += trans.log_abs_det_jacobian(cloned_msg.particles, new_particles)
 
         new_msg = Message(cloned_msg.type,
                           cloned_msg.p_shape, cloned_msg.s_shape, cloned_msg.b_shape, cloned_msg.e_shape,
-                          new_parameters, new_particles, cloned_msg.weights, new_log_density, **cloned_msg.attr)
+                          new_parameter, new_particles, cloned_msg.weight, new_log_densities, **cloned_msg.attr)
         return new_msg
 
-    @staticmethod
-    def event_translate_2pred(msg, translator):
-        """
-            Translate msg's particles from PyTorch format to Cognitive format, using the given translator.
-
-            If there are multiple r.v., will return a tuple of translated messages, elements corresponding to each r.v.
-                specified in the translator. In this case, the particle weights and log sampling densities will be
-                copied for each split event particles to form new messages.
-
-            :param msg:             a Message instance. The message to be translated.
-            :param translator:      a KnowledgeTranslator instance.
-        """
-        assert isinstance(msg, Message)
-        assert isinstance(translator, KnowledgeTranslator)
-        assert MessageType.Particles in msg.type
-
-        result_particles = translator.event2pred_event(msg.particles)
-
-        result_msgs = []
-        if not isinstance(result_particles, tuple):
-            assert isinstance(result_particles, torch.Tensor)
-            result_particles = tuple([result_particles])
-        for particles in result_particles:
-            # Shape check
-            assert isinstance(particles, torch.Tensor) and particles.dim() == 2 and particles.shape[0] == msg.s_shape
-            # Clone message
-            cloned_msg = msg.clone()
-            new_msg = Message(cloned_msg.type,
-                              cloned_msg.p_shape, cloned_msg.s_shape, cloned_msg.b_shape, particles.shape[1],
-                              cloned_msg.parameters, particles, cloned_msg.weights, cloned_msg.log_density,
-                              **cloned_msg.attr)
-            result_msgs.append(new_msg)
-
-        return tuple(result_msgs)
-
-    @staticmethod
-    def event_translate_2torch(msgs, translator):
-        """
-            Translate provided iterable of messages' particles from Cognitive format to form a message with particles in
-                PyTorch format, using the given translator.
-
-            The message order in the given iterable should conform to the random variable order specified in the
-                translator.
-
-            Return a single message.
-
-            :param msgs:        an iterable of Message instances. Order should be compatible with the order of random
-                                    variables specified in the given translator.
-            :param translator:  a KnowledgeTranslator instance.
-        """
-        assert isinstance(msgs, Iterable) and all(isinstance(msg, Message) for msg in msgs)
-        assert isinstance(translator, KnowledgeTranslator)
-        assert all(MessageType.Particles in msg.type for msg in msgs)
-
-        result_particles = translator.event2torch_event(tuple(msgs))
-
-
-
-
+    # @staticmethod
+    # def event_translate_2pred(msg, translator):
+    #     """Translates `msg`'s particle tensors in ``msg.particles`` from PyTorch format to Cognitive format, using the
+    #     given `translator`.
+    #
+    #     If there are multiple random variables, then returns a tuple of translated messages. Elements in the tuple
+    #     corresponds to each random variable specified in the translator respectively. In this case, the particle weight
+    #     tensor ``msg.weight`` and log sampling density tensors in ``msg.log_densities`` will be cloned for each returned
+    #     message in the tuple.
+    #
+    #     Parameters
+    #     ----------
+    #     msg : Message
+    #         The message to be translated.
+    #     translator : KnowledgeTranslator
+    #         The translator instance.
+    #
+    #     Returns
+    #     -------
+    #     Message or tuple of Message
+    #         Returns a single Message instance if there is only a single random variable, otherwise returns a tuple of
+    #         Message instances.
+    #     """
+    #     assert isinstance(msg, Message)
+    #     assert isinstance(translator, KnowledgeTranslator)
+    #     assert MessageType.Particles in msg.type
+    #
+    #     result_particles = translator.event2pred_event(msg.particles)
+    #
+    #     result_msgs = []
+    #     if not isinstance(result_particles, tuple):
+    #         assert isinstance(result_particles, torch.Tensor)
+    #         result_particles = tuple([result_particles])
+    #     for particles in result_particles:
+    #         # Shape check
+    #         assert isinstance(particles, torch.Tensor) and particles.dim() == 2 and particles.shape[0] == msg.s_shape
+    #         # Clone message
+    #         cloned_msg = msg.clone()
+    #         new_msg = Message(cloned_msg.type,
+    #                           cloned_msg.p_shape, cloned_msg.s_shape, cloned_msg.b_shape, particles.shape[1],
+    #                           cloned_msg.parameters, particles, cloned_msg.weights, cloned_msg.log_density,
+    #                           **cloned_msg.attr)
+    #         result_msgs.append(new_msg)
+    #
+    #     return tuple(result_msgs)
+    #
+    # @staticmethod
+    # def event_translate_2torch(msgs, translator):
+    #     """
+    #         Translate provided iterable of messages' particles from Cognitive format to form a message with particles in
+    #             PyTorch format, using the given translator.
+    #
+    #         The message order in the given iterable should conform to the random variable order specified in the
+    #             translator.
+    #
+    #         Return a single message.
+    #
+    #         :param msgs:        an iterable of Message instances. Order should be compatible with the order of random
+    #                                 variables specified in the given translator.
+    #         :param translator:  a KnowledgeTranslator instance.
+    #     """
+    #     assert isinstance(msgs, Iterable) and all(isinstance(msg, Message) for msg in msgs)
+    #     assert isinstance(translator, KnowledgeTranslator)
+    #     assert all(MessageType.Particles in msg.type for msg in msgs)
+    #
+    #     result_particles = translator.event2torch_event(tuple(msgs))
 
 
 # TODO: Enum class of all the inference method

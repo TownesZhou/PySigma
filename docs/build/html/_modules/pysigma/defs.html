@@ -167,7 +167,7 @@
 <span class="sd">    Basic structures in the graphical architecture</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span><span class="p">,</span> <span class="n">Transform</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
 <span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">auto</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
@@ -1498,104 +1498,134 @@
 <span class="sd">        Methods for Manipulations on message events </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Message.event_transform"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.event_transform">[docs]</a>    <span class="k">def</span> <span class="nf">event_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trans</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Apply a transformation on the event values. Return the transformed message.</span>
+        <span class="sd">&quot;&quot;&quot;Applies a transformation on the `self`&#39;s event values. Returns the transformed message.</span>
 
-<span class="sd">            Message contents will be cloned.</span>
+<span class="sd">        `self` contents will be cloned before being passed to the transformed message.</span>
 
-<span class="sd">            For particles:</span>
-<span class="sd">                - Apply the transformation directly on the particle values</span>
-<span class="sd">                - Log sampling densities will be adjusted by adding the log abs determinant of the Jacobian of the</span>
-<span class="sd">                    transformation:</span>
-<span class="sd">                            log P(Y) = log P(X) + log |det (dX / dY)|</span>
-<span class="sd">                - Weights are kept the same, but the tensor will be cloned.</span>
+<span class="sd">        For particles:</span>
 
-<span class="sd">            For parameters:</span>
-<span class="sd">                - Raise an alert if &#39;dist_class&#39; attribute is missing in self.attr</span>
-<span class="sd">                - Query DistributionServer to obtained the transformed parameter.</span>
+<span class="sd">        * Apply the transformation directly on the particle tensors in ``self.particles``.</span>
+<span class="sd">        * Log sampling density tensors in ``self.log_densities`` will be adjusted by adding the log absolute determinant</span>
+<span class="sd">          of the Jacobian of the transformation::</span>
 
-<span class="sd">            :param trans:     torch.distributions.transforms.Transform. The transformation functor.</span>
+<span class="sd">             log P(Y) = log P(X) + log |det (dX / dY)|</span>
+
+<span class="sd">        * Weights are kept the same, but the tensor will be cloned.</span>
+
+<span class="sd">        For parameters:</span>
+
+<span class="sd">        * `dist_class` attribute must be present in ``self.attr``, and the attribute value must be a subclass of</span>
+<span class="sd">          `torch.distribution.Distribution &lt;https://pytorch.org/docs/stable/distributions.html#torch.distributions.distribution.Distribution&gt;`_.</span>
+<span class="sd">        * Query `DistributionServer` to obtained the transformed parameter.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        trans : torch.distributions.transforms.Transform</span>
+<span class="sd">            The transformation object</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The transformed message.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `dist_class` attribute is not present in ``self.attr``, or its value is not a subclass of</span>
+<span class="sd">            `torch.distribution.Distribution`</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        `torch.distributions.Transform &lt;https://pytorch.org/docs/stable/distributions.html#torch.distributions.transforms.Transform&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="n">Transform</span><span class="p">)</span>
 
         <span class="c1"># First clone</span>
         <span class="n">cloned_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-        <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">new_log_density</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_density</span>
+        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_densities</span>
 
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
             <span class="k">assert</span> <span class="s1">&#39;dist_class&#39;</span> <span class="ow">in</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">,</span> \
                 <span class="s2">&quot;Missing &#39;dist_class&#39; message attribute when transforming a message that contains parameters.&quot;</span>
-            <span class="n">new_parameters</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">transform_param</span><span class="p">(</span><span class="n">new_parameters</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;dist_class&#39;</span><span class="p">],</span> <span class="n">trans</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;dist_class&#39;</span><span class="p">],</span> <span class="n">Distribution</span><span class="p">)</span>
+            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">transform_param</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;dist_class&#39;</span><span class="p">],</span> <span class="n">trans</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
             <span class="n">new_particles</span> <span class="o">=</span> <span class="n">trans</span><span class="p">(</span><span class="n">new_particles</span><span class="p">)</span>
-            <span class="n">new_log_density</span> <span class="o">+=</span> <span class="n">trans</span><span class="o">.</span><span class="n">log_abs_det_jacobian</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">)</span>
+            <span class="n">new_log_densities</span> <span class="o">+=</span> <span class="n">trans</span><span class="o">.</span><span class="n">log_abs_det_jacobian</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="n">cloned_msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_parameters</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">new_log_density</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">new_msg</span></div>
+                          <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_msg</span></div></div>
 
-<div class="viewcode-block" id="Message.event_translate_2pred"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.event_translate_2pred">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">event_translate_2pred</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">translator</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Translate msg&#39;s particles from PyTorch format to Cognitive format, using the given translator.</span>
-
-<span class="sd">            If there are multiple r.v., will return a tuple of translated messages, elements corresponding to each r.v.</span>
-<span class="sd">                specified in the translator. In this case, the particle weights and log sampling densities will be</span>
-<span class="sd">                copied for each split event particles to form new messages.</span>
-
-<span class="sd">            :param msg:             a Message instance. The message to be translated.</span>
-<span class="sd">            :param translator:      a KnowledgeTranslator instance.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">translator</span><span class="p">,</span> <span class="n">KnowledgeTranslator</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span>
-
-        <span class="n">result_particles</span> <span class="o">=</span> <span class="n">translator</span><span class="o">.</span><span class="n">event2pred_event</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
-
-        <span class="n">result_msgs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result_particles</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result_particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
-            <span class="n">result_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">result_particles</span><span class="p">])</span>
-        <span class="k">for</span> <span class="n">particles</span> <span class="ow">in</span> <span class="n">result_particles</span><span class="p">:</span>
-            <span class="c1"># Shape check</span>
-            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">particles</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">msg</span><span class="o">.</span><span class="n">s_shape</span>
-            <span class="c1"># Clone message</span>
-            <span class="n">cloned_msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                              <span class="n">cloned_msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-                              <span class="n">cloned_msg</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">particles</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_density</span><span class="p">,</span>
-                              <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
-            <span class="n">result_msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_msg</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">result_msgs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Message.event_translate_2torch"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.event_translate_2torch">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">event_translate_2torch</span><span class="p">(</span><span class="n">msgs</span><span class="p">,</span> <span class="n">translator</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Translate provided iterable of messages&#39; particles from Cognitive format to form a message with particles in</span>
-<span class="sd">                PyTorch format, using the given translator.</span>
-
-<span class="sd">            The message order in the given iterable should conform to the random variable order specified in the</span>
-<span class="sd">                translator.</span>
-
-<span class="sd">            Return a single message.</span>
-
-<span class="sd">            :param msgs:        an iterable of Message instances. Order should be compatible with the order of random</span>
-<span class="sd">                                    variables specified in the given translator.</span>
-<span class="sd">            :param translator:  a KnowledgeTranslator instance.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msgs</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">msgs</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">translator</span><span class="p">,</span> <span class="n">KnowledgeTranslator</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">msgs</span><span class="p">)</span>
-
-        <span class="n">result_particles</span> <span class="o">=</span> <span class="n">translator</span><span class="o">.</span><span class="n">event2torch_event</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">msgs</span><span class="p">))</span></div></div>
-
-
-
-
+    <span class="c1"># @staticmethod</span>
+    <span class="c1"># def event_translate_2pred(msg, translator):</span>
+    <span class="c1">#     &quot;&quot;&quot;Translates `msg`&#39;s particle tensors in ``msg.particles`` from PyTorch format to Cognitive format, using the</span>
+    <span class="c1">#     given `translator`.</span>
+    <span class="c1">#</span>
+    <span class="c1">#     If there are multiple random variables, then returns a tuple of translated messages. Elements in the tuple</span>
+    <span class="c1">#     corresponds to each random variable specified in the translator respectively. In this case, the particle weight</span>
+    <span class="c1">#     tensor ``msg.weight`` and log sampling density tensors in ``msg.log_densities`` will be cloned for each returned</span>
+    <span class="c1">#     message in the tuple.</span>
+    <span class="c1">#</span>
+    <span class="c1">#     Parameters</span>
+    <span class="c1">#     ----------</span>
+    <span class="c1">#     msg : Message</span>
+    <span class="c1">#         The message to be translated.</span>
+    <span class="c1">#     translator : KnowledgeTranslator</span>
+    <span class="c1">#         The translator instance.</span>
+    <span class="c1">#</span>
+    <span class="c1">#     Returns</span>
+    <span class="c1">#     -------</span>
+    <span class="c1">#     Message or tuple of Message</span>
+    <span class="c1">#         Returns a single Message instance if there is only a single random variable, otherwise returns a tuple of</span>
+    <span class="c1">#         Message instances.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     assert isinstance(msg, Message)</span>
+    <span class="c1">#     assert isinstance(translator, KnowledgeTranslator)</span>
+    <span class="c1">#     assert MessageType.Particles in msg.type</span>
+    <span class="c1">#</span>
+    <span class="c1">#     result_particles = translator.event2pred_event(msg.particles)</span>
+    <span class="c1">#</span>
+    <span class="c1">#     result_msgs = []</span>
+    <span class="c1">#     if not isinstance(result_particles, tuple):</span>
+    <span class="c1">#         assert isinstance(result_particles, torch.Tensor)</span>
+    <span class="c1">#         result_particles = tuple([result_particles])</span>
+    <span class="c1">#     for particles in result_particles:</span>
+    <span class="c1">#         # Shape check</span>
+    <span class="c1">#         assert isinstance(particles, torch.Tensor) and particles.dim() == 2 and particles.shape[0] == msg.s_shape</span>
+    <span class="c1">#         # Clone message</span>
+    <span class="c1">#         cloned_msg = msg.clone()</span>
+    <span class="c1">#         new_msg = Message(cloned_msg.type,</span>
+    <span class="c1">#                           cloned_msg.p_shape, cloned_msg.s_shape, cloned_msg.b_shape, particles.shape[1],</span>
+    <span class="c1">#                           cloned_msg.parameters, particles, cloned_msg.weights, cloned_msg.log_density,</span>
+    <span class="c1">#                           **cloned_msg.attr)</span>
+    <span class="c1">#         result_msgs.append(new_msg)</span>
+    <span class="c1">#</span>
+    <span class="c1">#     return tuple(result_msgs)</span>
+    <span class="c1">#</span>
+    <span class="c1"># @staticmethod</span>
+    <span class="c1"># def event_translate_2torch(msgs, translator):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#         Translate provided iterable of messages&#39; particles from Cognitive format to form a message with particles in</span>
+    <span class="c1">#             PyTorch format, using the given translator.</span>
+    <span class="c1">#</span>
+    <span class="c1">#         The message order in the given iterable should conform to the random variable order specified in the</span>
+    <span class="c1">#             translator.</span>
+    <span class="c1">#</span>
+    <span class="c1">#         Return a single message.</span>
+    <span class="c1">#</span>
+    <span class="c1">#         :param msgs:        an iterable of Message instances. Order should be compatible with the order of random</span>
+    <span class="c1">#                                 variables specified in the given translator.</span>
+    <span class="c1">#         :param translator:  a KnowledgeTranslator instance.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     assert isinstance(msgs, Iterable) and all(isinstance(msg, Message) for msg in msgs)</span>
+    <span class="c1">#     assert isinstance(translator, KnowledgeTranslator)</span>
+    <span class="c1">#     assert all(MessageType.Particles in msg.type for msg in msgs)</span>
+    <span class="c1">#</span>
+    <span class="c1">#     result_particles = translator.event2torch_event(tuple(msgs))</span>
 
 
 <span class="c1"># TODO: Enum class of all the inference method</span>

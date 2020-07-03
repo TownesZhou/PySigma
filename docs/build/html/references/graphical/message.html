@@ -907,73 +907,44 @@ will be called so that the returning content tensors are contiguous.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.event_transform">
 <code class="sig-name descname">event_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trans</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply a transformation on the event values. Return the transformed message.</p>
-<p>Message contents will be cloned.</p>
-<dl class="simple">
-<dt>For particles:</dt><dd><ul class="simple">
-<li><p>Apply the transformation directly on the particle values</p></li>
-<li><dl class="simple">
-<dt>Log sampling densities will be adjusted by adding the log abs determinant of the Jacobian of the</dt><dd><dl class="simple">
-<dt>transformation:</dt><dd><p>log P(Y) = log P(X) + log <a href="#id9"><span class="problematic" id="id10">|det (dX / dY)|</span></a></p>
-</dd>
-</dl>
-</dd>
-</dl>
+<dd><p>Applies a transformation on the <cite>self</cite>’s event values. Returns the transformed message.</p>
+<p><cite>self</cite> contents will be cloned before being passed to the transformed message.</p>
+<p>For particles:</p>
+<ul>
+<li><p>Apply the transformation directly on the particle tensors in <code class="docutils literal notranslate"><span class="pre">self.particles</span></code>.</p></li>
+<li><p>Log sampling density tensors in <code class="docutils literal notranslate"><span class="pre">self.log_densities</span></code> will be adjusted by adding the log absolute determinant
+of the Jacobian of the transformation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">log</span> <span class="n">P</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">=</span> <span class="n">log</span> <span class="n">P</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="n">log</span> <span class="o">|</span><span class="n">det</span> <span class="p">(</span><span class="n">dX</span> <span class="o">/</span> <span class="n">dY</span><span class="p">)</span><span class="o">|</span>
+</pre></div>
+</div>
 </li>
 <li><p>Weights are kept the same, but the tensor will be cloned.</p></li>
 </ul>
-</dd>
-<dt>For parameters:</dt><dd><ul class="simple">
-<li><p>Raise an alert if ‘dist_class’ attribute is missing in self.attr</p></li>
-<li><p>Query DistributionServer to obtained the transformed parameter.</p></li>
+<p>For parameters:</p>
+<ul class="simple">
+<li><p><cite>dist_class</cite> attribute must be present in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code>, and the attribute value must be a subclass of
+<a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#torch.distributions.distribution.Distribution">torch.distribution.Distribution</a>.</p></li>
+<li><p>Query <cite>DistributionServer</cite> to obtained the transformed parameter.</p></li>
 </ul>
-</dd>
-</dl>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>trans</strong> – torch.distributions.transforms.Transform. The transformation functor.</p>
+<dd class="field-odd"><p><strong>trans</strong> (<em>torch.distributions.transforms.Transform</em>) – The transformation object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The transformed message.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>dist_class</cite> attribute is not present in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code>, or its value is not a subclass of
+    <cite>torch.distribution.Distribution</cite></p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="pysigma.defs.Message.event_translate_2pred">
-<em class="property">static </em><code class="sig-name descname">event_translate_2pred</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">translator</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_translate_2pred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_translate_2pred" title="Permalink to this definition">¶</a></dt>
-<dd><p>Translate msg’s particles from PyTorch format to Cognitive format, using the given translator.</p>
-<dl class="simple">
-<dt>If there are multiple r.v., will return a tuple of translated messages, elements corresponding to each r.v.</dt><dd><p>specified in the translator. In this case, the particle weights and log sampling densities will be
-copied for each split event particles to form new messages.</p>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>msg</strong> – a Message instance. The message to be translated.</p></li>
-<li><p><strong>translator</strong> – a KnowledgeTranslator instance.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="pysigma.defs.Message.event_translate_2torch">
-<em class="property">static </em><code class="sig-name descname">event_translate_2torch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msgs</span></em>, <em class="sig-param"><span class="n">translator</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_translate_2torch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_translate_2torch" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Translate provided iterable of messages’ particles from Cognitive format to form a message with particles in</dt><dd><p>PyTorch format, using the given translator.</p>
-</dd>
-<dt>The message order in the given iterable should conform to the random variable order specified in the</dt><dd><p>translator.</p>
-</dd>
-</dl>
-<p>Return a single message.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>msgs</strong> – an iterable of Message instances. Order should be compatible with the order of random
-variables specified in the given translator.</p></li>
-<li><p><strong>translator</strong> – a KnowledgeTranslator instance.</p></li>
-</ul>
-</dd>
-</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#torch.distributions.transforms.Transform">torch.distributions.Transform</a></p>
+</div>
 </dd></dl>
 
 </dd></dl>
