@@ -324,11 +324,11 @@
 <span class="sd">    parameter : torch.Tensor or None</span>
 <span class="sd">        Parameter tensor</span>
 <span class="sd">    particles : list of torch.Tensor or None</span>
-<span class="sd">        List of particle value tensors</span>
+<span class="sd">        Tuple of particle value tensors</span>
 <span class="sd">    weight : torch.Tensor or None</span>
 <span class="sd">        Particle weight tensor</span>
 <span class="sd">    log_densities : list of torch.Tensor or None</span>
-<span class="sd">        List of particles log sampling tensors</span>
+<span class="sd">        Tuple of particles log sampling tensors</span>
 <span class="sd">    attr : dict</span>
 <span class="sd">        Miscellaneous optional attributes, specified by **kwargs in the constructor.</span>
 
@@ -428,9 +428,9 @@
         <span class="c1"># Parameter</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">=</span> <span class="n">parameter</span>
         <span class="c1"># Particle list</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span> <span class="k">if</span> <span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span> <span class="k">if</span> <span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">log_densities</span><span class="p">)</span> <span class="k">if</span> <span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">log_densities</span><span class="p">)</span> <span class="k">if</span> <span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="c1"># Additional important attributes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attr</span> <span class="o">=</span> <span class="n">kwargs</span>
         <span class="c1"># Shapes.</span>
@@ -564,10 +564,10 @@
             <span class="c1"># Take element-wise product</span>
             <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">*</span> <span class="n">other</span><span class="o">.</span><span class="n">weight</span>
             <span class="c1"># Clone self tensor contents</span>
-            <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
-            <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
+            <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
+            <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
             <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                              <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                              <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                               <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
@@ -654,10 +654,10 @@
                 <span class="n">new_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">b_s_other</span><span class="p">)</span>
 
             <span class="c1"># Clone tensor contents</span>
-            <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
-            <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
+            <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
+            <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
             <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                              <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                              <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                               <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
@@ -698,6 +698,7 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        tuple of torch.Size</span>
+<span class="sd">            A tuple of the message&#39;s shapes</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span></div>
 
@@ -717,13 +718,25 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Message.reduce_type"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.reduce_type">[docs]</a>    <span class="k">def</span> <span class="nf">reduce_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Return a &#39;msg_type&#39; type reduced self message, where irrelevant components w.r.t. &#39;msg_type&#39; is removed, and</span>
-<span class="sd">                the relevant components are retained and cloned.</span>
+        <span class="sd">&quot;&quot;&quot;Returns a reduced `msg_type` type message from `self`, where irrelevant components w.r.t. &#39;msg_type&#39; in</span>
+<span class="sd">        `self` is removed, and only relevant components are retained and cloned.</span>
 
-<span class="sd">            Return self and do nothing if msg_type is self type.</span>
+<span class="sd">        The target message type must be either ``MessageType.Parameter`` or ``MessageType.Particles``.</span>
 
-<span class="sd">            :param msg_type:        MessageType.Parameter or MessageType.Particles.</span>
+<span class="sd">        parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        msg_type : {``MessageType.Parameter``, ``MessageType.Particles``}</span>
+<span class="sd">            The message type of the returned reduced message.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The reduced message</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If target message type specified by `msg_type` is not compatible with `self` type.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">msg_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> \
             <span class="s2">&quot;Target message type &#39;</span><span class="si">{}</span><span class="s2">&#39; is not compatible with self message type &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
@@ -736,39 +749,44 @@
         <span class="c1"># First clone content</span>
         <span class="n">cloned_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">msg_type</span> <span class="o">==</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">:</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span>
-                              <span class="n">parameters</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span>
+                              <span class="n">parameters</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span>
                               <span class="n">event_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">particles</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span>
-                              <span class="n">weights</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_density</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+                              <span class="n">weights</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.clone"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.clone">[docs]</a>    <span class="k">def</span> <span class="nf">clone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Return a cloned message from self. Guarantees that every content is deep-copied. Tensors will be cloned and</span>
-<span class="sd">                dictionaries will be deep-copied.</span>
+        <span class="sd">&quot;&quot;&quot;Return a cloned message from self.</span>
+
+<span class="sd">        Guarantees that every content is deep-copied. Tensors will be cloned and dictionaries will be deep-copied.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            A cloned and deep-copied message of self.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span>
-        <span class="n">log_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_density</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="n">log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span>
         <span class="n">attr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="n">particles</span> <span class="o">=</span> <span class="n">particles</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">log_density</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="n">log_density</span> <span class="o">=</span> <span class="n">log_density</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">particles</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">log_densities</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">attr</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">parameters</span><span class="p">,</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">log_density</span><span class="p">,</span> <span class="o">**</span><span class="n">attr</span><span class="p">)</span>
+                          <span class="n">parameters</span><span class="p">,</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="p">,</span> <span class="o">**</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>

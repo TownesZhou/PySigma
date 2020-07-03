@@ -159,11 +159,11 @@ class Message:
     parameter : torch.Tensor or None
         Parameter tensor
     particles : list of torch.Tensor or None
-        List of particle value tensors
+        Tuple of particle value tensors
     weight : torch.Tensor or None
         Particle weight tensor
     log_densities : list of torch.Tensor or None
-        List of particles log sampling tensors
+        Tuple of particles log sampling tensors
     attr : dict
         Miscellaneous optional attributes, specified by **kwargs in the constructor.
 
@@ -263,9 +263,9 @@ class Message:
         # Parameter
         self.parameter = parameter
         # Particle list
-        self.particles = list(particles) if particles is not None else None
+        self.particles = tuple(particles) if particles is not None else None
         self.weight = weight
-        self.log_densities = list(log_densities) if log_densities is not None else None
+        self.log_densities = tuple(log_densities) if log_densities is not None else None
         # Additional important attributes
         self.attr = kwargs
         # Shapes.
@@ -399,10 +399,10 @@ class Message:
             # Take element-wise product
             new_weights = self.weight * other.weight
             # Clone self tensor contents
-            cloned_particles = list(p.clone() for p in self.particles)
-            cloned_log_densities = list(d.clone() for d in self.log_densities)
+            cloned_particles = tuple(p.clone() for p in self.particles)
+            cloned_log_densities = tuple(d.clone() for d in self.log_densities)
             new_msg = Message(self.type,
-                              sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
+                              batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
                               particles=cloned_particles, weights=new_weights, log_density=cloned_log_densities)
         return new_msg
 
@@ -489,10 +489,10 @@ class Message:
                 new_weights = torch.pow(new_weight, b_s_other)
 
             # Clone tensor contents
-            cloned_particles = list(p.clone() for p in self.particles)
-            cloned_log_densities = list(d.clone() for d in self.log_densities)
+            cloned_particles = tuple(p.clone() for p in self.particles)
+            cloned_log_densities = tuple(d.clone() for d in self.log_densities)
             new_msg = Message(self.type,
-                              sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
+                              batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
                               particles=cloned_particles, weights=new_weight, log_density=cloned_log_densities)
         return new_msg
 
@@ -553,13 +553,25 @@ class Message:
         """
 
     def reduce_type(self, msg_type):
-        """
-            Return a 'msg_type' type reduced self message, where irrelevant components w.r.t. 'msg_type' is removed, and
-                the relevant components are retained and cloned.
+        """Returns a reduced `msg_type` type message from `self`, where irrelevant components w.r.t. 'msg_type' in
+        `self` is removed, and only relevant components are retained and cloned.
 
-            Return self and do nothing if msg_type is self type.
+        The target message type must be either ``MessageType.Parameter`` or ``MessageType.Particles``.
 
-            :param msg_type:        MessageType.Parameter or MessageType.Particles.
+        parameters
+        ----------
+        msg_type : {``MessageType.Parameter``, ``MessageType.Particles``}
+            The message type of the returned reduced message.
+
+        Returns
+        -------
+        Message
+            The reduced message
+
+        Raises
+        ------
+        AssertionError
+            If target message type specified by `msg_type` is not compatible with `self` type.
         """
         assert msg_type in self.type, \
             "Target message type '{}' is not compatible with self message type '{}'".format(msg_type, self.type)
@@ -572,39 +584,44 @@ class Message:
         # First clone content
         cloned_msg = self.clone()
         if msg_type == MessageType.Parameter:
-            new_msg = Message(cloned_msg.type, param_shape=cloned_msg.p_shape, batch_shape=cloned_msg.b_shape,
-                              parameters=cloned_msg.parameters, **cloned_msg.attr)
+            new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, param_shape=cloned_msg.p_shape,
+                              parameters=cloned_msg.parameter, **cloned_msg.attr)
         else:
-            new_msg = Message(cloned_msg.type, sample_shape=cloned_msg.s_shape, batch_shape=cloned_msg.b_shape,
+            new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, sample_shape=cloned_msg.s_shape,
                               event_shape=cloned_msg.e_shape, particles=cloned_msg.particles,
-                              weights=cloned_msg.weights, log_density=cloned_msg.log_density, **cloned_msg.attr)
+                              weights=cloned_msg.weight, log_density=cloned_msg.log_densities, **cloned_msg.attr)
         return new_msg
 
     def clone(self):
+        """Return a cloned message from self.
+
+        Guarantees that every content is deep-copied. Tensors will be cloned and dictionaries will be deep-copied.
+
+        Returns
+        -------
+        Message
+            A cloned and deep-copied message of self.
         """
-            Return a cloned message from self. Guarantees that every content is deep-copied. Tensors will be cloned and
-                dictionaries will be deep-copied.
-        """
-        parameters = self.parameters
+        parameters = self.parameter
         particles = self.particles
-        weights = self.weights
-        log_density = self.log_density
+        weight = self.weight
+        log_densities = self.log_densities
         attr = self.attr
 
         if isinstance(parameters, torch.Tensor):
             parameters = parameters.clone()
-        if isinstance(particles, torch.Tensor):
-            particles = particles.clone()
-        if isinstance(weights, torch.Tensor):
-            weights = weights.clone()
-        if isinstance(log_density, torch.Tensor):
-            log_density = log_density.clone()
+        if particles is not None:
+            particles = tuple(p.clone() for p in particles)
+        if isinstance(weight, torch.Tensor):
+            weight = weight.clone()
+        if log_densities is not None:
+            log_densities = tuple(d.clone() for d in log_densities)
         if self.attr is not None:
             attr = deepcopy(self.attr)
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, self.b_shape, self.e_shape,
-                          parameters, particles, weights, log_density, **attr)
+                          parameters, particles, weight, log_densities, **attr)
         return new_msg
 
     """

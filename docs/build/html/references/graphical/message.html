@@ -280,7 +280,7 @@ cloned.</p></li>
 <dl class="py attribute">
 <dt id="pysigma.defs.Message.particles">
 <code class="sig-name descname">particles</code><a class="headerlink" href="#pysigma.defs.Message.particles" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of particle value tensors</p>
+<dd><p>Tuple of particle value tensors</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>list of torch.Tensor or None</p>
@@ -302,7 +302,7 @@ cloned.</p></li>
 <dl class="py attribute">
 <dt id="pysigma.defs.Message.log_densities">
 <code class="sig-name descname">log_densities</code><a class="headerlink" href="#pysigma.defs.Message.log_densities" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of particles log sampling tensors</p>
+<dd><p>Tuple of particles log sampling tensors</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>list of torch.Tensor or None</p>
@@ -497,7 +497,7 @@ the Message class constructor, will be discarded in the returned message.</p>
 <dd><p>Returns a tuple of the message’s shapes: <code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p></p>
+<dd class="field-odd"><p>A tuple of the message’s shapes</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>tuple of torch.Size</p>
@@ -522,14 +522,21 @@ the Message class constructor, will be discarded in the returned message.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.reduce_type">
 <code class="sig-name descname">reduce_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_type</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.reduce_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.reduce_type" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Return a ‘msg_type’ type reduced self message, where irrelevant components w.r.t. ‘msg_type’ is removed, and</dt><dd><p>the relevant components are retained and cloned.</p>
-</dd>
-</dl>
-<p>Return self and do nothing if msg_type is self type.</p>
+<dd><p>Returns a reduced <cite>msg_type</cite> type message from <cite>self</cite>, where irrelevant components w.r.t. ‘msg_type’ in
+<cite>self</cite> is removed, and only relevant components are retained and cloned.</p>
+<p>The target message type must be either <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>msg_type</strong> – MessageType.Parameter or MessageType.Particles.</p>
+<dd class="field-odd"><p><strong>msg_type</strong> ({<code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>}) – The message type of the returned reduced message.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The reduced message</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If target message type specified by <cite>msg_type</cite> is not compatible with <cite>self</cite> type.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -537,8 +544,14 @@ the Message class constructor, will be discarded in the returned message.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.clone">
 <code class="sig-name descname">clone</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.clone"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.clone" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Return a cloned message from self. Guarantees that every content is deep-copied. Tensors will be cloned and</dt><dd><p>dictionaries will be deep-copied.</p>
+<dd><p>Return a cloned message from self.</p>
+<p>Guarantees that every content is deep-copied. Tensors will be cloned and dictionaries will be deep-copied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A cloned and deep-copied message of self.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
 </dd></dl>
