@@ -95,7 +95,9 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../references/graphical/index.html">Graphical</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../references/graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#variable-metatypes">Variable Metatypes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#message-types">Message Types</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#message">Message</a></li>
 </ul>
 </li>
@@ -188,20 +190,46 @@
 
 
 <span class="c1"># Variable Metatypes and Variable for general inference</span>
-<span class="k">class</span> <span class="nc">VariableMetatype</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<div class="viewcode-block" id="VariableMetatype"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.VariableMetatype">[docs]</a><span class="k">class</span> <span class="nc">VariableMetatype</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Enum class for Variable metatypes.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">Indexing</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Particle indexing variable, first dimension of a message</span>
     <span class="n">Relational</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># Relational variable, second set of dimensions of a message</span>
     <span class="n">Random</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># Random variable, last set of dimensions of a message</span>
-    <span class="n">Parameter</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Parameter variable, last dimensions of a distribution&#39;s parameter tensor</span>
+    <span class="n">Parameter</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Parameter variable, last dimensions of a distribution&#39;s parameter tensor</span></div>
 
 
-<span class="k">class</span> <span class="nc">Variable</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Variable as in variable nodes in the graphical architecture. Store information about this variable such as</span>
-<span class="sd">            its meta-type and dimension size</span>
-<span class="sd">        The equality testing is used for matching variables in Alpha-Beta graphs. Two variables are equal if and only</span>
-<span class="sd">            if ALL of the fields are equal.</span>
+<div class="viewcode-block" id="Variable"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Variable">[docs]</a><span class="k">class</span> <span class="nc">Variable</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Variable represented by variable nodes in the graphical architecture. Stores information such as a variable&#39;s</span>
+<span class="sd">    meta-type, dimension size, and value constraints (if the variable has Random meta-type).</span>
 
+<span class="sd">    The equality testing is used for matching variables in Alpha-Beta subgraphs. Two variables are equal if and only</span>
+<span class="sd">    if ALL of their fields are equal.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        The name of the variable.</span>
+<span class="sd">    metatype : {``VariableMetatype.Indexing``, ``VariableMetatype.Relational``, ``VariableMetatype.Random``, ``VariableMetatype.Parameter``}</span>
+<span class="sd">        The meta-type of this variable.</span>
+<span class="sd">    size : int</span>
+<span class="sd">        The size of the message dimension this variable corresponds to.</span>
+<span class="sd">    value_constraints : iterable of torch.distributions.constraints.Constraint</span>
+<span class="sd">        The set of value constraints that determine the value range (support) of this variable. Specify if and only if</span>
+<span class="sd">        variable&#39;s metatype is ``VariableMetatype.Random``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Variable name.</span>
+<span class="sd">    metatype : {``VariableMetatype.Indexing``, ``VariableMetatype.Relational``, ``VariableMetatype.Random``, ``VariableMetatype.Parameter``}</span>
+<span class="sd">        The meta-type of this variable.</span>
+<span class="sd">    size : int</span>
+<span class="sd">        The size of the message dimension this variable corresponds to.</span>
+<span class="sd">    constraints : iterable of torch.distributions.constraints.Constraint</span>
+<span class="sd">        The set of value constraints that determine the value range (support) of this variable. Specify if and only if</span>
+<span class="sd">        variable&#39;s metatype is ``VariableMetatype.Random``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">metatype</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">value_constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -254,25 +282,25 @@
 
     <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># override so that hash value of the string representation of the variable is used</span>
-        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metatype</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metatype</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">))</span></div>
 
 
 <span class="c1"># Generalized message type and message representation</span>
-<span class="k">class</span> <span class="nc">MessageType</span><span class="p">(</span><span class="n">Flag</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Enum class to represent message types</span>
+<div class="viewcode-block" id="MessageType"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.MessageType">[docs]</a><span class="k">class</span> <span class="nc">MessageType</span><span class="p">(</span><span class="n">Flag</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Enum class to represent message types</span>
 
-<span class="sd">        The True-valued boolean relationship between types, using the &#39;in&#39; operator:</span>
-<span class="sd">            - Undefined in Undefined == Undefined in Parameter == Undefined in Particles == Undefined in Both == True</span>
-<span class="sd">            - Parameter in Parameter == Undefined in Both == True</span>
-<span class="sd">            - Particles in Particles == Undefined in Both == True</span>
+<span class="sd">        The True-valued boolean relationship between types, using the ``in`` operator::</span>
+
+<span class="sd">            Undefined in Undefined == Undefined in Parameter == Undefined in Particles == Undefined in Both == True</span>
+<span class="sd">            Parameter in Parameter == Undefined in Both == True</span>
+<span class="sd">            Particles in Particles == Undefined in Both == True</span>
+
 <span class="sd">        All other relations are False.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">Undefined</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">Parameter</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
     <span class="n">Particles</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
-    <span class="n">Both</span> <span class="o">=</span> <span class="n">Parameter</span> <span class="o">|</span> <span class="n">Particles</span>
+    <span class="n">Both</span> <span class="o">=</span> <span class="n">Parameter</span> <span class="o">|</span> <span class="n">Particles</span></div>
 
 
 <div class="viewcode-block" id="Message"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message">[docs]</a><span class="k">class</span> <span class="nc">Message</span><span class="p">:</span>

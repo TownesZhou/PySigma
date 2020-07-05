@@ -95,7 +95,9 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="references/graphical/index.html">Graphical</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="references/graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#variable-metatypes">Variable Metatypes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#message-types">Message Types</a></li>
 <li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#message">Message</a></li>
 </ul>
 </li>
@@ -182,12 +184,16 @@
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#E"><strong>E</strong></a>
+ | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
@@ -230,10 +236,10 @@
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_flatten">batch_flatten() (pysigma.defs.Message method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_put">batch_index_put() (pysigma.defs.Message method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_select">batch_index_select() (pysigma.defs.Message method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_narrow">batch_narrow() (pysigma.defs.Message method)</a>
@@ -246,6 +252,8 @@
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_unsqueeze">batch_unsqueeze() (pysigma.defs.Message method)</a>
 </li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Both">Both (pysigma.defs.MessageType attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -253,6 +261,10 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.clone">clone() (pysigma.defs.Message method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.constraints">constraints (pysigma.defs.Variable attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -265,6 +277,14 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.event_transform">event_transform() (pysigma.defs.Message method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Indexing">Indexing (pysigma.defs.VariableMetatype attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -283,6 +303,20 @@
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message">Message (class in pysigma.defs)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType">MessageType (class in pysigma.defs)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.metatype">metatype (pysigma.defs.Variable attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.name">name (pysigma.defs.Variable attribute)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
@@ -290,11 +324,19 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.p_shape">p_shape (pysigma.defs.Message attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.parameter">parameter (pysigma.defs.Message attribute)</a>
 </li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Parameter">Parameter (pysigma.defs.MessageType attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Parameter">(pysigma.defs.VariableMetatype attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.particles">particles (pysigma.defs.Message attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Particles">Particles (pysigma.defs.MessageType attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -302,7 +344,13 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Random">Random (pysigma.defs.VariableMetatype attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.reduce_type">reduce_type() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Relational">Relational (pysigma.defs.VariableMetatype attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -312,9 +360,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.s_shape">s_shape (pysigma.defs.Message attribute)</a>
 </li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.same_size_as">same_size_as() (pysigma.defs.Message method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.same_size_as">same_size_as() (pysigma.defs.Message method)</a>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.size">size (pysigma.defs.Variable attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.size">size() (pysigma.defs.Message method)</a>
 </li>
@@ -325,6 +375,26 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.type">type (pysigma.defs.Message attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Undefined">Undefined (pysigma.defs.MessageType attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable">Variable (class in pysigma.defs)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype">VariableMetatype (class in pysigma.defs)</a>
 </li>
   </ul></td>
 </tr></table>

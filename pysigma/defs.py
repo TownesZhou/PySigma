@@ -13,6 +13,9 @@ from utils import DistributionServer, KnowledgeTranslator
 
 # Variable Metatypes and Variable for general inference
 class VariableMetatype(Enum):
+    """Enum class for Variable metatypes.
+
+    """
     Indexing = 0  # Particle indexing variable, first dimension of a message
     Relational = 1  # Relational variable, second set of dimensions of a message
     Random = 2  # Random variable, last set of dimensions of a message
@@ -20,12 +23,34 @@ class VariableMetatype(Enum):
 
 
 class Variable:
-    """
-        Variable as in variable nodes in the graphical architecture. Store information about this variable such as
-            its meta-type and dimension size
-        The equality testing is used for matching variables in Alpha-Beta graphs. Two variables are equal if and only
-            if ALL of the fields are equal.
+    """Variable represented by variable nodes in the graphical architecture. Stores information such as a variable's
+    meta-type, dimension size, and value constraints (if the variable has Random meta-type).
 
+    The equality testing is used for matching variables in Alpha-Beta subgraphs. Two variables are equal if and only
+    if ALL of their fields are equal.
+
+    Parameters
+    ----------
+    name : str
+        The name of the variable.
+    metatype : {``VariableMetatype.Indexing``, ``VariableMetatype.Relational``, ``VariableMetatype.Random``, ``VariableMetatype.Parameter``}
+        The meta-type of this variable.
+    size : int
+        The size of the message dimension this variable corresponds to.
+    value_constraints : iterable of torch.distributions.constraints.Constraint
+        The set of value constraints that determine the value range (support) of this variable. Specify if and only if
+        variable's metatype is ``VariableMetatype.Random``.
+
+    Attributes
+    ----------
+    name : str
+        Variable name.
+    metatype : {``VariableMetatype.Indexing``, ``VariableMetatype.Relational``, ``VariableMetatype.Random``, ``VariableMetatype.Parameter``}
+        The meta-type of this variable.
+    size : int
+        The size of the message dimension this variable corresponds to.
+    constraints : iterable of torch.distributions.constraints.Constraint
+        The set of value constraints that determine the value range (support) of this variable.
     """
 
     def __init__(self, name, metatype, size, value_constraints=None):
@@ -83,15 +108,15 @@ class Variable:
 
 # Generalized message type and message representation
 class MessageType(Flag):
-    """
-        Enum class to represent message types
+    """Enum class to represent message types
 
-        The True-valued boolean relationship between types, using the 'in' operator:
-            - Undefined in Undefined == Undefined in Parameter == Undefined in Particles == Undefined in Both == True
-            - Parameter in Parameter == Undefined in Both == True
-            - Particles in Particles == Undefined in Both == True
+        The True-valued boolean relationship between types, using the ``in`` operator::
+
+            Undefined in Undefined == Undefined in Parameter == Undefined in Particles == Undefined in Both == True
+            Parameter in Parameter == Undefined in Both == True
+            Particles in Particles == Undefined in Both == True
+
         All other relations are False.
-
     """
     Undefined = 0
     Parameter = auto()

@@ -97,7 +97,9 @@
 </li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#variable-metatypes">Variable Metatypes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#message-types">Message Types</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#message">Message</a></li>
 </ul>
 </li>
@@ -183,8 +185,138 @@
             
   <div class="section" id="basic-data-structures">
 <h1>Basic Data Structures<a class="headerlink" href="#basic-data-structures" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="variable-metatypes">
+<h2>Variable Metatypes<a class="headerlink" href="#variable-metatypes" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.defs.VariableMetatype">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">VariableMetatype</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#VariableMetatype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.VariableMetatype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enum class for Variable metatypes.</p>
+<dl class="py attribute">
+<dt id="pysigma.defs.VariableMetatype.Indexing">
+<code class="sig-name descname">Indexing</code><em class="property"> = 0</em><a class="headerlink" href="#pysigma.defs.VariableMetatype.Indexing" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.VariableMetatype.Relational">
+<code class="sig-name descname">Relational</code><em class="property"> = 1</em><a class="headerlink" href="#pysigma.defs.VariableMetatype.Relational" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.VariableMetatype.Random">
+<code class="sig-name descname">Random</code><em class="property"> = 2</em><a class="headerlink" href="#pysigma.defs.VariableMetatype.Random" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.VariableMetatype.Parameter">
+<code class="sig-name descname">Parameter</code><em class="property"> = 3</em><a class="headerlink" href="#pysigma.defs.VariableMetatype.Parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="variable">
 <h2>Variable<a class="headerlink" href="#variable" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.defs.Variable">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">Variable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">metatype</span></em>, <em class="sig-param"><span class="n">size</span></em>, <em class="sig-param"><span class="n">value_constraints</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Variable represented by variable nodes in the graphical architecture. Stores information such as a variable’s
+meta-type, dimension size, and value constraints (if the variable has Random meta-type).</p>
+<p>The equality testing is used for matching variables in Alpha-Beta subgraphs. Two variables are equal if and only
+if ALL of their fields are equal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the variable.</p></li>
+<li><p><strong>metatype</strong> ({<code class="docutils literal notranslate"><span class="pre">VariableMetatype.Indexing</span></code>, <code class="docutils literal notranslate"><span class="pre">VariableMetatype.Relational</span></code>, <code class="docutils literal notranslate"><span class="pre">VariableMetatype.Random</span></code>, <code class="docutils literal notranslate"><span class="pre">VariableMetatype.Parameter</span></code>}) – The meta-type of this variable.</p></li>
+<li><p><strong>size</strong> (<em>int</em>) – The size of the message dimension this variable corresponds to.</p></li>
+<li><p><strong>value_constraints</strong> (<em>iterable of torch.distributions.constraints.Constraint</em>) – The set of value constraints that determine the value range (support) of this variable. Specify if and only if
+variable’s metatype is <code class="docutils literal notranslate"><span class="pre">VariableMetatype.Random</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.defs.Variable.name">
+<code class="sig-name descname">name</code><a class="headerlink" href="#pysigma.defs.Variable.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Variable name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Variable.metatype">
+<code class="sig-name descname">metatype</code><a class="headerlink" href="#pysigma.defs.Variable.metatype" title="Permalink to this definition">¶</a></dt>
+<dd><p>The meta-type of this variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>{<code class="docutils literal notranslate"><span class="pre">VariableMetatype.Indexing</span></code>, <code class="docutils literal notranslate"><span class="pre">VariableMetatype.Relational</span></code>, <code class="docutils literal notranslate"><span class="pre">VariableMetatype.Random</span></code>, <code class="docutils literal notranslate"><span class="pre">VariableMetatype.Parameter</span></code>}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Variable.size">
+<code class="sig-name descname">size</code><a class="headerlink" href="#pysigma.defs.Variable.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>The size of the message dimension this variable corresponds to.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Variable.constraints">
+<code class="sig-name descname">constraints</code><a class="headerlink" href="#pysigma.defs.Variable.constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>The set of value constraints that determine the value range (support) of this variable. Specify if and only if
+variable’s metatype is <code class="docutils literal notranslate"><span class="pre">VariableMetatype.Random</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>iterable of torch.distributions.constraints.Constraint</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="message-types">
+<h2>Message Types<a class="headerlink" href="#message-types" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.defs.MessageType">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">MessageType</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#MessageType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.MessageType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enum class to represent message types</p>
+<p>The True-valued boolean relationship between types, using the <code class="docutils literal notranslate"><span class="pre">in</span></code> operator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Undefined</span> <span class="ow">in</span> <span class="n">Undefined</span> <span class="o">==</span> <span class="n">Undefined</span> <span class="ow">in</span> <span class="n">Parameter</span> <span class="o">==</span> <span class="n">Undefined</span> <span class="ow">in</span> <span class="n">Particles</span> <span class="o">==</span> <span class="n">Undefined</span> <span class="ow">in</span> <span class="n">Both</span> <span class="o">==</span> <span class="kc">True</span>
+<span class="n">Parameter</span> <span class="ow">in</span> <span class="n">Parameter</span> <span class="o">==</span> <span class="n">Undefined</span> <span class="ow">in</span> <span class="n">Both</span> <span class="o">==</span> <span class="kc">True</span>
+<span class="n">Particles</span> <span class="ow">in</span> <span class="n">Particles</span> <span class="o">==</span> <span class="n">Undefined</span> <span class="ow">in</span> <span class="n">Both</span> <span class="o">==</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>All other relations are False.</p>
+<dl class="py attribute">
+<dt id="pysigma.defs.MessageType.Undefined">
+<code class="sig-name descname">Undefined</code><em class="property"> = 0</em><a class="headerlink" href="#pysigma.defs.MessageType.Undefined" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.MessageType.Parameter">
+<code class="sig-name descname">Parameter</code><em class="property"> = 1</em><a class="headerlink" href="#pysigma.defs.MessageType.Parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.MessageType.Particles">
+<code class="sig-name descname">Particles</code><em class="property"> = 2</em><a class="headerlink" href="#pysigma.defs.MessageType.Particles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.MessageType.Both">
+<code class="sig-name descname">Both</code><em class="property"> = 3</em><a class="headerlink" href="#pysigma.defs.MessageType.Both" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="message">
 <h2>Message<a class="headerlink" href="#message" title="Permalink to this headline">¶</a></h2>
