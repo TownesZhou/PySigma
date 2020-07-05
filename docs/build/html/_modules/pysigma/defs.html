@@ -87,12 +87,23 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../references/index.html">References</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../references/cognitive/index.html">Cognitive</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive/predicate.html">Predicate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../references/cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#conditional">Conditional</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../references/graphical/index.html">Graphical</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/message.html">Message</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#message">Message</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#subheader1">subheader1</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/conditional-nodes.html">Conditional Subgraph Nodes</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../references/utils/index.html">Utils</a></li>
@@ -264,7 +275,7 @@
     <span class="n">Both</span> <span class="o">=</span> <span class="n">Parameter</span> <span class="o">|</span> <span class="n">Particles</span>
 
 
-<div class="viewcode-block" id="Message"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message">[docs]</a><span class="k">class</span> <span class="nc">Message</span><span class="p">:</span>
+<div class="viewcode-block" id="Message"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message">[docs]</a><span class="k">class</span> <span class="nc">Message</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Message to be propagated between nodes in the graphical architecture.</span>
 
 <span class="sd">    The `Message` class is the most fundamental data structure in PySigma that carries the knowledge of a batch of</span>
@@ -475,7 +486,7 @@
 <span class="sd">        Overload arithmetic operators</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="Message.__add__"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.__add__">[docs]</a>    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__add__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__add__">[docs]</a>    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overloads the addition operation ``+``.</span>
 
 <span class="sd">        Implements the semantics of addition operation as in vector spaces. The computational operations used to</span>
@@ -571,7 +582,7 @@
                               <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.__iadd__"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.__iadd__">[docs]</a>    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__iadd__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__iadd__">[docs]</a>    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overloads self-addition operator ``+=``.</span>
 
 <span class="sd">        See Also</span>
@@ -580,7 +591,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Message.__mul__"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.__mul__">[docs]</a>    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__mul__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__mul__">[docs]</a>    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overloads multiplication operator ``*``.</span>
 
 <span class="sd">        Implements the semantics of scalar multiplication operation as in vector spaces. The computational operations</span>
@@ -661,7 +672,7 @@
                               <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.__imul__"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.__imul__">[docs]</a>    <span class="k">def</span> <span class="nf">__imul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__imul__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__imul__">[docs]</a>    <span class="k">def</span> <span class="nf">__imul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overloads self-multiplication operator ``*=``.</span>
 
 <span class="sd">        See Also</span>
@@ -692,7 +703,7 @@
         <span class="c1">#            f&quot;Weights: {weights_str}\nLog_Density: {log_density_str}&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;String representation for Message instance is yet to be implemented.&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Message.size"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.size">[docs]</a>    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.size"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.size">[docs]</a>    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a tuple of the message&#39;s shapes: ``(batch_shape, param_shape, sample_shape, event_shape)``</span>
 
 <span class="sd">        Returns</span>
@@ -702,7 +713,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span></div>
 
-<div class="viewcode-block" id="Message.same_size_as"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.same_size_as">[docs]</a>    <span class="k">def</span> <span class="nf">same_size_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.same_size_as"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.same_size_as">[docs]</a>    <span class="k">def</span> <span class="nf">same_size_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Check if self has the same shape as the other message.</span>
 
 <span class="sd">        Returns</span>
@@ -717,7 +728,7 @@
 <span class="sd">            Methods for operations on the message instance itself.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="Message.reduce_type"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.reduce_type">[docs]</a>    <span class="k">def</span> <span class="nf">reduce_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.reduce_type"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.reduce_type">[docs]</a>    <span class="k">def</span> <span class="nf">reduce_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a reduced `msg_type` type message from `self`, where irrelevant components w.r.t. &#39;msg_type&#39; in</span>
 <span class="sd">        `self` is removed, and only relevant components are retained and cloned.</span>
 
@@ -757,7 +768,7 @@
                               <span class="n">weights</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.clone"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.clone">[docs]</a>    <span class="k">def</span> <span class="nf">clone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.clone"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.clone">[docs]</a>    <span class="k">def</span> <span class="nf">clone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a cloned message from self.</span>
 
 <span class="sd">        Guarantees that every content is deep-copied. Tensors will be cloned and dictionaries will be deep-copied.</span>
@@ -793,7 +804,7 @@
 <span class="sd">        Methods for batch dimension manipulations. </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="Message.batch_permute"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_permute">[docs]</a>    <span class="k">def</span> <span class="nf">batch_permute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_dims</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_permute"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_permute">[docs]</a>    <span class="k">def</span> <span class="nf">batch_permute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_dims</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a permuted message whose tensor contents that include batch dimensions (e.g. parameters and particle</span>
 <span class="sd">        values) are permuted w.r.t. `target_dims`.</span>
 
@@ -850,7 +861,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_unsqueeze"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_unsqueeze">[docs]</a>    <span class="k">def</span> <span class="nf">batch_unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_unsqueeze"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_unsqueeze">[docs]</a>    <span class="k">def</span> <span class="nf">batch_unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a new message with a dimension of size one inserted at the target batch dimension specified by `dim`.</span>
 
 <span class="sd">        The target dimension is relative to the batch dimensions only. It should be in range</span>
@@ -896,7 +907,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_index_select"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_index_select">[docs]</a>    <span class="k">def</span> <span class="nf">batch_index_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_index_select"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_index_select">[docs]</a>    <span class="k">def</span> <span class="nf">batch_index_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a message that is a concatenation of the slices from `self` along the `dim` batch dimension and</span>
 <span class="sd">        indexed by `index`.</span>
 
@@ -950,7 +961,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_index_put"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_index_put">[docs]</a>    <span class="k">def</span> <span class="nf">batch_index_put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_index_put"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_index_put">[docs]</a>    <span class="k">def</span> <span class="nf">batch_index_put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a message whose entries along the dimension `dim` are slices from self message and are put into</span>
 <span class="sd">        the positions along the axis specified by indices in `index`.</span>
 
@@ -1025,7 +1036,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_diagonal"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diagonal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_diagonal"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diagonal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a partial view of self with the its diagonal elements with respect to `dim1` and `dim2` appended as</span>
 <span class="sd">        a dimension at the end of the shape.</span>
 
@@ -1091,7 +1102,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_diag_embed"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_diag_embed">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diag_embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">diag_dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">target_dim1</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">target_dim2</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_diag_embed"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_diag_embed">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diag_embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">diag_dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">target_dim1</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">target_dim2</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a message whose diagonals of certain 2D planes (dimensions specified by `target_dim1` and</span>
 <span class="sd">        `target_dim2`) are filled by slices of self along the dimension specified by `diag_dim`).</span>
 
@@ -1182,7 +1193,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_narrow"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_narrow">[docs]</a>    <span class="k">def</span> <span class="nf">batch_narrow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_narrow"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_narrow">[docs]</a>    <span class="k">def</span> <span class="nf">batch_narrow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a message that is a narrowed version of `self` along the dimension specified by `dim`.</span>
 
 <span class="sd">        Effectively, this method selects the chunk spanning ``[:length]`` along the dimension `dim` of `self`. The</span>
@@ -1237,7 +1248,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_broaden"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_broaden">[docs]</a>    <span class="k">def</span> <span class="nf">batch_broaden</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_broaden"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_broaden">[docs]</a>    <span class="k">def</span> <span class="nf">batch_broaden</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a message that is a broadened version of `self` along the dimension specified by `dim`, with identity</span>
 <span class="sd">        values filled in ``[dim_size + 1: length]`` along the dimension `dim` in the returned message.</span>
 
@@ -1301,7 +1312,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_summarize"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_summarize">[docs]</a>    <span class="k">def</span> <span class="nf">batch_summarize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_summarize"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_summarize">[docs]</a>    <span class="k">def</span> <span class="nf">batch_summarize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Implements the default Sum-Product summarization semantics. Summarizes over the batch dimension specified by</span>
 <span class="sd">        `dim`. Returns a message with one less dimension.</span>
 
@@ -1348,7 +1359,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_flatten"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_flatten">[docs]</a>    <span class="k">def</span> <span class="nf">batch_flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_flatten"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_flatten">[docs]</a>    <span class="k">def</span> <span class="nf">batch_flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Flattens the set of batch dimensions specified by `dims` and append the flattened dimension as the last</span>
 <span class="sd">        batch dimension. If `dims` is ``None``, will flatten all batch dimensions.</span>
 
@@ -1399,7 +1410,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_reshape"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_reshape">[docs]</a>    <span class="k">def</span> <span class="nf">batch_reshape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_batch_shape</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_reshape"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_reshape">[docs]</a>    <span class="k">def</span> <span class="nf">batch_reshape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_batch_shape</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a message with the same underlying data as self, but with the specified `new_batch_shape`.</span>
 
 <span class="sd">        Parameters</span>
@@ -1440,7 +1451,7 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.batch_expand"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.batch_expand">[docs]</a>    <span class="k">def</span> <span class="nf">batch_expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_batch_shape</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.batch_expand"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_expand">[docs]</a>    <span class="k">def</span> <span class="nf">batch_expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_batch_shape</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a new view of `self` with singleton batch dimensions expanded to a larger size.</span>
 
 <span class="sd">        Passing a -1 as the size for a batch dimension means not changing the size of that batch dimension.</span>
@@ -1497,7 +1508,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Methods for Manipulations on message events </span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="Message.event_transform"><a class="viewcode-back" href="../../references/graphical/message.html#pysigma.defs.Message.event_transform">[docs]</a>    <span class="k">def</span> <span class="nf">event_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trans</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.event_transform"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_transform">[docs]</a>    <span class="k">def</span> <span class="nf">event_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trans</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Applies a transformation on the `self`&#39;s event values. Returns the transformed message.</span>
 
 <span class="sd">        `self` contents will be cloned before being passed to the transformed message.</span>

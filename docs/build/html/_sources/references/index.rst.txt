@@ -2,8 +2,8 @@ References
 ==========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    
-   cognitive/index
+   cognitive
    graphical/index
    utils/index

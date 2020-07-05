@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Predicate &mdash; PySigma 0.0.2 documentation</title>
+  <title>Conditional Subgraph Nodes &mdash; PySigma 0.0.2 documentation</title>
   
 
   
@@ -36,8 +36,8 @@
     
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Graphical" href="../graphical/index.html" />
-    <link rel="prev" title="Cognitive" href="index.html" /> 
+    <link rel="next" title="Utils" href="../utils/index.html" />
+    <link rel="prev" title="Predicate Subgraph Nodes" href="predicate-nodes.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -89,12 +89,23 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">References</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="index.html">Cognitive</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Predicate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#conditional">Conditional</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../graphical/index.html">Graphical</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../graphical/message.html">Message</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#message">Message</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#subheader1">subheader1</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Conditional Subgraph Nodes</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/index.html">Utils</a></li>
@@ -149,15 +160,15 @@
         
           <li><a href="../index.html">References</a> &raquo;</li>
         
-          <li><a href="index.html">Cognitive</a> &raquo;</li>
+          <li><a href="index.html">Graphical</a> &raquo;</li>
         
-      <li>Predicate</li>
+      <li>Conditional Subgraph Nodes</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../../_sources/references/cognitive/predicate.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../../_sources/references/graphical/conditional-nodes.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -170,13 +181,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="predicate">
-<h1>Predicate<a class="headerlink" href="#predicate" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt id="pysigma.structures.Predicate">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.structures.</code><code class="sig-name descname">Predicate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">predicate_name</span></em>, <em class="sig-param"><span class="n">relational_args</span></em>, <em class="sig-param"><span class="n">random_args</span></em>, <em class="sig-param"><span class="n">inference_mode</span></em>, <em class="sig-param"><span class="n">num_particles</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">distribution_class</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">memorial</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">perceptual</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/structures.html#Predicate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.Predicate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
+  <div class="section" id="conditional-subgraph-nodes">
+<h1>Conditional Subgraph Nodes<a class="headerlink" href="#conditional-subgraph-nodes" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -187,10 +193,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../graphical/index.html" class="btn btn-neutral float-right" title="Graphical" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../utils/index.html" class="btn btn-neutral float-right" title="Utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral float-left" title="Cognitive" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="predicate-nodes.html" class="btn btn-neutral float-left" title="Predicate Subgraph Nodes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

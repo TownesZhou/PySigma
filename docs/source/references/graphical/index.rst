@@ -2,6 +2,8 @@ Graphical
 =========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
-   message
+   data-structures
+   predicate-nodes
+   conditional-nodes
