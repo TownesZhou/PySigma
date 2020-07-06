@@ -1,6 +1,17 @@
 Predicate Subgraph Nodes
 ========================
 
+Working Memory Variable Node
+----------------------------
 
-subheader1
-^^^^^^^^^^
+
+Long-Term Memory Factor Node
+----------------------------
+
+
+Perceptual Buffer Node
+----------------------
+
+
+Working Memory Factor Node
+--------------------------

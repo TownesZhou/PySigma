@@ -95,7 +95,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../cognitive.html#conditional">Conditional</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical Architecture</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="data-structures.html">Basic Data Structures</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable-metatypes">Variable Metatypes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable">Variable</a></li>
@@ -106,15 +106,33 @@
 </li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Abstract Base Nodes</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#node">Node</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#factornode">FactorNode</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#variablenode">VariableNode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beta-factor-node">Beta Factor Node</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#subheader1">subheader1</a></li>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="conditional-nodes.html">Conditional Subgraph Nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/index.html">Utils</a></li>
@@ -169,7 +187,7 @@
         
           <li><a href="../index.html">References</a> &raquo;</li>
         
-          <li><a href="index.html">Graphical</a> &raquo;</li>
+          <li><a href="index.html">Graphical Architecture</a> &raquo;</li>
         
       <li>Abstract Base Nodes</li>
     
@@ -325,8 +343,8 @@ desired by child node class.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="factornode">
-<h2>FactorNode<a class="headerlink" href="#factornode" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="factor-node">
+<h2>Factor Node<a class="headerlink" href="#factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical._nodes.FactorNode">
 <em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">FactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#FactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.FactorNode" title="Permalink to this definition">¶</a></dt>
@@ -351,8 +369,8 @@ desired by child node class.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="variablenode">
-<h2>VariableNode<a class="headerlink" href="#variablenode" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="variable-node">
+<h2>Variable Node<a class="headerlink" href="#variable-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical._nodes.VariableNode">
 <em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">VariableNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#VariableNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode" title="Permalink to this definition">¶</a></dt>
@@ -480,6 +498,12 @@ variable node.</p>
 
 </dd></dl>
 
+</div>
+<div class="section" id="alpha-factor-node">
+<h2>Alpha Factor Node<a class="headerlink" href="#alpha-factor-node" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="beta-factor-node">
+<h2>Beta Factor Node<a class="headerlink" href="#beta-factor-node" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 

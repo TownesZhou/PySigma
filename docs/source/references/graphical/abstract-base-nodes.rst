@@ -8,17 +8,22 @@ Node
    :members:
    :undoc-members:
 
-FactorNode
-----------
+Factor Node
+-----------
 
 .. autoclass:: pysigma.graphical._nodes.FactorNode
    :members:
    :undoc-members:
 
-
-VariableNode
-------------
+Variable Node
+-------------
 
 .. autoclass:: pysigma.graphical._nodes.VariableNode
    :members:
    :undoc-members:
+
+Alpha Factor Node
+-----------------
+
+Beta Factor Node
+----------------
