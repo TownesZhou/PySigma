@@ -1,0 +1,542 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Abstract Base Nodes &mdash; PySigma 0.0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Predicate Subgraph Nodes" href="predicate-nodes.html" />
+    <link rel="prev" title="Basic Data Structures" href="data-structures.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">References</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#conditional">Conditional</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#factornode">FactorNode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#variablenode">VariableNode</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#subheader1">subheader1</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="conditional-nodes.html">Conditional Subgraph Nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/index.html">Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">References</a> &raquo;</li>
+        
+          <li><a href="index.html">Graphical</a> &raquo;</li>
+        
+      <li>Abstract Base Nodes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/references/graphical/abstract-base-nodes.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="abstract-base-nodes">
+<h1>Abstract Base Nodes<a class="headerlink" href="#abstract-base-nodes" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="node">
+<h2>Node<a class="headerlink" href="#node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical._nodes.Node">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">Node</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>The base class for all nodes in PySigma graphical architecture.</p>
+<p>Declares common attributes between <cite>FactorNode</cite> and <cite>VariableNode</cite>, for example a flag indicating whether this node
+has reach quiescence, i.e., whether no new message shall be sent via adjacent links in current cycle. During
+construction of the graph, its instance should be passed to <cite>NetworkX</cite> methods to instantiate a node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Name of the node.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.Node.name">
+<code class="sig-name descname">name</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.Node.quiescence">
+<code class="sig-name descname">quiescence</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.quiescence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether this node has reached quiescence, and no further computation at this node is necessary at
+the current cycle. Will default to <code class="docutils literal notranslate"><span class="pre">False</span></code> at the start of the cycle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.Node.visited">
+<code class="sig-name descname">visited</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.visited" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether this node has been visited at all, i.e., <cite>compute()</cite> method being called at the current cycle.
+Default to <code class="docutils literal notranslate"><span class="pre">False</span></code> at the start of the cycle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.Node.in_linkdata">
+<code class="sig-name descname">in_linkdata</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.in_linkdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of incoming linkdata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of LinkData</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.Node.out_linkdata">
+<code class="sig-name descname">out_linkdata</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.out_linkdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of outgoing linkdata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of LinkData</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.Node.log">
+<code class="sig-name descname">log</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Internal log</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.Node.pretty_log">
+<code class="sig-name descname">pretty_log</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.pretty_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pretty log for beautiful front-end visualization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.Node.check_quiesce">
+<code class="sig-name descname">check_quiesce</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#Node.check_quiesce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.Node.check_quiesce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check <code class="docutils literal notranslate"><span class="pre">new</span></code> attribute of incoming linkdata to determine whether this node has reached quiescence.</p>
+<p>By default, a node is determined quiesced if and only if <strong>all</strong> incoming linkdata has no <cite>new</cite> message.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Certain nodes may desire a different behavior for checking quiescence. In that case, this method should be
+overridden.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if this node has reached quiescence.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.Node.add_link">
+<em class="property">abstract </em><code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#Node.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.Node.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adding linkdata connecting to this node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.Node.compute">
+<em class="property">abstract </em><code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#Node.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.Node.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute method to be called to propagate messages during decision phase.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
+node-level statistics logging is taken care of herein.</p>
+<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>check_quiesce()</cite> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+without logging anything or performing any further computation. Note that such behavior may or may not be
+desired by child node class.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="factornode">
+<h2>FactorNode<a class="headerlink" href="#factornode" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical._nodes.FactorNode">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">FactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#FactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.FactorNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factor node abstract base class.</p>
+<p>Guarantees that all incident nodes are variable nodes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Name of this factor node.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.FactorNode.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#FactorNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.FactorNode.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a linkdata connecting to a variable node</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="variablenode">
+<h2>VariableNode<a class="headerlink" href="#variablenode" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical._nodes.VariableNode">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">VariableNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#VariableNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Variable node abstract base class.</p>
+<p>Guarantees that all incident nodes are factor nodes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this variable node.</p></li>
+<li><p><strong>rel_var_list</strong> (<em>iterable of Variable</em>) – Iterable of relational variables. Corresponds to the batch dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">b_shape</span></code> attribute of
+incoming messages.</p></li>
+<li><p><strong>param_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a><em>, </em><em>optional</em>) – The parameter variable. Corresponds to the parameter dimension. Used to check <code class="docutils literal notranslate"><span class="pre">p_shape</span></code> attribute of incoming
+messages.</p></li>
+<li><p><strong>index_var_list</strong> (<em>iterable of Variable</em><em>, </em><em>optional</em>) – Iterable of indexing variables. Corresponds to the sample dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">s_shape</span></code> attribute of
+incoming messages. Must specify if <cite>ran_var_list</cite> is specified.</p></li>
+<li><p><strong>ran_var_list</strong> (<em>iterable of Variable</em><em>, </em><em>optional</em>) – Iterable of random variables. Corresponds to the event dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">e_shape</span></code> attribute of
+incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.VariableNode.rel_vars">
+<code class="sig-name descname">rel_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.rel_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple of relational variables, specified by <cite>rel_var_list</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>tuple of Variable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.VariableNode.param_var">
+<code class="sig-name descname">param_var</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.param_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameter variable, specified by <cite>param_var</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> if <cite>param_var</cite> is not specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable">Variable</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.VariableNode.index_vars">
+<code class="sig-name descname">index_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.index_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple of indexing variables, specified by <cite>index_var_list</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> if <cite>index_var_list</cite> is not
+specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>tuple of Variable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.VariableNode.ran_vars">
+<code class="sig-name descname">ran_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.ran_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple of random variables, specified by <cite>ran_var_list</cite>. Default sto <code class="docutils literal notranslate"><span class="pre">None</span></code> if <cite>ran_var_list</cite> is not specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>tuple of Variable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.VariableNode.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.b_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Batch dimension sizes. Inferred from <cite>rel_vars</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.VariableNode.p_shape">
+<code class="sig-name descname">p_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.p_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameter dimension sizes. Inferred from <cite>param_var</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.VariableNode.s_shape">
+<code class="sig-name descname">s_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.s_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample dimension sizes. Inferred from <cite>index_vars</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.VariableNode.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.e_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Event dimension sizes. Inferred from <cite>ran_vars</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.VariableNode.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#VariableNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register the LinkData connecting a factor node to this variable node.</p>
+<p>Checks that the preset message shape specified in <cite>linkdata</cite> agrees with the inferred message shape at this
+variable node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If the linkdata to be added does not impose the same message shape restriction as this variable node does.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="predicate-nodes.html" class="btn btn-neutral float-right" title="Predicate Subgraph Nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="data-structures.html" class="btn btn-neutral float-left" title="Basic Data Structures" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

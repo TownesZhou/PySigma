@@ -36,7 +36,7 @@
     
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Predicate Subgraph Nodes" href="predicate-nodes.html" />
+    <link rel="next" title="Abstract Base Nodes" href="abstract-base-nodes.html" />
     <link rel="prev" title="Graphical" href="index.html" /> 
 </head>
 
@@ -102,6 +102,12 @@
 <li class="toctree-l4"><a class="reference internal" href="#message-types">Message Types</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#message">Message</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#factornode">FactorNode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#variablenode">VariableNode</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
@@ -1199,8 +1205,8 @@ an edge.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>vn</strong> (<em>VariableNode</em>) – VariableNode instance that this link is incident to.</p></li>
-<li><p><strong>fn</strong> (<em>FactorNode</em>) – FactorNode instance that this link is incident to.</p></li>
+<li><p><strong>vn</strong> (<a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode" title="pysigma.graphical._nodes.VariableNode"><em>VariableNode</em></a>) – VariableNode instance that this link is incident to.</p></li>
+<li><p><strong>fn</strong> (<a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical._nodes.FactorNode" title="pysigma.graphical._nodes.FactorNode"><em>FactorNode</em></a>) – FactorNode instance that this link is incident to.</p></li>
 <li><p><strong>to_fn</strong> (<em>bool</em>) – True if this link is pointing toward the factor node.</p></li>
 <li><p><strong>msg_shape</strong> (<em>tuple of torch.Size</em>) – The shape of the message to carry. Used for sanity check of message shapes. Should be in the format
 <code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code>. An empty shape <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code> should be used as
@@ -1237,7 +1243,7 @@ the default none shape.</p></li>
 <dd><p>The incident variable node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>VariableNode</p>
+<dd class="field-odd"><p><a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode" title="pysigma.graphical._nodes.VariableNode">VariableNode</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1248,7 +1254,7 @@ the default none shape.</p></li>
 <dd><p>The incident factor node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>FactorNode</p>
+<dd class="field-odd"><p><a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical._nodes.FactorNode" title="pysigma.graphical._nodes.FactorNode">FactorNode</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1400,7 +1406,7 @@ has been read in the current decision phase.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="predicate-nodes.html" class="btn btn-neutral float-right" title="Predicate Subgraph Nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="abstract-base-nodes.html" class="btn btn-neutral float-right" title="Abstract Base Nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="index.html" class="btn btn-neutral float-left" title="Graphical" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

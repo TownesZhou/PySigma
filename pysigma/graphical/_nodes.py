@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from torch.distributions import Distribution, Transform
 from torch.distributions.constraints import Constraint
 from torch.nn.functional import cosine_similarity
-from defs import Variable, MessageType, Message
+from defs import VariableMetatype, Variable, MessageType, Message
 from utils import DistributionServer
 from structures import VariableMap, Summarization
 
@@ -228,11 +228,35 @@ class LinkData:
 
 
 class Node(ABC):
-    """
-        The super class of `FactorNode` and `VariableNode`. It declares common attributes between `FactorNode` and
-            `VariableNode`, for example a flag indicating whether this node has reach quiescence, i.e., whether no new
-            message shall be sent via adjacent link in curretn cycle. During construction of the graph, its instance
-            will be passed to `NetworkX` methods to instantiate a node.
+    """The base class for all nodes in PySigma graphical architecture.
+
+    Declares common attributes between `FactorNode` and `VariableNode`, for example a flag indicating whether this node
+    has reach quiescence, i.e., whether no new message shall be sent via adjacent links in current cycle. During
+    construction of the graph, its instance should be passed to `NetworkX` methods to instantiate a node.
+
+    Parameters
+    ----------
+    name : str
+        Name of the node.
+
+    Attributes
+    ----------
+    name : str
+        Name of the node.
+    quiescence : bool
+        Indicates whether this node has reached quiescence, and no further computation at this node is necessary at
+        the current cycle. Will default to ``False`` at the start of the cycle.
+    visited : bool
+        Indicates whether this node has been visited at all, i.e., `compute()` method being called at the current cycle.
+        Default to ``False`` at the start of the cycle.
+    in_linkdata : list of LinkData
+        List of incoming linkdata.
+    out_linkdata : list of LinkData
+        List of outgoing linkdata.
+    log : dict
+        Internal log
+    pretty_log : dict
+        Pretty log for beautiful front-end visualization.
     """
 
     def __init__(self, name):
@@ -257,10 +281,19 @@ class Node(ABC):
         return self.name
 
     def check_quiesce(self):
-        """
-            Check quiescence of incoming linkdata to determine whether this node has reached quiescence
-            Return True if reached quiescence, False otherwise
-            Will update self.quiescence accordingly
+        """Check ``new`` attribute of incoming linkdata to determine whether this node has reached quiescence.
+
+        By default, a node is determined quiesced if and only if **all** incoming linkdata has no `new` message.
+
+        .. note::
+
+            Certain nodes may desire a different behavior for checking quiescence. In that case, this method should be
+            overridden.
+
+        Returns
+        -------
+        bool
+            ``True`` if this node has reached quiescence.
         """
         quiesced = True
         for in_ld in self.in_linkdata:
@@ -272,19 +305,21 @@ class Node(ABC):
 
     @abstractmethod
     def add_link(self, linkdata):
+        """Adding linkdata connecting to this node.
+
+        """
         pass
 
     @abstractmethod
     def compute(self):
-        """
-            Compute method to be called to propagate message during decision phase.
+        """Compute method to be called to propagate messages during decision phase.
 
-            Note that super() must be called within compute() method in any child class, because all abstract node-level
-                statistics logging is taken care of herein.
+        Note that ``super()`` must be called within `compute()` method in any child class, because all abstract
+        node-level statistics logging is taken care of herein.
 
-            The default quiescence behavior for compute() is to return directly if check_quiesce() returns True, without
-                logging anything or carrying out further computation. Note that such behavior may or may not be desired
-                by child node class.
+        The default quiescence behavior for `compute()` is to return directly if `check_quiesce()` returns ``True``,
+        without logging anything or performing any further computation. Note that such behavior may or may not be
+        desired by child node class.
         """
         # Return directly if quiesced
         if self.check_quiesce():
@@ -294,17 +329,25 @@ class Node(ABC):
 
 
 class FactorNode(Node, ABC):
-    """
-        Factor node abstract base class.
+    """Factor node abstract base class.
 
-        Guarantees that all incident nodes are variable nodes.
+    Guarantees that all incident nodes are variable nodes.
+
+    Parameters
+    ----------
+    name : str
+        Name of this factor node.
     """
     def __init__(self, name):
         super(FactorNode, self).__init__(name)
 
     def add_link(self, linkdata):
-        """
-            Add a linkdata connecting to a variable node
+        """Add a linkdata connecting to a variable node
+
+        Parameters
+        ----------
+        linkdata : LinkData
+            The incident linkdata to be registered.
         """
         assert isinstance(linkdata, LinkData)
         assert linkdata.fn is self
@@ -318,45 +361,94 @@ class FactorNode(Node, ABC):
 
 
 class VariableNode(Node, ABC):
-    """
-        Variable node abstract base class.
+    """Variable node abstract base class.
 
-        Guarantees that all incident nodes are factor nodes
-    """
+    Guarantees that all incident nodes are factor nodes
 
-    def __init__(self, name, index_var, rel_var_list, param_var=None, ran_var_list=None):
-        """
-            Decalre a VariableNode
-        :param name:        name of the variable node
-        :param index_var:      Particle indexing variable
-        :param rel_var_list:   list of Variables representing the relational variables of this variable nodes
-        :param ran_var_list:   Optional. list of Variables representing the random variables of this variable nodes
-        :param param_var:      Optional. The parameter variable.
-        """
+    Parameters
+    ----------
+    name : str
+        Name of this variable node.
+    rel_var_list : iterable of Variable
+        Iterable of relational variables. Corresponds to the batch dimensions. Used to check ``b_shape`` attribute of
+        incoming messages.
+    param_var : Variable, optional
+        The parameter variable. Corresponds to the parameter dimension. Used to check ``p_shape`` attribute of incoming
+        messages.
+    index_var_list : iterable of Variable, optional
+        Iterable of indexing variables. Corresponds to the sample dimensions. Used to check ``s_shape`` attribute of
+        incoming messages. Must specify if `ran_var_list` is specified.
+    ran_var_list : iterable of Variable, optional
+        Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of
+        incoming messages. Must specify if `index_var_list` is specified.
+
+    Attributes
+    ----------
+    rel_vars : tuple of Variable
+        Tuple of relational variables, specified by `rel_var_list`.
+    param_var : Variable
+        Parameter variable, specified by `param_var`. Defaults to ``None`` if `param_var` is not specified.
+    index_vars : tuple of Variable
+        Tuple of indexing variables, specified by `index_var_list`. Defaults to ``None`` if `index_var_list` is not
+        specified.
+    ran_vars : tuple of Variable
+        Tuple of random variables, specified by `ran_var_list`. Default sto ``None`` if `ran_var_list` is not specified.
+    b_shape : torch.Size
+        Batch dimension sizes. Inferred from `rel_vars`.
+    p_shape : torch.Size
+        Parameter dimension sizes. Inferred from `param_var`. Defaults to ``torch.Size([])``.
+    s_shape : torch.Size
+        Sample dimension sizes. Inferred from `index_vars`. Defaults to ``torch.Size([])``.
+    e_shape : torch.Size
+        Event dimension sizes. Inferred from `ran_vars`. Defaults to ``torch.Size([])``.
+    """
+    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None):
         super(VariableNode, self).__init__(name)
-        assert isinstance(index_var, Variable)
-        assert isinstance(rel_var_list, Iterable) and all(isinstance(v, Variable) for v in rel_var_list)
-        assert ran_var_list is not None or (isinstance(ran_var_list, Iterable) and
-                                            all(isinstance(v, Variable) for v in ran_var_list))
-        assert param_var is not None or isinstance(param_var, Variable)
+        assert isinstance(rel_var_list, Iterable) and \
+            all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
+        assert param_var is None or \
+            (isinstance(param_var, Variable) and param_var.metatype == VariableMetatype.Parameter)
+        assert index_var_list is None or \
+            (isinstance(index_var_list, Iterable) and
+             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Indexing) for v in index_var_list)
+        assert ran_var_list is None or \
+            (isinstance(ran_var_list, Iterable) and
+             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Random) for v in ran_var_list)
+        assert (index_var_list is None) is (ran_var_list is None)
 
-        self.index_var = index_var
-        self.rel_var_list = rel_var_list
-        self.ran_var_list = ran_var_list
-        self.s_shape = torch.Size([index_var.size])
-        self.b_shape = torch.Size(list(rel_var.size for rel_var in rel_var_list))
-        self.p_shape = torch.Size([param_var.size]) if param_var is not None else None
-        self.e_shape = torch.Size([sum(list(ran_var.size for ran_var in ran_var_list))]) if ran_var_list is not None \
-            else None
+        self.rel_vars = tuple(rel_var_list)
+        self.param_var = param_var
+        self.index_vars = tuple(index_var_list) if index_var_list is not None else None
+        self.ran_vars = tuple(ran_var_list) if ran_var_list is not None else None
+
+        self.b_shape = torch.Size([v.size for v in self.rel_vars])
+        self.p_shape = torch.Size([self.param_var.size]) if self.param_var is not None else torch.Size([])
+        self.s_shape = torch.Size([v.size for v in self.index_vars]) if self.index_vars is not None else torch.Size([])
+        self.e_shape = torch.Size([v.size for v in self.ran_vars]) if self.ran_vars is not None else torch.Size([])
 
     def add_link(self, linkdata):
-        """
-            Register the LinkData connecting a factor node to this variable node.
-            Check that the variable list specified in linkdata agrees with that pre-specified at this variable node
+        """Register the LinkData connecting a factor node to this variable node.
+
+        Checks that the preset message shape specified in `linkdata` agrees with the inferred message shape at this
+        variable node.
+
+        Parameters
+        ----------
+        linkdata : LinkData
+            The incident linkdata to be registered.
+
+        Raises
+        ------
+        AssertionError
+            If the linkdata to be added does not impose the same message shape restriction as this variable node does.
         """
         assert isinstance(linkdata, LinkData)
         assert linkdata.vn is self
-        assert linkdata.msg_shape == (self.s_shape, self.b_shape, self.p_shape, self.e_shape)
+        assert linkdata.msg_shape == (self.b_shape, self.p_shape, self.s_shape, self.e_shape), \
+            "At {}: The linkdata to be registered with the current node does not impose the same message shape " \
+            "restriction as this node does. Current node's shape: (batch_shape, param_shape, sample_shape, " \
+            "event_shape) = {}. Found linkdata's shape: {}"\
+            .format(self.name, (self.b_shape, self.p_shape, self.s_shape, self.e_shape), linkdata.msg_shape)
         if linkdata in self.in_linkdata + self.out_linkdata:
             return
 

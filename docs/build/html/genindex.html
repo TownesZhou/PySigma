@@ -102,6 +102,12 @@
 <li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#linkdata">LinkData</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="references/graphical/abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/abstract-base-nodes.html#factornode">FactorNode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/abstract-base-nodes.html#variablenode">VariableNode</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#subheader1">subheader1</a></li>
 </ul>
@@ -191,7 +197,9 @@
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
+ | <a href="#Q"><strong>Q</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
@@ -219,6 +227,16 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.FactorNode.add_link">add_link() (pysigma.graphical._nodes.FactorNode method)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.add_link">(pysigma.graphical._nodes.Node method)</a>
+</li>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.add_link">(pysigma.graphical._nodes.VariableNode method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.attr">attr (pysigma.defs.Message attribute)</a>
 
       <ul>
@@ -232,7 +250,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.b_shape">b_shape (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.b_shape">(pysigma.graphical._nodes.VariableNode attribute)</a>
 </li>
+      </ul></li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_broaden">batch_broaden() (pysigma.defs.Message method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_diag_embed">batch_diag_embed() (pysigma.defs.Message method)</a>
@@ -243,10 +265,10 @@
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_flatten">batch_flatten() (pysigma.defs.Message method)</a>
 </li>
-      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_put">batch_index_put() (pysigma.defs.Message method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_put">batch_index_put() (pysigma.defs.Message method)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_select">batch_index_select() (pysigma.defs.Message method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_narrow">batch_narrow() (pysigma.defs.Message method)</a>
@@ -267,10 +289,14 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.check_quiesce">check_quiesce() (pysigma.graphical._nodes.Node method)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.clone">clone() (pysigma.defs.Message method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.compute">compute() (pysigma.graphical._nodes.Node method)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.constraints">constraints (pysigma.defs.Variable attribute)</a>
 </li>
   </ul></td>
@@ -292,7 +318,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.e_shape">e_shape (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.e_shape">(pysigma.graphical._nodes.VariableNode attribute)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.epsilon">epsilon (pysigma.graphical._nodes.LinkData attribute)</a>
@@ -305,6 +335,10 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.FactorNode">FactorNode (class in pysigma.graphical._nodes)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.fn">fn (pysigma.graphical._nodes.LinkData attribute)</a>
 </li>
   </ul></td>
@@ -313,6 +347,12 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.in_linkdata">in_linkdata (pysigma.graphical._nodes.Node attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.index_vars">index_vars (pysigma.graphical._nodes.VariableNode attribute)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Indexing">Indexing (pysigma.defs.VariableMetatype attribute)</a>
 </li>
   </ul></td>
@@ -325,6 +365,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.log">log (pysigma.graphical._nodes.Node attribute)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.log_densities">log_densities (pysigma.defs.Message attribute)</a>
 </li>
   </ul></td>
@@ -352,10 +394,24 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.name">name (pysigma.defs.Variable attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.name">(pysigma.graphical._nodes.Node attribute)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.new">new (pysigma.graphical._nodes.LinkData attribute)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node">Node (class in pysigma.graphical._nodes)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.out_linkdata">out_linkdata (pysigma.graphical._nodes.Node attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -364,6 +420,12 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.p_shape">p_shape (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.p_shape">(pysigma.graphical._nodes.VariableNode attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.param_var">param_var (pysigma.graphical._nodes.VariableNode attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.parameter">parameter (pysigma.defs.Message attribute)</a>
 </li>
@@ -380,6 +442,18 @@
       <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Particles">Particles (pysigma.defs.MessageType attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.pretty_log">pretty_log (pysigma.graphical._nodes.LinkData attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.pretty_log">(pysigma.graphical._nodes.Node attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Q">Q</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.quiescence">quiescence (pysigma.graphical._nodes.Node attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -387,6 +461,8 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.ran_vars">ran_vars (pysigma.graphical._nodes.VariableNode attribute)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Random">Random (pysigma.defs.VariableMetatype attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.read">read() (pysigma.graphical._nodes.LinkData method)</a>
@@ -394,6 +470,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.reduce_type">reduce_type() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.rel_vars">rel_vars (pysigma.graphical._nodes.VariableNode attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Relational">Relational (pysigma.defs.VariableMetatype attribute)</a>
 </li>
@@ -406,7 +484,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.s_shape">s_shape (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.s_shape">(pysigma.graphical._nodes.VariableNode attribute)</a>
 </li>
+      </ul></li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.same_particles_as">same_particles_as() (pysigma.defs.Message method)</a>
 </li>
   </ul></td>
@@ -445,9 +527,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable">Variable (class in pysigma.defs)</a>
 </li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype">VariableMetatype (class in pysigma.defs)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype">VariableMetatype (class in pysigma.defs)</a>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode">VariableNode (class in pysigma.graphical._nodes)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.visited">visited (pysigma.graphical._nodes.Node attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.vn">vn (pysigma.graphical._nodes.LinkData attribute)</a>
 </li>

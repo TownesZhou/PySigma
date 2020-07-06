@@ -102,6 +102,12 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#linkdata">LinkData</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#factornode">FactorNode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#variablenode">VariableNode</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#subheader1">subheader1</a></li>
 </ul>
@@ -188,7 +194,7 @@
 <span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span><span class="p">,</span> <span class="n">Transform</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
 <span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="k">import</span> <span class="n">cosine_similarity</span>
-<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span>
+<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span>
 <span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">DistributionServer</span>
 <span class="kn">from</span> <span class="nn">structures</span> <span class="k">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
 
@@ -406,12 +412,36 @@
         <span class="k">return</span> <span class="n">msg</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        The super class of `FactorNode` and `VariableNode`. It declares common attributes between `FactorNode` and</span>
-<span class="sd">            `VariableNode`, for example a flag indicating whether this node has reach quiescence, i.e., whether no new</span>
-<span class="sd">            message shall be sent via adjacent link in curretn cycle. During construction of the graph, its instance</span>
-<span class="sd">            will be passed to `NetworkX` methods to instantiate a node.</span>
+<div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The base class for all nodes in PySigma graphical architecture.</span>
+
+<span class="sd">    Declares common attributes between `FactorNode` and `VariableNode`, for example a flag indicating whether this node</span>
+<span class="sd">    has reach quiescence, i.e., whether no new message shall be sent via adjacent links in current cycle. During</span>
+<span class="sd">    construction of the graph, its instance should be passed to `NetworkX` methods to instantiate a node.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of the node.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of the node.</span>
+<span class="sd">    quiescence : bool</span>
+<span class="sd">        Indicates whether this node has reached quiescence, and no further computation at this node is necessary at</span>
+<span class="sd">        the current cycle. Will default to ``False`` at the start of the cycle.</span>
+<span class="sd">    visited : bool</span>
+<span class="sd">        Indicates whether this node has been visited at all, i.e., `compute()` method being called at the current cycle.</span>
+<span class="sd">        Default to ``False`` at the start of the cycle.</span>
+<span class="sd">    in_linkdata : list of LinkData</span>
+<span class="sd">        List of incoming linkdata.</span>
+<span class="sd">    out_linkdata : list of LinkData</span>
+<span class="sd">        List of outgoing linkdata.</span>
+<span class="sd">    log : dict</span>
+<span class="sd">        Internal log</span>
+<span class="sd">    pretty_log : dict</span>
+<span class="sd">        Pretty log for beautiful front-end visualization.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
@@ -435,11 +465,20 @@
         <span class="c1"># override to provide the node&#39;s name as its string representation</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
-    <span class="k">def</span> <span class="nf">check_quiesce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Check quiescence of incoming linkdata to determine whether this node has reached quiescence</span>
-<span class="sd">            Return True if reached quiescence, False otherwise</span>
-<span class="sd">            Will update self.quiescence accordingly</span>
+<div class="viewcode-block" id="Node.check_quiesce"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.check_quiesce">[docs]</a>    <span class="k">def</span> <span class="nf">check_quiesce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check ``new`` attribute of incoming linkdata to determine whether this node has reached quiescence.</span>
+
+<span class="sd">        By default, a node is determined quiesced if and only if **all** incoming linkdata has no `new` message.</span>
+
+<span class="sd">        .. note::</span>
+
+<span class="sd">            Certain nodes may desire a different behavior for checking quiescence. In that case, this method should be</span>
+<span class="sd">            overridden.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            ``True`` if this node has reached quiescence.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">quiesced</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">:</span>
@@ -447,43 +486,53 @@
                 <span class="n">quiesced</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="k">break</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span> <span class="o">=</span> <span class="n">quiesced</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span></div>
 
-    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Node.add_link"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.add_link">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
-        <span class="k">pass</span>
+        <span class="sd">&quot;&quot;&quot;Adding linkdata connecting to this node.</span>
 
-    <span class="nd">@abstractmethod</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Node.compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.compute">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Compute method to be called to propagate message during decision phase.</span>
+        <span class="sd">&quot;&quot;&quot;Compute method to be called to propagate messages during decision phase.</span>
 
-<span class="sd">            Note that super() must be called within compute() method in any child class, because all abstract node-level</span>
-<span class="sd">                statistics logging is taken care of herein.</span>
+<span class="sd">        Note that ``super()`` must be called within `compute()` method in any child class, because all abstract</span>
+<span class="sd">        node-level statistics logging is taken care of herein.</span>
 
-<span class="sd">            The default quiescence behavior for compute() is to return directly if check_quiesce() returns True, without</span>
-<span class="sd">                logging anything or carrying out further computation. Note that such behavior may or may not be desired</span>
-<span class="sd">                by child node class.</span>
+<span class="sd">        The default quiescence behavior for `compute()` is to return directly if `check_quiesce()` returns ``True``,</span>
+<span class="sd">        without logging anything or performing any further computation. Note that such behavior may or may not be</span>
+<span class="sd">        desired by child node class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Return directly if quiesced</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_quiesce</span><span class="p">():</span>
             <span class="k">return</span>
         <span class="c1"># TODO: Other general logging regarding node computation statistics to be added here</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">visited</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">visited</span> <span class="o">=</span> <span class="kc">True</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">FactorNode</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Factor node abstract base class.</span>
+<div class="viewcode-block" id="FactorNode"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.FactorNode">[docs]</a><span class="k">class</span> <span class="nc">FactorNode</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Factor node abstract base class.</span>
 
-<span class="sd">        Guarantees that all incident nodes are variable nodes.</span>
+<span class="sd">    Guarantees that all incident nodes are variable nodes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this factor node.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Add a linkdata connecting to a variable node</span>
+<div class="viewcode-block" id="FactorNode.add_link"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.FactorNode.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a linkdata connecting to a variable node</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        linkdata : LinkData</span>
+<span class="sd">            The incident linkdata to be registered.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">fn</span> <span class="ow">is</span> <span class="bp">self</span>
@@ -493,56 +542,105 @@
         <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">VariableNode</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Variable node abstract base class.</span>
+<div class="viewcode-block" id="VariableNode"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode">[docs]</a><span class="k">class</span> <span class="nc">VariableNode</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Variable node abstract base class.</span>
 
-<span class="sd">        Guarantees that all incident nodes are factor nodes</span>
+<span class="sd">    Guarantees that all incident nodes are factor nodes</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this variable node.</span>
+<span class="sd">    rel_var_list : iterable of Variable</span>
+<span class="sd">        Iterable of relational variables. Corresponds to the batch dimensions. Used to check ``b_shape`` attribute of</span>
+<span class="sd">        incoming messages.</span>
+<span class="sd">    param_var : Variable, optional</span>
+<span class="sd">        The parameter variable. Corresponds to the parameter dimension. Used to check ``p_shape`` attribute of incoming</span>
+<span class="sd">        messages.</span>
+<span class="sd">    index_var_list : iterable of Variable, optional</span>
+<span class="sd">        Iterable of indexing variables. Corresponds to the sample dimensions. Used to check ``s_shape`` attribute of</span>
+<span class="sd">        incoming messages. Must specify if `ran_var_list` is specified.</span>
+<span class="sd">    ran_var_list : iterable of Variable, optional</span>
+<span class="sd">        Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of</span>
+<span class="sd">        incoming messages. Must specify if `index_var_list` is specified.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rel_vars : tuple of Variable</span>
+<span class="sd">        Tuple of relational variables, specified by `rel_var_list`.</span>
+<span class="sd">    param_var : Variable</span>
+<span class="sd">        Parameter variable, specified by `param_var`. Defaults to ``None`` if `param_var` is not specified.</span>
+<span class="sd">    index_vars : tuple of Variable</span>
+<span class="sd">        Tuple of indexing variables, specified by `index_var_list`. Defaults to ``None`` if `index_var_list` is not</span>
+<span class="sd">        specified.</span>
+<span class="sd">    ran_vars : tuple of Variable</span>
+<span class="sd">        Tuple of random variables, specified by `ran_var_list`. Default sto ``None`` if `ran_var_list` is not specified.</span>
+<span class="sd">    b_shape : torch.Size</span>
+<span class="sd">        Batch dimension sizes. Inferred from `rel_vars`.</span>
+<span class="sd">    p_shape : torch.Size</span>
+<span class="sd">        Parameter dimension sizes. Inferred from `param_var`. Defaults to ``torch.Size([])``.</span>
+<span class="sd">    s_shape : torch.Size</span>
+<span class="sd">        Sample dimension sizes. Inferred from `index_vars`. Defaults to ``torch.Size([])``.</span>
+<span class="sd">    e_shape : torch.Size</span>
+<span class="sd">        Event dimension sizes. Inferred from `ran_vars`. Defaults to ``torch.Size([])``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">index_var</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Decalre a VariableNode</span>
-<span class="sd">        :param name:        name of the variable node</span>
-<span class="sd">        :param index_var:      Particle indexing variable</span>
-<span class="sd">        :param rel_var_list:   list of Variables representing the relational variables of this variable nodes</span>
-<span class="sd">        :param ran_var_list:   Optional. list of Variables representing the random variables of this variable nodes</span>
-<span class="sd">        :param param_var:      Optional. The parameter variable.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_var</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rel_var_list</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">ran_var_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span>
-                                            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ran_var_list</span><span class="p">))</span>
-        <span class="k">assert</span> <span class="n">param_var</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param_var</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Relational</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rel_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">param_var</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">param_var</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">param_var</span><span class="o">.</span><span class="n">metatype</span> <span class="o">==</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Parameter</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">index_var_list</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">index_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span>
+             <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="o">==</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Indexing</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">ran_var_list</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span>
+             <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="o">==</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Random</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ran_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="n">index_var_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="p">(</span><span class="n">ran_var_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">index_var</span> <span class="o">=</span> <span class="n">index_var</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rel_var_list</span> <span class="o">=</span> <span class="n">rel_var_list</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ran_var_list</span> <span class="o">=</span> <span class="n">ran_var_list</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">index_var</span><span class="o">.</span><span class="n">size</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">rel_var</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">rel_var</span> <span class="ow">in</span> <span class="n">rel_var_list</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">param_var</span><span class="o">.</span><span class="n">size</span><span class="p">])</span> <span class="k">if</span> <span class="n">param_var</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="nb">sum</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ran_var</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">ran_var</span> <span class="ow">in</span> <span class="n">ran_var_list</span><span class="p">))])</span> <span class="k">if</span> <span class="n">ran_var_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
-            <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rel_vars</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rel_var_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_var</span> <span class="o">=</span> <span class="n">param_var</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_vars</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">index_var_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">index_var_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">ran_var_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Register the LinkData connecting a factor node to this variable node.</span>
-<span class="sd">            Check that the variable list specified in linkdata agrees with that pre-specified at this variable node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_vars</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">param_var</span><span class="o">.</span><span class="n">size</span><span class="p">])</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_var</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_vars</span><span class="p">])</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_vars</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span><span class="p">])</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([])</span>
+
+<div class="viewcode-block" id="VariableNode.add_link"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Register the LinkData connecting a factor node to this variable node.</span>
+
+<span class="sd">        Checks that the preset message shape specified in `linkdata` agrees with the inferred message shape at this</span>
+<span class="sd">        variable node.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        linkdata : LinkData</span>
+<span class="sd">            The incident linkdata to be registered.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the linkdata to be added does not impose the same message shape restriction as this variable node does.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span> <span class="ow">is</span> <span class="bp">self</span>
-        <span class="k">assert</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">msg_shape</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">msg_shape</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> \
+            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: The linkdata to be registered with the current node does not impose the same message shape &quot;</span> \
+            <span class="s2">&quot;restriction as this node does. Current node&#39;s shape: (batch_shape, param_shape, sample_shape, &quot;</span> \
+            <span class="s2">&quot;event_shape) = </span><span class="si">{}</span><span class="s2">. Found linkdata&#39;s shape: </span><span class="si">{}</span><span class="s2">&quot;</span>\
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">msg_shape</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">linkdata</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">:</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div></div>
 
 
 <span class="sd">&quot;&quot;&quot;</span>
