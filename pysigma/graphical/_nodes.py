@@ -24,15 +24,52 @@ from structures import VariableMap, Summarization
 
 
 class LinkData:
+    """Identifies the data of a directed link between a factor node and a variable node. Stores intermediate messages in
+    its message memory.
+
+    Note that links are directional, and two of such links should be specified with opposite directions to represent
+    a bidirectional link between a factor node and a variable node.
+
+    During construction of the graph, its instance should be passed to NetworkX methods as the edge data to instantiate
+    an edge.
+
+    Parameters
+    ----------
+    vn : VariableNode
+        VariableNode instance that this link is incident to.
+    fn : FactorNode
+        FactorNode instance that this link is incident to.
+    to_fn : bool
+        True if this link is pointing toward the factor node.
+    msg_shape : tuple of torch.Size
+        The shape of the message to carry. Used for sanity check of message shapes. Should be in the format
+        ``(batch_shape, param_shape, sample_shape, event_shape)``. An empty shape ``torch.Size([])`` should be used as
+        the default none shape.
+    epsilon : float, optional
+        Epsilon upper bound for checking message difference.
+
+    Attributes
+    ----------
+    memory : Message or None
+        The message memory buffer.
+    new : bool
+        Indicates if this link-data has received a new message in the current decision phase.
+    vn : VariableNode
+        The incident variable node.
+    fn : FactorNode
+        The incident factor node.
+    msg_shape : tuple of torch.Size
+        The allowable message shape, in the format ``(batch_shape, param_shape, sample_shape, event_shape)``.
+    to_fn : bool
+        Indicates if this link-data is pointing towards a factor node.
+    epsilon : float
+        Epsilon upper bound for checking message difference.
+    attr : dict
+        Additional special attributes specified via `kwargs` in the constructor.
+    pretty_log : dict
+        Pretty logging for front-end visualization.
     """
-        Identify the data of a directed link between a factor node and a variable node. Stores intermediate
-            messages in the message memory
-        Note that links are directional, and two of such links should be specified with opposite directions to
-            represent a bidirectional link between a factor node and a variable node, typically in the case of condacts.
-        During construction of the graph, its instance will be passed to NetworkX methods as the edge data to
-            instantiate an edge.
-    """
-    def __init__(self, vn, fn, to_fn, msg_shape, epsilon, **kwargs):
+    def __init__(self, vn, fn, to_fn, msg_shape, epsilon=10e-5, **kwargs):
         """
         :param vn:      VariableNode instance that this link is incident to
         :param fn:      FactorNode instance that this link is incident to
@@ -44,7 +81,8 @@ class LinkData:
         """
         assert isinstance(vn, VariableNode)
         assert isinstance(fn, FactorNode)
-        assert isinstance(msg_shape, tuple) and all(isinstance(s, torch.Size) for s in msg_shape)
+        assert isinstance(msg_shape, tuple) and len(msg_shape) == 4 and \
+            all(isinstance(s, torch.Size) for s in msg_shape)
         assert isinstance(to_fn, bool)
         assert isinstance(epsilon, float)
 
@@ -75,38 +113,66 @@ class LinkData:
             return fn_name + " --> " + vn_name
 
     def reset_shape(self, msg_shape):
-        """
-            Reset shape for the Message
-            CAUTION: will clear memory buffer and set self.new to False
+        """Reset shape for the Message
 
-            :param msg_shape:       A tuple of torch.Size. Represents all four message shapes.
+        Parameters
+        ----------
+        msg_shape : tuple of torch.Size
+            The target message shape, in the format ``(batch_shape, param_shape, sample_shape, event_shape)``.  An empty
+            shape ``torch.Size([])`` should be used as the default none shape.
+
+        Warnings
+        --------
+        This method will clear the memory buffer ``self.memory`` and set ``self.new`` to False.
         """
-        assert isinstance(msg_shape, tuple) and all(isinstance(s, torch.Size) for s in msg_shape)
+        assert isinstance(msg_shape, tuple) and len(msg_shape) == 4 and \
+            all(isinstance(s, torch.Size) for s in msg_shape)
         self.msg_shape = msg_shape
         self.memory = None
         self.new = False
 
     def write(self, new_msg, check_diff=True, clone=False):
-        """
-            Set the link message memory to the new message arriving at this link.
+        """Writes to the link message memory with the new message specified via `new_msg`. Once a new message is
+        written, ``self.new`` will be set to ``True``.
 
-            If check_diff is True, then will check if the new message is different from the existing one before
-                replacing the existing with the new one.
+        If `check_diff` is ``True``, will check if the new message is different from the existing one before
+        replacing the existing with the new one.
 
-            Messages will be deemed difference in the following cases:
-                - if they are of different types,
-                - if they are both Parameter type and the batch average L2 distance between the two parameter tensors
-                    is larger than epsilon,
-                - if they are both Particles type and they possess either different particle values or different
-                    sampling log densities,
-                - if they are both Particles type, and they possess the same particles values and same sampling log
-                    densities, but the batch average cosine similarity distance between the two particle weight tensors
-                    is larger than epsilon.
+        If `clone` is ``True``, then will first clone `new_msg` and store the cloned message in the memory buffer.
 
-            If want to set a new message of a different message type than the current memory, make sure reset_shape()
-                is first called so that shape check works for the new message.
+        Parameters
+        ----------
+            new_msg : Message
+                The new message to be stored in this link-data.
+            check_diff : bool, optional
+                Whether to compare the difference between stored message against `new_msg` and decide whether to receive
+                the new message and set ``self.new`` to ``True``.
+            clone : bool, optional
+                Whether to clone `new_msg` before storing it in the memory buffer.
 
-            If clone is True, then will store a cloned new_msg
+        Notes
+        -----
+        Messages will be deemed different in the following cases:
+
+            1. If they are of different types,
+            2. If new message has ``MessageType.Undefined`` type,
+            3. If they both have parameters and the batch average L2 distance between the two parameter tensors
+               is larger than ``epsilon``,
+            4. If they both have particles and either their particle value tensors or their particle log sampling
+               tensors are different.
+            5. If they both have particles, and they possess the same particles value tensors and same sampling log
+               density tensors, but the batch average cosine similarity distance between the two particle weight tensors
+               is larger than ``epsilon``.
+
+        .. note::
+
+            When `self` and `other` have type ``MessageType.Both``, the parameters will be chosen over the particles to
+            compare message difference.
+
+        .. note::
+
+           If want to set a new message of a different message type than the current memory, make sure reset_shape()
+           is first called so that shape check works for the new message.
         """
         assert isinstance(new_msg, Message)
         # Check new message shape
@@ -117,37 +183,44 @@ class LinkData:
         #   - self.memory is None
         #   - check_diff is False
         #   - new message has different type
-        #   - message type is Particles and new message has different particle values and/or sampling log densities
+        #   - new message has Undefined type
+        #   - messages have particles and new message has different particle values and/or sampling log densities
         if self.memory is None or check_diff is False or new_msg.type != self.memory.type or \
-                (new_msg.type == MessageType.Particles and not (torch.equal(self.memory.particles, new_msg.particles) and
-                                                                torch.equal(self.memory.log_density, new_msg.log_density))):
+                new_msg.type == MessageType.Undefined or\
+                (MessageType.Particles in new_msg.type and not self.memory.same_particles_as(new_msg)):
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
             return
 
         # Otherwise, check difference by KL-divergence
-        if self.memory.type == MessageType.Parameter:
+        if MessageType.Parameter in self.memory.type:
             # For Parameter message, compare batch average L2 distance
             # Parameter tensor has shape (batch_shape + param_shape), with param_shape of length 1
             # L2 distance is computed along param_shape dimension, i.e., the -1 dimension
-            diff = new_msg.parameters - self.memory.parameters
-            val = diff.norm(dim=-1).mean()
+            val = self.memory.diff_param(new_msg)
         else:
             # For Particles message, compare batch average cosine similarity distance
-            # Particle weights has shape (sample_shape + batch_shape), with sample_shape of length 1
+            # Particle weights has shape (batch_shape + sample_shape)
             # cosine similarity distance is computed along sample_shape dimension. i.e., the 0 dimension
-            val = cosine_similarity(new_msg.weights, self.memory.weights, dim=0).mean()
+            val = self.memory.diff_weight(new_msg)
 
         # Compare distance value with epsilon
         if val > self.epsilon:
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
 
-    def read(self, clone: bool = False):
-        """
-            Return the current content stored in memory. Set new to False to indicate this link message have been read
-                since current cycle
-            if clone is True, return a cloned version of memory content
+    def read(self, clone=False):
+        """Returns the current content stored in memory. Set ``self.new`` to ``False`` to indicate this link message
+        has been read in the current decision phase.
+
+        Parameters
+        ----------
+        clone : bool
+            Whether to return a cloned message of the memory.
+
+        Returns
+        -------
+            The current memory message.
         """
         self.new = False
         msg = self.memory.clone() if clone is True else self.memory

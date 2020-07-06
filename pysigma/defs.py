@@ -4,6 +4,7 @@
 import torch
 from torch.distributions import Distribution, Transform
 from torch.distributions.constraints import Constraint
+from torch.nn.functional import cosine_similarity
 from enum import Enum, Flag, auto
 from collections.abc import Iterable
 import numpy as np
@@ -54,18 +55,6 @@ class Variable:
     """
 
     def __init__(self, name, metatype, size, value_constraints=None):
-        """
-            Instantiate a variable. Optionally indicates a set of value constraints if and only if variable is Random
-                metatype.
-
-            :param name:                a str. The name of this variable
-            :param metatype:            VariableMetatype. The metatype of this variable: Indexing, Relational, Random,
-                                            or Parameter
-            :param size:                an int. The size of the dimension this variable corresponds to
-            :param value_constraints:   an Iterable of torch.distributions.constraints.Constraint instances. The set of
-                                            value constraints that determine the value range (support) of this random
-                                            variable. Should specify if and only if metatype is Random.
-        """
         assert isinstance(name, str)
         assert isinstance(metatype, VariableMetatype)
         assert isinstance(size, int)
@@ -137,14 +126,16 @@ class Message:
     batch_shape : torch.Size
         The size of the batch dimensions. Must be a shape of **at least** length 1.
     param_shape : torch.Size, optional
-        The size of the parameter dimension of `parameter`. Must specify if `msg_type` is ``MessageType.Parameter``.
-        Must be a shape of **exactly** length 1.
+        The size of the parameter dimension of `parameter`. Must specify if `msg_type` is ``MessageType.Parameter`` with
+        a length of **exactly** 1. Default to an empty shape ``torch.Size([])``.
     sample_shape : torch.Size, optional
         The size of the sample dimensions of each particle tensor in `particles` respectively in order. Must specify if
-        message type is ``MessageType.Particle``. Must be a shape of **at least** length 1.
+        message type is ``MessageType.Particles``, with a length equal to the number of particle tensors. Default to an
+        empty shape ``torch.Size([])``.
     event_shape : torch.Size, optional
         The size of the event dimensions of each particle tensor in `particles` respectively in order. Must specify if
-        message type is ``MessageType.Particle``. Must be a shape of **at least** length 1.
+        message type is ``MessageType.Particles``, with a length equal to the number of particle tensors. Default to an
+        empty shape ``torch.Size([])``.
     parameter : torch.Tensor or an int of 0, optional
         The parameter tensor to the batch of distributions this message is encoding. Must specify if the message type is
         ``MessageType.Parameter``. A torch.Tensor of shape ``batch_shape + param_shape`` if the parameters do not
@@ -268,13 +259,13 @@ class Message:
     Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
     """
     def __init__(self, msg_type,
-                 batch_shape=None, param_shape=None, sample_shape=None, event_shape=None,
+                 batch_shape, param_shape=torch.Size([]), sample_shape=torch.Size([]), event_shape=torch.Size([]),
                  parameter=0, particles=None, weight=1, log_densities=None, **kwargs):
         assert isinstance(msg_type, MessageType)
-        assert batch_shape is None or isinstance(batch_shape, torch.Size) and len(batch_shape) >= 1
-        assert param_shape is None or isinstance(param_shape, torch.Size) and len(param_shape) == 1
-        assert sample_shape is None or isinstance(sample_shape, torch.Size) and len(sample_shape) >= 1
-        assert event_shape is None or isinstance(event_shape, torch.Size) and len(event_shape) == len(sample_shape)
+        assert isinstance(batch_shape, torch.Size) and len(batch_shape) >= 1
+        assert isinstance(param_shape, torch.Size) and len(param_shape) <= 1
+        assert isinstance(sample_shape, torch.Size)
+        assert isinstance(event_shape, torch.Size) and len(event_shape) == len(sample_shape)
 
         assert parameter == 0 or isinstance(parameter, torch.Tensor)
         assert particles is None or (isinstance(particles, Iterable) and
@@ -573,9 +564,117 @@ class Message:
         assert isinstance(other, Message)
         return self.size() == other.size()
 
-    """
-            Methods for operations on the message instance itself.
+    def same_particles_as(self, other):
+        """Check if `self` has the same particles as the other message. This include checking the list of particle value
+        tensors as well as checking the list of particle log sampling density tensors.
+
+        .. note::
+
+           Will always return ``False`` if `self` or `other` does not have particles.
+
+        Parameters
+        ----------
+        other : Message
+            The other message.
+
+        Returns
+        -------
+        bool
+            True if `self` has the same particles as the `other` message.
         """
+        assert isinstance(other, Message)
+        if MessageType.Particles not in self.type or MessageType.Particles not in other.type or \
+                len(self.s_shape) != len(other.s_shape):
+            return False
+
+        same = True
+        # Check list of particle value tensors
+        for s_p, o_p in zip(self.particles, other.particles):
+            if not torch.equal(s_p, o_p):
+                same = False
+        # Check list of sampling log density tensors
+        for s_d, o_d in zip(self.log_densities, other.log_densities):
+            if not torch.equal(s_d, o_d):
+                same = False
+
+        return same
+
+    def diff_param(self, other):
+        """Compute the difference between the parameters of `self` and `other`.
+
+        Returns a batch average L2 distance between the two parameters. Since parameters have shape
+        ``(batch_shape, param_shape)``, with ``param_shape`` of exactly length 1, the L2 distance is calculated along
+        ``dim=-1``.
+
+        Parameters
+        ----------
+        other : Message
+            The other message.
+
+        Returns
+        -------
+        torch.Tensor
+            The batch average L2 distance.
+
+        Raises
+        ------
+        AssertionError
+            If `self` and/or `other` do not have parameters.
+
+        See Also
+        --------
+        The L2 norm computation:
+        `torch.norm() <https://pytorch.org/docs/stable/torch.html#torch.norm>`_.
+        """
+        assert isinstance(other, Message)
+        assert MessageType.Parameter in self.type and MessageType.Parameter in other.type
+        # Parameter has shape (batch_shape, param_shape), with param_shape of exactly length one
+        diff = self.parameter - other.parameter
+        val = diff.norm(dim=-1).mean()
+        return val
+
+    def diff_weight(self, other):
+        """Compute the difference between the weight of `self` and `other`.
+
+        Returns a batch average cosine_similarity between the two weight tensors. Since weights have shape
+        ``(batch_shape, weight_shape)``, with ``weight_shape`` of perhaps more than length 1, the weight tensors are
+        first flattened across the sample shape, then the cosine_similarity is calculated across the flattened
+        dimension.
+
+        Note that calculating the difference of weights only makes sense if both messages have the *same* particle value
+        tensors and particle log sampling density tensors. Therefore, `same_particles_as()` will first be called for a
+        sanity check. An assertion error will be raised if `same_particles_as()` returns ``False``.
+
+        Parameters
+        ----------
+        other : Message
+            The other message
+
+        Returns
+        -------
+        torch.Tensor
+            The batch average cosine similarity.
+
+        Raises
+        ------
+        AssertionError
+            If `self` and/or `other` do not have particles.
+        AssertionError
+            If `self` does not have the same particle values and log sampling densities as `other`.
+
+        See Also
+        --------
+        The cosine similarity computation:
+        `torch.nn.functional.cosine_similarity() <https://pytorch.org/docs/stable/nn.functional.html?highlight=cosine#torch.nn.functional.cosine_similarity>`_.
+        """
+        assert isinstance(other, Message)
+        assert MessageType.Particles in self.type and MessageType.Particles in other.type
+        assert self.same_particles_as(other)
+        # weights have shape (batch_shape, weight_shape). Flatten weight_shape
+        x1 = self.weight.reshape(self.b_shape + torch.Size([-1]))
+        x2 = other.weight.reshape(self.b_shape + torch.Size([-1]))
+        val = cosine_similarity(x1, x2, dim=-1).mean()
+        return val
 
     def reduce_type(self, msg_type):
         """Returns a reduced `msg_type` type message from `self`, where irrelevant components w.r.t. 'msg_type' in
