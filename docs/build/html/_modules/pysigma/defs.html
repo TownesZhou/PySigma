@@ -133,7 +133,11 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../../references/utils/index.html">Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../references/utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
@@ -212,7 +216,7 @@
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">DistributionServer</span><span class="p">,</span> <span class="n">KnowledgeTranslator</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">DistributionServer</span>
 
 
 <span class="c1"># Variable Metatypes and Variable for general inference</span>
@@ -495,10 +499,10 @@
 
         <span class="c1"># Check whether necessary arguments are provided</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -534,7 +538,7 @@
 
 <span class="sd">        Implements the semantics of addition operation as in vector spaces. The computational operations used to</span>
 <span class="sd">        implement the semantics are different for different message contents. See</span>
-<span class="sd">        :ref:`Message class notes regarding arithmetic structures&lt;message-arithmetic-structures-notes&gt;`</span>
+<span class="sd">        :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;`</span>
 <span class="sd">        for more details.</span>
 
 <span class="sd">        Only messages with compatible types can be added. This means a ``MessageType.Parameter`` type message can only</span>
@@ -1324,7 +1328,7 @@
             <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">new_parameter</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
             <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag_embed</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">target_dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">target_dim2</span><span class="p">)</span>
             <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">new_parameter</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># weights has shape (b_shape + s_shape)</span>
             <span class="c1"># For weights, the default entries to be filled in places other than the diagonal should be 1&#39;s, so we</span>
             <span class="c1">#   will first fill the log of input into the diagonal and then take exponential. 0&#39;s filled by</span>
@@ -1657,7 +1661,7 @@
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Methods for Manipulations on message events </span>
+<span class="sd">        Methods for Operations on Message Events </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Message.event_transform"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_transform">[docs]</a>    <span class="k">def</span> <span class="nf">event_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trans</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Applies a transformation on the `self`&#39;s event values. Returns the transformed message.</span>
@@ -1720,7 +1724,65 @@
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="n">cloned_msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_msg</span></div>
+
+<div class="viewcode-block" id="Message.event_reweight"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_reweight">[docs]</a>    <span class="k">def</span> <span class="nf">event_reweight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_log_pdf</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a new ``MessageType.Particles`` type message with the same particle values and log sampling density</span>
+<span class="sd">        as `self`, but a different weight tensor, derived from importance weighting `target_log_pdf` against stored</span>
+<span class="sd">        log sampling density tensors in ``self.log_densities``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_log_pdf : torch.Tensor</span>
+<span class="sd">            The batched log pdf of the `self` particles w.r.t. to the batched target distributions the new message is</span>
+<span class="sd">            to encode. Should have shape ``(self.b_shape + self.s_shape)``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            A new importance-reweighted ``MessageType.Particles`` type message with the same particles as `self`.</span>
+
+<span class="sd">        Warnings</span>
+<span class="sd">        --------</span>
+<span class="sd">        Note that all auxiliary attributes stored in ``self.attr``, supplied via additional keyword arguments in the</span>
+<span class="sd">        Message class constructor will be discarded in the returned message.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        The importance weighting procedure can be summarized in two steps::</span>
+
+<span class="sd">            log_ratio = target_log_pdf - joint_log_density</span>
+<span class="sd">            new_weight = normalize(exp(log_ratio))</span>
+
+<span class="sd">        Some remarks:</span>
+
+<span class="sd">        * ``joint_log_density`` here refers to the joint log sampling density of the combinatorially concatenated</span>
+<span class="sd">          marginal event particles in ``self.particles``. Therefore, if there are multiple random variables, this</span>
+<span class="sd">          quantity is derived by first expanding each marginal log sampling density tensor in ``self.log_densities``</span>
+<span class="sd">          to the full sampling dimensions, then taking the sum over all such expanded log density tensor.</span>
+<span class="sd">        * The last step guarantees that ``new_weight`` sums to 1 across sampling dimensions. Note that this step is not</span>
+<span class="sd">          explicitly implemented in this method; we assume it is taken care of by Message class constructor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_log_pdf</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target_log_pdf</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span>
+
+        <span class="c1"># Obtain joint sampling density. Should have shape (self.s_shape)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">joint_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exp_den</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">):</span>
+                <span class="n">dims</span> <span class="o">=</span> <span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">exp_den</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">))</span>
+            <span class="n">joint_density</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">exp_den</span><span class="p">)</span>
+
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">target_log_pdf</span> <span class="o">-</span> <span class="n">joint_density</span><span class="p">)</span>    <span class="c1"># Unweighted</span>
+
+        <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
+                          <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">particles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div></div>
+
 
     <span class="c1"># @staticmethod</span>
     <span class="c1"># def event_translate_2pred(msg, translator):</span>

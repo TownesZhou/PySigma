@@ -135,7 +135,11 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../utils/index.html">Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
@@ -575,7 +579,7 @@ dimension.</p></li>
 <dd><p>Overloads the addition operation <code class="docutils literal notranslate"><span class="pre">+</span></code>.</p>
 <p>Implements the semantics of addition operation as in vector spaces. The computational operations used to
 implement the semantics are different for different message contents. See
-<a class="reference internal" href="#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes regarding arithmetic structures</span></a>
+<a class="reference internal" href="#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a>
 for more details.</p>
 <p>Only messages with compatible types can be added. This means a <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message can only
 be added with one of type <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, and similarly a
@@ -1204,6 +1208,46 @@ of the Jacobian of the transformation:</p>
 <p class="admonition-title">See also</p>
 <p><a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#torch.distributions.transforms.Transform">torch.distributions.Transform</a></p>
 </div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.defs.Message.event_reweight">
+<code class="sig-name descname">event_reweight</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_log_pdf</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_reweight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_reweight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message with the same particle values and log sampling density
+as <cite>self</cite>, but a different weight tensor, derived from importance weighting <cite>target_log_pdf</cite> against stored
+log sampling density tensors in <code class="docutils literal notranslate"><span class="pre">self.log_densities</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>target_log_pdf</strong> (<em>torch.Tensor</em>) – The batched log pdf of the <cite>self</cite> particles w.r.t. to the batched target distributions the new message is
+to encode. Should have shape <code class="docutils literal notranslate"><span class="pre">(self.b_shape</span> <span class="pre">+</span> <span class="pre">self.s_shape)</span></code>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new importance-reweighted <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message with the same particles as <cite>self</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Note that all auxiliary attributes stored in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code>, supplied via additional keyword arguments in the
+Message class constructor will be discarded in the returned message.</p>
+</div>
+<p class="rubric">Notes</p>
+<p>The importance weighting procedure can be summarized in two steps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">log_ratio</span> <span class="o">=</span> <span class="n">target_log_pdf</span> <span class="o">-</span> <span class="n">joint_log_density</span>
+<span class="n">new_weight</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">exp</span><span class="p">(</span><span class="n">log_ratio</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Some remarks:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">joint_log_density</span></code> here refers to the joint log sampling density of the combinatorially concatenated
+marginal event particles in <code class="docutils literal notranslate"><span class="pre">self.particles</span></code>. Therefore, if there are multiple random variables, this
+quantity is derived by first expanding each marginal log sampling density tensor in <code class="docutils literal notranslate"><span class="pre">self.log_densities</span></code>
+to the full sampling dimensions, then taking the sum over all such expanded log density tensor.</p></li>
+<li><p>The last step guarantees that <code class="docutils literal notranslate"><span class="pre">new_weight</span></code> sums to 1 across sampling dimensions. Note that this step is not
+explicitly implemented in this method; we assume it is taken care of by Message class constructor.</p></li>
+</ul>
 </dd></dl>
 
 </dd></dl>

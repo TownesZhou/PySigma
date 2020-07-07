@@ -1,0 +1,839 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pysigma.utils &mdash; PySigma 0.0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../references/index.html">References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../references/cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#conditional">Conditional</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../references/graphical/index.html">Graphical Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#beta-factor-node">Beta Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../references/utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pysigma.utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pysigma.utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Utility functions</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.distributions</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span><span class="p">,</span> <span class="n">ExponentialFamily</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span><span class="p">,</span> <span class="n">integer_interval</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.kl</span> <span class="k">import</span> <span class="n">kl_divergence</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+
+<span class="k">def</span> <span class="nf">intern_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">struc_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add prefix and brackets to transform user provided structure name to internal name</span>
+<span class="sd">    :param name:    Structure name</span>
+<span class="sd">    :param struc_type:    one of &quot;type&quot;, &quot;predicate&quot;, or &quot;conditional</span>
+<span class="sd">    :return:        processed name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">struc_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;predicate&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span> <span class="s2">&quot;unknown type for processing structure name&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;TYPE_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+    <span class="k">elif</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;predicate&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;PRED_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+    <span class="k">elif</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;conditional&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;COND_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">extern_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">struc_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inverse operation of intern_name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">struc_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;predicate&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span> <span class="s2">&quot;unknown type for processing structure name&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;TYPE_&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;predicate&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;PRED_[&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;conditional&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;COND_[&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">name</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="c1"># TODO: Global dictionary that designates which PyTorch&#39;s distribution class is finite discrete</span>
+<span class="n">FINITE_DISCRETE_CLASSES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">,</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">,</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Binomial</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="c1"># TODO: DistributionServer class</span>
+<div class="viewcode-block" id="DistributionServer"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer">[docs]</a><span class="k">class</span> <span class="nc">DistributionServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Serving distribution class dependent utilities</span>
+
+<span class="sd">    * Conversion between PyTorch distribution parameters and distribution instance:</span>
+
+<span class="sd">      ``param2dist()``, ``dist2param()``</span>
+
+<span class="sd">    * Translation between PyTorch distribution parameters and natural parameters for exponential family distribution:</span>
+
+<span class="sd">      ``natural2exp_dist()``, ``exp_dist2natural()``</span>
+
+<span class="sd">    * Get vector of moments from a given distribution instance:</span>
+
+<span class="sd">      ``get_moments()``</span>
+
+<span class="sd">    * Draw particles from distribution instance:</span>
+
+<span class="sd">      ``draw_particles()``</span>
+
+<span class="sd">    * Get log probability density from given particles:</span>
+
+<span class="sd">      ``log_pdf()``</span>
+
+
+<span class="sd">    Certain distribution classes require special handling, for example for those categorized as finite discrete,</span>
+<span class="sd">    particle values will be drawn uniformly, covering every value in the RV&#39;s value range (support) once and only once,</span>
+<span class="sd">    while assigning each particle its probability mass as its particle weight.</span>
+
+<span class="sd">    Therefore we delegate all such special handling to this class on an individual basis.</span>
+
+<span class="sd">    Note that input and output will conform to the format understandable by PyTorch&#39;s distribution class. To</span>
+<span class="sd">    translate to and from formats compatible to PySigma&#39;s predicate knowledge, use KnowledgeServer class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">param2dist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Conversion from PyTorch distribution parameters to distribution instance</span>
+<span class="sd">            Return a distribution instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_param2dist</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Conversion from parameters to distribution instance for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; &quot;</span>
+                                      <span class="s2">&quot;not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+
+        <span class="n">dist</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_param2dist</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">!=</span> <span class="n">b_shape</span> <span class="ow">or</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span> <span class="o">!=</span> <span class="n">e_shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The shape of the generated distribution </span><span class="si">{}</span><span class="s2"> does not match the provided shape. &quot;</span>
+                             <span class="s2">&quot;Provided (batch_shape, event_shape) == (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">), but instead got (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">).&quot;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dist</span><span class="p">),</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">dist</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">dist2param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Conversion from distribution instance to PyTorch distribution parameters</span>
+<span class="sd">            Return a parameter tensor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="n">dist_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_dist2param</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Conversion from distribution instance to parameters for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; &quot;</span>
+                                      <span class="s2">&quot;not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_dist2param</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">natural2exp_param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Translation from natural parameters to PyTorch distribution parameters for exponential family</span>
+<span class="sd">            Return a parameter tensor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">natural_params</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">ExponentialFamily</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_natural2exp_param</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Translation from natural parameters to PyTorch distribution parameters for &quot;</span>
+                                      <span class="s2">&quot;distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_natural2exp_param</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">exp_param2natural</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">exp_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Translation from PyTorch distribution parameters to natural parameters for exponential family</span>
+<span class="sd">            Return a parameter tensor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exp_params</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">ExponentialFamily</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_exp_param2natural</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Translation from natural parameters to PyTorch distribution parameters for &quot;</span>
+                                      <span class="s2">&quot;distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_exp_param2natural</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">exp_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">natural2exp_dist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Composition of param2dist() with natural2exp_param()</span>
+<span class="sd">            Return a distribution instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">natural2exp_param</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">)</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dist</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">exp_dist2natural</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Composition of exp_param2natural() with dist2param()</span>
+<span class="sd">            Return a parameter tensor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">exp_param</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dist2param</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+        <span class="n">natural</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">exp_param2natural</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">),</span> <span class="n">exp_param</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">natural</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_moments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get vector of moments from a given distribution instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_moments</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n_moments</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+        <span class="n">dist_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Get moments method for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            TODO: Gibbs sampling procedure</span>
+<span class="sd">            Draw a given number of particles from the given batch of distribution instances. Return a tuple:</span>
+<span class="sd">                    (particles, weights, sampling_log_densities)</span>
+
+<span class="sd">            The Gibbs&#39; Sampling procedure is used to draw a single list of particles that will be used by each</span>
+<span class="sd">                distribution instance in the batch to derive individual weights by importance weighting.</span>
+
+<span class="sd">            Particles drawn are in the format compatible with PyTorch&#39;s distribution class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_particles</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+
+        <span class="n">dist_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_draw_particles</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Draw particles method for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_draw_particles</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">)</span>
+
+        <span class="c1"># shape check</span>
+        <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">num_particles</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">particles</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span> <span class="o">+</span> <span class="n">e_shape</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">weights</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span>
+                                                               <span class="n">weights</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sampling_log_densities</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sampling_log_densities</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span>
+
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">log_pdf</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get the log pdf of the given particles w.r.t. the given distribution instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+
+        <span class="n">dist_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_log_pdf</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Get log pdf method for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_log_pdf</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">particles</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">kl_norm</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist1</span><span class="p">,</span> <span class="n">dist2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get the norm of the KL divergence of two given batched distributions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist1</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist2</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">dist1</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">==</span> <span class="n">dist2</span><span class="o">.</span><span class="n">batch_shape</span>
+        <span class="n">kl</span> <span class="o">=</span> <span class="n">kl_divergence</span><span class="p">(</span><span class="n">dist1</span><span class="p">,</span> <span class="n">dist2</span><span class="p">)</span>
+        <span class="n">kl_norm</span> <span class="o">=</span> <span class="n">kl</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">kl_norm</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">transform_param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">trans</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            TODO: implement</span>
+<span class="sd">            Return the parameter of the transformed distribution</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        DEFAULT methods that may be applicable to multiple general distribution classes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_get_moments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Default method for getting moments, but only supports up to second order moment (i.e. X^2)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">n_moments</span> <span class="o">&lt;=</span> <span class="mi">2</span>
+
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">mean</span>
+        <span class="k">if</span> <span class="n">n_moments</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mean</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">square</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">variance</span> <span class="o">+</span> <span class="n">mean</span> <span class="o">**</span> <span class="mi">2</span>
+            <span class="c1"># Stack mean and square to insert a new last dimension</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">mean</span><span class="p">,</span> <span class="n">square</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_draw_particles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Default method for drawing particles. Draw according to the distribution itself.</span>
+<span class="sd">            Therefore, weights are uniform, and sampling log densities are the distribution&#39;s log pdf</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">num_particles</span><span class="p">])</span>
+        <span class="n">particles</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">sample_shape</span><span class="o">=</span><span class="n">s_shape</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># uniform weights</span>
+        <span class="n">sampling_log_densities</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">particles</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_log_pdf</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="n">log_pdf</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">particles</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">log_pdf</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Categorical distribution</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_categorical_param2dist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            For categorical, params assumed to be fed as the &#39;probs&#39; attribute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">probs</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dist</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_categorical_dist2param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance&#39;s</span>
+<span class="sd">                &#39;probs&#39; attribute. Particles will be drawn uniformly covering every value in the RV&#39;s domain once and</span>
+<span class="sd">                only once, while their probability mass will be assigned as the particle weights respectively.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">)</span>
+        <span class="n">span</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">b_shape</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span>
+        <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">num_particles</span><span class="p">)</span>
+
+        <span class="n">particles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">span</span><span class="p">):</span>
+            <span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">i</span>
+
+        <span class="c1"># Weights obtained from probs attribute, by simply permuting the last dimension to first dimension</span>
+        <span class="n">n_dims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="n">n_dims</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_dims</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>      <span class="c1"># clone to prevent accidental in-place value change</span>
+
+        <span class="c1"># Since we are effectively drawing particles uniformly from the finite discrete domain, the sampling pdf is also</span>
+        <span class="c1">#   uniform</span>
+        <span class="n">sampling_log_densities</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        distribution class dependent method pointer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dict_draw_particles</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="n">_categorical_draw</span>
+    <span class="p">}</span>
+    <span class="n">dict_log_pdf</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_param2dist</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_dist2param</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_natural2exp_param</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_exp_param2natural</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_natural2exp_dist</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_exp_dist2natural</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_get_moments</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span></div>
+
+
+<span class="c1"># TODO: Particle knowledge translator class</span>
+<span class="k">class</span> <span class="nc">KnowledgeServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        knowledge translator class. Translate knowledge tensors between the forms understandable by Predicate and that</span>
+<span class="sd">            understandable by PyTorch&#39;s distribution class. This includes both event particle tensors and parameter</span>
+<span class="sd">            tensors.</span>
+
+<span class="sd">        Different distribution class requires different handling, but in general values for multiple random variables</span>
+<span class="sd">            (potentially of different sizes) will be concatenated together to form the last dimension of event samples</span>
+<span class="sd">            that can be interpreted by PyTorch. Therefore when translating back to Predicate knowledge format, what</span>
+<span class="sd">            is returned is a TUPLE of tensors, size of which equal to the number of RVs, and each tensor within which</span>
+<span class="sd">            corresponds to one RV&#39;s value assignment respectively. Similarly, what is taken when translating from</span>
+<span class="sd">            Predicate knowledge to PyTorch&#39;s knowledge is also a tuple of tensors</span>
+
+<span class="sd">        A translator instance should be instantiated and hold by each Predicate. When instantiated, also check if</span>
+<span class="sd">            provided var_sizes and var_constraints are compatible with dist_class. This is also distribution class</span>
+<span class="sd">            dependent therefore needs individual implementation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">var_sizes</span><span class="p">,</span> <span class="n">var_constraints</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Instantiate a translator</span>
+
+<span class="sd">            :param dist_class: A subclass of torch.distributions.Distributions</span>
+<span class="sd">            :param var_sizes:  A sequence of integers, denoting the sizes of a predicate&#39;s random variables. The order</span>
+<span class="sd">                               will be respected when concatenating event values.</span>
+<span class="sd">            :param var_constraints: A sequence of torch.distributions.constraints.Constraint object. Each denoting the</span>
+<span class="sd">                                    value constraint of the corresponding random variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># distribution-dependent translation method pointer. Indexed by distribution class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2format_check</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_format_check</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_event</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2torch_event</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2pred_event</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2pred_event</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_param</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2torch_param</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2pred_param</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2pred_param</span>
+        <span class="p">}</span>
+
+        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var_sizes</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">var_sizes</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var_constraints</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">var_constraints</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_sizes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_constraints</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="o">=</span> <span class="n">dist_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var_sizes</span> <span class="o">=</span> <span class="n">var_sizes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var_constraints</span> <span class="o">=</span> <span class="n">var_constraints</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_vars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_sizes</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_format_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2format_check</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Format check for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2format_check</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">]()</span>
+
+    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">event2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Translate event particles from the format understandable by Predicate to the format understandable by</span>
+<span class="sd">                PyTorch</span>
+<span class="sd">            Take as input a tuple of torch tensors. Check that sizes of last dimensions equal to sizes of RVs</span>
+<span class="sd">            Return a single torch tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Do not check particle last dimension&#39;s size if var size is 1, because likely a dimension of size 1 will be</span>
+        <span class="c1">#   squeezed</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_vars</span> <span class="ow">and</span> \
+               <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">particles</span><span class="p">)</span> <span class="ow">and</span> \
+               <span class="nb">all</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">var_size</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">var_size</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_sizes</span><span class="p">)</span> <span class="k">if</span> <span class="n">var_size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_event</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Translation for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_event</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">](</span><span class="n">particles</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">event2pred_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Translate event particles from the format understandable by PyTorch to the format understandable by</span>
+<span class="sd">                Predicate</span>
+<span class="sd">            Take as input a single torch tensor.</span>
+<span class="sd">            Return a tuple of torch tensors, each corresponding to one RV&#39;s value assignment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2pred_event</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Translation for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2pred_event</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">](</span><span class="n">particles</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">param2torch_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Translate parameters from the format understandable by Predicate to the format understandable by</span>
+<span class="sd">                PyTorch</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_param</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Translation for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_param</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">](</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">param2pred_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Translate parameters from the format understandable by PyTorch to the format understandable by</span>
+<span class="sd">                Predicate</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2pred_param</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Translation for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2pred_param</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">](</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Default translation. </span>
+<span class="sd">            - event translation from pred to torch:</span>
+<span class="sd">                Take a tuple of tensors. Concatenate along last dimension</span>
+<span class="sd">            - event translation from torch to pred:</span>
+<span class="sd">                Take a tensor. Split last dimension according to the sizes of RVs. Return a tuple of tensors</span>
+<span class="sd">            - parameter translation from pred to torch:</span>
+<span class="sd">                Assume same format. No special computation</span>
+<span class="sd">            - parameter translation from torch to pred:</span>
+<span class="sd">                Assume same format. No special computation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_default_2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_default_2pred_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_default_do_nothing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stuff</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">stuff</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Categorical distribution. Assumes all RV have size 1</span>
+<span class="sd">            - format check</span>
+<span class="sd">                - var_sizes are all 1</span>
+<span class="sd">                - var_constraints are all integer_interval</span>
+<span class="sd">            - event translation from pred to torch:</span>
+<span class="sd">                Take a tuple of tensors each corresponding to one RV&#39;s value assignment. Compute value by taking volume </span>
+<span class="sd">                product</span>
+<span class="sd">            - event translation from torch to pred:</span>
+<span class="sd">                Take volume modulo of the event values. Return a tuple a tensors</span>
+<span class="sd">            - parameter translation from pred to torch:</span>
+<span class="sd">                Flatten R.V. dimension into single dimension</span>
+<span class="sd">            - parameter translation from torch to pred:</span>
+<span class="sd">                Reshape last dimension into multiple dimensions, numbers of dims equal to the numbers of R.V.s</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_categorical_format_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">var_size</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">var_size</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_sizes</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Categorical distribution: Random Variables must all have size of 1. Found: &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var_sizes</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">integer_interval</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_constraints</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Categorical distribution: Random Variables must all declare &#39;integer_interval&#39; value &quot;</span>
+                             <span class="s2">&quot;constraints. Found: &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var_constraints</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_var_span</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Helper function to determine the value range of each rv</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">integer_interval</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_constraints</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">-</span> <span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_constraints</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+
+        <span class="c1"># Taking volume product</span>
+        <span class="n">volume_prod</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># Going backward through spans to take product</span>
+        <span class="k">for</span> <span class="n">val</span><span class="p">,</span> <span class="n">span</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">particles</span><span class="p">),</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">var_span</span><span class="p">)):</span>
+            <span class="c1"># Cumulative summation by the product of i_th variable&#39;s value with its base</span>
+            <span class="n">volume_prod</span> <span class="o">+=</span> <span class="n">val</span> <span class="o">*</span> <span class="n">base</span>
+            <span class="c1"># Base of i_th var is the product of the spans of all later variables (i.e. from (i+1)th to n_th variable)</span>
+            <span class="n">base</span> <span class="o">*=</span> <span class="n">span</span>
+
+        <span class="k">return</span> <span class="n">volume_prod</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_2pred_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+
+        <span class="c1"># Treat values as volume products and take mod w.r.t. variables&#39; spans</span>
+        <span class="n">particle_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">residue</span> <span class="o">=</span> <span class="n">particles</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">var_span</span><span class="p">)</span>
+        <span class="c1"># Going forward through spans to take modulo</span>
+        <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">:</span>
+            <span class="n">base</span> <span class="o">/=</span> <span class="n">span</span>
+            <span class="n">particle_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">residue</span> <span class="o">%</span> <span class="n">base</span><span class="p">)</span>
+            <span class="n">residue</span> <span class="o">=</span> <span class="n">residue</span> <span class="o">//</span> <span class="n">base</span>
+
+        <span class="c1"># Return a tuple of tensors</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">particle_list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_2torch_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+        <span class="n">old_shape</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">assert</span> <span class="n">old_shape</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">var_span</span><span class="p">):]</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">var_span</span><span class="p">)</span>
+
+        <span class="c1"># Take a view of the parameter that flattens R.V. dimension</span>
+        <span class="n">new_shape</span> <span class="o">=</span> <span class="n">old_shape</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">var_span</span><span class="p">)]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">new_params</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">new_shape</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_params</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_2pred_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">math</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">var_span</span><span class="p">)</span>
+
+        <span class="c1"># Take a view of the parameter that expands last dimension into full R.V. dimensions</span>
+        <span class="n">new_shape</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">var_span</span><span class="p">)</span>
+        <span class="n">new_params</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">new_shape</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_params</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

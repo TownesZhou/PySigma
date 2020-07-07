@@ -1,6 +1,8 @@
 Abstract Base Nodes
 ===================
 
+.. currentmodule:: pysigma.graphical._nodes
+
 Node
 ----
 

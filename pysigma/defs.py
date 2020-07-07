@@ -9,7 +9,7 @@ from enum import Enum, Flag, auto
 from collections.abc import Iterable
 import numpy as np
 from copy import deepcopy
-from utils import DistributionServer, KnowledgeTranslator
+from utils import DistributionServer
 
 
 # Variable Metatypes and Variable for general inference
@@ -292,10 +292,10 @@ class Message:
 
         # Check whether necessary arguments are provided
         if MessageType.Parameter in self.type:
-            assert self.b_shape is not None and self.p_shape is not None
+            assert len(self.p_shape) >= 1
             assert self.parameter is not None
         if MessageType.Particles in self.type:
-            assert self.s_shape is not None and self.b_shape is not None and self.e_shape is not None
+            assert len(self.s_shape) >= 1
             assert self.particles is not None
             assert self.weight is not None
             assert self.log_densities is not None
@@ -331,7 +331,7 @@ class Message:
 
         Implements the semantics of addition operation as in vector spaces. The computational operations used to
         implement the semantics are different for different message contents. See
-        :ref:`Message class notes regarding arithmetic structures<message-arithmetic-structures-notes>`
+        :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>`
         for more details.
 
         Only messages with compatible types can be added. This means a ``MessageType.Parameter`` type message can only
@@ -1121,7 +1121,7 @@ class Message:
             new_parameter = new_parameter.permute(perm_order)
             new_parameter = torch.diag_embed(new_parameter, dim1=target_dim1, dim2=target_dim2)
             new_parameter = new_parameter.contiguous()
-        if isinstance(self.weights, torch.Tensor):
+        if isinstance(new_weight, torch.Tensor):
             # weights has shape (b_shape + s_shape)
             # For weights, the default entries to be filled in places other than the diagonal should be 1's, so we
             #   will first fill the log of input into the diagonal and then take exponential. 0's filled by
@@ -1454,7 +1454,7 @@ class Message:
         return new_msg
 
     """
-        Methods for Manipulations on message events 
+        Methods for Operations on Message Events 
     """
     def event_transform(self, trans):
         """Applies a transformation on the `self`'s event values. Returns the transformed message.
@@ -1518,6 +1518,67 @@ class Message:
                           cloned_msg.p_shape, cloned_msg.s_shape, cloned_msg.b_shape, cloned_msg.e_shape,
                           new_parameter, new_particles, cloned_msg.weight, new_log_densities, **cloned_msg.attr)
         return new_msg
+
+    def event_reweight(self, target_log_pdf):
+        """Returns a new ``MessageType.Particles`` type message with the same particle values and log sampling density
+        as `self`, but a different weight tensor, derived from importance weighting `target_log_pdf` against stored
+        log sampling density tensors in ``self.log_densities``.
+
+        Parameters
+        ----------
+        target_log_pdf : torch.Tensor
+            The batched log pdf of the `self` particles w.r.t. to the batched target distributions the new message is
+            to encode. Should have shape ``(self.b_shape + self.s_shape)``.
+
+        Returns
+        -------
+        Message
+            A new importance-reweighted ``MessageType.Particles`` type message with the same particles as `self`.
+
+        Warnings
+        --------
+        Note that all auxiliary attributes stored in ``self.attr``, supplied via additional keyword arguments in the
+        Message class constructor will be discarded in the returned message.
+
+        Notes
+        -----
+        The importance weighting procedure can be summarized in two steps::
+
+            log_ratio = target_log_pdf - joint_log_density
+            new_weight = normalize(exp(log_ratio))
+
+        Some remarks:
+
+        * ``joint_log_density`` here refers to the joint log sampling density of the combinatorially concatenated
+          marginal event particles in ``self.particles``. Therefore, if there are multiple random variables, this
+          quantity is derived by first expanding each marginal log sampling density tensor in ``self.log_densities``
+          to the full sampling dimensions, then taking the sum over all such expanded log density tensor.
+        * The last step guarantees that ``new_weight`` sums to 1 across sampling dimensions. Note that this step is not
+          explicitly implemented in this method; we assume it is taken care of by Message class constructor.
+        """
+        assert MessageType.Particles in self.type
+        assert isinstance(target_log_pdf, torch.Tensor) and target_log_pdf.shape == self.b_shape + self.s_shape
+
+        # Obtain joint sampling density. Should have shape (self.s_shape)
+        if len(self.s_shape) == 1:
+            joint_density = self.log_densities[0]
+        else:
+            exp_den = []
+            for i, d in enumerate(self.log_densities):
+                dims = ([1] * (len(self.s_shape) - 1)).insert(i, -1)
+                exp_den.append(d.view(dims).expand(self.s_shape))
+            joint_density = sum(exp_den)
+
+        # Make joint_density broadcastable by prepending batch dimensions
+        dims = [1] * len(self.b_shape) + list(self.s_shape)
+        joint_density = joint_density.view(dims)
+        new_weight = torch.exp(target_log_pdf - joint_density)    # Unweighted
+
+        new_msg = Message(MessageType.Particles,
+                          batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                          particles=self.particles, weight=new_weight, log_densities=self.log_densities)
+        return new_msg
+
 
     # @staticmethod
     # def event_translate_2pred(msg, translator):

@@ -6,4 +6,4 @@ References
    
    cognitive
    graphical/index
-   utils/index
+   utils

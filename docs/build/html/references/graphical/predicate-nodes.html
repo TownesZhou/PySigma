@@ -135,7 +135,11 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../utils/index.html">Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
@@ -212,6 +216,85 @@
 <h1>Predicate Subgraph Nodes<a class="headerlink" href="#predicate-subgraph-nodes" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="working-memory-variable-node">
 <h2>Working Memory Variable Node<a class="headerlink" href="#working-memory-variable-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical._nodes.WMVN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">WMVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">dist_class</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Working Memory Variable Node.</p>
+<p>Gate node connecting predicate structure to conditionals.</p>
+<p>Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of FAN
+node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist Particles
+type messages but all of them are homogeneous (sharing the same particle values as well as sampling log densities).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this variable node.</p></li>
+<li><p><strong>dist_class</strong> (<em>type</em>) – The distribution class that the Predicate assumes. Must be a subclass of torch.distributions.Distribution.</p></li>
+<li><p><strong>rel_var_list</strong> (<em>iterable of Variable</em>) – Iterable of relational variables. Corresponds to the batch dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">b_shape</span></code> attribute of
+incoming messages.</p></li>
+<li><p><strong>param_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a><em>, </em><em>optional</em>) – The parameter variable. Corresponds to the parameter dimension. Used to check <code class="docutils literal notranslate"><span class="pre">p_shape</span></code> attribute of incoming
+messages.</p></li>
+<li><p><strong>index_var_list</strong> (<em>iterable of Variable</em><em>, </em><em>optional</em>) – Iterable of indexing variables. Corresponds to the sample dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">s_shape</span></code> attribute of
+incoming messages. Must specify if <cite>ran_var_list</cite> is specified.</p></li>
+<li><p><strong>ran_var_list</strong> (<em>iterable of Variable</em><em>, </em><em>optional</em>) – Iterable of random variables. Corresponds to the event dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">e_shape</span></code> attribute of
+incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.WMVN.dist_class">
+<code class="sig-name descname">dist_class</code><a class="headerlink" href="#pysigma.graphical._nodes.WMVN.dist_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>The distribution class that the Predicate assumes. Must be a subclass of torch.distributions.Distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<p>Following combination procedure is carried out to conform to the standard of all inference methods</p>
+<ol class="arabic">
+<li><p>If all messages are of type <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, i.e., all containing parameters,
+then the default combination behavior is to take the sum over all the parameters. The assumption made here is
+that these parameters reside in some parameter vector space, and that the addition operation is well-defined.
+See <a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more
+details.</p>
+<p>The parameter representation of distributions is given a higher priority than the particle representation.
+Therefore, in this case, the particles in <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type message would be discarded by calling
+<cite>reduce_type()</cite> method on the message.</p>
+</li>
+<li><p>If there exists <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type incoming message, meaning that it contains only particles:</p>
+<ol class="loweralpha simple">
+<li><p>Find all messages of such type, and ensure that their particles are homogeneous.</p></li>
+<li><p>If there are other <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type messages, then the particles in
+above messages will be borrowed as the surrogate particles, and be importance weighted w.r.t. the distribution
+parameter to form a <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message.</p></li>
+<li><p>As all message now possess particles as representation for the distributions, the combination will be taken
+by taking the element-wise multiplication of the weight tensors with normalization. See
+<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more details.</p></li>
+</ol>
+</li>
+</ol>
+<p>Since occasionally querying log pdf is to be performed, WMVN thus needs to know the distribution class the
+predicate it belongs to is assuming.</p>
+<p>When combining messages, will exclude message from the link to which the combined message is to send to (if
+such a bidirected link exists). This implements the Sum-Product algorithm’s variable node semantics, if
+this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.</p>
+<p>Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
+share the same set of incoming links that provide the messages, previously computed result will be reused</p>
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.WMVN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute method to be called to propagate messages during decision phase.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
+node-level statistics logging is taken care of herein.</p>
+<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>check_quiesce()</cite> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+without logging anything or performing any further computation. Note that such behavior may or may not be
+desired by child node class.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="long-term-memory-factor-node">
 <h2>Long-Term Memory Factor Node<a class="headerlink" href="#long-term-memory-factor-node" title="Permalink to this headline">¶</a></h2>

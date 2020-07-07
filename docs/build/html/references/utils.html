@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Cognitive Language Interface &mdash; PySigma 0.0.2 documentation</title>
+  <title>Utils &mdash; PySigma 0.0.2 documentation</title>
   
 
   
@@ -36,8 +36,8 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Graphical Architecture" href="graphical/index.html" />
-    <link rel="prev" title="References" href="index.html" /> 
+    <link rel="next" title="Example Models" href="../examples/index.html" />
+    <link rel="prev" title="Other Structural Nodes" href="graphical/other-structural-nodes.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -89,10 +89,10 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">References</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Cognitive Language Interface</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#type">Type</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#predicate">Predicate</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#conditional">Conditional</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cognitive.html#conditional">Conditional</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="graphical/index.html">Graphical Architecture</a><ul>
@@ -135,9 +135,9 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="utils.html#distributionserver">DistributionServer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="utils.html#knowledgeserver">KnowledgeServer</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#knowledgeserver">KnowledgeServer</a></li>
 </ul>
 </li>
 </ul>
@@ -191,13 +191,13 @@
         
           <li><a href="index.html">References</a> &raquo;</li>
         
-      <li>Cognitive Language Interface</li>
+      <li>Utils</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../_sources/references/cognitive.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/references/utils.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -210,16 +210,42 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="cognitive-language-interface">
-<h1>Cognitive Language Interface<a class="headerlink" href="#cognitive-language-interface" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="type">
-<h2>Type<a class="headerlink" href="#type" title="Permalink to this headline">¶</a></h2>
+  <div class="section" id="utils">
+<h1>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="distributionserver">
+<h2>DistributionServer<a class="headerlink" href="#distributionserver" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.utils.DistributionServer">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.utils.</code><code class="sig-name descname">DistributionServer</code><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serving distribution class dependent utilities</p>
+<ul>
+<li><p>Conversion between PyTorch distribution parameters and distribution instance:</p>
+<p><code class="docutils literal notranslate"><span class="pre">param2dist()</span></code>, <code class="docutils literal notranslate"><span class="pre">dist2param()</span></code></p>
+</li>
+<li><p>Translation between PyTorch distribution parameters and natural parameters for exponential family distribution:</p>
+<p><code class="docutils literal notranslate"><span class="pre">natural2exp_dist()</span></code>, <code class="docutils literal notranslate"><span class="pre">exp_dist2natural()</span></code></p>
+</li>
+<li><p>Get vector of moments from a given distribution instance:</p>
+<p><code class="docutils literal notranslate"><span class="pre">get_moments()</span></code></p>
+</li>
+<li><p>Draw particles from distribution instance:</p>
+<p><code class="docutils literal notranslate"><span class="pre">draw_particles()</span></code></p>
+</li>
+<li><p>Get log probability density from given particles:</p>
+<p><code class="docutils literal notranslate"><span class="pre">log_pdf()</span></code></p>
+</li>
+</ul>
+<p>Certain distribution classes require special handling, for example for those categorized as finite discrete,
+particle values will be drawn uniformly, covering every value in the RV’s value range (support) once and only once,
+while assigning each particle its probability mass as its particle weight.</p>
+<p>Therefore we delegate all such special handling to this class on an individual basis.</p>
+<p>Note that input and output will conform to the format understandable by PyTorch’s distribution class. To
+translate to and from formats compatible to PySigma’s predicate knowledge, use KnowledgeServer class</p>
+</dd></dl>
+
 </div>
-<div class="section" id="predicate">
-<h2>Predicate<a class="headerlink" href="#predicate" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="conditional">
-<h2>Conditional<a class="headerlink" href="#conditional" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="knowledgeserver">
+<h2>KnowledgeServer<a class="headerlink" href="#knowledgeserver" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -231,10 +257,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="graphical/index.html" class="btn btn-neutral float-right" title="Graphical Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../examples/index.html" class="btn btn-neutral float-right" title="Example Models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral float-left" title="References" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="graphical/other-structural-nodes.html" class="btn btn-neutral float-left" title="Other Structural Nodes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
