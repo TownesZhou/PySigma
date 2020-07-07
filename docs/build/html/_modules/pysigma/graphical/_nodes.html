@@ -127,8 +127,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html">Other Structural Nodes</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
 </ul>
 </li>
 </ul>
@@ -668,71 +668,144 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 
-<span class="k">class</span> <span class="nc">DFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Default (Dummy) Factor Node.</span>
+<div class="viewcode-block" id="DFN"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DFN">[docs]</a><span class="k">class</span> <span class="nc">DFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Default (Dummy) Factor Node.</span>
 
-<span class="sd">        No special computation. Simply relay message to one or multiple variable nodes</span>
-<span class="sd">        Requires that incident variable nodes have the same variable list</span>
-<span class="sd">        Only admit one incoming link but can connect with multiple outgoing links</span>
+<span class="sd">    No special computation. Simply relays message to one or multiple incident variable nodes. Requires that incident</span>
+<span class="sd">    variable nodes share the same variables. Only admits one incoming link but can connect with multiple outgoing links.</span>
+
+<span class="sd">    Since all incident variable nodes should share the same variables, these variables will also be registered in the</span>
+<span class="sd">    attributes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this node.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rel_vars : tuple of Variable</span>
+<span class="sd">        Tuple of relational variables.</span>
+<span class="sd">    param_var : Variable</span>
+<span class="sd">        Parameter variable.</span>
+<span class="sd">    index_vars : tuple of Variable</span>
+<span class="sd">        Tuple of indexing variables.</span>
+<span class="sd">    ran_vars : tuple of Variable</span>
+<span class="sd">        Tuple of random variables.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Default Factor Node&quot;</span>
 
         <span class="c1"># Since all incident nodes should have the same variable list, we can therefore log it here as an attribute</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">index_var</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rel_var_list</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ran_var_list</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rel_vars</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_var</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_vars</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+<div class="viewcode-block" id="DFN.add_link"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Checks that all variable nodes on the other side of the linkdata share the same set of variables. Infer</span>
+<span class="sd">        attribute values from the connected variable nodes&#39; variables.</span>
+
+<span class="sd">        .. note::</span>
+
+<span class="sd">           Only one incoming linkdata can be registered.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        linkdata : LinkData</span>
+<span class="sd">            The linkdata to be registered.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If attempting to register more than one incoming linkdata.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the variable node on the other side of the specified linkdata do not share the same set of variables as</span>
+<span class="sd">            other variable nodes in those linkdata that are already registered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
-        <span class="c1"># Make sure no more than on incoming alink</span>
+        <span class="c1"># Make sure no more than on incoming link</span>
         <span class="k">assert</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
         <span class="c1"># Also make sure incident variable nodes&#39; var_list agree with each other</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_var</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">index_var</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">index_var</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">rel_var_list</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ran_var_list</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_var_list</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_vars</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_var</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">param_var</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">index_vars</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_var</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">index_var</span> <span class="ow">and</span> \
-                   <span class="bp">self</span><span class="o">.</span><span class="n">rel_var_list</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span> <span class="ow">and</span> \
-                   <span class="bp">self</span><span class="o">.</span><span class="n">ran_var_list</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_var_list</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_vars</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_var</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">param_var</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_vars</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">index_vars</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">DFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="DFN.compute"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Relay untempered message to downstream variable nodes.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="n">in_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">:</span>
-            <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">DVN</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Default (Dummy) Variable Node.</span>
+<div class="viewcode-block" id="DVN"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DVN">[docs]</a><span class="k">class</span> <span class="nc">DVN</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Default (Dummy) Variable Node.</span>
 
-<span class="sd">        No special computation. Simply relay message to one or multiple factor nodes</span>
-<span class="sd">        Only admit one incoming link but can connect with multiple outgoing links</span>
+<span class="sd">    No special computation. Simply relay message to one or multiple factor nodes. Only admits one incoming link but can</span>
+<span class="sd">    connect with multiple outgoing links.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this variable node.</span>
+<span class="sd">    rel_var_list : iterable of Variable</span>
+<span class="sd">        Iterable of relational variables. Corresponds to the batch dimensions. Used to check ``b_shape`` attribute of</span>
+<span class="sd">        incoming messages.</span>
+<span class="sd">    param_var : Variable, optional</span>
+<span class="sd">        The parameter variable. Corresponds to the parameter dimension. Used to check ``p_shape`` attribute of incoming</span>
+<span class="sd">        messages.</span>
+<span class="sd">    index_var_list : iterable of Variable, optional</span>
+<span class="sd">        Iterable of indexing variables. Corresponds to the sample dimensions. Used to check ``s_shape`` attribute of</span>
+<span class="sd">        incoming messages. Must specify if `ran_var_list` is specified.</span>
+<span class="sd">    ran_var_list : iterable of Variable, optional</span>
+<span class="sd">        Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of</span>
+<span class="sd">        incoming messages. Must specify if `index_var_list` is specified.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">index_var</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">DVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">index_var</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">index_var_list</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Default Variable Node&quot;</span>
 
-    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+<div class="viewcode-block" id="DVN.add_link"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DVN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Guarantees that no more than on incoming link is registered.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        linkdata : LinkData</span>
+<span class="sd">            The linkdata to be registered.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If attempting to register more than one incoming linkdata.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
-        <span class="c1"># Make sure no more than on incoming and one outgoing link</span>
+        <span class="c1"># Make sure no more than on incoming link</span>
         <span class="k">assert</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">DVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="DVN.compute"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DVN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Relay untempered message to downstream factor nodes.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="n">in_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">:</span>
-            <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div></div>
 
 
 <span class="sd">&quot;&quot;&quot;</span>

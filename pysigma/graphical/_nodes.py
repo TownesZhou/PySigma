@@ -466,39 +466,81 @@ class VariableNode(Node, ABC):
 
 
 class DFN(FactorNode):
-    """
-        Default (Dummy) Factor Node.
+    """Default (Dummy) Factor Node.
 
-        No special computation. Simply relay message to one or multiple variable nodes
-        Requires that incident variable nodes have the same variable list
-        Only admit one incoming link but can connect with multiple outgoing links
+    No special computation. Simply relays message to one or multiple incident variable nodes. Requires that incident
+    variable nodes share the same variables. Only admits one incoming link but can connect with multiple outgoing links.
+
+    Since all incident variable nodes should share the same variables, these variables will also be registered in the
+    attributes.
+
+    Parameters
+    ----------
+    name : str
+        Name of this node.
+
+    Attributes
+    ----------
+    rel_vars : tuple of Variable
+        Tuple of relational variables.
+    param_var : Variable
+        Parameter variable.
+    index_vars : tuple of Variable
+        Tuple of indexing variables.
+    ran_vars : tuple of Variable
+        Tuple of random variables.
     """
     def __init__(self, name):
         super(DFN, self).__init__(name)
         self.pretty_log["node type"] = "Default Factor Node"
 
         # Since all incident nodes should have the same variable list, we can therefore log it here as an attribute
-        self.index_var = None
-        self.rel_var_list = None
-        self.ran_var_list = None
+        self.rel_vars = None
+        self.param_var = None
+        self.index_vars = None
+        self.ran_vars = None
 
     def add_link(self, linkdata):
+        """Checks that all variable nodes on the other side of the linkdata share the same set of variables. Infer
+        attribute values from the connected variable nodes' variables.
+
+        .. note::
+
+           Only one incoming linkdata can be registered.
+
+        Parameters
+        ----------
+        linkdata : LinkData
+            The linkdata to be registered.
+
+        Raises
+        ------
+        AssertionError
+            If attempting to register more than one incoming linkdata.
+        AssertionError
+            If the variable node on the other side of the specified linkdata do not share the same set of variables as
+            other variable nodes in those linkdata that are already registered.
+        """
         assert isinstance(linkdata, LinkData)
-        # Make sure no more than on incoming alink
+        # Make sure no more than on incoming link
         assert not linkdata.to_fn or len(self.in_linkdata) == 0
         # Also make sure incident variable nodes' var_list agree with each other
-        if self.index_var is None:
-            self.index_var = linkdata.vn.index_var
-            self.rel_var_list = linkdata.vn.rel_var_list
-            self.ran_var_list = linkdata.vn.ran_var_list
+        if self.rel_vars is None:
+            self.param_var = linkdata.vn.param_var
+            self.index_vars = linkdata.vn.rel_vars
+            self.ran_vars = linkdata.vn.ran_vars
         else:
-            assert self.index_var == linkdata.vn.index_var and \
-                   self.rel_var_list == linkdata.vn.rel_var_list and \
-                   self.ran_var_list == linkdata.vn.ran_var_list
+            assert self.rel_vars == linkdata.vn.rel_vars
+            assert self.param_var == linkdata.vn.param_var
+            assert self.index_vars == linkdata.vn.index_vars
+            assert self.ran_vars == linkdata.vn.ran_vars
 
         super(DFN, self).add_link(linkdata)
 
     def compute(self):
+        """Relay untempered message to downstream variable nodes.
+
+        """
         super(DFN, self).compute()
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
@@ -507,24 +549,55 @@ class DFN(FactorNode):
 
 
 class DVN(VariableNode):
-    """
-        Default (Dummy) Variable Node.
+    """Default (Dummy) Variable Node.
 
-        No special computation. Simply relay message to one or multiple factor nodes
-        Only admit one incoming link but can connect with multiple outgoing links
+    No special computation. Simply relay message to one or multiple factor nodes. Only admits one incoming link but can
+    connect with multiple outgoing links.
+
+    Parameters
+    ----------
+    name : str
+        Name of this variable node.
+    rel_var_list : iterable of Variable
+        Iterable of relational variables. Corresponds to the batch dimensions. Used to check ``b_shape`` attribute of
+        incoming messages.
+    param_var : Variable, optional
+        The parameter variable. Corresponds to the parameter dimension. Used to check ``p_shape`` attribute of incoming
+        messages.
+    index_var_list : iterable of Variable, optional
+        Iterable of indexing variables. Corresponds to the sample dimensions. Used to check ``s_shape`` attribute of
+        incoming messages. Must specify if `ran_var_list` is specified.
+    ran_var_list : iterable of Variable, optional
+        Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of
+        incoming messages. Must specify if `index_var_list` is specified.
     """
-    def __init__(self, name, index_var, rel_var_list, param_var=None, ran_var_list=None):
-        super(DVN, self).__init__(name, index_var, rel_var_list, param_var, ran_var_list)
+    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None):
+        super(DVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list)
         self.pretty_log["node type"] = "Default Variable Node"
 
     def add_link(self, linkdata):
+        """Guarantees that no more than on incoming link is registered.
+
+        Parameters
+        ----------
+        linkdata : LinkData
+            The linkdata to be registered.
+
+        Raises
+        ------
+        AssertionError
+            If attempting to register more than one incoming linkdata.
+        """
         assert isinstance(linkdata, LinkData)
-        # Make sure no more than on incoming and one outgoing link
+        # Make sure no more than on incoming link
         assert linkdata.to_fn or len(self.in_linkdata) == 0
 
         super(DVN, self).add_link(linkdata)
 
     def compute(self):
+        """Relay untempered message to downstream factor nodes.
+
+        """
         super(DVN, self).compute()
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
