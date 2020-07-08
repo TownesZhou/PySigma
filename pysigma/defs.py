@@ -320,7 +320,7 @@ class Message:
         if self.log_densities is not None:
             # jth log density tensor vector should have shape (s_shape[j])
             assert len(self.log_densities) == len(self.s_shape) == len(self.e_shape)
-            assert all(self.s_shape[j] == d.shape for j, d in enumerate(self.log_densities))
+            assert all(torch.Size([self.s_shape[j]]) == d.shape for j, d in enumerate(self.log_densities))
 
     """
         Overload arithmetic operators
@@ -419,7 +419,7 @@ class Message:
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
             new_msg = Message(self.type,
                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                              particles=cloned_particles, weights=new_weights, log_density=cloned_log_densities)
+                              particles=cloned_particles, weights=new_weights, log_densities=cloned_log_densities)
         return new_msg
 
     def __iadd__(self, other):
@@ -509,7 +509,7 @@ class Message:
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
             new_msg = Message(self.type,
                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                              particles=cloned_particles, weights=new_weight, log_density=cloned_log_densities)
+                              particles=cloned_particles, weights=new_weight, log_densities=cloned_log_densities)
         return new_msg
 
     def __imul__(self, other):
@@ -713,7 +713,7 @@ class Message:
         else:
             new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, sample_shape=cloned_msg.s_shape,
                               event_shape=cloned_msg.e_shape, particles=cloned_msg.particles,
-                              weights=cloned_msg.weight, log_density=cloned_msg.log_densities, **cloned_msg.attr)
+                              weights=cloned_msg.weight, log_densities=cloned_msg.log_densities, **cloned_msg.attr)
         return new_msg
 
     def clone(self):
