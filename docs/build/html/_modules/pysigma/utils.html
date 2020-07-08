@@ -291,10 +291,9 @@
 <span class="sd">    Note that input and output will conform to the format understandable by PyTorch&#39;s distribution class. To</span>
 <span class="sd">    translate to and from formats compatible to PySigma&#39;s predicate knowledge, use KnowledgeServer class</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.param2dist">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">param2dist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Conversion from PyTorch distribution parameters to distribution instance</span>
+        <span class="sd">&quot;&quot;&quot;Converts from PyTorch distribution parameters to distribution instance</span>
 <span class="sd">            Return a distribution instance</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
@@ -311,9 +310,9 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The shape of the generated distribution </span><span class="si">{}</span><span class="s2"> does not match the provided shape. &quot;</span>
                              <span class="s2">&quot;Provided (batch_shape, event_shape) == (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">), but instead got (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">).&quot;</span>
                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dist</span><span class="p">),</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">dist</span>
+        <span class="k">return</span> <span class="n">dist</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.dist2param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.dist2param">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">dist2param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Conversion from distribution instance to PyTorch distribution parameters</span>
@@ -325,9 +324,9 @@
         <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_dist2param</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Conversion from distribution instance to parameters for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; &quot;</span>
                                       <span class="s2">&quot;not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_dist2param</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_dist2param</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">)</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.natural2exp_param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.natural2exp_param">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">natural2exp_param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Translation from natural parameters to PyTorch distribution parameters for exponential family</span>
@@ -340,9 +339,9 @@
         <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_natural2exp_param</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Translation from natural parameters to PyTorch distribution parameters for &quot;</span>
                                       <span class="s2">&quot;distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_natural2exp_param</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_natural2exp_param</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">)</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.exp_param2natural"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.exp_param2natural">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">exp_param2natural</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">exp_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Translation from PyTorch distribution parameters to natural parameters for exponential family</span>
@@ -354,9 +353,9 @@
         <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_exp_param2natural</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Translation from natural parameters to PyTorch distribution parameters for &quot;</span>
                                       <span class="s2">&quot;distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_exp_param2natural</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">exp_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_exp_param2natural</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">exp_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">)</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.natural2exp_dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.natural2exp_dist">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">natural2exp_dist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Composition of param2dist() with natural2exp_param()</span>
@@ -364,9 +363,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">param</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">natural2exp_param</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">natural_params</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">)</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dist</span>
+        <span class="k">return</span> <span class="n">dist</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.exp_dist2natural"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.exp_dist2natural">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">exp_dist2natural</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Composition of exp_param2natural() with dist2param()</span>
@@ -374,9 +373,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">exp_param</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dist2param</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
         <span class="n">natural</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">exp_param2natural</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">),</span> <span class="n">exp_param</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">natural</span>
+        <span class="k">return</span> <span class="n">natural</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.get_moments"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.get_moments">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_moments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Get vector of moments from a given distribution instance</span>
@@ -388,9 +387,9 @@
         <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Get moments method for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
                                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">)</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.draw_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.draw_particles">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            TODO: Gibbs sampling procedure</span>
@@ -420,9 +419,9 @@
                                                                <span class="n">weights</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sampling_log_densities</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sampling_log_densities</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span>
 
-        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span>
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.log_pdf"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.log_pdf">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">log_pdf</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Get the log pdf of the given particles w.r.t. the given distribution instance</span>
@@ -434,9 +433,9 @@
         <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_log_pdf</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Get log pdf method for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
                                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_log_pdf</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">particles</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_log_pdf</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">particles</span><span class="p">)</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.kl_norm"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.kl_norm">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">kl_norm</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist1</span><span class="p">,</span> <span class="n">dist2</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Get the norm of the KL divergence of two given batched distributions</span>
@@ -445,15 +444,15 @@
         <span class="k">assert</span> <span class="n">dist1</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">==</span> <span class="n">dist2</span><span class="o">.</span><span class="n">batch_shape</span>
         <span class="n">kl</span> <span class="o">=</span> <span class="n">kl_divergence</span><span class="p">(</span><span class="n">dist1</span><span class="p">,</span> <span class="n">dist2</span><span class="p">)</span>
         <span class="n">kl_norm</span> <span class="o">=</span> <span class="n">kl</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">kl_norm</span>
+        <span class="k">return</span> <span class="n">kl_norm</span></div>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer.transform_param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.transform_param">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">transform_param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">trans</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            TODO: implement</span>
 <span class="sd">            Return the parameter of the transformed distribution</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        DEFAULT methods that may be applicable to multiple general distribution classes</span>
@@ -566,10 +565,52 @@
     <span class="p">}</span></div>
 
 
-<span class="c1"># TODO: Particle knowledge translator class</span>
-<span class="k">class</span> <span class="nc">KnowledgeServer</span><span class="p">:</span>
+<div class="viewcode-block" id="KnowledgeServer"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer">[docs]</a><span class="k">class</span> <span class="nc">KnowledgeServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Knowledge Server class. Provides service regarding a Predicate&#39;s knowledge.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="KnowledgeServer.draw_grid_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.draw_grid_particles">[docs]</a>    <span class="k">def</span> <span class="nf">draw_grid_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="KnowledgeServer.log_pdf"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.log_pdf">[docs]</a>    <span class="k">def</span> <span class="nf">log_pdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">surrogate_particles</span><span class="o">=</span><span class="p">()):</span>
+        <span class="k">pass</span></div>
+
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        knowledge translator class. Translate knowledge tensors between the forms understandable by Predicate and that</span>
+<span class="sd">    Utility static methods</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="KnowledgeServer.combinatorial_cat"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.combinatorial_cat">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">combinatorial_cat</span><span class="p">(</span><span class="n">particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper static method that combinatorially concatenates the list of event particles specified by `particles`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        particles : iterable of torch.Tensor</span>
+<span class="sd">            The list of particles to be concatenated. Each element should be a tensor with a shape of length 2, where</span>
+<span class="sd">            the first dimension is assumed the sample dimension, and second dimension assumed the event dimension.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            The combinatorially concatenated event particle tensor of shape::</span>
+
+<span class="sd">                [sample_size[0]*...*sample_size[m], event_size[0]+...+event_size[m]]</span>
+
+<span class="sd">            where ``sample_size[i]`` is the sample size of the ``i`` th particle, and similarly is ``event_size[i]``.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div></div>
+
+
+<span class="c1"># TODO: Particle knowledge translator class</span>
+<span class="k">class</span> <span class="nc">KnowledgeTranslator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        knowledge server class. Translate knowledge tensors between the forms understandable by Predicate and that</span>
 <span class="sd">            understandable by PyTorch&#39;s distribution class. This includes both event particle tensors and parameter</span>
 <span class="sd">            tensors.</span>
 
@@ -627,9 +668,6 @@
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Format check for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
                                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dict_2format_check</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">]()</span>
-
-    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span>
 
     <span class="k">def</span> <span class="nf">event2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

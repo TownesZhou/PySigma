@@ -52,33 +52,41 @@ FINITE_DISCRETE_CLASSES = [
 
 # TODO: DistributionServer class
 class DistributionServer:
-    """
-        Serving distribution class dependent utilities
-            - Conversion between PyTorch distribution parameters and distribution instance:
-                    param2dist(), dist2param()
-            - Translation between PyTorch distribution parameters and natural parameters for exponential family
-                distribution:
-                    natural2exp_dist(), exp_dist2natural()
-            - Get vector of moments from a given distribution instance:
-                    get_moments()
-            - Draw particles from  distribution instance:
-                    draw_particles()
-            - Get log probability density from given particles:
-                    log_pdf()
-            - Get the norm of the KL divergence of two batched distributions
+    """Serving distribution class dependent utilities
 
-        Certain distribution classes require special handling, for example for those categorized as finite discrete,
-            particle values will be drawn uniformly, covering every value in the RV's value domain once and only once,
-            while assigning each particle its probability mass as its particle weight.
-        Therefore we delegate all such special handlings to this class on an individual basis.
+    * Conversion between PyTorch distribution parameters and distribution instance:
 
-        Note that input and output will conform to the format understandable by PyTorch's distribution class. To
-            translate to and from formats compatible to PySigma's predicate knowledge, use KnowledgeTranslator class
+      ``param2dist()``, ``dist2param()``
+
+    * Translation between PyTorch distribution parameters and natural parameters for exponential family distribution:
+
+      ``natural2exp_dist()``, ``exp_dist2natural()``
+
+    * Get vector of moments from a given distribution instance:
+
+      ``get_moments()``
+
+    * Draw particles from distribution instance:
+
+      ``draw_particles()``
+
+    * Get log probability density from given particles:
+
+      ``log_pdf()``
+
+
+    Certain distribution classes require special handling, for example for those categorized as finite discrete,
+    particle values will be drawn uniformly, covering every value in the RV's value range (support) once and only once,
+    while assigning each particle its probability mass as its particle weight.
+
+    Therefore we delegate all such special handling to this class on an individual basis.
+
+    Note that input and output will conform to the format understandable by PyTorch's distribution class. To
+    translate to and from formats compatible to PySigma's predicate knowledge, use KnowledgeServer class
     """
     @classmethod
     def param2dist(cls, dist_class, params, b_shape, e_shape):
-        """
-            Conversion from PyTorch distribution parameters to distribution instance
+        """Converts from PyTorch distribution parameters to distribution instance
             Return a distribution instance
         """
         assert isinstance(params, torch.Tensor)
@@ -350,10 +358,86 @@ class DistributionServer:
     }
 
 
+class KnowledgeServer:
+    """Knowledge Server class. Provides service regarding a Predicate's knowledge.
+
+    Parameters
+    ----------
+
+    Attributes
+    ----------
+    """
+    def __init__(self):
+        pass
+
+    def draw_grid_particles(self):
+        pass
+
+    def log_pdf(self, surrogate_particles=()):
+        pass
+
+    """
+    Utility static methods
+    """
+    @staticmethod
+    def combinatorial_cat(particles):
+        """Helper static method that combinatorially concatenates the list of event particles specified by `particles`.
+
+        Returns the contained tensor directly if there is only one entry in `particles`.
+
+        Parameters
+        ----------
+        particles : iterable of torch.Tensor
+            The list of particles to be concatenated. Each element should be a tensor with a shape of length 2, where
+            the first dimension is assumed the sample dimension, and second dimension assumed the event dimension.
+
+        Returns
+        -------
+        torch.Tensor
+            The combinatorially concatenated event particle tensor of shape::
+
+                [sample_size[0]*...*sample_size[m], event_size[0]+...+event_size[m]]
+
+            where ``sample_size[i]`` is the sample size of the ``i`` th particle, and similarly is ``event_size[i]``.
+        """
+        assert isinstance(particles, Iterable) and len(list(particles)) > 0 and \
+            all(isinstance(p, torch.Tensor) and p.dim() == 2 for p in particles)
+
+        if len(particles) < 2:
+            return particles[0]
+
+        particles = list(particles)
+        num = len(particles)
+        sample_size_list = [p.shape[0] for p in particles]
+        event_size = sum([e.shape[1] for e in particles])
+
+        # 1. Repeat each particle tensor to expand to full sample dimensions.
+        exp_particles = []
+        for i, p in enumerate(particles):
+            # Insert singleton sample dimensions
+            dims = ([1] * (num - 1))        # singleton dimensions
+            dims.insert(i, p.shape[0])      # original sample dimension
+            dims.append(p.shape[1])         # append event dimension at the end
+            p_viewed = p.view(dims)
+            # Repeat tensor along inserted singleton dimensions
+            repeat_times = sample_size_list[:i] + [1] + sample_size_list[i + 1:] + [1]
+            p_repeated = p_viewed.repeat(repeat_times)
+            exp_particles.append(p_repeated)
+
+        # 2. Concatenate along the event dimensions
+        comb_cat = torch.cat(exp_particles, dim=-1)
+        assert comb_cat.shape[-1] == event_size
+
+        # 3. Flatten sample dimensions
+        flat_cat = comb_cat.view(-1, event_size)
+
+        return flat_cat
+
+
 # TODO: Particle knowledge translator class
 class KnowledgeTranslator:
     """
-        knowledge translator class. Translate knowledge tensors between the forms understandable by Predicate and that
+        knowledge server class. Translate knowledge tensors between the forms understandable by Predicate and that
             understandable by PyTorch's distribution class. This includes both event particle tensors and parameter
             tensors.
 
@@ -368,7 +452,6 @@ class KnowledgeTranslator:
             provided var_sizes and var_constraints are compatible with dist_class. This is also distribution class
             dependent therefore needs individual implementation.
     """
-
     def __init__(self, dist_class, var_sizes, var_constraints):
         """
             Instantiate a translator

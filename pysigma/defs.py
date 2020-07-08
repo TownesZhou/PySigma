@@ -1565,7 +1565,8 @@ class Message:
         else:
             exp_den = []
             for i, d in enumerate(self.log_densities):
-                dims = ([1] * (len(self.s_shape) - 1)).insert(i, -1)
+                dims = ([1] * (len(self.s_shape) - 1))
+                dims.insert(i, -1)
                 exp_den.append(d.view(dims).expand(self.s_shape))
             joint_density = sum(exp_den)
 
