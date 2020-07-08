@@ -307,7 +307,7 @@ class Message:
         if particles is not None:
             # jth particle tensor should have shape (s_shape[j] + e_shape[j])
             assert len(self.particles) == len(self.s_shape) == len(self.e_shape)
-            assert all(self.s_shape[j] + self.e_shape[j] == p.shape for j, p in enumerate(self.particles))
+            assert all(torch.Size([self.s_shape[j], self.e_shape[j]]) == p.shape for j, p in enumerate(self.particles))
         if isinstance(self.weight, torch.Tensor):
             # Weights tensor should have shape (b_shape + s_shape)
             assert self.b_shape + self.s_shape == self.weight.shape
