@@ -569,10 +569,12 @@ class KnowledgeServer:
         # Instantiate the surrogate distribution instance if asked for
         if alt_param is not None:
             assert alt_param.shape == self.batched_param.shape
-
+            dist = DistributionServer.param2dist(self.dist_class, alt_param, dist_info=alt_dist_info)
+        else:
+            dist = self.batched_dist
 
         # Query DistributionServer
-        log_prob = DistributionServer.log_prob(self.batched_dist, torch_particles)
+        log_prob = DistributionServer.log_prob(dist, torch_particles)
 
         return log_prob
 
