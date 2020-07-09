@@ -293,10 +293,10 @@
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_flatten">batch_flatten() (pysigma.defs.Message method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_put">batch_index_put() (pysigma.defs.Message method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_select">batch_index_select() (pysigma.defs.Message method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_narrow">batch_narrow() (pysigma.defs.Message method)</a>
@@ -308,6 +308,10 @@
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_summarize">batch_summarize() (pysigma.defs.Message method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_unsqueeze">batch_unsqueeze() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.batched_dist">batched_dist (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.batched_param">batched_param (pysigma.utils.KnowledgeServer attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Both">Both (pysigma.defs.MessageType attribute)</a>
 </li>
@@ -361,10 +365,10 @@
 </li>
       <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_natural2exp_param">dict_natural2exp_param (pysigma.utils.DistributionServer attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_param2dist">dict_param2dist (pysigma.utils.DistributionServer attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.diff_param">diff_param() (pysigma.defs.Message method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.diff_weight">diff_weight() (pysigma.defs.Message method)</a>
@@ -372,6 +376,12 @@
       <li><a href="references/utils.html#pysigma.utils.DistributionServer.dist2param">dist2param() (pysigma.utils.DistributionServer class method)</a>
 </li>
       <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.WMVN.dist_class">dist_class (pysigma.graphical._nodes.WMVN attribute)</a>
+
+      <ul>
+        <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.dist_class">(pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.dist_info">dist_info (pysigma.utils.KnowledgeServer attribute)</a>
 </li>
       <li><a href="references/utils.html#pysigma.utils.DistributionServer">DistributionServer (class in pysigma.utils)</a>
 </li>
@@ -395,8 +405,12 @@
       </ul></li>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.epsilon">epsilon (pysigma.graphical._nodes.LinkData attribute)</a>
 </li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.event2cognitive_event">event2cognitive_event() (pysigma.utils.KnowledgeServer method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.event2torch_event">event2torch_event() (pysigma.utils.KnowledgeServer method)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.event_reweight">event_reweight() (pysigma.defs.Message method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.event_transform">event_transform() (pysigma.defs.Message method)</a>
@@ -468,13 +482,13 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.log_densities">log_densities (pysigma.defs.Message attribute)</a>
-</li>
-      <li><a href="references/utils.html#pysigma.utils.DistributionServer.log_pdf">log_pdf() (pysigma.utils.DistributionServer class method)</a>
 
       <ul>
-        <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.log_pdf">(pysigma.utils.KnowledgeServer method)</a>
+        <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.log_densities">(pysigma.utils.KnowledgeServer attribute)</a>
 </li>
       </ul></li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.log_prob">log_prob() (pysigma.utils.DistributionServer class method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -514,6 +528,8 @@
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.new">new (pysigma.graphical._nodes.LinkData attribute)</a>
 </li>
       <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node">Node (class in pysigma.graphical._nodes)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.num_rvs">num_rvs (pysigma.utils.KnowledgeServer attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -557,6 +573,8 @@
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Particles">Particles (pysigma.defs.MessageType attribute)</a>
 </li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.particles">particles (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.pretty_log">pretty_log (pysigma.graphical._nodes.LinkData attribute)</a>
 
       <ul>
@@ -587,10 +605,10 @@
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.read">read() (pysigma.graphical._nodes.LinkData method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.reduce_type">reduce_type() (pysigma.defs.Message method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DFN.rel_vars">rel_vars (pysigma.graphical._nodes.DFN attribute)</a>
 
       <ul>
@@ -600,6 +618,10 @@
       <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Relational">Relational (pysigma.defs.VariableMetatype attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.reset_shape">reset_shape() (pysigma.graphical._nodes.LinkData method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.rv_constraints">rv_constraints (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.rv_sizes">rv_sizes (pysigma.utils.KnowledgeServer attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -622,6 +644,8 @@
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.size">size (pysigma.defs.Variable attribute)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.size">size() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.surrogate_log_prob">surrogate_log_prob() (pysigma.utils.KnowledgeServer method)</a>
 </li>
   </ul></td>
 </tr></table>

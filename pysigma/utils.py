@@ -84,21 +84,52 @@ class DistributionServer:
     Note that input and output will conform to the format understandable by PyTorch's distribution class. To
     translate to and from formats compatible to PySigma's predicate knowledge, use KnowledgeServer class
     """
+    """
+    Public class method API
+    """
     @classmethod
-    def param2dist(cls, dist_class, params, b_shape, e_shape):
-        """Converts from PyTorch distribution parameters to distribution instance
-            Return a distribution instance
+    def param2dist(cls, dist_class, param, b_shape, e_shape, dist_info=None):
+        """Converts distribution parameter to a distribution instance.
+
+        Depending on the context and Predicate knowledge format, the parameter `param` may belong to different
+        representation systems, in which case it should be interpreted differently. Such specification should be
+        sufficiently described in the argument `dist_info` in a prior consent format.
+
+        The argument `b_shape` and `e_shape` stand for distribution's batch shape and event shape respectively. They
+        are used primarily for sanity check. Note that this event shape `e_shape` pertains to PyTorch's distribution
+        class specification, and therefore may or may not be different from the event shape of particles in PySigma's
+        cognitive format.
+
+        Parameters
+        ----------
+        dist_class : type
+            The distribution class. Must be a subclass of ``torch.distributions.Distribution``.
+        param : torch.Tensor
+            The parameter tensor. The last dimension is assumed to be the parameter dimension, and sizes of the
+            dimensions at the front should be equal to `b_shape`.
+        b_shape : torch.Size
+            The batch shape of the distribution. Used for shape sanity check.
+        e_shape : torch.Size
+            The presumed event shape of the distribution. Used for shape sanity check.
+        dist_info : dict, optional
+            An optional dict containing all relevant information in order to correctly interpret the parameter `param`.
+
+        Returns
+        -------
+        torch.distributions.Distribution
+            The instantiated distribution instance.
         """
-        assert isinstance(params, torch.Tensor)
         assert issubclass(dist_class, torch.distributions.Distribution)
+        assert isinstance(param, torch.Tensor)
         assert isinstance(b_shape, torch.Size)
         assert isinstance(e_shape, torch.Size)
+        assert dist_info is None or isinstance(dist_info, dict)
 
         if dist_class not in cls.dict_param2dist.keys():
             raise NotImplementedError("Conversion from parameters to distribution instance for distribution class '{}' "
                                       "not yet implemented".format(dist_class))
 
-        dist = cls.dict_param2dist[dist_class](params)
+        dist = cls.dict_param2dist[dist_class](param, dist_info)
         if dist.batch_shape != b_shape or dist.event_shape != e_shape:
             raise ValueError("The shape of the generated distribution {} does not match the provided shape. "
                              "Provided (batch_shape, event_shape) == ({}, {}), but instead got ({}, {})."
@@ -106,24 +137,40 @@ class DistributionServer:
         return dist
 
     @classmethod
-    def dist2param(cls, dist):
-        """
-            Conversion from distribution instance to PyTorch distribution parameters
-            Return a parameter tensor
+    def dist2param(cls, dist, dist_info=None):
+        """Extract the parameter tensor from a given distribution instance.
+
+        Depending on the context and Predicate knowledge format, the desired parameter may belong to different
+        representation systems, in which case it should be generated differently. Such specification should be
+        sufficiently described in the argument `dist_info` in a prior consent format.
+
+        Parameters
+        ----------
+        dist : torch.distributions.Distribution
+            The distribution instance from which to extract the parameter.
+        dist_info : dict, optional
+            An optional dict containing all relevant information in order to correctly generate the parameter `param`.
+
+        Returns
+        -------
+        torch.Tensor
+            The parameter tensor in the desired format.
         """
         assert isinstance(dist, Distribution)
+        assert dist_info is None or isinstance(dist_info, dict)
         dist_class = type(dist)
 
         if dist_class not in cls.dict_dist2param.keys():
             raise NotImplementedError("Conversion from distribution instance to parameters for distribution class '{}' "
                                       "not yet implemented".format(dist_class))
-        return cls.dict_dist2param[dist_class](dist)
+        return cls.dict_dist2param[dist_class](dist, dist_info)
 
     @classmethod
     def natural2exp_param(cls, dist_class, natural_params, b_shape):
         """
             Translation from natural parameters to PyTorch distribution parameters for exponential family
             Return a parameter tensor
+            # TODO: Implement with dist_info
         """
         assert isinstance(natural_params, torch.Tensor)
         assert issubclass(dist_class, ExponentialFamily)
@@ -139,10 +186,10 @@ class DistributionServer:
         """
             Translation from PyTorch distribution parameters to natural parameters for exponential family
             Return a parameter tensor
+            # TODO: Implement with dist_info
         """
         assert isinstance(exp_params, torch.Tensor)
         assert issubclass(dist_class, ExponentialFamily)
-        assert isinstance(b_shape, torch.Size)
         if dist_class not in cls.dict_exp_param2natural.keys():
             raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
                                       "distribution class '{}' not yet implemented".format(dist_class))
@@ -153,6 +200,7 @@ class DistributionServer:
         """
             Composition of param2dist() with natural2exp_param()
             Return a distribution instance
+            # TODO: Implement with dist_info
         """
         param = cls.natural2exp_param(dist_class, natural_params, b_shape)
         dist = cls.param2dist(dist_class, param, b_shape, e_shape)
@@ -163,6 +211,7 @@ class DistributionServer:
         """
             Composition of exp_param2natural() with dist2param()
             Return a parameter tensor
+            # TODO: Implement with dist_info
         """
         exp_param = cls.dist2param(dist)
         natural = cls.exp_param2natural(type(dist), exp_param, dist.batch_shape)
@@ -172,6 +221,7 @@ class DistributionServer:
     def get_moments(cls, dist, n_moments):
         """
             Get vector of moments from a given distribution instance
+            # TODO: Implement with dist_info
         """
         assert isinstance(dist, Distribution)
         assert isinstance(n_moments, int) and n_moments > 0
@@ -193,6 +243,7 @@ class DistributionServer:
                 distribution instance in the batch to derive individual weights by importance weighting.
 
             Particles drawn are in the format compatible with PyTorch's distribution class
+            # TODO: Implement with dist_info
         """
         assert isinstance(dist, Distribution)
         assert isinstance(num_particles, int)
@@ -215,18 +266,71 @@ class DistributionServer:
         return particles, weights, sampling_log_densities
 
     @classmethod
-    def log_pdf(cls, dist, particles):
-        """
-            Get the log pdf of the given particles w.r.t. the given distribution instance
-        """
-        assert isinstance(dist, Distribution)
-        assert isinstance(particles, torch.Tensor)
+    def log_prob(cls, dist, values):
+        """Get the log probability mass/density of the given particle values w.r.t. the given batched distribution
+        instance.
 
-        dist_class = type(dist)
-        if dist_class not in cls.dict_log_pdf.keys():
-            raise NotImplementedError("Get log pdf method for distribution class '{}' not yet implemented"
-                                      .format(dist_class))
-        return cls.dict_log_pdf[dist_class](dist, particles)
+        The particle value should be in PyTorch format that is compatible with PyTorch's distribution classes. This
+        means the last dimension of `values` is assumed the event dimension, and should be compatible with, if not
+        identical to, ``dist.event_shape``. Every other dimensions to the front is assumed sample dimensions, the sizes
+        of which together forms the ``sample_shape``.
+
+        The distribution instance `dist` is assumed batched. In other words, its batch shape ``dist.batch_shape`` should
+        not be empty.
+
+        Parameters
+        ----------
+        dist : torch.distributions.Distribution
+            A batched distribution instance. Its batch shape ``dist.batch_shape`` should not be empty.
+        values : torch.Tensor
+            A 2D tensor with shape ``(sample_shape + [event_size])``
+
+        Returns
+        -------
+        torch.Tensor
+            The log probability mass/density tensor, of shape ``(dist.batch_shape + sample_shape)``
+
+        Raises
+        ------
+        AssertionError
+            If the ``event_size`` found in `values` is different from `dist.event_shape`.
+        """
+        assert isinstance(dist, Distribution) and len(dist.batch_shape) >= 1
+        assert isinstance(values, torch.Tensor) and values.dim() >= 2
+
+        # dist_class = type(dist)
+        # if dist_class not in cls.dict_log_pdf.keys():
+        #     raise NotImplementedError("Get log pdf method for distribution class '{}' not yet implemented"
+        #                               .format(dist_class))
+        # return cls.dict_log_pdf[dist_class](dist, particles)
+
+        # Extract shapes
+        sample_shape, event_shape = values.shape[:-1], values.shape[-1:]
+        batch_shape = dist.batch_shape
+        assert event_shape == dist.event_shape, \
+            "The event shape ({}) found in the given particles is different from the event shape ({}) found in the " \
+            "distribution instance".format(event_shape, dist.event_shape)
+
+        # Insert singleton dimensions into the particles tensor, and repeat along those dimensions to expand to
+        # full batch shape.
+        for i in range(len(batch_shape)):
+            values = values.unsqueeze(dim=len(sample_shape))
+        repeat_times = [1] * len(sample_shape) + list(batch_shape) + [1]
+        values = values.repeat(repeat_times)
+
+        # Query the actual distribution instance
+        log_prob = dist.log_prob(values)
+
+        # The returned log prob tensor should have shape (sample_shape + batch_shape). We need to permute these
+        # dimensions to conform to the Cognitive format
+        assert log_prob.shape == sample_shape + batch_shape
+        perm_order = [len(sample_shape) + i for i in range(len(batch_shape))] + [i for i in range(len(sample_shape))]
+        log_prob = log_prob.permute(perm_order)
+
+        # Also call contiguous() to rearrange the memory layout
+        log_prob = log_prob.contiguous()
+
+        return log_prob
 
     @classmethod
     def kl_norm(cls, dist1, dist2):
@@ -288,15 +392,19 @@ class DistributionServer:
         Categorical distribution
     """
     @classmethod
-    def _categorical_param2dist(cls, params):
+    def _categorical_param2dist(cls, params, dist_info):
         """
             For categorical, params assumed to be fed as the 'probs' attribute
+            # TODO: different parameter scheme and dist_info schema specification
         """
         dist = torch.distributions.Categorical(probs=params)
         return dist
 
     @classmethod
-    def _categorical_dist2param(cls, dist):
+    def _categorical_dist2param(cls, dist, dist_info):
+        """
+            # TODO: different parameter scheme and dist_info schema specification
+        """
         return dist.probs
 
     @classmethod
@@ -363,22 +471,198 @@ class KnowledgeServer:
 
     Parameters
     ----------
+    dist_class : type
+        The distribution class of the Predicate's knowledge. Must be a subclass of ``torch.distributions.Distribution``.
+    rv_sizes : iterable of ints
+        The sizes of the random variables of the Predicate's knowledge. Note that the order given by the iterable will
+        be respected.
+    rv_constraints : iterable of torch.distributions.constraints.Constraint
+        The value constraints of the random variables. Note that the order given by the iterable will be respected.
+    dist_info : dict, optional
+        An optional attribute dict that contains all necessary information for DistributionServer to draw particles and
+        query particles' log pdf.
 
     Attributes
     ----------
+    dist_class : type
+    rv_sizes : tuple of ints
+    rv_constraints : tuple of torch.distributions.constraints.Constraint
+    dist_info : dict
+    num_rvs : int
+        Number of random variables involved in specifying the Predicate knowledge.
+    batched_param : torch.Tensor
+        The cached batched parameter tensor of the Predicate's knowledge. This attribute is set when
+        `draw_grid_particles` is called with ``update_cache=True``.
+    batched_dist : torch.distributions.Distribution
+        The cached batched distribution instance that is instantiated from `batched_param`. This attribute is set when
+        `draw_grid_particles` is called with ``update_cache=True``.
+    particles : tuple of torch.Tensor
+        The cached tuple of marginal particle event tensors corresponding to the random variables. This attribute is set
+        when `draw_grid_particles` is called with ``update_cache=True``.
+    log_densities : tuple of torch.Tensor
+        The cached tuple of log sampling density tensors corresponding to each of the marginal particle event. This
+        attribute is set when `draw_grid_particles` is called with ``update_cache=True``.
     """
-    def __init__(self):
+    def __init__(self, dist_class, rv_sizes, rv_constraints, dist_info=None):
+        assert issubclass(dist_class, Distribution)
+        assert isinstance(rv_sizes, Iterable) and all(isinstance(s, int) and s > 0 for s in rv_sizes)
+        assert isinstance(rv_constraints, Iterable) and all(isinstance(c, Constraint) for c in rv_constraints)
+        assert dist_info is None or isinstance(dist_info, dict)
+
+        self.dist_class = dist_class
+        self.rv_sizes = tuple(rv_sizes)
+        self.rv_constraints = tuple(rv_constraints)
+        self.dist_info = dist_info
+
+        assert len(self.rv_sizes) == len(self.rv_constraints)
+        self.num_rvs = len(self.rv_sizes)
+
+        # Cache
+        self.batched_param = None
+        self.batched_dist = None
+        self.particles = None
+        self.log_densities = None
+
+        # distribution-dependent translation method pointer. Indexed by distribution class
+        self.dict_2torch_event = {
+            torch.distributions.Categorical: self._categorical_2torch_event
+        }
+        self.dict_2cognitive_event = {
+            torch.distributions.Categorical: self._categorical_2cognitive_event
+        }
+
+    """
+    Public API
+    """
+    def draw_grid_particles(self, update_cache=True):
         pass
 
-    def draw_grid_particles(self):
-        pass
+    def surrogate_log_prob(self, surrogate_particles):
+        """Query the log pdf of the surrogate particles specified by `surrogate_particles` w.r.t. the cached
+        distribution instance.
 
-    def log_pdf(self, surrogate_particles=()):
-        pass
+        Each particle tensor in `surrogate_particles` must correspond to a Predicate's random variable in the given
+        order. Alternatively, ``None`` can be specified as an entry in `surrogate_particles` so that the cached particle
+        tensor of the corresponding RV remembered by this KnowledgeServer instance will be used instead.
+
+        Parameters
+        ----------
+        surrogate_particles : list of torch.Tensor and/or None
+            The surrogate particles to be queried. Each entry must either be None, so that the corresponding cached
+            particles will be used instead, or a torch.Tensor, with a shape of length 2 and the last dimension size
+            equal to the corresponding value in ``self.rv_sizes``.
+
+        Returns
+        -------
+        torch.Tensor
+            The log probability tensor, of shape ``(sample_shape + batch_shape)``, where ``sample_shape`` is the list
+            of sample sizes of the queried particles in order (either those provided by `surrogate_particles` or those
+            in ``self.particles``), and ``batch_shape`` is the batch shape of the Predicate's knowledge.
+
+        Raises
+        ------
+        AssertionError
+            If `self.batched_param` is ``None``, meaning no cached parameters to instantiate distribution instance.
+        AssertionError
+            If `surrogate_particles` contains ``None`` but ``self.particles`` is also None, meaning no cached particles.
+        """
+        assert isinstance(surrogate_particles, list) and len(surrogate_particles) == self.num_rvs and \
+            all(p is None or (isinstance(p, torch.Tensor) and p.dim() == 2 and p.shape[1] == self.rv_sizes[i])
+                for i, p in enumerate(surrogate_particles))
+
+        assert self.batched_dist is not None, \
+            "No distribution instance has been cached, so cannot look up particles' log pdf."
+        assert all(isinstance(p, torch.Tensor) for p in surrogate_particles) or self.particles is not None, \
+            "Found `None` in `surrogate_particles`, but no particles have been cached yet to be used instead."
+
+        query_particles = list(p if p is not None else self.particles[i] for i, p in enumerate(surrogate_particles))
+
+        # Combinatorially concatenate particles to obtain full joint particle list
+        cat_particles = KnowledgeServer.combinatorial_cat(query_particles)
+        # Transform joint event values from Cognitive format to PyTorch format
+        torch_particles = self.event2torch_event(cat_particles)
+
+        # Query DistributionServer
+        log_prob = DistributionServer.log_prob(self.batched_dist, torch_particles)
+
+        return log_prob
+
+    def event2torch_event(self, cat_particles):
+        """Translates joint particle event values from the Cognitive format to a format understandable by PyTorch
+        distribution class.
+
+        Parameters
+        ----------
+        cat_particles : torch.Tensor
+            A 2D tensor representing the list of concatenated particle events in Cognitive format. Its 2nd dimension
+            size should be equal to the sum of rv sizes in ``self.rv_sizes``.
+
+        Returns
+        -------
+        torch.Tensor
+            A 2D tensor representing a list of translated particle events from `cat_particles`. Its 1st dimension size
+            is equal to the 1st dimension size of `cat_particles`.
+
+        Notes
+        -----
+        The specific translation method may vary depending on the distribution class. Therefore, this method serves only
+        as an API entry point where the specific translation procedure will be looked up in ``self.dict_2torch_event``
+        using the registered distribution class ``self.dist_class``. If no entry is found, then will assume no special
+        translation is necessary and will return the input `cat_particles` as is.
+        """
+        assert isinstance(cat_particles, torch.Tensor) and cat_particles.dim() == 2 and \
+            cat_particles.shape[1] == sum(self.rv_sizes)
+
+        assert self.dist_class is not None, \
+            "No distribution class has been registered. No way to translate given particle event values."
+
+        if self.dist_class in self.dict_2torch_event.keys():
+            result = self.dict_2torch_event[self.dist_class](cat_particles)
+        else:
+            result = cat_particles
+
+        assert result.shape[0] == cat_particles.shape[0]
+        return result
+
+    def event2cognitive_event(self, particles):
+        """Translates joint particle event values from the PyTorch distribution class format to Cognitive format.
+
+        Parameters
+        ----------
+        particles : torch.Tensor
+            A 2D tensor representing the list of concatenated particle events in PyTorch format.
+
+        Returns
+        -------
+        torch.Tensor
+            A 2D tensor representing a list of translated particle events from `cat_particles`. Its 1st dimension size
+            is equal to the 1st dimension size of `cat_particles`, and 2nd dimension size equal to the sum of rv sizes
+            in ``self.rv_sizes``.
+
+        Notes
+        -----
+        The specific translation method may vary depending on the distribution class. Therefore, this method serves only
+        as an API entry point where the specific translation procedure will be looked up in
+        ``self.dict_2cognitive_event`` using the registered distribution class ``self.dist_class``. If no entry is
+        found, then will assume no special translation is necessary and will return the input `cat_particles` as is.
+        """
+        assert isinstance(particles, torch.Tensor) and particles.dim() == 2
+
+        assert self.dist_class is not None, \
+            "No distribution class has been registered. No way to translate given particle event values."
+
+        if self.dist_class in self.dict_2cognitive_event.keys():
+            result = self.dict_2cognitive_event[self.dist_class](particles)
+        else:
+            result = particles
+
+        assert result.shape[0] == particles.shape[0] and result.shape[1] == sum(self.rv_sizes)
+        return result
 
     """
     Utility static methods
     """
+
     @staticmethod
     def combinatorial_cat(particles):
         """Helper static method that combinatorially concatenates the list of event particles specified by `particles`.
@@ -396,9 +680,10 @@ class KnowledgeServer:
         torch.Tensor
             The combinatorially concatenated event particle tensor of shape::
 
-                [sample_size[0]*...*sample_size[m], event_size[0]+...+event_size[m]]
+                [sample_size[0], ..., sample_size[m], event_size[0]+...+event_size[m]]
 
             where ``sample_size[i]`` is the sample size of the ``i`` th particle, and similarly is ``event_size[i]``.
+            Its total number of dimensions, i.e. ``.dim()``, is equal to the number of random variables plus 1.
         """
         assert isinstance(particles, Iterable) and len(list(particles)) > 0 and \
             all(isinstance(p, torch.Tensor) and p.dim() == 2 for p in particles)
@@ -426,149 +711,9 @@ class KnowledgeServer:
 
         # 2. Concatenate along the event dimensions
         comb_cat = torch.cat(exp_particles, dim=-1)
-        assert comb_cat.shape[-1] == event_size
+        assert comb_cat.shape == torch.Size(sample_size_list + [event_size])
 
-        # 3. Flatten sample dimensions
-        flat_cat = comb_cat.view(-1, event_size)
-
-        return flat_cat
-
-
-# TODO: Particle knowledge translator class
-class KnowledgeTranslator:
-    """
-        knowledge server class. Translate knowledge tensors between the forms understandable by Predicate and that
-            understandable by PyTorch's distribution class. This includes both event particle tensors and parameter
-            tensors.
-
-        Different distribution class requires different handling, but in general values for multiple random variables
-            (potentially of different sizes) will be concatenated together to form the last dimension of event samples
-            that can be interpreted by PyTorch. Therefore when translating back to Predicate knowledge format, what
-            is returned is a TUPLE of tensors, size of which equal to the number of RVs, and each tensor within which
-            corresponds to one RV's value assignment respectively. Similarly, what is taken when translating from
-            Predicate knowledge to PyTorch's knowledge is also a tuple of tensors
-
-        A translator instance should be instantiated and hold by each Predicate. When instantiated, also check if
-            provided var_sizes and var_constraints are compatible with dist_class. This is also distribution class
-            dependent therefore needs individual implementation.
-    """
-    def __init__(self, dist_class, var_sizes, var_constraints):
-        """
-            Instantiate a translator
-
-            :param dist_class: A subclass of torch.distributions.Distributions
-            :param var_sizes:  A sequence of integers, denoting the sizes of a predicate's random variables. The order
-                               will be respected when concatenating event values.
-            :param var_constraints: A sequence of torch.distributions.constraints.Constraint object. Each denoting the
-                                    value constraint of the corresponding random variable.
-        """
-        # distribution-dependent translation method pointer. Indexed by distribution class
-        self.dict_2format_check = {
-            torch.distributions.Categorical: self._categorical_format_check
-        }
-        self.dict_2torch_event = {
-            torch.distributions.Categorical: self._categorical_2torch_event
-        }
-        self.dict_2pred_event = {
-            torch.distributions.Categorical: self._categorical_2pred_event
-        }
-        self.dict_2torch_param = {
-            torch.distributions.Categorical: self._categorical_2torch_param
-        }
-        self.dict_2pred_param = {
-            torch.distributions.Categorical: self._categorical_2pred_param
-        }
-
-        assert issubclass(dist_class, Distribution)
-        assert isinstance(var_sizes, Iterable) and all(isinstance(size, int) for size in var_sizes)
-        assert isinstance(var_constraints, Iterable) and all(isinstance(c, Constraint) for c in var_constraints)
-        assert len(var_sizes) == len(var_constraints)
-
-        self.dist_class = dist_class
-        self.var_sizes = var_sizes
-        self.var_constraints = var_constraints
-
-        self.num_vars = len(var_sizes)
-
-    def _format_check(self):
-        if self.dist_class not in self.dict_2format_check.keys():
-            raise NotImplementedError("Format check for distribution class '{}' not yet implemented"
-                                      .format(self.dist_class))
-        self.dict_2format_check[self.dist_class]()
-
-    def event2torch_event(self, particles):
-        """
-            Translate event particles from the format understandable by Predicate to the format understandable by
-                PyTorch
-            Take as input a tuple of torch tensors. Check that sizes of last dimensions equal to sizes of RVs
-            Return a single torch tensor.
-        """
-        # Do not check particle last dimension's size if var size is 1, because likely a dimension of size 1 will be
-        #   squeezed
-        assert isinstance(particles, tuple) and len(particles) == self.num_vars and \
-               all(isinstance(p, torch.Tensor) for p in particles) and \
-               all(p.shape[-1] == var_size for p, var_size in zip(particles, self.var_sizes) if var_size != 1)
-        if self.dist_class not in self.dict_2torch_event.keys():
-            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
-                                      .format(self.dist_class))
-        return self.dict_2torch_event[self.dist_class](particles)
-
-    def event2pred_event(self, particles):
-        """
-            Translate event particles from the format understandable by PyTorch to the format understandable by
-                Predicate
-            Take as input a single torch tensor.
-            Return a tuple of torch tensors, each corresponding to one RV's value assignment
-        """
-        assert isinstance(particles, torch.Tensor)
-        if self.dist_class not in self.dict_2pred_event.keys():
-            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
-                                      .format(self.dist_class))
-        return self.dict_2pred_event[self.dist_class](particles)
-
-    def param2torch_param(self, params):
-        """
-            Translate parameters from the format understandable by Predicate to the format understandable by
-                PyTorch
-        """
-        assert isinstance(params, torch.Tensor)
-        if self.dist_class not in self.dict_2torch_param.keys():
-            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
-                                      .format(self.dist_class))
-        return self.dict_2torch_param[self.dist_class](params)
-
-    def param2pred_event(self, params):
-        """
-            Translate parameters from the format understandable by PyTorch to the format understandable by
-                Predicate
-        """
-        assert isinstance(params, torch.Tensor)
-        if self.dist_class not in self.dict_2pred_param.keys():
-            raise NotImplementedError("Translation for distribution class '{}' not yet implemented"
-                                      .format(self.dist_class))
-        return self.dict_2pred_param[self.dist_class](params)
-
-    """
-        Default translation. 
-            - event translation from pred to torch:
-                Take a tuple of tensors. Concatenate along last dimension
-            - event translation from torch to pred:
-                Take a tensor. Split last dimension according to the sizes of RVs. Return a tuple of tensors
-            - parameter translation from pred to torch:
-                Assume same format. No special computation
-            - parameter translation from torch to pred:
-                Assume same format. No special computation
-    """
-    def _default_2torch_event(self, particles):
-        result = torch.cat(particles, dim=-1)
-        return result
-
-    def _default_2pred_event(self, particles):
-        result = torch.split(particles, self.var_sizes, dim=-1)
-        return result
-
-    def _default_do_nothing(self, stuff):
-        return stuff
+        return comb_cat
 
     """
         Categorical distribution. Assumes all RV have size 1
@@ -585,27 +730,25 @@ class KnowledgeTranslator:
             - parameter translation from torch to pred:
                 Reshape last dimension into multiple dimensions, numbers of dims equal to the numbers of R.V.s
     """
-    def _categorical_format_check(self):
-        if not all(var_size == 1 for var_size in self.var_sizes):
-            raise ValueError("Categorical distribution: Random Variables must all have size of 1. Found: '{}'"
-                             .format(self.var_sizes))
-        if not all(isinstance(c, torch.distributions.constraints.integer_interval) for c in self.var_constraints):
-            raise ValueError("Categorical distribution: Random Variables must all declare 'integer_interval' value "
-                             "constraints. Found: '{}'".format(self.var_constraints))
-
     def _categorical_var_span(self):
         # Helper function to determine the value range of each rv
-        assert all(isinstance(c, integer_interval) for c in self.var_constraints)
-        return list(c.upper_bound - c.lower_bound + 1 for c in self.var_constraints)
+        assert all(isinstance(c, integer_interval) for c in self.rv_constraints)
+        return tuple(c.upper_bound - c.lower_bound + 1 for c in self.rv_constraints)
 
     def _categorical_2torch_event(self, particles):
-        var_span = self._categorical_var_span()
+        assert all(s == 1 for s in self.rv_sizes), \
+            "While attempting to translate Categorical events to PyTorch format, expect random variable sizes to be " \
+            "all 1, but instead found sizes {}".format(self.rv_sizes)
 
+        # First split joint event values
+        split_particles = torch.split(particles, 1, dim=-1)
+        # Get rv span
+        var_span = self._categorical_var_span()
         # Taking volume product
         volume_prod = 1
         base = 1
         # Going backward through spans to take product
-        for val, span in zip(reversed(particles), reversed(var_span)):
+        for val, span in zip(reversed(split_particles), reversed(var_span)):
             # Cumulative summation by the product of i_th variable's value with its base
             volume_prod += val * base
             # Base of i_th var is the product of the spans of all later variables (i.e. from (i+1)th to n_th variable)
@@ -613,43 +756,23 @@ class KnowledgeTranslator:
 
         return volume_prod
 
-    def _categorical_2pred_event(self, particles):
+    def _categorical_2cognitive_event(self, particles):
         assert isinstance(particles, torch.Tensor)
-        var_span = self._categorical_var_span()
+        assert all(s == 1 for s in self.rv_sizes), \
+            "While attempting to translate Categorical events to PyTorch format, expect random variable sizes to be " \
+            "all 1, but instead found sizes {}".format(self.rv_sizes)
 
+        var_span = self._categorical_var_span()
         # Treat values as volume products and take mod w.r.t. variables' spans
-        particle_list = []
+        modulo_list = []
         residue = particles
         base = math.prod(var_span)
         # Going forward through spans to take modulo
         for span in var_span:
             base /= span
-            particle_list.append(residue % base)
+            modulo_list.append(residue % base)
             residue = residue // base
 
-        # Return a tuple of tensors
-        result = tuple(particle_list)
+        # Concatenate the modulo list
+        result = torch.cat(modulo_list, dim=-1)
         return result
-
-    def _categorical_2torch_param(self, params):
-        assert isinstance(params, torch.Tensor)
-        var_span = self._categorical_var_span()
-        old_shape = params.shape
-        assert old_shape[-len(var_span):] == torch.Size(var_span)
-
-        # Take a view of the parameter that flattens R.V. dimension
-        new_shape = old_shape[:-len(var_span)] + torch.Size([-1])
-        new_params = params.view(new_shape)
-
-        return new_params
-
-    def _categorical_2pred_param(self, params):
-        assert isinstance(params, torch.Tensor)
-        var_span = self._categorical_var_span()
-        assert params.shape[-1] == math.prod(var_span)
-
-        # Take a view of the parameter that expands last dimension into full R.V. dimensions
-        new_shape = params.shape[:-1] + torch.Size(var_span)
-        new_params = params.view(new_shape)
-
-        return new_params
