@@ -790,11 +790,11 @@ class WMVN(VariableNode):
 
 
 class LTMFN(FactorNode):
-    """
-        Long-Term Memory Factor Node.
+    """Long-Term Memory Factor Node.
 
-        Holds the distribution class of this predicate, and if necessary can draw particle events from currently
-            assumed distribution instance.
+    Memorizes and updates the predicate's knowledge across decision cycles. Hosts and maintains the associated
+    KnowledgeServer instance to provide service to downstream nodes.
+
 
         Admits incoming link from WMVN that contains combined action message to this predicate by the end of the
             decision cycle, as well as the incoming link from parameter feed and WMFN that contains parameter messages.

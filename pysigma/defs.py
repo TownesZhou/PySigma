@@ -9,7 +9,7 @@ from enum import Enum, Flag, auto
 from collections.abc import Iterable
 import numpy as np
 from copy import deepcopy
-from utils import DistributionServer
+from utils import DistributionServer, KnowledgeServer
 
 
 # Variable Metatypes and Variable for general inference
@@ -1611,10 +1611,14 @@ class Message:
         -----
         Regarding the implementation:
 
-        Marginalization of particles is implemented by simply discarding the target particle value tensor as well as
-        its corresponding log sampling density tensor, and sum over the target prob tensor over the event dimension.
+        Marginalization of the particles is implemented by simply discarding the target particle value tensor as well as
+        its corresponding log sampling density tensor, and summing over the target prob tensor over the event dimension.
         The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the
         marginal sampling density tensor.
+
+        Note that the target prob tensor recovered in this way is **NOT** the
+        actual probability w.r.t. the target distributions, but one that is proportional to that up to a normalization
+        constant factor.
         """
         assert isinstance(event_dim, int) and -len(self.e_shape) <= event_dim <= len(self.e_shape) - 1
         assert MessageType.Particles in self.type, \
@@ -1660,8 +1664,103 @@ class Message:
 
         new_msg = Message(MessageType.Particles,
                           batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
-                          particles=new_particles, weight=new_weight, log_densities=new_densities)
+                          particles=new_particles, weight=new_weight, log_densities=new_densities, **self.attr)
         return new_msg
+
+    def event_concatenate(self, cat_event_dims, target_event_dim=-1):
+        """Concatenate the particle events corresponding to the event dimensions specified by `cat_event_dims`. The new
+        concatenated events will be placed at `target_event_dim` dimension.
+
+        To concatenate events means to 1) combinatorially concatenate the particle value tensors, 2) to take the
+        cross product of associated marginal sampling density tensors and flatten it, 3) reshape the weight tensor
+        into correct flattened shape.
+
+        Note that the event dimensions will be concatenated in the order given by `cat_event_dims`.
+
+        Only messages with particles support this operation. If `self`'s message type is ``MessageType.Both``, a
+        ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.
+
+        Parameters
+        ----------
+        cat_event_dims : iterable of int
+            The list of event dimensions to be concatenated. Must have length at least 2. Each should be in range
+            ``[-len(event_shape), len(event_shape) - 1]``.
+        target_event_dim : int
+            The target event dimension where the concatenated event will be placed. Should be in range
+            ``[-len(event_shape) + k, len(event_shape) - k - 1]``, where ``k`` equals to ``len(cat_event_dims)``.
+
+        Returns
+        -------
+        Message
+            A ``Message.Particles`` type message where the specified event dimensions are concatenated.
+
+        Raises
+        ------
+        AssertionError
+            If `self` does not contain particles.
+        """
+        assert isinstance(cat_event_dims, Iterable)
+        cat_event_dims = list(cat_event_dims)
+        assert len(cat_event_dims) >= 2
+        assert all(isinstance(d, int) and
+                   -len(self.e_shape) + len(cat_event_dims) <= d <= len(self.e_shape) - len(cat_event_dims) - 1
+                   for d in cat_event_dims)
+        assert isinstance(target_event_dim, int) and -len(self.e_shape) <= target_event_dim <= len(self.e_shape) - 1
+        assert MessageType.Particles in self.type, \
+            "Only message with particles can concatenate event dimensions. Such operation on distribution parameter is " \
+            "not well defined."
+
+        # Convert dims to positive values if they are negative
+        cat_event_dims = [len(self.e_shape) + d if d < 0 else d for d in cat_event_dims]
+        target_event_dim = len(self.e_shape) + target_event_dim if target_event_dim < 0 else target_event_dim
+
+        # Collect elements to be concatenated, in the order given by cat_event_dims. Also the pre-flattened shape
+        cat_particles = list(self.particles[i] for i in cat_event_dims)
+        cat_densities = list(self.log_densities[i] for i in cat_event_dims)
+        cat_s_shape = torch.Size([self.s_shape[i] for i in cat_event_dims])
+        # Collect the residues that are not to be concatenated
+        res_particles = list(self.particles[i] for i in range(len(self.s_shape)) if i not in cat_event_dims)
+        res_densities = list(self.log_densities[i] for i in range(len(self.s_shape)) if i not in cat_event_dims)
+        # New shapes
+        new_s_shape = [self.s_shape[i] for i in range(len(self.s_shape)) if i not in cat_event_dims]
+        new_s_shape.insert(target_event_dim, np.prod([self.s_shape[j] for j in cat_event_dims]))
+        new_e_shape = [self.e_shape[i] for i in range(len(self.e_shape)) if i not in cat_event_dims]
+        new_e_shape.insert(target_event_dim, sum([self.e_shape[j] for j in cat_event_dims]))
+
+        # Combinatorially concatenate particle values. Flatten result and insert to the rest to form new particle tuple
+        comb_particles = KnowledgeServer.combinatorial_cat(cat_particles)
+        assert comb_particles.shape[:-1] == cat_s_shape
+        flat_particles = comb_particles.view(-1, comb_particles.shape[-1])        # flatten
+        new_particles = res_particles[:target_event_dim] + [flat_particles] + res_particles[target_event_dim:]
+
+        # Take cross product of marginal sampling densities and flatten.
+        expand_log_den = []
+        for j, d in enumerate(cat_densities):
+            view_dim = [-1] * (len(cat_s_shape) - 1)
+            view_dim.insert(j, cat_s_shape[j])
+            expand_log_den.append(d.view(view_dim))
+        joint_log_den = sum(expand_log_den)
+        assert joint_log_den.shape == cat_s_shape
+        flat_log_den = joint_log_den.view(-1)       # flatten
+        new_densities = res_densities[:target_event_dim] + [flat_log_den] + res_densities[target_event_dim:]
+
+        # Reshape weight tensor into correct flattened shape
+        # First permute cat_event_dims to the last dimensions
+        new_weight = self.weight        # of shape (b_shape + sample_shape)
+        b_cat_event_dims = list(len(self.b_shape) + d for d in cat_event_dims)      # Account for batch dims at front
+        b_target_event_dim = len(self.b_shape) + target_event_dim
+        for dim in b_cat_event_dims:
+            perm_order = list(d for d in range(new_weight.dim()) if d != dim) + [dim]
+            new_weight = new_weight.permute(perm_order)
+        assert new_weight.shape[-len(cat_event_dims):] == cat_s_shape
+        new_weight = new_weight.view(new_weight.shape[:-len(cat_event_dims)] + torch.Size([1]))     # flatten
+        perm_order = list(range(new_weight.dim() - 1))
+        perm_order.insert(b_target_event_dim, -1)
+        new_weight = new_weight.permute(perm_order)         # Permute flattened dims to target_event_dim
+
+        new_msg = Message(MessageType.Particles,
+                          batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
+                          particles=new_particles, weight=new_weight, log_densities=new_densities, **self.attr)
 
     # @staticmethod
     # def event_translate_2pred(msg, translator):
