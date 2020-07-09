@@ -86,7 +86,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../introduction/getting-started.html">Getting Started</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../references/index.html">References</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../references/index.html">API References</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../references/cognitive.html">Cognitive Language Interface</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#type">Type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#predicate">Predicate</a></li>
@@ -1786,8 +1786,89 @@
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
                           <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">particles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">new_msg</span></div></div>
+        <span class="k">return</span> <span class="n">new_msg</span></div>
 
+<div class="viewcode-block" id="Message.event_marginalize"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_marginalize">[docs]</a>    <span class="k">def</span> <span class="nf">event_marginalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_dim</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a message from `self` where the event dimension specified bv `event_dim` is marginalized,</span>
+<span class="sd">        corresponding to marginalizing the corresponding random variable.</span>
+
+<span class="sd">        Only messages with particles support this operation. If `self`&#39;s message type is ``MessageType.Both``, a</span>
+<span class="sd">        ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        event_dim : int</span>
+<span class="sd">            Which event dimension / random variable to be marginalized over. Can accept a value in the range</span>
+<span class="sd">            ``[-len(event_shape), len(event_shape) - 1]``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            A ``MessageType.Particles`` type message where the `event_dim` th event dimension is marginalized over.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `self` does not contain particles.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `self`&#39;s ``len(event_shape)`` is 1, i.e., currently only one event dimension, but still this method is</span>
+<span class="sd">            called to marginalize the only left event dimension.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Regarding the implementation:</span>
+
+<span class="sd">        Marginalization of particles is implemented by simply discarding the target particle value tensor as well as</span>
+<span class="sd">        its corresponding log sampling density tensor, and sum over the target prob tensor over the event dimension.</span>
+<span class="sd">        The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the</span>
+<span class="sd">        marginal sampling density tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">event_dim</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> \
+            <span class="s2">&quot;Only message with particles can be marginalized over. Marginalization over distribution parameter is not&quot;</span> \
+            <span class="s2">&quot; well defined.&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="s2">&quot;Attempting to marginalize over a message with one a single event dimension.&quot;</span>
+
+        <span class="c1"># Convert event_dim to positive if it&#39;s negative</span>
+        <span class="n">event_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">event_dim</span> <span class="k">if</span> <span class="n">event_dim</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">event_dim</span>
+
+        <span class="c1"># Discard the target particle</span>
+        <span class="n">new_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[:</span><span class="n">event_dim</span><span class="p">])</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">event_dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]))</span>
+        <span class="n">new_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">[:</span><span class="n">event_dim</span><span class="p">])</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">[</span><span class="n">event_dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]))</span>
+        <span class="n">new_s_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[:</span><span class="n">event_dim</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">event_dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
+        <span class="n">new_e_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[:</span><span class="n">event_dim</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">event_dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
+
+        <span class="c1"># Recover target prob</span>
+        <span class="c1"># First take cross product of all marginal sampling density</span>
+        <span class="n">expand_log_den</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">):</span>
+            <span class="n">view_dim</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">view_dim</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">expand_log_den</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">view_dim</span><span class="p">))</span>
+
+        <span class="c1"># Take joint sum and exponentialize, which is equivalent to cross product.</span>
+        <span class="n">joint_density</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">expand_log_den</span><span class="p">))</span>
+        <span class="c1"># Now expand dimensions even more to full batch dimensions. Resulting shape should be (b_shape + s_shape)</span>
+        <span class="n">view_dim</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span>
+        <span class="n">joint_density</span> <span class="o">=</span> <span class="n">joint_density</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">view_dim</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">joint_density</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span>
+
+        <span class="c1"># Recover target_prob, and sum over event_dim.</span>
+        <span class="n">target_prob</span> <span class="o">=</span> <span class="n">joint_density</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="n">summed_prob</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">target_prob</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">event_dim</span><span class="p">)</span>
+
+        <span class="c1"># Obtain new weight</span>
+        <span class="n">mar_expand_log_den</span> <span class="o">=</span> <span class="n">expand_log_den</span><span class="p">[:</span><span class="n">event_dim</span><span class="p">]</span> <span class="o">+</span> <span class="n">expand_log_den</span><span class="p">[</span><span class="n">event_dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
+        <span class="n">mar_joint_density</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">mar_expand_log_den</span><span class="p">))</span>
+        <span class="n">view_dim</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">new_s_shape</span><span class="p">)</span>
+        <span class="n">mar_joint_density</span> <span class="o">=</span> <span class="n">mar_joint_density</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">view_dim</span><span class="p">)</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="n">summed_prob</span> <span class="o">/</span> <span class="n">mar_joint_density</span>
+
+        <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
+                          <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">new_s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="n">new_e_shape</span><span class="p">,</span>
+                          <span class="n">particles</span><span class="o">=</span><span class="n">new_particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">new_densities</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_msg</span></div></div>
 
     <span class="c1"># @staticmethod</span>
     <span class="c1"># def event_translate_2pred(msg, translator):</span>
@@ -1878,7 +1959,7 @@
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2020, USC Institute for Creative Technologies
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
 
     </p>
   </div>

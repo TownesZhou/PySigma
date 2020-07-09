@@ -1581,6 +1581,87 @@ class Message:
                           particles=self.particles, weight=new_weight, log_densities=self.log_densities)
         return new_msg
 
+    def event_marginalize(self, event_dim):
+        """Returns a message from `self` where the event dimension specified bv `event_dim` is marginalized,
+        corresponding to marginalizing the corresponding random variable.
+
+        Only messages with particles support this operation. If `self`'s message type is ``MessageType.Both``, a
+        ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.
+
+        Parameters
+        ----------
+        event_dim : int
+            Which event dimension / random variable to be marginalized over. Can accept a value in the range
+            ``[-len(event_shape), len(event_shape) - 1]``.
+
+        Returns
+        -------
+        Message
+            A ``MessageType.Particles`` type message where the `event_dim` th event dimension is marginalized over.
+
+        Raises
+        ------
+        AssertionError
+            If `self` does not contain particles.
+        AssertionError
+            If `self`'s ``len(event_shape)`` is 1, i.e., currently only one event dimension, but still this method is
+            called to marginalize the only left event dimension.
+
+        Notes
+        -----
+        Regarding the implementation:
+
+        Marginalization of particles is implemented by simply discarding the target particle value tensor as well as
+        its corresponding log sampling density tensor, and sum over the target prob tensor over the event dimension.
+        The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the
+        marginal sampling density tensor.
+        """
+        assert isinstance(event_dim, int) and -len(self.e_shape) <= event_dim <= len(self.e_shape) - 1
+        assert MessageType.Particles in self.type, \
+            "Only message with particles can be marginalized over. Marginalization over distribution parameter is not" \
+            " well defined."
+        assert len(self.e_shape) > 1, \
+            "Attempting to marginalize over a message with one a single event dimension."
+
+        # Convert event_dim to positive if it's negative
+        event_dim = len(self.e_shape) + event_dim if event_dim < 0 else event_dim
+
+        # Discard the target particle
+        new_particles = tuple(list(self.particles[:event_dim]) + list(self.particles[event_dim + 1:]))
+        new_densities = tuple(list(self.log_densities[:event_dim]) + list(self.log_densities[event_dim + 1:]))
+        new_s_shape = self.s_shape[:event_dim] + self.s_shape[event_dim + 1:]
+        new_e_shape = self.e_shape[:event_dim] + self.e_shape[event_dim + 1:]
+
+        # Recover target prob
+        # First take cross product of all marginal sampling density
+        expand_log_den = []
+        for j, d in enumerate(self.log_densities):
+            view_dim = [-1] * (len(self.e_shape) - 1)
+            view_dim.insert(j, self.s_shape[j])
+            expand_log_den.append(d.view(view_dim))
+
+        # Take joint sum and exponentialize, which is equivalent to cross product.
+        joint_density = torch.exp(sum(expand_log_den))
+        # Now expand dimensions even more to full batch dimensions. Resulting shape should be (b_shape + s_shape)
+        view_dim = [1] * len(self.b_shape) + list(self.s_shape)
+        joint_density = joint_density.view(view_dim)
+        assert joint_density.shape == self.b_shape + self.s_shape
+
+        # Recover target_prob, and sum over event_dim.
+        target_prob = joint_density * self.weight
+        summed_prob = torch.sum(target_prob, dim=len(self.b_shape) + event_dim)
+
+        # Obtain new weight
+        mar_expand_log_den = expand_log_den[:event_dim] + expand_log_den[event_dim + 1:]
+        mar_joint_density = torch.exp(sum(mar_expand_log_den))
+        view_dim = [1] * len(self.b_shape) + list(new_s_shape)
+        mar_joint_density = mar_joint_density.view(view_dim)
+        new_weight = summed_prob / mar_joint_density
+
+        new_msg = Message(MessageType.Particles,
+                          batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
+                          particles=new_particles, weight=new_weight, log_densities=new_densities)
+        return new_msg
 
     # @staticmethod
     # def event_translate_2pred(msg, translator):

@@ -86,7 +86,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../introduction/getting-started.html">Getting Started</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../references/index.html">References</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../references/index.html">API References</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../references/cognitive.html">Cognitive Language Interface</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#type">Type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#predicate">Predicate</a></li>
@@ -997,11 +997,11 @@
 
 
 <span class="k">class</span> <span class="nc">LTMFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Long-Term Memory Factor Node.</span>
+    <span class="sd">&quot;&quot;&quot;Long-Term Memory Factor Node.</span>
 
-<span class="sd">        Holds the distribution class of this predicate, and if necessary can draw particle events from currently</span>
-<span class="sd">            assumed distribution instance.</span>
+<span class="sd">    Memorizes and updates the predicate&#39;s knowledge across decision cycles. Hosts and maintains the associated</span>
+<span class="sd">    KnowledgeServer instance to provide service to downstream nodes.</span>
+
 
 <span class="sd">        Admits incoming link from WMVN that contains combined action message to this predicate by the end of the</span>
 <span class="sd">            decision cycle, as well as the incoming link from parameter feed and WMFN that contains parameter messages.</span>
@@ -2034,7 +2034,7 @@
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2020, USC Institute for Creative Technologies
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
 
     </p>
   </div>

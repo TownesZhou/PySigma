@@ -88,7 +88,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../introduction/getting-started.html">Getting Started</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="reference internal" href="../index.html">References</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../cognitive.html">Cognitive Language Interface</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../cognitive.html#type">Type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cognitive.html#predicate">Predicate</a></li>
@@ -189,7 +189,7 @@
     
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
         
-          <li><a href="../index.html">References</a> &raquo;</li>
+          <li><a href="../index.html">API References</a> &raquo;</li>
         
           <li><a href="index.html">Graphical Architecture</a> &raquo;</li>
         
@@ -1251,6 +1251,40 @@ explicitly implemented in this method; we assume it is taken care of by Message 
 </ul>
 </dd></dl>
 
+<dl class="py method">
+<dt id="pysigma.defs.Message.event_marginalize">
+<code class="sig-name descname">event_marginalize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event_dim</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_marginalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_marginalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a message from <cite>self</cite> where the event dimension specified bv <cite>event_dim</cite> is marginalized,
+corresponding to marginalizing the corresponding random variable.</p>
+<p>Only messages with particles support this operation. If <cite>self</cite>’s message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, a
+<code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message will be returned, where the parameter of <cite>self</cite> is discarded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>event_dim</strong> (<em>int</em>) – Which event dimension / random variable to be marginalized over. Can accept a value in the range
+<code class="docutils literal notranslate"><span class="pre">[-len(event_shape),</span> <span class="pre">len(event_shape)</span> <span class="pre">-</span> <span class="pre">1]</span></code>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message where the <cite>event_dim</cite> th event dimension is marginalized over.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If <cite>self</cite> does not contain particles.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>self</cite>’s <code class="docutils literal notranslate"><span class="pre">len(event_shape)</span></code> is 1, i.e., currently only one event dimension, but still this method is
+    called to marginalize the only left event dimension.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Regarding the implementation:</p>
+<p>Marginalization of particles is implemented by simply discarding the target particle value tensor as well as
+its corresponding log sampling density tensor, and sum over the target prob tensor over the event dimension.
+The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the
+marginal sampling density tensor.</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -1482,7 +1516,7 @@ has been read in the current decision phase.</p>
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2020, USC Institute for Creative Technologies
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
 
     </p>
   </div>
