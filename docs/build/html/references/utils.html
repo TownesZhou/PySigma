@@ -243,23 +243,23 @@ while assigning each particle its probability mass as its particle weight.</p>
 translate to and from formats compatible to PySigma’s predicate knowledge, use KnowledgeServer class</p>
 <dl class="py method">
 <dt id="pysigma.utils.DistributionServer.param2dist">
-<em class="property">classmethod </em><code class="sig-name descname">param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist_class</span></em>, <em class="sig-param"><span class="n">param</span></em>, <em class="sig-param"><span class="n">b_shape</span></em>, <em class="sig-param"><span class="n">e_shape</span></em>, <em class="sig-param"><span class="n">dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.param2dist" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist_class</span></em>, <em class="sig-param"><span class="n">param</span></em>, <em class="sig-param"><span class="n">b_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">e_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.param2dist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts distribution parameter to a distribution instance.</p>
 <p>Depending on the context and Predicate knowledge format, the parameter <cite>param</cite> may belong to different
 representation systems, in which case it should be interpreted differently. Such specification should be
 sufficiently described in the argument <cite>dist_info</cite> in a prior consent format.</p>
-<p>The argument <cite>b_shape</cite> and <cite>e_shape</cite> stand for distribution’s batch shape and event shape respectively. They
-are used primarily for sanity check. Note that this event shape <cite>e_shape</cite> pertains to PyTorch’s distribution
-class specification, and therefore may or may not be different from the event shape of particles in PySigma’s
-cognitive format.</p>
+<p>The optional arguments <cite>b_shape</cite> and <cite>e_shape</cite> stand for distribution’s batch shape and event shape
+respectively. They are used primarily for sanity check. Note that this event shape <cite>e_shape</cite> pertains to
+PyTorch’s distribution class specification, and therefore may or may not be different from the event shape of
+particles in PySigma’s cognitive format.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dist_class</strong> (<em>type</em>) – The distribution class. Must be a subclass of <code class="docutils literal notranslate"><span class="pre">torch.distributions.Distribution</span></code>.</p></li>
 <li><p><strong>param</strong> (<em>torch.Tensor</em>) – The parameter tensor. The last dimension is assumed to be the parameter dimension, and sizes of the
 dimensions at the front should be equal to <cite>b_shape</cite>.</p></li>
-<li><p><strong>b_shape</strong> (<em>torch.Size</em>) – The batch shape of the distribution. Used for shape sanity check.</p></li>
-<li><p><strong>e_shape</strong> (<em>torch.Size</em>) – The presumed event shape of the distribution. Used for shape sanity check.</p></li>
+<li><p><strong>b_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The batch shape of the distribution. Used for shape sanity check.</p></li>
+<li><p><strong>e_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The presumed event shape of the distribution. Used for shape sanity check.</p></li>
 <li><p><strong>dist_info</strong> (<em>dict</em><em>, </em><em>optional</em>) – An optional dict containing all relevant information in order to correctly interpret the parameter <cite>param</cite>.</p></li>
 </ul>
 </dd>
@@ -555,22 +555,31 @@ attribute is set when <cite>draw_grid_particles</cite> is called with <code clas
 
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer.surrogate_log_prob">
-<code class="sig-name descname">surrogate_log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">surrogate_particles</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.surrogate_log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.surrogate_log_prob" title="Permalink to this definition">¶</a></dt>
-<dd><p>Query the log pdf of the surrogate particles specified by <cite>surrogate_particles</cite> w.r.t. the cached
-distribution instance.</p>
-<p>Each particle tensor in <cite>surrogate_particles</cite> must correspond to a Predicate’s random variable in the given
-order. Alternatively, <code class="docutils literal notranslate"><span class="pre">None</span></code> can be specified as an entry in <cite>surrogate_particles</cite> so that the cached particle
+<code class="sig-name descname">surrogate_log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">alt_particles</span></em>, <em class="sig-param"><span class="n">alt_param</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">alt_dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.surrogate_log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.surrogate_log_prob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the log pdf of the surrogate particles specified by <cite>alt_particles</cite> w.r.t. the cached distribution
+instance.</p>
+<p>Each particle tensor in <cite>alt_particles</cite> must correspond to a Predicate’s random variable in the given
+order. Alternatively, <code class="docutils literal notranslate"><span class="pre">None</span></code> can be specified as an entry in <cite>alt_particles</cite> so that the cached particle
 tensor of the corresponding RV remembered by this KnowledgeServer instance will be used instead.</p>
+<p>By default, the cached distribution <code class="docutils literal notranslate"><span class="pre">self.cached_dist</span></code> will be queried. Alternatively, the <cite>alt_param</cite> and
+<cite>alg_dist_info</cite> arguments can be specified so that a surrogate distribution instance will be instantiated and
+queried.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>surrogate_particles</strong> (<em>list of torch.Tensor and/or None</em>) – The surrogate particles to be queried. Each entry must either be None, so that the corresponding cached
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alt_particles</strong> (<em>list of torch.Tensor and/or None</em>) – The surrogate particles to be queried. Each entry must either be None, so that the corresponding cached
 particles will be used instead, or a torch.Tensor, with a shape of length 2 and the last dimension size
-equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>.</p>
+equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>.</p></li>
+<li><p><strong>alt_param</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
+being queried. Should have the same shape as the cached <code class="docutils literal notranslate"><span class="pre">self.batched_param</span></code>.</p></li>
+<li><p><strong>alt_dist_info</strong> (<em>dict</em><em>, </em><em>optional</em>) – The dist info necessary for DistributionServer to convert <cite>alt_param</cite> into a distribution instance. Will
+have no effect when <cite>alt_param</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, even if specified.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The log probability tensor, of shape <code class="docutils literal notranslate"><span class="pre">(sample_shape</span> <span class="pre">+</span> <span class="pre">batch_shape)</span></code>, where <code class="docutils literal notranslate"><span class="pre">sample_shape</span></code> is the list
-of sample sizes of the queried particles in order (either those provided by <cite>surrogate_particles</cite> or those
-in <code class="docutils literal notranslate"><span class="pre">self.particles</span></code>), and <code class="docutils literal notranslate"><span class="pre">batch_shape</span></code> is the batch shape of the Predicate’s knowledge.</p>
+<dd class="field-even"><p>The log probability tensor, of shape <code class="docutils literal notranslate"><span class="pre">(batch_shape</span> <span class="pre">+</span> <span class="pre">sample_shape)</span></code>, where <code class="docutils literal notranslate"><span class="pre">batch_shape</span></code> is the batch
+shape of the Predicate’s knowledge, and <code class="docutils literal notranslate"><span class="pre">sample_shape</span></code> is the list of sample sizes of the queried
+particles in order (either those provided by <cite>alt_particles</cite> or those in <code class="docutils literal notranslate"><span class="pre">self.particles</span></code>).</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>torch.Tensor</p>
@@ -578,7 +587,8 @@ in <code class="docutils literal notranslate"><span class="pre">self.particles</
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>AssertionError</strong> – If <cite>self.batched_param</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, meaning no cached parameters to instantiate distribution instance.</p></li>
-<li><p><strong>AssertionError</strong> – If <cite>surrogate_particles</cite> contains <code class="docutils literal notranslate"><span class="pre">None</span></code> but <code class="docutils literal notranslate"><span class="pre">self.particles</span></code> is also None, meaning no cached particles.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>alt_particles</cite> contains <code class="docutils literal notranslate"><span class="pre">None</span></code> but <code class="docutils literal notranslate"><span class="pre">self.particles</span></code> is also None, meaning no cached particles.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>alt_param</cite> is specified but it has different shape than <code class="docutils literal notranslate"><span class="pre">self.batched_param</span></code>.</p></li>
 </ul>
 </dd>
 </dl>

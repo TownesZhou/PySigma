@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from torch.distributions import Distribution, Transform
 from torch.distributions.constraints import Constraint
 from defs import VariableMetatype, Variable, MessageType, Message
-from utils import DistributionServer
+from utils import DistributionServer, KnowledgeServer
 from structures import VariableMap, Summarization
 
 
@@ -307,7 +307,7 @@ class Node(ABC):
         """Adding linkdata connecting to this node.
 
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def compute(self):
@@ -618,16 +618,15 @@ class WMVN(VariableNode):
 
     Gate node connecting predicate structure to conditionals.
 
-    Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of FAN
-    node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist Particles
-    type messages but all of them are homogeneous (sharing the same particle values as well as sampling log densities).
+    A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
+    particles needs to be queried.
 
     Parameters
     ----------
     name : str
         Name of this variable node.
-    dist_class : type
-        The distribution class that the Predicate assumes. Must be a subclass of torch.distributions.Distribution.
+    ks : KnowledgeServer
+        The KnowledgeServer instance associated with the belonging Predicate.
     rel_var_list : iterable of Variable
         Iterable of relational variables. Corresponds to the batch dimensions. Used to check ``b_shape`` attribute of
         incoming messages.
@@ -643,59 +642,81 @@ class WMVN(VariableNode):
 
     Attributes
     ----------
-    dist_class : type
-        The distribution class that the Predicate assumes. Must be a subclass of torch.distributions.Distribution.
+    ks : KnowledgeServer
+        The KnowledgeServer instance associated with the belonging Predicate.
 
-    Notes
-    -----
-    Following combination procedure is carried out to conform to the standard of all inference methods
 
-    1. If all messages are of type ``MessageType.Parameter`` or ``MessageType.Both``, i.e., all containing parameters,
-       then the default combination behavior is to take the sum over all the parameters. The assumption made here is
-       that these parameters reside in some parameter vector space, and that the addition operation is well-defined.
-       See :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more
-       details.
-
-       The parameter representation of distributions is given a higher priority than the particle representation.
-       Therefore, in this case, the particles in ``MessageType.Both`` type message would be discarded by calling
-       `reduce_type()` method on the message.
-
-    2. If there exists ``MessageType.Particles`` type incoming message, meaning that it contains only particles:
-
-       a. Find all messages of such type, and ensure that their particles are homogeneous.
-       b. If there are other ``MessageType.Parameter`` or ``MessageType.Both`` type messages, then the particles in
-          above messages will be borrowed as the surrogate particles, and be importance weighted w.r.t. the distribution
-          parameter to form a ``MessageType.Particles`` type message.
-       c. As all message now possess particles as representation for the distributions, the combination will be taken
-          by taking the element-wise multiplication of the weight tensors with normalization. See
-          :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more details.
-
-    Since occasionally querying log pdf is to be performed, WMVN thus needs to know the distribution class the
-    predicate it belongs to is assuming.
-
-    When combining messages, will exclude message from the link to which the combined message is to send to (if
-    such a bidirected link exists). This implements the Sum-Product algorithm's variable node semantics, if
-    this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.
-
-    Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
-    share the same set of incoming links that provide the messages, previously computed result will be reused
     """
-    def __init__(self, name, dist_class, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None):
-        assert issubclass(dist_class, Distribution)
+    def __init__(self, name, ks, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None):
+        assert isinstance(ks, KnowledgeServer)
         super(WMVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list)
         self.pretty_log["node type"] = "Working Memory Variable Node"
 
         # Distribution class the Predicate self belongs to is assuming
-        self.dist_class = dist_class
+        self.ks = ks
         # Cache for temporarily saving computation result for combination
         self._cache = {}
 
     def compute(self):
+        """Combine incoming message to this Predicate subgraph.
+
+        Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
+        FAN node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist
+        Particles type messages but all of them are homogeneous (sharing the same particle values as well as sampling
+        log densities).
+
+        Raises
+        ------
+        AssertionError
+            If the ``MessageType.Particles`` type messages in the incoming links do not share the same particles
+            (including particle value tensors and/or particle log sampling density tensors)
+
+        Warns
+        -----
+        UserWarning
+            If there is only one incoming link, but this link is connected to a factor node that is also connected from
+            this WMVN via an outgoing link. This means, per Sum-Product exclusion principle, that this outgoing link
+            will also be neglected during compute() and no new message will ever be propagated via this link.
+
+        Notes
+        -----
+        Following combination procedure is carried out to conform to the standard of all inference methods
+
+        1. If all messages are of type ``MessageType.Parameter`` or ``MessageType.Both``, i.e., all containing parameters,
+           then the default combination behavior is to take the sum over all the parameters. The assumption made here is
+           that these parameters reside in some parameter vector space, and that the addition operation is well-defined.
+           See :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more
+           details.
+
+           The parameter representation of distributions is given a higher priority than the particle representation.
+           Therefore, in this case, the particles in ``MessageType.Both`` type message would be discarded by calling
+           `reduce_type()` method on the message.
+
+        2. If there exists ``MessageType.Particles`` type incoming message, meaning that it contains only particles:
+
+           a. Find all messages of such type, and ensure that their particles are homogeneous.
+           b. If there are other ``MessageType.Parameter`` or ``MessageType.Both`` type messages, then the particles in
+              above messages will be borrowed as the surrogate particles, and be importance weighted w.r.t. the distribution
+              parameter to form a ``MessageType.Particles`` type message.
+           c. As all message now possess particles as representation for the distributions, the combination will be taken
+              by taking the element-wise multiplication of the weight tensors with normalization. See
+              :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more details.
+
+        When combining messages, will exclude message from the link to which the combined message is to send to (if
+        such a bidirected link exists). This implements the Sum-Product algorithm's variable node semantics, if
+        this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.
+
+        Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
+        share the same set of incoming links that provide the messages, previously computed result will be reused
+
+
+        """
         super(WMVN, self).compute()
         # Relay message if only one incoming link
         if len(self.in_linkdata) == 1:
             in_ld = self.in_linkdata[0]
             msg = in_ld.read()
+            assert isinstance(msg, Message)
             for out_ld in self.out_linkdata:
                 # Throw a warning if the outgoing link is connected to the same factor node that the only incoming
                 #   link is connected to, since in such case no message would be sent to that factor node
@@ -715,52 +736,38 @@ class WMVN(VariableNode):
                 in_lds = tuple(in_ld for in_ld in self.in_linkdata if in_ld.fn is not out_ld.fn)
 
                 # Check if there's cached data. If yes, use cached result
-                if in_lds in self.cache.keys():
-                    out_msg = self.cache[in_lds]
+                if in_lds in self._cache.keys():
+                    out_msg = self._cache[in_lds]
                 # Otherwise, compute combined message
                 else:
                     in_msgs = tuple(in_ld.read() for in_ld in in_lds)
                     # 1. Find if there's any Particles message
-                    if any(msg.type == MessageType.Particles for msg in in_msgs):
+                    if any(msg.type is MessageType.Particles for msg in in_msgs):
                         # 1.a. Ensure all particle lists are homogeneous
-                        particle_msgs = tuple(msg for msg in in_msgs if msg.type == MessageType.Particles)
-                        particle_lds = tuple(ld for ld in in_lds if ld.read().type == MessageType.Particles)
+                        particle_msgs = tuple(msg for msg in in_msgs if msg.type is MessageType.Particles)
+                        particle_lds = tuple(ld for ld in in_lds if ld.read().type is MessageType.Particles)
                         tmp_msg, tmp_ld = particle_msgs[0], particle_lds[0]
+                        assert isinstance(tmp_msg, Message)
                         for msg, in_ld in zip(particle_msgs, particle_lds):
-                            assert torch.equal(tmp_msg.particles, msg.particles), \
+                            assert tmp_msg.same_particles_as(msg), \
                                 "At WMVN '{}': When attempting to combine incoming messages, found that incoming " \
-                                "Particle message's particle values from  linkdata '{}' does not agree with that of " \
-                                "incoming Particle message from linkdata '{}'"\
-                                .format(self.name, in_ld, tmp_ld)
-                            assert msg.log_density == tmp_msg.log_density, \
-                                "At WMVN '{}': When attempting to combine incoming messages, found that incoming " \
-                                "Particle message's sampling log density from linkdata '{}' does not agree with that of " \
-                                "incoming Particle message  from linkdata '{}'" \
+                                "Particle message's particles (particle value tensors and/or particle log sampling " \
+                                "density tensors) from  linkdata '{}' does not agree with that of incoming Particle " \
+                                "message from linkdata '{}'" \
                                 .format(self.name, in_ld, tmp_ld)
 
-                        # 1.b Find any Parameter type message, if they exist, draw particle list
-                        param_msgs = tuple(msg for msg in in_msgs if msg.type is MessageType.Parameter)
+                        # 1.b Find message that contains parameter. If they exist, use the particles from the above
+                        # messages as surrogate particle list and query its log prob w.r.t. the parameter.
+                        param_msgs = tuple(msg for msg in in_msgs if MessageType.Parameter in msg.type)
                         particles = tmp_msg.particles
-                        sampling_log_density = tmp_msg.log_density
-                        s_shape = tmp_msg.s_shape
-                        b_shape = tmp_msg.b_shape
-                        e_shape = tmp_msg.e_shape
 
                         # 2.b Compute particle weights w.r.t. distributions induced by the Parameter type messages
                         candidate_msgs = list(particle_msgs)
                         for param_msg in param_msgs:
-                            # Obtain distribution instance
-                            dist = DistributionServer.param2dist(self.dist_class, param_msg.parameters, b_shape, e_shape)
-                            # Query log pdf
-                            log_density = DistributionServer.log_pdf(dist, particles)
-                            # Compute new weights by inversely weighting log pdf with sampling log pdf
-                            weights = torch.exp(log_density - sampling_log_density)
-                            # Convert to Particles message and append to candidate msg list. Normalization of weights
-                            #   is taken care of during Message initialization
-                            msg = Message(MessageType.Particles,
-                                          sample_shape=s_shape, batch_shape=b_shape, event_shape=e_shape,
-                                          particles=particles, weights=weights, log_density=log_density)
-                            candidate_msgs.append(msg)
+                            dist_info = param_msg.attr['dist_info'] if 'dist_info' in param_msg.attr.keys() else None
+                            target_log_prob = self.ks.surrogate_log_prob(particles, param_msg, dist_info)
+                            surrogate_msg = tmp_msg.event_reweight(target_log_prob)
+                            candidate_msgs.append(surrogate_msg)
 
                         # Combine messages
                         out_msg = candidate_msgs[0]
@@ -774,12 +781,12 @@ class WMVN(VariableNode):
                             out_msg += msg
 
                 # Cache result
-                self.cache[in_lds] = out_msg
+                self._cache[in_lds] = out_msg
                 # Send message
                 out_ld.write(out_msg)
 
             # Clear cache
-            self.cache = {}
+            self._cache = {}
 
 
 class LTMFN(FactorNode):

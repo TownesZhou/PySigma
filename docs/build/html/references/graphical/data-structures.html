@@ -385,7 +385,8 @@ dimensions. Alternatively, can be an int of 1 to specify the uniform weight. Def
 sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
 <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>. The jth entry must have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span></code>.</p></li>
 <li><p><strong>**kwargs</strong> – Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
-cloned.</p></li>
+cloned. Note that any <cite>dist_info</cite> required by DistributionServer regarding the specification of the parameters
+should be associated with the key <code class="docutils literal notranslate"><span class="pre">&quot;dist_info&quot;</span></code>.</p></li>
 </ul>
 </dd>
 </dl>

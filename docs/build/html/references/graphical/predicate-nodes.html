@@ -221,9 +221,8 @@
 <em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">WMVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Working Memory Variable Node.</p>
 <p>Gate node connecting predicate structure to conditionals.</p>
-<p>Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of FAN
-node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist Particles
-type messages but all of them are homogeneous (sharing the same particle values as well as sampling log densities).</p>
+<p>A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
+particles needs to be queried.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -251,6 +250,25 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.WMVN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combine incoming message to this Predicate subgraph.</p>
+<p>Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
+FAN node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist
+Particles type messages but all of them are homogeneous (sharing the same particle values as well as sampling
+log densities).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If the <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type messages in the incoming links do not share the same particles
+    (including particle value tensors and/or particle log sampling density tensors)</p>
+</dd>
+<dt class="field-even">Warns</dt>
+<dd class="field-even"><p><strong>UserWarning</strong> – If there is only one incoming link, but this link is connected to a factor node that is also connected from
+this WMVN via an outgoing link. This means, per Sum-Product exclusion principle, that this outgoing link
+will also be neglected during compute() and no new message will ever be propagated via this link.</p>
+</dd>
+</dl>
 <p class="rubric">Notes</p>
 <p>Following combination procedure is carried out to conform to the standard of all inference methods</p>
 <ol class="arabic">
@@ -275,17 +293,11 @@ by taking the element-wise multiplication of the weight tensors with normalizati
 </ol>
 </li>
 </ol>
-<p>Since occasionally querying log pdf is to be performed, WMVN thus needs help from the Predicate’s KnowledgeServer
-instance.</p>
 <p>When combining messages, will exclude message from the link to which the combined message is to send to (if
 such a bidirected link exists). This implements the Sum-Product algorithm’s variable node semantics, if
 this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.</p>
 <p>Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
 share the same set of incoming links that provide the messages, previously computed result will be reused</p>
-<dl class="py method">
-<dt id="pysigma.graphical._nodes.WMVN.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Combine incoming message to this Predicate subgraph.</p>
 </dd></dl>
 
 </dd></dl>

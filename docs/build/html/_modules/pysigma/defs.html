@@ -365,7 +365,8 @@
 <span class="sd">        ``MessageType.Particles``. The jth entry must have shape ``sample_shape[j]``.</span>
 <span class="sd">    **kwargs</span>
 <span class="sd">        Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is</span>
-<span class="sd">        cloned.</span>
+<span class="sd">        cloned. Note that any `dist_info` required by DistributionServer regarding the specification of the parameters</span>
+<span class="sd">        should be associated with the key ``&quot;dist_info&quot;``.</span>
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
@@ -624,7 +625,7 @@
             <span class="c1"># Clone self tensor contents</span>
             <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
             <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">s_type</span><span class="p">,</span>
                               <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                               <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>

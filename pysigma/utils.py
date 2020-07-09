@@ -537,9 +537,9 @@ class KnowledgeServer:
         Returns
         -------
         torch.Tensor
-            The log probability tensor, of shape ``(sample_shape + batch_shape)``, where ``sample_shape`` is the list
-            of sample sizes of the queried particles in order (either those provided by `alt_particles` or those
-            in ``self.particles``), and ``batch_shape`` is the batch shape of the Predicate's knowledge.
+            The log probability tensor, of shape ``(batch_shape + sample_shape)``, where ``batch_shape`` is the batch
+            shape of the Predicate's knowledge, and ``sample_shape`` is the list of sample sizes of the queried
+            particles in order (either those provided by `alt_particles` or those in ``self.particles``).
 
         Raises
         ------

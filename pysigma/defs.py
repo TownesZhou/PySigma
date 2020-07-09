@@ -158,7 +158,8 @@ class Message:
         ``MessageType.Particles``. The jth entry must have shape ``sample_shape[j]``.
     **kwargs
         Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
-        cloned.
+        cloned. Note that any `dist_info` required by DistributionServer regarding the specification of the parameters
+        should be associated with the key ``"dist_info"``.
 
     Attributes
     ----------
@@ -417,7 +418,7 @@ class Message:
             # Clone self tensor contents
             cloned_particles = tuple(p.clone() for p in self.particles)
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
-            new_msg = Message(self.type,
+            new_msg = Message(s_type,
                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
                               particles=cloned_particles, weights=new_weights, log_densities=cloned_log_densities)
         return new_msg
