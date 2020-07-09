@@ -46,7 +46,8 @@ extensions = [
 	'sphinx_rtd_theme',
 	'sphinx.ext.napoleon',
 	'sphinx.ext.viewcode', 
-	'sphinx.ext.autosummary'
+	'sphinx.ext.autosummary',
+	'sphinx.ext.todo'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -62,6 +63,9 @@ master_doc = 'index'
 
 # For autodoc: Output entities in the order specified in the source code
 autodoc_member_order = 'bysource'
+
+# Allow showing TODO items in the docs
+todo_include_todos = True
 
 
 # -- Options for HTML output -------------------------------------------------

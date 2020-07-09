@@ -118,6 +118,14 @@ class DistributionServer:
         -------
         torch.distributions.Distribution
             The instantiated distribution instance.
+
+        Raises
+        ------
+        NotImplementedError
+            If the conversion procedure specific to `dist_class` has not been implemented yet.
+        ValueError
+            If the converted distribution instance has different batch shape and event shape than specified `b_shape`
+            and `e_shape` respectively.
         """
         assert issubclass(dist_class, torch.distributions.Distribution)
         assert isinstance(param, torch.Tensor)
@@ -155,6 +163,11 @@ class DistributionServer:
         -------
         torch.Tensor
             The parameter tensor in the desired format.
+
+        Raises
+        ------
+        NotImplementedError
+            If the conversion procedure specific to the distribution class of `dist` has not been implemented yet.
         """
         assert isinstance(dist, Distribution)
         assert dist_info is None or isinstance(dist_info, dict)
@@ -166,62 +179,11 @@ class DistributionServer:
         return cls.dict_dist2param[dist_class](dist, dist_info)
 
     @classmethod
-    def natural2exp_param(cls, dist_class, natural_params, b_shape):
-        """
-            Translation from natural parameters to PyTorch distribution parameters for exponential family
-            Return a parameter tensor
-            # TODO: Implement with dist_info
-        """
-        assert isinstance(natural_params, torch.Tensor)
-        assert issubclass(dist_class, ExponentialFamily)
-        assert isinstance(b_shape, torch.Size)
-
-        if dist_class not in cls.dict_natural2exp_param.keys():
-            raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
-                                      "distribution class '{}' not yet implemented".format(dist_class))
-        return cls.dict_natural2exp_param[dist_class](natural_params, b_shape)
-
-    @classmethod
-    def exp_param2natural(cls, dist_class, exp_params, b_shape):
-        """
-            Translation from PyTorch distribution parameters to natural parameters for exponential family
-            Return a parameter tensor
-            # TODO: Implement with dist_info
-        """
-        assert isinstance(exp_params, torch.Tensor)
-        assert issubclass(dist_class, ExponentialFamily)
-        if dist_class not in cls.dict_exp_param2natural.keys():
-            raise NotImplementedError("Translation from natural parameters to PyTorch distribution parameters for "
-                                      "distribution class '{}' not yet implemented".format(dist_class))
-        return cls.dict_exp_param2natural[dist_class](exp_params, b_shape)
-
-    @classmethod
-    def natural2exp_dist(cls, dist_class, natural_params, b_shape, e_shape):
-        """
-            Composition of param2dist() with natural2exp_param()
-            Return a distribution instance
-            # TODO: Implement with dist_info
-        """
-        param = cls.natural2exp_param(dist_class, natural_params, b_shape)
-        dist = cls.param2dist(dist_class, param, b_shape, e_shape)
-        return dist
-
-    @classmethod
-    def exp_dist2natural(cls, dist):
-        """
-            Composition of exp_param2natural() with dist2param()
-            Return a parameter tensor
-            # TODO: Implement with dist_info
-        """
-        exp_param = cls.dist2param(dist)
-        natural = cls.exp_param2natural(type(dist), exp_param, dist.batch_shape)
-        return natural
-
-    @classmethod
     def get_moments(cls, dist, n_moments):
-        """
-            Get vector of moments from a given distribution instance
-            # TODO: Implement with dist_info
+        """Get vector of moments from a given distribution instance
+
+        .. todo::
+           Implement with dist_info
         """
         assert isinstance(dist, Distribution)
         assert isinstance(n_moments, int) and n_moments > 0
@@ -235,7 +197,8 @@ class DistributionServer:
     @classmethod
     def draw_particles(cls, dist, num_particles, b_shape, e_shape):
         """
-            TODO: Gibbs sampling procedure
+            .. todo::
+               Gibbs sampling procedure
             Draw a given number of particles from the given batch of distribution instances. Return a tuple:
                     (particles, weights, sampling_log_densities)
 
@@ -243,7 +206,6 @@ class DistributionServer:
                 distribution instance in the batch to derive individual weights by importance weighting.
 
             Particles drawn are in the format compatible with PyTorch's distribution class
-            # TODO: Implement with dist_info
         """
         assert isinstance(dist, Distribution)
         assert isinstance(num_particles, int)
@@ -346,7 +308,9 @@ class DistributionServer:
     @classmethod
     def transform_param(cls, param, dist_class, trans):
         """
-            TODO: implement
+            .. todo::
+               To implement
+
             Return the parameter of the transformed distribution
         """
         pass
@@ -534,7 +498,11 @@ class KnowledgeServer:
     """
     Public API
     """
-    def draw_grid_particles(self, update_cache=True):
+    def draw_grid_particles(self, new_param, update_cache=True):
+        """
+        .. todo::
+           To implement
+        """
         pass
 
     def surrogate_log_prob(self, surrogate_particles):
