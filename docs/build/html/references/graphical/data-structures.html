@@ -1186,8 +1186,8 @@ of the Jacobian of the transformation:</p>
 </ul>
 <p>For parameters:</p>
 <ul class="simple">
-<li><p><cite>dist_class</cite> attribute must be present in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code>, and the attribute value must be a subclass of
-<a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#torch.distributions.distribution.Distribution">torch.distribution.Distribution</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;dist_info&quot;</span></code> -keyed attribute must be present in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code> to inform <cite>DistributionServer</cite> of the
+attribute of the distribution parameter.</p></li>
 <li><p>Query <cite>DistributionServer</cite> to obtained the transformed parameter.</p></li>
 </ul>
 <dl class="field-list simple">
@@ -1201,8 +1201,7 @@ of the Jacobian of the transformation:</p>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>dist_class</cite> attribute is not present in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code>, or its value is not a subclass of
-    <cite>torch.distribution.Distribution</cite></p>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>dist_info</cite> attribute is not present in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code></p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -1279,10 +1278,45 @@ corresponding to marginalizing the corresponding random variable.</p>
 </dl>
 <p class="rubric">Notes</p>
 <p>Regarding the implementation:</p>
-<p>Marginalization of particles is implemented by simply discarding the target particle value tensor as well as
-its corresponding log sampling density tensor, and sum over the target prob tensor over the event dimension.
+<p>Marginalization of the particles is implemented by simply discarding the target particle value tensor as well as
+its corresponding log sampling density tensor, and summing over the target prob tensor over the event dimension.
 The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the
 marginal sampling density tensor.</p>
+<p>Note that the target prob tensor recovered in this way is <strong>NOT</strong> the
+actual probability w.r.t. the target distributions, but one that is proportional to that up to a normalization
+constant factor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.defs.Message.event_concatenate">
+<code class="sig-name descname">event_concatenate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cat_event_dims</span></em>, <em class="sig-param"><span class="n">target_event_dim</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_concatenate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_concatenate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenate the particle events corresponding to the event dimensions specified by <cite>cat_event_dims</cite>. The new
+concatenated events will be placed at <cite>target_event_dim</cite> dimension.</p>
+<p>To concatenate events means to 1) combinatorially concatenate the particle value tensors, 2) to take the
+cross product of associated marginal sampling density tensors and flatten it, 3) reshape the weight tensor
+into correct flattened shape.</p>
+<p>Note that the event dimensions will be concatenated in the order given by <cite>cat_event_dims</cite>.</p>
+<p>Only messages with particles support this operation. If <cite>self</cite>’s message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, a
+<code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message will be returned, where the parameter of <cite>self</cite> is discarded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cat_event_dims</strong> (<em>iterable of int</em>) – The list of event dimensions to be concatenated. Must have length at least 2. Each should be in range
+<code class="docutils literal notranslate"><span class="pre">[-len(event_shape),</span> <span class="pre">len(event_shape)</span> <span class="pre">-</span> <span class="pre">1]</span></code>.</p></li>
+<li><p><strong>target_event_dim</strong> (<em>int</em>) – The target event dimension where the concatenated event will be placed. Should be in range
+<code class="docutils literal notranslate"><span class="pre">[-len(event_shape)</span> <span class="pre">+</span> <span class="pre">k,</span> <span class="pre">len(event_shape)</span> <span class="pre">-</span> <span class="pre">k</span> <span class="pre">-</span> <span class="pre">1]</span></code>, where <code class="docutils literal notranslate"><span class="pre">k</span></code> equals to <code class="docutils literal notranslate"><span class="pre">len(cat_event_dims)</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">Message.Particles</span></code> type message where the specified event dimensions are concatenated.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>self</cite> does not contain particles.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

@@ -307,7 +307,7 @@ class DistributionServer:
         return kl_norm
 
     @classmethod
-    def transform_param(cls, param, dist_class, trans):
+    def transform_param(cls, param, dist_info, trans):
         """
             .. todo::
                To implement

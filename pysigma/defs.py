@@ -1474,8 +1474,8 @@ class Message:
 
         For parameters:
 
-        * `dist_class` attribute must be present in ``self.attr``, and the attribute value must be a subclass of
-          `torch.distribution.Distribution <https://pytorch.org/docs/stable/distributions.html#torch.distributions.distribution.Distribution>`_.
+        * ``"dist_info"`` -keyed attribute must be present in ``self.attr`` to inform `DistributionServer` of the
+          attribute of the distribution parameter.
         * Query `DistributionServer` to obtained the transformed parameter.
 
         Parameters
@@ -1491,8 +1491,7 @@ class Message:
         Raises
         ------
         AssertionError
-            If `dist_class` attribute is not present in ``self.attr``, or its value is not a subclass of
-            `torch.distribution.Distribution`
+            If `dist_info` attribute is not present in ``self.attr``
 
         See Also
         --------
@@ -1507,10 +1506,9 @@ class Message:
         new_log_densities = cloned_msg.log_densities
 
         if MessageType.Parameter in cloned_msg.type:
-            assert 'dist_class' in cloned_msg.attr, \
-                "Missing 'dist_class' message attribute when transforming a message that contains parameters."
-            assert issubclass(cloned_msg.attr['dist_class'], Distribution)
-            new_parameter = DistributionServer.transform_param(new_parameter, cloned_msg.attr['dist_class'], trans)
+            assert 'dist_info' in cloned_msg.attr, \
+                "Missing 'dist_info' message attribute when transforming a message that contains parameters."
+            new_parameter = DistributionServer.transform_param(new_parameter, cloned_msg.attr['dist_info'], trans)
         if MessageType.Particles in cloned_msg.type:
             new_particles = trans(new_particles)
             new_log_densities += trans.log_abs_det_jacobian(cloned_msg.particles, new_particles)
