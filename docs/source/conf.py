@@ -22,7 +22,7 @@ import pysigma
 # -- Project information -----------------------------------------------------
 
 project = 'PySigma'
-copyright = '2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom'
+copyright = '2020, USC Institute for Creative Technologies'
 author = 'Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom'
 
 # The full version, including alpha/beta/rc tags

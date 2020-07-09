@@ -88,17 +88,17 @@ class DistributionServer:
     Public class method API
     """
     @classmethod
-    def param2dist(cls, dist_class, param, b_shape, e_shape, dist_info=None):
+    def param2dist(cls, dist_class, param, b_shape=None, e_shape=None, dist_info=None):
         """Converts distribution parameter to a distribution instance.
 
         Depending on the context and Predicate knowledge format, the parameter `param` may belong to different
         representation systems, in which case it should be interpreted differently. Such specification should be
         sufficiently described in the argument `dist_info` in a prior consent format.
 
-        The argument `b_shape` and `e_shape` stand for distribution's batch shape and event shape respectively. They
-        are used primarily for sanity check. Note that this event shape `e_shape` pertains to PyTorch's distribution
-        class specification, and therefore may or may not be different from the event shape of particles in PySigma's
-        cognitive format.
+        The optional arguments `b_shape` and `e_shape` stand for distribution's batch shape and event shape
+        respectively. They are used primarily for sanity check. Note that this event shape `e_shape` pertains to
+        PyTorch's distribution class specification, and therefore may or may not be different from the event shape of
+        particles in PySigma's cognitive format.
 
         Parameters
         ----------
@@ -107,9 +107,9 @@ class DistributionServer:
         param : torch.Tensor
             The parameter tensor. The last dimension is assumed to be the parameter dimension, and sizes of the
             dimensions at the front should be equal to `b_shape`.
-        b_shape : torch.Size
+        b_shape : torch.Size, optional
             The batch shape of the distribution. Used for shape sanity check.
-        e_shape : torch.Size
+        e_shape : torch.Size, optional
             The presumed event shape of the distribution. Used for shape sanity check.
         dist_info : dict, optional
             An optional dict containing all relevant information in order to correctly interpret the parameter `param`.
@@ -129,8 +129,8 @@ class DistributionServer:
         """
         assert issubclass(dist_class, torch.distributions.Distribution)
         assert isinstance(param, torch.Tensor)
-        assert isinstance(b_shape, torch.Size)
-        assert isinstance(e_shape, torch.Size)
+        assert b_shape is None or isinstance(b_shape, torch.Size)
+        assert e_shape is None or isinstance(e_shape, torch.Size)
         assert dist_info is None or isinstance(dist_info, dict)
 
         if dist_class not in cls.dict_param2dist.keys():
@@ -138,7 +138,8 @@ class DistributionServer:
                                       "not yet implemented".format(dist_class))
 
         dist = cls.dict_param2dist[dist_class](param, dist_info)
-        if dist.batch_shape != b_shape or dist.event_shape != e_shape:
+        if (b_shape is not None and dist.batch_shape != b_shape) or \
+                (e_shape is not None and dist.event_shape != e_shape):
             raise ValueError("The shape of the generated distribution {} does not match the provided shape. "
                              "Provided (batch_shape, event_shape) == ({}, {}), but instead got ({}, {})."
                              .format(str(dist), b_shape, e_shape, dist.batch_shape, dist.event_shape))
@@ -433,6 +434,9 @@ class DistributionServer:
 class KnowledgeServer:
     """Knowledge Server class. Provides service regarding a Predicate's knowledge.
 
+    The architecture should hold one KnowledgeServer instance for each Predicate instantiated to cache knowledge
+    contents and provide distribution related service.
+
     Parameters
     ----------
     dist_class : type
@@ -505,26 +509,36 @@ class KnowledgeServer:
         """
         pass
 
-    def surrogate_log_prob(self, surrogate_particles):
-        """Query the log pdf of the surrogate particles specified by `surrogate_particles` w.r.t. the cached
-        distribution instance.
+    def surrogate_log_prob(self, alt_particles, alt_param=None, alt_dist_info=None):
+        """Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution
+        instance.
 
-        Each particle tensor in `surrogate_particles` must correspond to a Predicate's random variable in the given
-        order. Alternatively, ``None`` can be specified as an entry in `surrogate_particles` so that the cached particle
+        Each particle tensor in `alt_particles` must correspond to a Predicate's random variable in the given
+        order. Alternatively, ``None`` can be specified as an entry in `alt_particles` so that the cached particle
         tensor of the corresponding RV remembered by this KnowledgeServer instance will be used instead.
+
+        By default, the cached distribution ``self.cached_dist`` will be queried. Alternatively, the `alt_param` and
+        `alg_dist_info` arguments can be specified so that a surrogate distribution instance will be instantiated and
+        queried.
 
         Parameters
         ----------
-        surrogate_particles : list of torch.Tensor and/or None
+        alt_particles : list of torch.Tensor and/or None
             The surrogate particles to be queried. Each entry must either be None, so that the corresponding cached
             particles will be used instead, or a torch.Tensor, with a shape of length 2 and the last dimension size
             equal to the corresponding value in ``self.rv_sizes``.
+        alt_param : torch.Tensor, optional
+            The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
+            being queried. Should have the same shape as the cached ``self.batched_param``.
+        alt_dist_info : dict, optional
+            The dist info necessary for DistributionServer to convert `alt_param` into a distribution instance. Will
+            have no effect when `alt_param` is ``None``, even if specified.
 
         Returns
         -------
         torch.Tensor
             The log probability tensor, of shape ``(sample_shape + batch_shape)``, where ``sample_shape`` is the list
-            of sample sizes of the queried particles in order (either those provided by `surrogate_particles` or those
+            of sample sizes of the queried particles in order (either those provided by `alt_particles` or those
             in ``self.particles``), and ``batch_shape`` is the batch shape of the Predicate's knowledge.
 
         Raises
@@ -532,23 +546,30 @@ class KnowledgeServer:
         AssertionError
             If `self.batched_param` is ``None``, meaning no cached parameters to instantiate distribution instance.
         AssertionError
-            If `surrogate_particles` contains ``None`` but ``self.particles`` is also None, meaning no cached particles.
+            If `alt_particles` contains ``None`` but ``self.particles`` is also None, meaning no cached particles.
+        AssertionError
+            If `alt_param` is specified but it has different shape than ``self.batched_param``.
         """
-        assert isinstance(surrogate_particles, list) and len(surrogate_particles) == self.num_rvs and \
+        assert isinstance(alt_particles, list) and len(alt_particles) == self.num_rvs and \
             all(p is None or (isinstance(p, torch.Tensor) and p.dim() == 2 and p.shape[1] == self.rv_sizes[i])
-                for i, p in enumerate(surrogate_particles))
+                for i, p in enumerate(alt_particles))
 
         assert self.batched_dist is not None, \
             "No distribution instance has been cached, so cannot look up particles' log pdf."
-        assert all(isinstance(p, torch.Tensor) for p in surrogate_particles) or self.particles is not None, \
+        assert all(isinstance(p, torch.Tensor) for p in alt_particles) or self.particles is not None, \
             "Found `None` in `surrogate_particles`, but no particles have been cached yet to be used instead."
 
-        query_particles = list(p if p is not None else self.particles[i] for i, p in enumerate(surrogate_particles))
+        query_particles = list(p if p is not None else self.particles[i] for i, p in enumerate(alt_particles))
 
         # Combinatorially concatenate particles to obtain full joint particle list
         cat_particles = KnowledgeServer.combinatorial_cat(query_particles)
         # Transform joint event values from Cognitive format to PyTorch format
         torch_particles = self.event2torch_event(cat_particles)
+
+        # Instantiate the surrogate distribution instance if asked for
+        if alt_param is not None:
+            assert alt_param.shape == self.batched_param.shape
+
 
         # Query DistributionServer
         log_prob = DistributionServer.log_prob(self.batched_dist, torch_particles)

@@ -218,7 +218,7 @@
 <h2>Working Memory Variable Node<a class="headerlink" href="#working-memory-variable-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical._nodes.WMVN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">WMVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">dist_class</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">WMVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Working Memory Variable Node.</p>
 <p>Gate node connecting predicate structure to conditionals.</p>
 <p>Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of FAN
@@ -228,7 +228,7 @@ type messages but all of them are homogeneous (sharing the same particle values 
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> (<em>str</em>) – Name of this variable node.</p></li>
-<li><p><strong>dist_class</strong> (<em>type</em>) – The distribution class that the Predicate assumes. Must be a subclass of torch.distributions.Distribution.</p></li>
+<li><p><strong>ks</strong> (<a class="reference internal" href="../utils.html#pysigma.utils.KnowledgeServer" title="pysigma.utils.KnowledgeServer"><em>KnowledgeServer</em></a>) – The KnowledgeServer instance associated with the belonging Predicate.</p></li>
 <li><p><strong>rel_var_list</strong> (<em>iterable of Variable</em>) – Iterable of relational variables. Corresponds to the batch dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">b_shape</span></code> attribute of
 incoming messages.</p></li>
 <li><p><strong>param_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a><em>, </em><em>optional</em>) – The parameter variable. Corresponds to the parameter dimension. Used to check <code class="docutils literal notranslate"><span class="pre">p_shape</span></code> attribute of incoming
@@ -241,12 +241,12 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.WMVN.dist_class">
-<code class="sig-name descname">dist_class</code><a class="headerlink" href="#pysigma.graphical._nodes.WMVN.dist_class" title="Permalink to this definition">¶</a></dt>
-<dd><p>The distribution class that the Predicate assumes. Must be a subclass of torch.distributions.Distribution.</p>
+<dt id="pysigma.graphical._nodes.WMVN.ks">
+<code class="sig-name descname">ks</code><a class="headerlink" href="#pysigma.graphical._nodes.WMVN.ks" title="Permalink to this definition">¶</a></dt>
+<dd><p>The KnowledgeServer instance associated with the belonging Predicate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>type</p>
+<dd class="field-odd"><p><a class="reference internal" href="../utils.html#pysigma.utils.KnowledgeServer" title="pysigma.utils.KnowledgeServer">KnowledgeServer</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -275,8 +275,8 @@ by taking the element-wise multiplication of the weight tensors with normalizati
 </ol>
 </li>
 </ol>
-<p>Since occasionally querying log pdf is to be performed, WMVN thus needs to know the distribution class the
-predicate it belongs to is assuming.</p>
+<p>Since occasionally querying log pdf is to be performed, WMVN thus needs help from the Predicate’s KnowledgeServer
+instance.</p>
 <p>When combining messages, will exclude message from the link to which the combined message is to send to (if
 such a bidirected link exists). This implements the Sum-Product algorithm’s variable node semantics, if
 this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.</p>
@@ -285,12 +285,7 @@ share the same set of incoming links that provide the messages, previously compu
 <dl class="py method">
 <dt id="pysigma.graphical._nodes.WMVN.compute">
 <code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute method to be called to propagate messages during decision phase.</p>
-<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
-node-level statistics logging is taken care of herein.</p>
-<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>check_quiesce()</cite> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>,
-without logging anything or performing any further computation. Note that such behavior may or may not be
-desired by child node class.</p>
+<dd><p>Combine incoming message to this Predicate subgraph.</p>
 </dd></dl>
 
 </dd></dl>
@@ -328,7 +323,7 @@ desired by child node class.</p>
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom
+        &copy; Copyright 2020, USC Institute for Creative Technologies
 
     </p>
   </div>

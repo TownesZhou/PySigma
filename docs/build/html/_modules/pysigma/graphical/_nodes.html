@@ -216,7 +216,7 @@
 <span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span><span class="p">,</span> <span class="n">Transform</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
 <span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">DistributionServer</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">DistributionServer</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
 <span class="kn">from</span> <span class="nn">structures</span> <span class="k">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
 
 
@@ -514,7 +514,7 @@
         <span class="sd">&quot;&quot;&quot;Adding linkdata connecting to this node.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 <div class="viewcode-block" id="Node.compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.compute">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -833,8 +833,8 @@
 <span class="sd">    ----------</span>
 <span class="sd">    name : str</span>
 <span class="sd">        Name of this variable node.</span>
-<span class="sd">    dist_class : type</span>
-<span class="sd">        The distribution class that the Predicate assumes. Must be a subclass of torch.distributions.Distribution.</span>
+<span class="sd">    ks : KnowledgeServer</span>
+<span class="sd">        The KnowledgeServer instance associated with the belonging Predicate.</span>
 <span class="sd">    rel_var_list : iterable of Variable</span>
 <span class="sd">        Iterable of relational variables. Corresponds to the batch dimensions. Used to check ``b_shape`` attribute of</span>
 <span class="sd">        incoming messages.</span>
@@ -850,8 +850,8 @@
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
-<span class="sd">    dist_class : type</span>
-<span class="sd">        The distribution class that the Predicate assumes. Must be a subclass of torch.distributions.Distribution.</span>
+<span class="sd">    ks : KnowledgeServer</span>
+<span class="sd">        The KnowledgeServer instance associated with the belonging Predicate.</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
@@ -877,8 +877,8 @@
 <span class="sd">          by taking the element-wise multiplication of the weight tensors with normalization. See</span>
 <span class="sd">          :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;` for more details.</span>
 
-<span class="sd">    Since occasionally querying log pdf is to be performed, WMVN thus needs to know the distribution class the</span>
-<span class="sd">    predicate it belongs to is assuming.</span>
+<span class="sd">    Since occasionally querying log pdf is to be performed, WMVN thus needs help from the Predicate&#39;s KnowledgeServer</span>
+<span class="sd">    instance.</span>
 
 <span class="sd">    When combining messages, will exclude message from the link to which the combined message is to send to (if</span>
 <span class="sd">    such a bidirected link exists). This implements the Sum-Product algorithm&#39;s variable node semantics, if</span>
@@ -887,17 +887,20 @@
 <span class="sd">    Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links</span>
 <span class="sd">    share the same set of incoming links that provide the messages, previously computed result will be reused</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ks</span><span class="p">,</span> <span class="n">KnowledgeServer</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">WMVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">index_var_list</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Working Memory Variable Node&quot;</span>
 
         <span class="c1"># Distribution class the Predicate self belongs to is assuming</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="o">=</span> <span class="n">dist_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ks</span> <span class="o">=</span> <span class="n">ks</span>
         <span class="c1"># Cache for temporarily saving computation result for combination</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span>
 
 <div class="viewcode-block" id="WMVN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.WMVN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine incoming message to this Predicate subgraph.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">WMVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="c1"># Relay message if only one incoming link</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -2027,7 +2030,7 @@
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom
+        &copy; Copyright 2020, USC Institute for Creative Technologies
 
     </p>
   </div>
