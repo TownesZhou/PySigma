@@ -23,19 +23,7 @@ import pysigma
 
 project = 'PySigma'
 copyright = '2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies'
-author = 'Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom'
-
-# The full version, including alpha/beta/rc tags
-release = '0.0.2'
-
-
-# -- General configuration ---------------------------------------------------
-
-# Import Read the Docs Sphinx Theme
-import sphinx_rtd_theme
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+author = 'Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Pawant to as or your custom'
 # ones.
 # sphinx.ext.autodoc - Automatically importing docstrings from source module
 # sphinx_rtd_theme - The official Read-the-Docs theme

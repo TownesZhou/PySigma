@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>pysigma.utils &mdash; PySigma 0.0.2 documentation</title>
+  <title>pysigma.utils &mdash; PySigma  documentation</title>
   
 
   
@@ -665,18 +665,20 @@
 <span class="sd">    dist_info : dict</span>
 <span class="sd">    num_rvs : int</span>
 <span class="sd">        Number of random variables involved in specifying the Predicate knowledge.</span>
-<span class="sd">    batched_param : torch.Tensor</span>
-<span class="sd">        The cached batched parameter tensor of the Predicate&#39;s knowledge. This attribute is set when</span>
-<span class="sd">        `draw_grid_particles` is called with ``update_cache=True``.</span>
-<span class="sd">    batched_dist : torch.distributions.Distribution</span>
-<span class="sd">        The cached batched distribution instance that is instantiated from `batched_param`. This attribute is set when</span>
-<span class="sd">        `draw_grid_particles` is called with ``update_cache=True``.</span>
 <span class="sd">    particles : tuple of torch.Tensor</span>
 <span class="sd">        The cached tuple of marginal particle event tensors corresponding to the random variables. This attribute is set</span>
 <span class="sd">        when `draw_grid_particles` is called with ``update_cache=True``.</span>
 <span class="sd">    log_densities : tuple of torch.Tensor</span>
 <span class="sd">        The cached tuple of log sampling density tensors corresponding to each of the marginal particle event. This</span>
 <span class="sd">        attribute is set when `draw_grid_particles` is called with ``update_cache=True``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    In order to provide service to both predicate nodes and conditional nodes in all stages, KnowledgeServer should</span>
+<span class="sd">    store and manipulate data regarding the random variables only. In other words, only message components that do not</span>
+<span class="sd">    involve batch dimensions should be cached; this includes particle value tensors and log sampling density tensors,</span>
+<span class="sd">    but excludes both parameter and weight tensors. The latter ones&#39; shapes are not invariant throughout the stages</span>
+<span class="sd">    in the conditional subgraph, and therefore should be specified by the callee.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">rv_sizes</span><span class="p">,</span> <span class="n">rv_constraints</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
@@ -693,8 +695,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
 
         <span class="c1"># Cache</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">batched_param</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">batched_dist</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -716,7 +716,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="KnowledgeServer.surrogate_log_prob"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.surrogate_log_prob">[docs]</a>    <span class="k">def</span> <span class="nf">surrogate_log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alt_particles</span><span class="p">,</span> <span class="n">alt_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alt_dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="KnowledgeServer.surrogate_log_prob"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.surrogate_log_prob">[docs]</a>    <span class="k">def</span> <span class="nf">surrogate_log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alt_particles</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution</span>
 <span class="sd">        instance.</span>
 
@@ -734,12 +734,9 @@
 <span class="sd">            The surrogate particles to be queried. Each entry must either be None, so that the corresponding cached</span>
 <span class="sd">            particles will be used instead, or a torch.Tensor, with a shape of length 2 and the last dimension size</span>
 <span class="sd">            equal to the corresponding value in ``self.rv_sizes``.</span>
-<span class="sd">        alt_param : torch.Tensor, optional</span>
+<span class="sd">        param : torch.Tensor, optional</span>
 <span class="sd">            The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob</span>
 <span class="sd">            being queried. Should have the same shape as the cached ``self.batched_param``.</span>
-<span class="sd">        alt_dist_info : dict, optional</span>
-<span class="sd">            The dist info necessary for DistributionServer to convert `alt_param` into a distribution instance. Will</span>
-<span class="sd">            have no effect when `alt_param` is ``None``, even if specified.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -761,8 +758,6 @@
             <span class="nb">all</span><span class="p">(</span><span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))</span>
 
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">batched_dist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
-            <span class="s2">&quot;No distribution instance has been cached, so cannot look up particles&#39; log pdf.&quot;</span>
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">alt_particles</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
             <span class="s2">&quot;Found `None` in `surrogate_particles`, but no particles have been cached yet to be used instead.&quot;</span>
 
@@ -773,13 +768,8 @@
         <span class="c1"># Transform joint event values from Cognitive format to PyTorch format</span>
         <span class="n">torch_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2torch_event</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">)</span>
 
-        <span class="c1"># Instantiate the surrogate distribution instance if asked for</span>
-        <span class="k">if</span> <span class="n">alt_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="n">alt_param</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">batched_param</span><span class="o">.</span><span class="n">shape</span>
-            <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">alt_param</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="n">alt_dist_info</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batched_dist</span>
-
+        <span class="c1"># Instantiate the distribution instance</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
         <span class="c1"># Query DistributionServer</span>
         <span class="n">log_prob</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch_particles</span><span class="p">)</span>
 

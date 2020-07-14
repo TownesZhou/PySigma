@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Predicate Subgraph Nodes &mdash; PySigma 0.0.2 documentation</title>
+  <title>Predicate Subgraph Nodes &mdash; PySigma  documentation</title>
   
 
   
@@ -305,6 +305,144 @@ share the same set of incoming links that provide the messages, previously compu
 </div>
 <div class="section" id="long-term-memory-factor-node">
 <h2>Long-Term Memory Factor Node<a class="headerlink" href="#long-term-memory-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical._nodes.LTMFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">LTMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span></em>, <em class="sig-param"><span class="n">index_var_list</span></em>, <em class="sig-param"><span class="n">ran_var_list</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Long-Term Memory Factor Node.</p>
+<p>Memorizes and updates the predicate’s knowledge across decision cycles. Hosts and maintains the associated
+KnowledgeServer instance to provide service to downstream nodes.</p>
+<p>Admits one incoming link from <cite>WMVN_IN</cite> that contains combined action message toward this predicate by the end of
+the decision cycle, as well as arbitrary number of incoming links from parameter feeds and/or <cite>WMFN</cite> that contains
+parameter messages. Special attribute therefore needs to be declared in the linkdata’s attribute dictionary to
+distinguish which one sends “event” message from <cite>WMVN_IN</cite> and which ones send “param” messages from parameter
+feeds.</p>
+<p>If there are multiple incoming “param” labeled links, then combination will be carried out by taking summation over
+the parameters. See
+<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a>
+for more details.</p>
+<p>Particles should be drawn during modification phase of each cognitive cycle by calling <cite>draw_particles()</cite> method,
+which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling
+procedure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node.</p></li>
+<li><p><strong>ks</strong> (<a class="reference internal" href="../utils.html#pysigma.utils.KnowledgeServer" title="pysigma.utils.KnowledgeServer"><em>KnowledgeServer</em></a>) – The KnowledgeServer instance associated with the predicate.</p></li>
+<li><p><strong>rel_var_list</strong> (<em>iterable of Variable</em>) – Iterable of relational variables, corresponding to the predicate’s relational arguments.</p></li>
+<li><p><strong>param_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a>) – The parameter variable.</p></li>
+<li><p><strong>index_var_list</strong> (<em>iterable of Variable</em>) – Iterable of indexing variables.</p></li>
+<li><p><strong>ran_var_list</strong> (<em>iterable of Variable</em>) – Iterable of random variables, corresponding to the predicate’s random arguments.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.ks">
+<code class="sig-name descname">ks</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.ks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.rel_var_list">
+<code class="sig-name descname">rel_var_list</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.rel_var_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.param_var">
+<code class="sig-name descname">param_var</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.param_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.index_var_list">
+<code class="sig-name descname">index_var_list</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.index_var_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.ran_var_list">
+<code class="sig-name descname">ran_var_list</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.ran_var_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.b_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The batch shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.p_shape">
+<code class="sig-name descname">p_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.p_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The parameter shape (size).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.s_shape">
+<code class="sig-name descname">s_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.s_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The sample shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.e_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The event shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.LTMFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Only admits one incoming and one outgoing event message link, the former should be connected from <cite>WMVN_IN</cite>
+and the later from <cite>WMVN_OUT</cite> (can be the same WMVN instance). However can admit multiple incoming
+parameter message link.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered. The <code class="docutils literal notranslate"><span class="pre">'type'</span></code> key-ed attribute must present in the linkdata’s attribute
+dict.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If attempting to register more than one outgoing link.</p></li>
+<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">'type'</span></code> key does not exist in the linkdata’s attribute dict, or if the associated value is neither
+    <code class="docutils literal notranslate"><span class="pre">'event'</span></code> nor <code class="docutils literal notranslate"><span class="pre">'param'</span></code>.</p></li>
+<li><p><strong>AssertionError</strong> – If attempting to register more than one <cite>event</cite> incoming link.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.LTMFN.draw_particles">
+<code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.draw_particles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws particles.</p>
+<p>This method should be called during the modification phase. Parameter will be gathered from incoming <cite>param</cite>
+linkdata, and in the case of multiple incoming <cite>param</cite> linkdata the parameter tensors gathered will be combined.
+Then, a new list of particles in the Cognitive format will be drawn using the KnowledgeServer instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.LTMFN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate message from assumed distribution and send toward WMVN_OUT</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="perceptual-buffer-node">
 <h2>Perceptual Buffer Node<a class="headerlink" href="#perceptual-buffer-node" title="Permalink to this headline">¶</a></h2>

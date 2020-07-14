@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Utils &mdash; PySigma 0.0.2 documentation</title>
+  <title>Utils &mdash; PySigma  documentation</title>
   
 
   
@@ -497,30 +497,6 @@ query particles’ log pdf.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.utils.KnowledgeServer.batched_param">
-<code class="sig-name descname">batched_param</code><a class="headerlink" href="#pysigma.utils.KnowledgeServer.batched_param" title="Permalink to this definition">¶</a></dt>
-<dd><p>The cached batched parameter tensor of the Predicate’s knowledge. This attribute is set when
-<cite>draw_grid_particles</cite> is called with <code class="docutils literal notranslate"><span class="pre">update_cache=True</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>torch.Tensor</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="pysigma.utils.KnowledgeServer.batched_dist">
-<code class="sig-name descname">batched_dist</code><a class="headerlink" href="#pysigma.utils.KnowledgeServer.batched_dist" title="Permalink to this definition">¶</a></dt>
-<dd><p>The cached batched distribution instance that is instantiated from <cite>batched_param</cite>. This attribute is set when
-<cite>draw_grid_particles</cite> is called with <code class="docutils literal notranslate"><span class="pre">update_cache=True</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>torch.distributions.Distribution</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
 <dt id="pysigma.utils.KnowledgeServer.particles">
 <code class="sig-name descname">particles</code><a class="headerlink" href="#pysigma.utils.KnowledgeServer.particles" title="Permalink to this definition">¶</a></dt>
 <dd><p>The cached tuple of marginal particle event tensors corresponding to the random variables. This attribute is set
@@ -544,6 +520,12 @@ attribute is set when <cite>draw_grid_particles</cite> is called with <code clas
 </dl>
 </dd></dl>
 
+<p class="rubric">Notes</p>
+<p>In order to provide service to both predicate nodes and conditional nodes in all stages, KnowledgeServer should
+store and manipulate data regarding the random variables only. In other words, only message components that do not
+involve batch dimensions should be cached; this includes particle value tensors and log sampling density tensors,
+but excludes both parameter and weight tensors. The latter ones’ shapes are not invariant throughout the stages
+in the conditional subgraph, and therefore should be specified by the callee.</p>
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer.draw_grid_particles">
 <code class="sig-name descname">draw_grid_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_param</span></em>, <em class="sig-param"><span class="n">update_cache</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.draw_grid_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.draw_grid_particles" title="Permalink to this definition">¶</a></dt>
@@ -555,7 +537,7 @@ attribute is set when <cite>draw_grid_particles</cite> is called with <code clas
 
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer.surrogate_log_prob">
-<code class="sig-name descname">surrogate_log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">alt_particles</span></em>, <em class="sig-param"><span class="n">alt_param</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">alt_dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.surrogate_log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.surrogate_log_prob" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">surrogate_log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">alt_particles</span></em>, <em class="sig-param"><span class="n">param</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.surrogate_log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.surrogate_log_prob" title="Permalink to this definition">¶</a></dt>
 <dd><p>Query the log pdf of the surrogate particles specified by <cite>alt_particles</cite> w.r.t. the cached distribution
 instance.</p>
 <p>Each particle tensor in <cite>alt_particles</cite> must correspond to a Predicate’s random variable in the given
@@ -570,10 +552,8 @@ queried.</p>
 <li><p><strong>alt_particles</strong> (<em>list of torch.Tensor and/or None</em>) – The surrogate particles to be queried. Each entry must either be None, so that the corresponding cached
 particles will be used instead, or a torch.Tensor, with a shape of length 2 and the last dimension size
 equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>.</p></li>
-<li><p><strong>alt_param</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
+<li><p><strong>param</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
 being queried. Should have the same shape as the cached <code class="docutils literal notranslate"><span class="pre">self.batched_param</span></code>.</p></li>
-<li><p><strong>alt_dist_info</strong> (<em>dict</em><em>, </em><em>optional</em>) – The dist info necessary for DistributionServer to convert <cite>alt_param</cite> into a distribution instance. Will
-have no effect when <cite>alt_param</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, even if specified.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
