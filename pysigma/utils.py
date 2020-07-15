@@ -502,7 +502,7 @@ class KnowledgeServer:
     """
     Public API
     """
-    def draw_grid_particles(self, new_param, update_cache=True):
+    def draw_particles(self, new_param, batch_shape, update_cache=True):
         """
         .. todo::
            To implement

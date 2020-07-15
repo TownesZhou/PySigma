@@ -344,6 +344,11 @@ class Message:
         There are more restrictions for ``MessageType.Particles`` type messages. Messages of such type can only be
         added together if their ``particles`` and ``log_densities`` fields are equal.
 
+        If two messages with compatible but not identical types are added together, the resulting message will have the
+        smaller type, meaning only the common components will be added. For example, the result of adding a
+        ``MessageType.Parameter`` type message with a ``MessageType.Both`` type message is a ``MessageType.Parameter``
+        type message.
+
         All contents are first cloned before taking the operations and returning the result.
 
         Parameters

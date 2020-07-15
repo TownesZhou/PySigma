@@ -795,133 +795,180 @@ class LTMFN(FactorNode):
     Memorizes and updates the predicate's knowledge across decision cycles. Hosts and maintains the associated
     KnowledgeServer instance to provide service to downstream nodes.
 
+    Admits one incoming link from `WMVN_IN` that contains combined action message toward this predicate by the end of
+    the decision cycle, as well as arbitrary number of incoming links from parameter feeds and/or `WMFN` that contains
+    parameter messages. Special attribute therefore needs to be declared in the linkdata's attribute dictionary to
+    distinguish which one sends "event" message from `WMVN_IN` and which ones send "param" messages from parameter
+    feeds.
 
-        Admits incoming link from WMVN that contains combined action message to this predicate by the end of the
-            decision cycle, as well as the incoming link from parameter feed and WMFN that contains parameter messages.
-            Therefore needs special attribute in the links to identify which one sends "event" messages and which one
-            sends "parameter" messages.
+    If there are multiple incoming "param" labeled links, then combination will be carried out by taking summation over
+    the parameters. See
+    :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>`
+    for more details.
 
-        Only admits one incoming and one outgoing event message link, the former should be connected from WMVN_IN
-            and the later from WMVN_OUT (can be the same WMVN also). However can admits multiple incoming parameter
-            message link. The parameters of the assumed distribution instance will be taken as the SUM over all the
-            incoming parameters.
+    Particles should be drawn during modification phase of each cognitive cycle by calling `init_msg()` method,
+    which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling
+    procedure.
 
-        Can toggle modes between drawing particles and not drawing by toggle_draw():
-            - If drawing mode is turned on, then LTMFN will send Particles message to WMVN_OUT during compute(). The
-                particles message to be send is retrieved from memory buffer, which is set by calling draw_particles()
-                during the modification phase.
-            - Otherwise, LTMFN will send Parameter message, containing the parameter from the parameter feed, directly
-                to WMVN_OUT. In this mode, calling draw_particles() will have no effect.
+    Parameters
+    ----------
+    name : str
+        Name of this node.
+    ks : KnowledgeServer
+        The KnowledgeServer instance associated with the predicate.
+    rel_var_list : iterable of Variable
+        Iterable of relational variables, corresponding to the predicate's relational arguments.
+    param_var : Variable
+        The parameter variable.
+    index_var_list : iterable of Variable
+        Iterable of indexing variables.
+    ran_var_list : iterable of Variable
+        Iterable of random variables, corresponding to the predicate's random arguments.
+
+    Attributes
+    ----------
+    ks
+    rel_var_list
+    param_var
+    index_var_list
+    ran_var_list
+    b_shape : torch.Size
+        The batch shape.
+    p_shape : torch.Size
+        The parameter shape (size).
+    s_shape : torch.Size
+        The sample shape.
+    e_shape : torch.Size
+        The event shape.
+    msg_cache : Message
+        The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.
     """
-    def __init__(self, name, distribution_class, num_particles, batch_shape, event_shape, param_shape):
+    def __init__(self, name, ks, rel_var_list, param_var, index_var_list, ran_var_list):
         super(LTMFN, self).__init__(name)
         self.pretty_log["node type"] = "Long-Term Memory Factor Node"
 
-        assert issubclass(distribution_class, Distribution)
-        assert isinstance(num_particles, int) and num_particles >= 1
-        assert isinstance(batch_shape, torch.Size)
-        assert isinstance(event_shape, torch.Size)
-        assert isinstance(param_shape, torch.Size)
+        assert isinstance(ks, KnowledgeServer)
+        assert isinstance(rel_var_list, Iterable) and \
+            all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
+        assert isinstance(param_var, Variable) and param_var.metatype is VariableMetatype.Parameter
+        assert isinstance(index_var_list, Iterable) and \
+            all(isinstance(v, Variable) and v.metatype is VariableMetatype.Indexing for v in index_var_list)
+        assert isinstance(ran_var_list, Iterable) and \
+            all(isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_var_list)
 
-        self.dist_class = distribution_class
-        self.num_particles = num_particles
-        self.s_shape = torch.Size([self.num_particles])
-        self.b_shape = batch_shape
-        self.e_shape = event_shape
-        self.p_shape = param_shape
+        self.ks = ks
+        self.rel_var_list = tuple(rel_var_list)
+        self.param_var = param_var
+        self.index_var_list = tuple(index_var_list)
+        self.ran_var_list = tuple(ran_var_list)
 
-        # Flag that indicates whether to sample particles during compute()
-        self.to_sample = False
+        self.b_shape = torch.Size([v.size for v in self.rel_var_list])
+        self.p_shape = torch.Size([self.param_var.size])
+        self.s_shape = torch.Size([v.size for v in self.index_var_list])
+        self.e_shape = torch.Size([v.size for v in self.ran_var_list])
 
-        # Knowledge
-        self.param = None           # Parameter tensor to the distribution instance
-        self.dist = None            # Distribution instance at current decision cycle
-        self.particles = None       # Particle list at current decision cycle
-        self.weights = None         # Particle weights
-        self.log_density = None     # The log-pdf of particles
+        # Message cache
+        self.msg_cache = None
 
     def add_link(self, linkdata):
+        """Only admits one incoming and one outgoing event message link, the former should be connected from `WMVN_IN`
+        and the later from `WMVN_OUT` (can be the same WMVN instance). However can admit multiple incoming
+        parameter message link.
+
+        Parameters
+        ----------
+        linkdata : LinkData
+            The linkdata to be registered. The ``'type'`` key-ed attribute must present in the linkdata's attribute
+            dict.
+
+        Raises
+        ------
+        AssertionError
+            If the new linkdata does not have identical batch shape and param shape.
+        AssertionError
+            If attempting to register more than one outgoing link.
+        AssertionError
+            If ``'type'`` key does not exist in the linkdata's attribute dict, or if the associated value is neither
+            ``'event'`` nor ``'param'``.
+        AssertionError
+            If attempting to register more than one `event` incoming link.
         """
-            Only admits one incoming and one outgoing event message link, the former should be connected from WMVN_IN
-                and the later from WMVN_OUT (can be the same WMVN also). However can admits multiple incoming parameter
-                message link.
-        """
-        assert isinstance(linkdata, LinkData)
+        # Check that the linkdata has correct batch shape and param shape.
+        assert isinstance(linkdata, LinkData) and linkdata.msg_shape[:2] == (self.b_shape, self.p_shape)
 
         # Only admit one outgoing link and that must be WMVN. Check dimensions to be compatible with event message
         if not linkdata.to_fn:
-            assert len(self.out_linkdata) == 0 and isinstance(linkdata.vn, WMVN)
+            assert len(self.out_linkdata) == 0 and isinstance(linkdata.vn, WMVN), \
+                "Attempting to register more than one outgoing linkdata."
         # Can admit multiple incoming links. Check that link has special attribute declared.
         #   Check dimension for parameter link and event link respectively
         else:
-            assert 'type' in linkdata.attr.keys(), "Incoming link to a LTMFN must specify 'type' special attribute"
-            assert linkdata.attr['type'] in ['event', 'param'], "Incoming link to a LTMFN must have 'type' special " \
-                                                                "attribute with value 'event' or 'param'"
+            assert 'type' in linkdata.attr.keys(), \
+                "At{}: Incoming link to a LTMFN must specify 'type' special attribute".format(self.name)
+            assert linkdata.attr['type'] in ['event', 'param'], \
+                "At{}: Incoming link to a LTMFN must have 'type' special attribute with value 'event' or 'param'"\
+                .format(self.name)
             if linkdata.attr['type'] == 'event':
-                assert len(list(ld for ld in self.in_linkdata if ld.attr['type'] == 'event')) == 0
+                assert len(list(ld for ld in self.in_linkdata if ld.attr['type'] == 'event')) == 0,\
+                    "At {}: Attempting to register more than one incoming event type linkdata"
         
         super(LTMFN, self).add_link(linkdata)
 
-    def toggle_draw(self, to_sample=False):
-        # Turn on or off whether this LTMFN will sample particles during compute()
-        self.to_sample = to_sample
-        # Also reset shape of the outgoing linkdata
-        assert len(self.out_linkdata) > 0
-        if self.to_sample:
-            self.out_linkdata[0].reset_shape(self.s_shape + self.b_shape + self.e_shape)
-        else:
-            self.out_linkdata[0].reset_shape(self.b_shape + self.p_shape)
+    def init_msg(self):
+        """Draws particles and instantiate new message for next cognitive cycle.
 
-    def retrive_particles(self):
-        # Return the particles and sampling log density
-        return self.particles, self.log_density
+        This method should be called during the modification phase. Parameter will be gathered from incoming `param`
+        linkdata, and in the case of multiple incoming `param` linkdata the parameter tensors gathered will be combined.
+        A new list of particles will then be drawn in the cognitive format by querying the given KnowledgeServer.
 
-    def draw_particles(self):
+        Raises
+        ------
+        AssertionError
+            If no `param` type incoming linkdata is found.
+        AssertionError
+            If messages read from incoming linkdata do not all contain parameters.
         """
-            Draw particles. This method should be called during the modification phase, if necessary. Parameters will
-                be gathered from incoming "param" type of linkdata, obtain new distribution instance, and update
-                'particles', 'weights', 'log_density' attributes
-        """
-        # Return directly if drawing mode is off
-        if not self.to_sample:
-            return
-
         # Obtain parameters from incoming 'param' link.
         param_lds = list(ld for ld in self.in_linkdata if ld.attr['type'] == 'param')
-        assert len(param_lds) > 0
+        assert len(param_lds) > 0, \
+            "At {}: Attempting to gather parameters, but no incoming param type linkdata found."
 
-        param_msg = param_lds[0].read()
-        assert param_msg.type == MessageType.Parameter
-        for other_ld in param_lds[1:]:
-            param_msg += other_ld.read()
+        param_msgs = tuple(ld.read() for ld in param_lds)
+        assert all(MessageType.Parameter in msg.type for msg in param_msgs), \
+            "At {}: Expect all messages from incoming param type linkdata to contain parameters, but instead found " \
+            "message types: {} from linkdata {}."\
+            .format(self.name, list(msg.type for msg in param_msgs), list(str(ld) for ld in param_lds))
 
-        # Set param buffer
-        self.param = param_msg.parameters
-        # Obtain new distribution instance
-        self.dist = DistributionServer.param2dist(self.dist_class, self.param, self.b_shape, self.e_shape)
-        # Update particles buffer
-        self.particles, self.weights, self.log_density = \
-            DistributionServer.draw_particles(self.dist, self.num_particles, self.b_shape, self.e_shape)
+        # Combine parameter messages and extract the parameter tensor
+        param = sum(param_msgs).parameter
+        # Query KnowledgeServer to extract components of a particle list.
+        particles, weight, log_densities = self.ks.draw_particles(param, self.b_shape, update_cache=True)
+
+        # Instantiate new message and set the cache
+        self.msg_cache = Message(MessageType.Both,
+                                 self.b_shape, self.p_shape, self.s_shape, self.e_shape,
+                                 param, particles, weight, log_densities,
+                                 dist_info=self.ks.dist_info)
 
     def compute(self):
         """
-            Generate message from assumed distribution and send toward WMVN_OUT
+        Send message in ``self.msg_cache`` to the connected `WMVN_OUT` node.
+
+        Raises
+        ------
+        AssertionError
+            If there are no connected outgoing linkdata.
+        AssertionError
+            If ``self.msg_cache`` is None. This means `init_msg()` were not called prior to the current decision phase
+            which calls this method.
         """
         super(LTMFN, self).compute()
         assert len(self.out_linkdata) > 0
+        assert self.msg_cache is not None, \
+            "At {}: No cached message at this LTMFN node to be send outward. init_msg() should first be called prior " \
+            "to calling this method."
         out_ld = self.out_linkdata[0]
-
-        # If drawing particles mode is on, send Particles message
-        if self.to_sample:
-            out_msg = Message(MessageType.Particles,
-                              sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                              particles=self.particles, weights=self.weights, log_density=self.log_density)
-        # Otherwise, send Parameter message
-        else:
-            out_msg = Message(MessageType.Parameter,
-                              batch_shape=self.b_shape, param_shape=self.p_shape, parameters=self.param)
-
-        out_ld.write(out_msg)
+        out_ld.write(self.msg_cache)
 
 
 class PBFN(FactorNode):
