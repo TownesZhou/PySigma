@@ -559,6 +559,7 @@ class KnowledgeServer:
 
         batched_dist = DistributionServer.param2dist(self.dist_class, batched_param, batch_shape, self.e_shape,
                                                      self.dist_info)
+        # TODO
 
     def surrogate_log_prob(self, alt_particles, param):
         """Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution
