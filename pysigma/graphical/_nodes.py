@@ -764,8 +764,7 @@ class WMVN(VariableNode):
                         # 2.b Compute particle weights w.r.t. distributions induced by the Parameter type messages
                         candidate_msgs = list(particle_msgs)
                         for param_msg in param_msgs:
-                            dist_info = param_msg.attr['dist_info'] if 'dist_info' in param_msg.attr.keys() else None
-                            target_log_prob = self.ks.surrogate_log_prob(particles, param_msg, dist_info)
+                            target_log_prob = self.ks.surrogate_log_prob(param_msg.parameter, particles)
                             surrogate_msg = tmp_msg.event_reweight(target_log_prob)
                             candidate_msgs.append(surrogate_msg)
 
@@ -942,13 +941,16 @@ class LTMFN(FactorNode):
         # Combine parameter messages and extract the parameter tensor
         param = sum(param_msgs).parameter
         # Query KnowledgeServer to extract components of a particle list.
-        particles, weight, log_densities = self.ks.draw_particles(param, self.b_shape, update_cache=True)
+        particles, log_densities = self.ks.draw_particles(param, self.b_shape, update_cache=True)
+        log_prob = self.ks.surrogate_log_prob(param)
 
-        # Instantiate new message and set the cache
-        self.msg_cache = Message(MessageType.Both,
-                                 self.b_shape, self.p_shape, self.s_shape, self.e_shape,
-                                 param, particles, weight, log_densities,
-                                 dist_info=self.ks.dist_info)
+        # Instantiate a temporary message with uniform weight and use Message method to obtain re-weighted message
+        tmp_msg = Message(MessageType.Both,
+                          batch_shape=self.b_shape, param_shape=self.p_shape,
+                          sample_shape=self.s_shape, event_shape=self.e_shape,
+                          parameter=param, particles=particles, weight=1, log_densities=log_densities,
+                          dist_info=self.ks.dist_info)
+        self.msg_cache = tmp_msg.event_reweight(log_prob)
 
     def compute(self):
         """

@@ -1730,26 +1730,29 @@
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.event_reweight"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_reweight">[docs]</a>    <span class="k">def</span> <span class="nf">event_reweight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_log_pdf</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns a new ``MessageType.Particles`` type message with the same particle values and log sampling density</span>
+<div class="viewcode-block" id="Message.event_reweight"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_reweight">[docs]</a>    <span class="k">def</span> <span class="nf">event_reweight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_log_prob</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a new message with the same type of `self` with the same particle values and log sampling densities</span>
 <span class="sd">        as `self`, but a different weight tensor, derived from importance weighting `target_log_pdf` against stored</span>
 <span class="sd">        log sampling density tensors in ``self.log_densities``.</span>
 
+<span class="sd">        `self` &#39;s type must be either ``MessageType.Particles`` or ``MessageType.Both`` to support this method.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        target_log_pdf : torch.Tensor</span>
+<span class="sd">        target_log_prob : torch.Tensor</span>
 <span class="sd">            The batched log pdf of the `self` particles w.r.t. to the batched target distributions the new message is</span>
 <span class="sd">            to encode. Should have shape ``(self.b_shape + self.s_shape)``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Message</span>
-<span class="sd">            A new importance-reweighted ``MessageType.Particles`` type message with the same particles as `self`.</span>
+<span class="sd">            A new importance-reweighted message with the same type and components as `self` except the importance</span>
+<span class="sd">            weight.</span>
 
-<span class="sd">        Warnings</span>
-<span class="sd">        --------</span>
-<span class="sd">        Note that all auxiliary attributes stored in ``self.attr``, supplied via additional keyword arguments in the</span>
-<span class="sd">        Message class constructor will be discarded in the returned message.</span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `self` has neither type `MessageType.Particles`` nor type ``MessageType.Both``.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -1768,7 +1771,7 @@
 <span class="sd">          explicitly implemented in this method; we assume it is taken care of by Message class constructor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_log_pdf</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target_log_pdf</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_log_prob</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target_log_prob</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span>
 
         <span class="c1"># Obtain joint sampling density. Should have shape (self.s_shape)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -1784,11 +1787,14 @@
         <span class="c1"># Make joint_density broadcastable by prepending batch dimensions</span>
         <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span>
         <span class="n">joint_density</span> <span class="o">=</span> <span class="n">joint_density</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
-        <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">target_log_pdf</span> <span class="o">-</span> <span class="n">joint_density</span><span class="p">)</span>    <span class="c1"># Unweighted</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">target_log_prob</span> <span class="o">-</span> <span class="n">joint_density</span><span class="p">)</span>    <span class="c1"># Unweighted</span>
 
-        <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
-                          <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">particles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
+        <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+                          <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span>
+                          <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span>
+                          <span class="n">particles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">,</span>
+                          <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.event_marginalize"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_marginalize">[docs]</a>    <span class="k">def</span> <span class="nf">event_marginalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_dim</span><span class="p">):</span>

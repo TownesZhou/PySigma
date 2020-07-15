@@ -441,11 +441,14 @@ class KnowledgeServer:
     ----------
     dist_class : type
         The distribution class of the Predicate's knowledge. Must be a subclass of ``torch.distributions.Distribution``.
-    rv_sizes : iterable of ints
+    rv_sizes : iterable of int
         The sizes of the random variables of the Predicate's knowledge. Note that the order given by the iterable will
         be respected.
     rv_constraints : iterable of torch.distributions.constraints.Constraint
         The value constraints of the random variables. Note that the order given by the iterable will be respected.
+    rv_num_particles : iterable of int
+        The number of marginal particles that should be drawn w.r.t. each random variable. Must have the same length as
+        `rv_sizes` and `rv_constraints`, i.e., the number of random variables.
     dist_info : dict, optional
         An optional attribute dict that contains all necessary information for DistributionServer to draw particles and
         query particles' log pdf.
@@ -453,8 +456,9 @@ class KnowledgeServer:
     Attributes
     ----------
     dist_class : type
-    rv_sizes : tuple of ints
+    rv_sizes : tuple of int
     rv_constraints : tuple of torch.distributions.constraints.Constraint
+    rv_num_particles : tuple of int
     dist_info : dict
     num_rvs : int
         Number of random variables involved in specifying the Predicate knowledge.
@@ -474,16 +478,24 @@ class KnowledgeServer:
     involve batch dimensions should be cached; this includes particle value tensors and log sampling density tensors,
     but excludes both parameter and weight tensors. The latter ones' shapes are not invariant throughout the stages
     in the conditional subgraph, and therefore should be specified by the callee.
+
+    Signatures for special private distribution class dependent methods:
+
+    * Cognitive to PyTorch event format translation method: ``2torch_event(particles) --> particles``
+    * PyTorch to Cognitive event format translation method: ``2cognitive_event(particles) --> particles``
+    * Special marginal particle list sampling method: ``special_draw(batched_dist) --> particles, log_densities``
     """
-    def __init__(self, dist_class, rv_sizes, rv_constraints, dist_info=None):
+    def __init__(self, dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info=None):
         assert issubclass(dist_class, Distribution)
         assert isinstance(rv_sizes, Iterable) and all(isinstance(s, int) and s > 0 for s in rv_sizes)
         assert isinstance(rv_constraints, Iterable) and all(isinstance(c, Constraint) for c in rv_constraints)
+        assert (isinstance(rv_num_particles, Iterable) and all(isinstance(n, int) and n > 0 for n in rv_num_particles))
         assert dist_info is None or isinstance(dist_info, dict)
 
         self.dist_class = dist_class
         self.rv_sizes = tuple(rv_sizes)
         self.rv_constraints = tuple(rv_constraints)
+        self.rv_num_particles = tuple(rv_num_particles)
         self.dist_info = dist_info
 
         assert len(self.rv_sizes) == len(self.rv_constraints)
@@ -520,7 +532,6 @@ class KnowledgeServer:
         2. draw a single unique list of **marginal** particle values w.r.t. each random variable from the entire batch
            of distribution instances,
         3. calculate their corresponding marginal sampling densities,
-        4. calculate the batch of importance weights w.r.t. each distribution instance.
 
         Parameters
         ----------
@@ -536,8 +547,6 @@ class KnowledgeServer:
         -------
         particles : tuple of torch.Tensor
             The marginal particle lists w.r.t. each random variable in order.
-        weight : torch.Tensor
-            The batch importance weight that approximate the target batched distribution instances.
         log_densities : tuple of torch.Tensor
             The marginal sampling log densities w.r.t. each random variable in order.
 
@@ -559,9 +568,28 @@ class KnowledgeServer:
 
         batched_dist = DistributionServer.param2dist(self.dist_class, batched_param, batch_shape, self.e_shape,
                                                      self.dist_info)
-        # TODO
 
-    def surrogate_log_prob(self, alt_particles, param):
+        # Look up for special draw method
+        cstr = tuple(set(type(c) for c in self.rv_constraints))      # Take set to eliminate duplicate constraint types
+        if cstr in self.dict_2special_draw.keys():
+            particles, log_densities = self.dict_2special_draw[cstr](batched_dist)
+        else:
+            particles, log_densities = self._default_draw(batched_dist)
+        # Check shape and type
+        assert isinstance(particles, tuple) and \
+            all(isinstance(p, torch.Tensor) and p.shape == torch.Size([self.rv_num_particles[j], self.rv_sizes[j]])
+                for j, p in enumerate(particles))
+        assert isinstance(log_densities, tuple) and \
+            all(isinstance(d, torch.Tensor) and d.shape == torch.Size([self.rv_num_particles[j]])
+                for j, d in enumerate(log_densities))
+
+        # Cache the particle list if asked for
+        if update_cache:
+            self.particles, self.log_densities = particles, log_densities
+
+        return particles, log_densities
+
+    def surrogate_log_prob(self, param, alt_particles=None):
         """Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution
         instance.
 
@@ -575,13 +603,13 @@ class KnowledgeServer:
 
         Parameters
         ----------
-        alt_particles : list of torch.Tensor and/or None
-            The surrogate particles to be queried. Each entry must either be None, so that the corresponding cached
-            particles will be used instead, or a torch.Tensor, with a shape of length 2 and the last dimension size
-            equal to the corresponding value in ``self.rv_sizes``.
         param : torch.Tensor, optional
             The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
             being queried. Should have the same shape as the cached ``self.batched_param``.
+        alt_particles : list of (torch.Tensor or None), or None
+            The surrogate particles to be queried. If not None, each entry must either be None, so that the
+            corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last
+            dimension size equal to the corresponding value in ``self.rv_sizes``.
 
         Returns
         -------
@@ -599,12 +627,15 @@ class KnowledgeServer:
         AssertionError
             If `alt_param` is specified but it has different shape than ``self.batched_param``.
         """
-        assert isinstance(alt_particles, list) and len(alt_particles) == self.num_rvs and \
-            all(p is None or (isinstance(p, torch.Tensor) and p.dim() == 2 and p.shape[1] == self.rv_sizes[i])
-                for i, p in enumerate(alt_particles))
+        if alt_particles is not None:
+            assert isinstance(alt_particles, list) and len(alt_particles) == self.num_rvs and \
+                all(p is None or (isinstance(p, torch.Tensor) and p.dim() == 2 and p.shape[1] == self.rv_sizes[i])
+                    for i, p in enumerate(alt_particles))
+        else:
+            alt_particles = (None,) * self.num_rvs
 
         assert all(isinstance(p, torch.Tensor) for p in alt_particles) or self.particles is not None, \
-            "Found `None` in `surrogate_particles`, but no particles have been cached yet to be used instead."
+            "Found `None` in `alt_particles`, but no particles have been cached yet to be used instead."
 
         query_particles = list(p if p is not None else self.particles[i] for i, p in enumerate(alt_particles))
 
@@ -749,6 +780,14 @@ class KnowledgeServer:
         return comb_cat
 
     """
+        Default methods that are distribution class independent
+            - _default_draw:
+                Draw a single unique list of marginal particles given batch of distributions and calculate marginal log 
+                sampling densities .
+    """
+    def _default_draw(self, batched_dist):
+        pass
+    """
         Categorical distribution. Assumes all RV have size 1
             - event translation from pred to torch:
                 Take a tuple of tensors each corresponding to one RV's value assignment. Compute value by taking volume 
@@ -803,6 +842,6 @@ class KnowledgeServer:
         result = torch.cat(modulo_list, dim=-1)
         return result
 
-    def _categorical_draw(self):
+    def _categorical_draw(self, *args):
         # TODO
         var_span = self._categorical_var_span()

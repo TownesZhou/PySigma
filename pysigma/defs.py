@@ -1523,26 +1523,29 @@ class Message:
                           new_parameter, new_particles, cloned_msg.weight, new_log_densities, **cloned_msg.attr)
         return new_msg
 
-    def event_reweight(self, target_log_pdf):
-        """Returns a new ``MessageType.Particles`` type message with the same particle values and log sampling density
+    def event_reweight(self, target_log_prob):
+        """Returns a new message with the same type of `self` with the same particle values and log sampling densities
         as `self`, but a different weight tensor, derived from importance weighting `target_log_pdf` against stored
         log sampling density tensors in ``self.log_densities``.
 
+        `self` 's type must be either ``MessageType.Particles`` or ``MessageType.Both`` to support this method.
+
         Parameters
         ----------
-        target_log_pdf : torch.Tensor
+        target_log_prob : torch.Tensor
             The batched log pdf of the `self` particles w.r.t. to the batched target distributions the new message is
             to encode. Should have shape ``(self.b_shape + self.s_shape)``.
 
         Returns
         -------
         Message
-            A new importance-reweighted ``MessageType.Particles`` type message with the same particles as `self`.
+            A new importance-reweighted message with the same type and components as `self` except the importance
+            weight.
 
-        Warnings
-        --------
-        Note that all auxiliary attributes stored in ``self.attr``, supplied via additional keyword arguments in the
-        Message class constructor will be discarded in the returned message.
+        Raises
+        ------
+        AssertionError
+            If `self` has neither type `MessageType.Particles`` nor type ``MessageType.Both``.
 
         Notes
         -----
@@ -1561,7 +1564,7 @@ class Message:
           explicitly implemented in this method; we assume it is taken care of by Message class constructor.
         """
         assert MessageType.Particles in self.type
-        assert isinstance(target_log_pdf, torch.Tensor) and target_log_pdf.shape == self.b_shape + self.s_shape
+        assert isinstance(target_log_prob, torch.Tensor) and target_log_prob.shape == self.b_shape + self.s_shape
 
         # Obtain joint sampling density. Should have shape (self.s_shape)
         if len(self.s_shape) == 1:
@@ -1577,11 +1580,14 @@ class Message:
         # Make joint_density broadcastable by prepending batch dimensions
         dims = [1] * len(self.b_shape) + list(self.s_shape)
         joint_density = joint_density.view(dims)
-        new_weight = torch.exp(target_log_pdf - joint_density)    # Unweighted
+        new_weight = torch.exp(target_log_prob - joint_density)    # Unweighted
 
-        new_msg = Message(MessageType.Particles,
-                          batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                          particles=self.particles, weight=new_weight, log_densities=self.log_densities)
+        new_msg = Message(self.type,
+                          batch_shape=self.b_shape, param_shape=self.p_shape,
+                          sample_shape=self.s_shape, event_shape=self.e_shape,
+                          parameter=self.parameter,
+                          particles=self.particles, weight=new_weight, log_densities=self.log_densities,
+                          **self.attr)
         return new_msg
 
     def event_marginalize(self, event_dim):

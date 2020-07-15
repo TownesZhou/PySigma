@@ -1216,27 +1216,27 @@ attribute of the distribution parameter.</p></li>
 
 <dl class="py method">
 <dt id="pysigma.defs.Message.event_reweight">
-<code class="sig-name descname">event_reweight</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_log_pdf</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_reweight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_reweight" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a new <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message with the same particle values and log sampling density
+<code class="sig-name descname">event_reweight</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_log_prob</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_reweight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_reweight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new message with the same type of <cite>self</cite> with the same particle values and log sampling densities
 as <cite>self</cite>, but a different weight tensor, derived from importance weighting <cite>target_log_pdf</cite> against stored
 log sampling density tensors in <code class="docutils literal notranslate"><span class="pre">self.log_densities</span></code>.</p>
+<p><cite>self</cite> ‘s type must be either <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> to support this method.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>target_log_pdf</strong> (<em>torch.Tensor</em>) – The batched log pdf of the <cite>self</cite> particles w.r.t. to the batched target distributions the new message is
+<dd class="field-odd"><p><strong>target_log_prob</strong> (<em>torch.Tensor</em>) – The batched log pdf of the <cite>self</cite> particles w.r.t. to the batched target distributions the new message is
 to encode. Should have shape <code class="docutils literal notranslate"><span class="pre">(self.b_shape</span> <span class="pre">+</span> <span class="pre">self.s_shape)</span></code>.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new importance-reweighted <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message with the same particles as <cite>self</cite>.</p>
+<dd class="field-even"><p>A new importance-reweighted message with the same type and components as <cite>self</cite> except the importance
+weight.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>self</cite> has neither type <cite>MessageType.Particles`</cite> nor type <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>.</p>
+</dd>
 </dl>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Note that all auxiliary attributes stored in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code>, supplied via additional keyword arguments in the
-Message class constructor will be discarded in the returned message.</p>
-</div>
 <p class="rubric">Notes</p>
 <p>The importance weighting procedure can be summarized in two steps:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">log_ratio</span> <span class="o">=</span> <span class="n">target_log_pdf</span> <span class="o">-</span> <span class="n">joint_log_density</span>

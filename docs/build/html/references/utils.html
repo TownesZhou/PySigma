@@ -429,7 +429,7 @@ not be empty.</p>
 <h2>KnowledgeServer<a class="headerlink" href="#knowledgeserver" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.utils.KnowledgeServer">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.utils.</code><code class="sig-name descname">KnowledgeServer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist_class</span></em>, <em class="sig-param"><span class="n">rv_sizes</span></em>, <em class="sig-param"><span class="n">rv_constraints</span></em>, <em class="sig-param"><span class="n">dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.utils.</code><code class="sig-name descname">KnowledgeServer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist_class</span></em>, <em class="sig-param"><span class="n">rv_sizes</span></em>, <em class="sig-param"><span class="n">rv_constraints</span></em>, <em class="sig-param"><span class="n">rv_num_particles</span></em>, <em class="sig-param"><span class="n">dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Knowledge Server class. Provides service regarding a Predicate’s knowledge.</p>
 <p>The architecture should hold one KnowledgeServer instance for each Predicate instantiated to cache knowledge
 contents and provide distribution related service.</p>
@@ -437,9 +437,11 @@ contents and provide distribution related service.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dist_class</strong> (<em>type</em>) – The distribution class of the Predicate’s knowledge. Must be a subclass of <code class="docutils literal notranslate"><span class="pre">torch.distributions.Distribution</span></code>.</p></li>
-<li><p><strong>rv_sizes</strong> (<em>iterable of ints</em>) – The sizes of the random variables of the Predicate’s knowledge. Note that the order given by the iterable will
+<li><p><strong>rv_sizes</strong> (<em>iterable of int</em>) – The sizes of the random variables of the Predicate’s knowledge. Note that the order given by the iterable will
 be respected.</p></li>
 <li><p><strong>rv_constraints</strong> (<em>iterable of torch.distributions.constraints.Constraint</em>) – The value constraints of the random variables. Note that the order given by the iterable will be respected.</p></li>
+<li><p><strong>rv_num_particles</strong> (<em>iterable of int</em>) – The number of marginal particles that should be drawn w.r.t. each random variable. Must have the same length as
+<cite>rv_sizes</cite> and <cite>rv_constraints</cite>, i.e., the number of random variables.</p></li>
 <li><p><strong>dist_info</strong> (<em>dict</em><em>, </em><em>optional</em>) – An optional attribute dict that contains all necessary information for DistributionServer to draw particles and
 query particles’ log pdf.</p></li>
 </ul>
@@ -460,7 +462,7 @@ query particles’ log pdf.</p></li>
 <code class="sig-name descname">rv_sizes</code><a class="headerlink" href="#pysigma.utils.KnowledgeServer.rv_sizes" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>tuple of ints</p>
+<dd class="field-odd"><p>tuple of int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -471,6 +473,16 @@ query particles’ log pdf.</p></li>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>tuple of torch.distributions.constraints.Constraint</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.utils.KnowledgeServer.rv_num_particles">
+<code class="sig-name descname">rv_num_particles</code><a class="headerlink" href="#pysigma.utils.KnowledgeServer.rv_num_particles" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>tuple of int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -537,6 +549,12 @@ store and manipulate data regarding the random variables only. In other words, o
 involve batch dimensions should be cached; this includes particle value tensors and log sampling density tensors,
 but excludes both parameter and weight tensors. The latter ones’ shapes are not invariant throughout the stages
 in the conditional subgraph, and therefore should be specified by the callee.</p>
+<p>Signatures for special private distribution class dependent methods:</p>
+<ul class="simple">
+<li><p>Cognitive to PyTorch event format translation method: <code class="docutils literal notranslate"><span class="pre">2torch_event(particles)</span> <span class="pre">--&gt;</span> <span class="pre">particles</span></code></p></li>
+<li><p>PyTorch to Cognitive event format translation method: <code class="docutils literal notranslate"><span class="pre">2cognitive_event(particles)</span> <span class="pre">--&gt;</span> <span class="pre">particles</span></code></p></li>
+<li><p>Special marginal particle list sampling method: <code class="docutils literal notranslate"><span class="pre">special_draw(batched_dist)</span> <span class="pre">--&gt;</span> <span class="pre">particles,</span> <span class="pre">log_densities</span></code></p></li>
+</ul>
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer.draw_particles">
 <code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">batched_param</span></em>, <em class="sig-param"><span class="n">batch_shape</span></em>, <em class="sig-param"><span class="n">update_cache</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.draw_particles" title="Permalink to this definition">¶</a></dt>
@@ -550,7 +568,6 @@ proceed to:</p>
 <li><p>draw a single unique list of <strong>marginal</strong> particle values w.r.t. each random variable from the entire batch
 of distribution instances,</p></li>
 <li><p>calculate their corresponding marginal sampling densities,</p></li>
-<li><p>calculate the batch of importance weights w.r.t. each distribution instance.</p></li>
 </ol>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -564,7 +581,6 @@ calling this method.</p></li>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>particles</strong> (<em>tuple of torch.Tensor</em>) – The marginal particle lists w.r.t. each random variable in order.</p></li>
-<li><p><strong>weight</strong> (<em>torch.Tensor</em>) – The batch importance weight that approximate the target batched distribution instances.</p></li>
 <li><p><strong>log_densities</strong> (<em>tuple of torch.Tensor</em>) – The marginal sampling log densities w.r.t. each random variable in order.</p></li>
 </ul>
 </p>
@@ -582,7 +598,7 @@ finite discrete random variables where a regular lattice should be drawn uniform
 
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer.surrogate_log_prob">
-<code class="sig-name descname">surrogate_log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">alt_particles</span></em>, <em class="sig-param"><span class="n">param</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.surrogate_log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.surrogate_log_prob" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">surrogate_log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param</span></em>, <em class="sig-param"><span class="n">alt_particles</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.surrogate_log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.surrogate_log_prob" title="Permalink to this definition">¶</a></dt>
 <dd><p>Query the log pdf of the surrogate particles specified by <cite>alt_particles</cite> w.r.t. the cached distribution
 instance.</p>
 <p>Each particle tensor in <cite>alt_particles</cite> must correspond to a Predicate’s random variable in the given
@@ -594,11 +610,11 @@ queried.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>alt_particles</strong> (<em>list of torch.Tensor and/or None</em>) – The surrogate particles to be queried. Each entry must either be None, so that the corresponding cached
-particles will be used instead, or a torch.Tensor, with a shape of length 2 and the last dimension size
-equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>.</p></li>
 <li><p><strong>param</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
 being queried. Should have the same shape as the cached <code class="docutils literal notranslate"><span class="pre">self.batched_param</span></code>.</p></li>
+<li><p><strong>alt_particles</strong> (<em>list of</em><em> (</em><em>torch.Tensor</em><em> or </em><em>None</em><em>)</em><em>, or </em><em>None</em>) – The surrogate particles to be queried. If not None, each entry must either be None, so that the
+corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last
+dimension size equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
