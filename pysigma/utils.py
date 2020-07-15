@@ -498,14 +498,57 @@ class KnowledgeServer:
         self.dict_2cognitive_event = {
             torch.distributions.Categorical: self._categorical_2cognitive_event
         }
+        self.dict_2special_draw = {
+            tuple([integer_interval]): self._categorical_draw
+        }
 
     """
     Public API
     """
-    def draw_particles(self, new_param, batch_shape, update_cache=True):
-        """
-        .. todo::
-           To implement
+    def draw_particles(self, batched_param, batch_shape, update_cache=True):
+        """Draws new particles for the associated predicate w.r.t. the given `batched_param`. Returns necessary
+        components to instantiate a particles message.
+
+        This method is typically called by the predicate's LTMFN node during modification phase, in which the new
+        updated batched parameter tensor has been obtained and provided by `batched_param`. This method is then
+        proceed to:
+
+        1. instantiate the batched distribution instances from the batched parameter tensor,
+        2. draw a single unique list of **marginal** particle values w.r.t. each random variable from the entire batch
+           of distribution instances,
+        3. calculate their corresponding marginal sampling densities,
+        4. calculate the batch of importance weights w.r.t. each distribution instance.
+
+        Parameters
+        ----------
+        batched_param : torch.Tensor
+            The new batched parameter tensor, of shape ``(batch_shape + [param_size])``.
+        batch_shape : torch.Size
+            The batch shape
+        update_cache : bool
+            Whether to replace the cache content in ``self.particles`` and ``self.log_densities`` with the result of
+            calling this method.
+
+        Returns
+        -------
+        particles : tuple of torch.Tensor
+            The marginal particle lists w.r.t. each random variable in order.
+        weight : torch.Tensor
+            The batch importance weight that approximate the target batched distribution instances.
+        log_densities : tuple of torch.Tensor
+            The marginal sampling log densities w.r.t. each random variable in order.
+
+        Notes
+        -----
+        Some remarks regarding the aforementioned step 2 and 3:
+
+        The tuple set of the types of the rv constraints specified in ``self.rv_constraints`` will be used to look up
+        the pre-specified method map ``self.dict_2special_draw``. If an entry present, will used that method to obtain
+        the returning ``particles`` and ``log_densities``. This is particularly useful, for instance, in the case of
+        finite discrete random variables where a regular lattice should be drawn uniformly.
+
+        Otherwise, the standard procedure will be carried out.
+        ``
         """
         pass
 
@@ -698,18 +741,11 @@ class KnowledgeServer:
 
     """
         Categorical distribution. Assumes all RV have size 1
-            - format check
-                - var_sizes are all 1
-                - var_constraints are all integer_interval
             - event translation from pred to torch:
                 Take a tuple of tensors each corresponding to one RV's value assignment. Compute value by taking volume 
                 product
             - event translation from torch to pred:
                 Take volume modulo of the event values. Return a tuple a tensors
-            - parameter translation from pred to torch:
-                Flatten R.V. dimension into single dimension
-            - parameter translation from torch to pred:
-                Reshape last dimension into multiple dimensions, numbers of dims equal to the numbers of R.V.s
     """
     def _categorical_var_span(self):
         # Helper function to determine the value range of each rv
@@ -757,3 +793,7 @@ class KnowledgeServer:
         # Concatenate the modulo list
         result = torch.cat(modulo_list, dim=-1)
         return result
+
+    def _categorical_draw(self):
+        # TODO
+        var_span = self._categorical_var_span()

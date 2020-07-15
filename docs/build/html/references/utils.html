@@ -527,12 +527,46 @@ involve batch dimensions should be cached; this includes particle value tensors 
 but excludes both parameter and weight tensors. The latter ones’ shapes are not invariant throughout the stages
 in the conditional subgraph, and therefore should be specified by the callee.</p>
 <dl class="py method">
-<dt id="pysigma.utils.KnowledgeServer.draw_grid_particles">
-<code class="sig-name descname">draw_grid_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_param</span></em>, <em class="sig-param"><span class="n">update_cache</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.draw_grid_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.draw_grid_particles" title="Permalink to this definition">¶</a></dt>
-<dd><div class="admonition-todo admonition" id="id4">
-<p class="admonition-title">Todo</p>
-<p>To implement</p>
-</div>
+<dt id="pysigma.utils.KnowledgeServer.draw_particles">
+<code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">batched_param</span></em>, <em class="sig-param"><span class="n">batch_shape</span></em>, <em class="sig-param"><span class="n">update_cache</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.draw_particles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws new particles for the associated predicate w.r.t. the given <cite>batched_param</cite>. Returns necessary
+components to instantiate a particles message.</p>
+<p>This method is typically called by the predicate’s LTMFN node during modification phase, in which the new
+updated batched parameter tensor has been obtained and provided by <cite>batched_param</cite>. This method is then
+proceed to:</p>
+<ol class="arabic simple">
+<li><p>instantiate the batched distribution instances from the batched parameter tensor,</p></li>
+<li><p>draw a single unique list of <strong>marginal</strong> particle values w.r.t. each random variable from the entire batch
+of distribution instances,</p></li>
+<li><p>calculate their corresponding marginal sampling densities,</p></li>
+<li><p>calculate the batch of importance weights w.r.t. each distribution instance.</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batched_param</strong> (<em>torch.Tensor</em>) – The new batched parameter tensor, of shape <code class="docutils literal notranslate"><span class="pre">(batch_shape</span> <span class="pre">+</span> <span class="pre">[param_size])</span></code>.</p></li>
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – The batch shape</p></li>
+<li><p><strong>update_cache</strong> (<em>bool</em>) – Whether to replace the cache content in <code class="docutils literal notranslate"><span class="pre">self.particles</span></code> and <code class="docutils literal notranslate"><span class="pre">self.log_densities</span></code> with the result of
+calling this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>particles</strong> (<em>tuple of torch.Tensor</em>) – The marginal particle lists w.r.t. each random variable in order.</p></li>
+<li><p><strong>weight</strong> (<em>torch.Tensor</em>) – The batch importance weight that approximate the target batched distribution instances.</p></li>
+<li><p><strong>log_densities</strong> (<em>tuple of torch.Tensor</em>) – The marginal sampling log densities w.r.t. each random variable in order.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Some remarks regarding the aforementioned step 2 and 3:</p>
+<p>The tuple set of the types of the rv constraints specified in <code class="docutils literal notranslate"><span class="pre">self.rv_constraints</span></code> will be used to look up
+the pre-specified method map <code class="docutils literal notranslate"><span class="pre">self.dict_2special_draw</span></code>. If an entry present, will used that method to obtain
+the returning <code class="docutils literal notranslate"><span class="pre">particles</span></code> and <code class="docutils literal notranslate"><span class="pre">log_densities</span></code>. This is particularly useful, for instance, in the case of
+finite discrete random variables where a regular lattice should be drawn uniformly.</p>
+<p>Otherwise, the standard procedure will be carried out.
+``</p>
 </dd></dl>
 
 <dl class="py method">

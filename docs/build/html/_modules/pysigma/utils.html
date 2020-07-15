@@ -705,14 +705,57 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dict_2cognitive_event</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2cognitive_event</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2special_draw</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">tuple</span><span class="p">([</span><span class="n">integer_interval</span><span class="p">]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_draw</span>
+        <span class="p">}</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Public API</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="KnowledgeServer.draw_grid_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.draw_grid_particles">[docs]</a>    <span class="k">def</span> <span class="nf">draw_grid_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_param</span><span class="p">,</span> <span class="n">update_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        .. todo::</span>
-<span class="sd">           To implement</span>
+<div class="viewcode-block" id="KnowledgeServer.draw_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.draw_particles">[docs]</a>    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_param</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">update_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Draws new particles for the associated predicate w.r.t. the given `batched_param`. Returns necessary</span>
+<span class="sd">        components to instantiate a particles message.</span>
+
+<span class="sd">        This method is typically called by the predicate&#39;s LTMFN node during modification phase, in which the new</span>
+<span class="sd">        updated batched parameter tensor has been obtained and provided by `batched_param`. This method is then</span>
+<span class="sd">        proceed to:</span>
+
+<span class="sd">        1. instantiate the batched distribution instances from the batched parameter tensor,</span>
+<span class="sd">        2. draw a single unique list of **marginal** particle values w.r.t. each random variable from the entire batch</span>
+<span class="sd">           of distribution instances,</span>
+<span class="sd">        3. calculate their corresponding marginal sampling densities,</span>
+<span class="sd">        4. calculate the batch of importance weights w.r.t. each distribution instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        batched_param : torch.Tensor</span>
+<span class="sd">            The new batched parameter tensor, of shape ``(batch_shape + [param_size])``.</span>
+<span class="sd">        batch_shape : torch.Size</span>
+<span class="sd">            The batch shape</span>
+<span class="sd">        update_cache : bool</span>
+<span class="sd">            Whether to replace the cache content in ``self.particles`` and ``self.log_densities`` with the result of</span>
+<span class="sd">            calling this method.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        particles : tuple of torch.Tensor</span>
+<span class="sd">            The marginal particle lists w.r.t. each random variable in order.</span>
+<span class="sd">        weight : torch.Tensor</span>
+<span class="sd">            The batch importance weight that approximate the target batched distribution instances.</span>
+<span class="sd">        log_densities : tuple of torch.Tensor</span>
+<span class="sd">            The marginal sampling log densities w.r.t. each random variable in order.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Some remarks regarding the aforementioned step 2 and 3:</span>
+
+<span class="sd">        The tuple set of the types of the rv constraints specified in ``self.rv_constraints`` will be used to look up</span>
+<span class="sd">        the pre-specified method map ``self.dict_2special_draw``. If an entry present, will used that method to obtain</span>
+<span class="sd">        the returning ``particles`` and ``log_densities``. This is particularly useful, for instance, in the case of</span>
+<span class="sd">        finite discrete random variables where a regular lattice should be drawn uniformly.</span>
+
+<span class="sd">        Otherwise, the standard procedure will be carried out.</span>
+<span class="sd">        ``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
@@ -905,18 +948,11 @@
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Categorical distribution. Assumes all RV have size 1</span>
-<span class="sd">            - format check</span>
-<span class="sd">                - var_sizes are all 1</span>
-<span class="sd">                - var_constraints are all integer_interval</span>
 <span class="sd">            - event translation from pred to torch:</span>
 <span class="sd">                Take a tuple of tensors each corresponding to one RV&#39;s value assignment. Compute value by taking volume </span>
 <span class="sd">                product</span>
 <span class="sd">            - event translation from torch to pred:</span>
 <span class="sd">                Take volume modulo of the event values. Return a tuple a tensors</span>
-<span class="sd">            - parameter translation from pred to torch:</span>
-<span class="sd">                Flatten R.V. dimension into single dimension</span>
-<span class="sd">            - parameter translation from torch to pred:</span>
-<span class="sd">                Reshape last dimension into multiple dimensions, numbers of dims equal to the numbers of R.V.s</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">_categorical_var_span</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Helper function to determine the value range of each rv</span>
@@ -963,7 +999,11 @@
 
         <span class="c1"># Concatenate the modulo list</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">modulo_list</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># TODO</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span></div>
 </pre></div>
 
            </div>

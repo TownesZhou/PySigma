@@ -320,7 +320,7 @@ feeds.</p>
 the parameters. See
 <a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a>
 for more details.</p>
-<p>Particles should be drawn during modification phase of each cognitive cycle by calling <cite>draw_particles()</cite> method,
+<p>Particles should be drawn during modification phase of each cognitive cycle by calling <cite>init_msg()</cite> method,
 which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling
 procedure.</p>
 <dl class="field-list simple">
@@ -404,6 +404,17 @@ procedure.</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.msg_cache">
+<code class="sig-name descname">msg_cache</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.msg_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="data-structures.html#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt id="pysigma.graphical._nodes.LTMFN.add_link">
 <code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.add_link" title="Permalink to this definition">¶</a></dt>
@@ -417,6 +428,7 @@ dict.</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If the new linkdata does not have identical batch shape and param shape.</p></li>
 <li><p><strong>AssertionError</strong> – If attempting to register more than one outgoing link.</p></li>
 <li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">'type'</span></code> key does not exist in the linkdata’s attribute dict, or if the associated value is neither
     <code class="docutils literal notranslate"><span class="pre">'event'</span></code> nor <code class="docutils literal notranslate"><span class="pre">'param'</span></code>.</p></li>
@@ -427,18 +439,35 @@ dict.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.LTMFN.draw_particles">
-<code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.draw_particles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Draws particles.</p>
+<dt id="pysigma.graphical._nodes.LTMFN.init_msg">
+<code class="sig-name descname">init_msg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN.init_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.init_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws particles and instantiate new message for next cognitive cycle.</p>
 <p>This method should be called during the modification phase. Parameter will be gathered from incoming <cite>param</cite>
 linkdata, and in the case of multiple incoming <cite>param</cite> linkdata the parameter tensors gathered will be combined.
-Then, a new list of particles in the Cognitive format will be drawn using the KnowledgeServer instance.</p>
+A new list of particles will then be drawn in the cognitive format by querying the given KnowledgeServer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If no <cite>param</cite> type incoming linkdata is found.</p></li>
+<li><p><strong>AssertionError</strong> – If messages read from incoming linkdata do not all contain parameters.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical._nodes.LTMFN.compute">
 <code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate message from assumed distribution and send toward WMVN_OUT</p>
+<dd><p>Send message in <code class="docutils literal notranslate"><span class="pre">self.msg_cache</span></code> to the connected <cite>WMVN_OUT</cite> node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If there are no connected outgoing linkdata.</p></li>
+<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.msg_cache</span></code> is None. This means <cite>init_msg()</cite> were not called prior to the current decision phase
+    which calls this method.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

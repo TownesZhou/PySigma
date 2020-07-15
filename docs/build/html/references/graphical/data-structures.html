@@ -589,6 +589,10 @@ be added with one of type <code class="docutils literal notranslate"><span class
 <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code>, and in any case a <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code> type message cannot be added.</p>
 <p>There are more restrictions for <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type messages. Messages of such type can only be
 added together if their <code class="docutils literal notranslate"><span class="pre">particles</span></code> and <code class="docutils literal notranslate"><span class="pre">log_densities</span></code> fields are equal.</p>
+<p>If two messages with compatible but not identical types are added together, the resulting message will have the
+smaller type, meaning only the common components will be added. For example, the result of adding a
+<code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message with a <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type message is a <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>
+type message.</p>
 <p>All contents are first cloned before taking the operations and returning the result.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
