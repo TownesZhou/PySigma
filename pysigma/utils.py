@@ -458,6 +458,8 @@ class KnowledgeServer:
     dist_info : dict
     num_rvs : int
         Number of random variables involved in specifying the Predicate knowledge.
+    e_shape : torch.Size
+        The event shape of predicate's knowledge. Inferred form `rv_sizes`.
     particles : tuple of torch.Tensor
         The cached tuple of marginal particle event tensors corresponding to the random variables. This attribute is set
         when `draw_grid_particles` is called with ``update_cache=True``.
@@ -486,6 +488,7 @@ class KnowledgeServer:
 
         assert len(self.rv_sizes) == len(self.rv_constraints)
         self.num_rvs = len(self.rv_sizes)
+        self.e_shape = torch.Size(rv_sizes)
 
         # Cache
         self.particles = None
@@ -550,7 +553,12 @@ class KnowledgeServer:
         Otherwise, the standard procedure will be carried out.
         ``
         """
-        pass
+        assert isinstance(batch_shape, torch.Size)
+        assert isinstance(batched_param, torch.Tensor) and batched_param.shape[:-1] == batch_shape
+        assert isinstance(update_cache, bool)
+
+        batched_dist = DistributionServer.param2dist(self.dist_class, batched_param, batch_shape, self.e_shape,
+                                                     self.dist_info)
 
     def surrogate_log_prob(self, alt_particles, param):
         """Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution

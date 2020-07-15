@@ -665,6 +665,8 @@
 <span class="sd">    dist_info : dict</span>
 <span class="sd">    num_rvs : int</span>
 <span class="sd">        Number of random variables involved in specifying the Predicate knowledge.</span>
+<span class="sd">    e_shape : torch.Size</span>
+<span class="sd">        The event shape of predicate&#39;s knowledge. Inferred form `rv_sizes`.</span>
 <span class="sd">    particles : tuple of torch.Tensor</span>
 <span class="sd">        The cached tuple of marginal particle event tensors corresponding to the random variables. This attribute is set</span>
 <span class="sd">        when `draw_grid_particles` is called with ``update_cache=True``.</span>
@@ -693,6 +695,7 @@
 
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">rv_sizes</span><span class="p">)</span>
 
         <span class="c1"># Cache</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="kc">None</span>
@@ -757,7 +760,12 @@
 <span class="sd">        Otherwise, the standard procedure will be carried out.</span>
 <span class="sd">        ``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batched_param</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">batched_param</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">batch_shape</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">update_cache</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+
+        <span class="n">batched_dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">batched_param</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="KnowledgeServer.surrogate_log_prob"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.surrogate_log_prob">[docs]</a>    <span class="k">def</span> <span class="nf">surrogate_log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alt_particles</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution</span>
