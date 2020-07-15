@@ -196,7 +196,7 @@ class DistributionServer:
         return cls.dict_get_moments[dist_class](dist, n_moments)
 
     @classmethod
-    def draw_particles(cls, dist, num_particles, b_shape, e_shape):
+    def draw_particles(cls, dist, num_particles):
         """
             .. todo::
                Gibbs sampling procedure
@@ -226,7 +226,7 @@ class DistributionServer:
                                                                weights.shape == s_shape + b_shape)
         assert isinstance(sampling_log_densities, torch.Tensor) and sampling_log_densities.shape == s_shape + b_shape
 
-        return particles, weights, sampling_log_densities
+        return particles
 
     @classmethod
     def log_prob(cls, dist, values):
@@ -246,7 +246,7 @@ class DistributionServer:
         dist : torch.distributions.Distribution
             A batched distribution instance. Its batch shape ``dist.batch_shape`` should not be empty.
         values : torch.Tensor
-            A 2D tensor with shape ``(sample_shape + [event_size])``
+            A tensor with shape ``(sample_shape + [event_size])``
 
         Returns
         -------
@@ -489,7 +489,7 @@ class KnowledgeServer:
         assert issubclass(dist_class, Distribution)
         assert isinstance(rv_sizes, Iterable) and all(isinstance(s, int) and s > 0 for s in rv_sizes)
         assert isinstance(rv_constraints, Iterable) and all(isinstance(c, Constraint) for c in rv_constraints)
-        assert (isinstance(rv_num_particles, Iterable) and all(isinstance(n, int) and n > 0 for n in rv_num_particles))
+        assert isinstance(rv_num_particles, Iterable) and all(isinstance(n, int) and n > 0 for n in rv_num_particles)
         assert dist_info is None or isinstance(dist_info, dict)
 
         self.dist_class = dist_class
@@ -501,6 +501,7 @@ class KnowledgeServer:
         assert len(self.rv_sizes) == len(self.rv_constraints)
         self.num_rvs = len(self.rv_sizes)
         self.e_shape = torch.Size(rv_sizes)
+        self.s_shape = torch.Size([n for n in self.rv_num_particles])
 
         # Cache
         self.particles = None
@@ -577,10 +578,10 @@ class KnowledgeServer:
             particles, log_densities = self._default_draw(batched_dist)
         # Check shape and type
         assert isinstance(particles, tuple) and \
-            all(isinstance(p, torch.Tensor) and p.shape == torch.Size([self.rv_num_particles[j], self.rv_sizes[j]])
+            all(isinstance(p, torch.Tensor) and p.shape == torch.Size([self.s_shape[j], self.e_shape[j]])
                 for j, p in enumerate(particles))
         assert isinstance(log_densities, tuple) and \
-            all(isinstance(d, torch.Tensor) and d.shape == torch.Size([self.rv_num_particles[j]])
+            all(isinstance(d, torch.Tensor) and d.shape == torch.Size(self.s_shape[j])
                 for j, d in enumerate(log_densities))
 
         # Cache the particle list if asked for
@@ -658,14 +659,16 @@ class KnowledgeServer:
         Parameters
         ----------
         cat_particles : torch.Tensor
-            A 2D tensor representing the list of concatenated particle events in Cognitive format. Its 2nd dimension
-            size should be equal to the sum of rv sizes in ``self.rv_sizes``.
+            A tensor representing the list of concatenated particle events in Cognitive format. Its last dimension will
+            be taken as the event dimension and should be equal to the sum of rv sizes in ``self.rv_sizes``, while all
+            other dimensions will be taken as the sample dimensions.
 
         Returns
         -------
         torch.Tensor
-            A 2D tensor representing a list of translated particle events from `cat_particles`. Its 1st dimension size
-            is equal to the 1st dimension size of `cat_particles`.
+            A tensor representing a list of translated particle events from `cat_particles`. Its last dimension size
+            depends on the PyTorch format representation of events, while the sizes of other dimensions are the same as
+            `cat_particles`.
 
         Notes
         -----
@@ -674,8 +677,7 @@ class KnowledgeServer:
         using the registered distribution class ``self.dist_class``. If no entry is found, then will assume no special
         translation is necessary and will return the input `cat_particles` as is.
         """
-        assert isinstance(cat_particles, torch.Tensor) and cat_particles.dim() == 2 and \
-            cat_particles.shape[1] == sum(self.rv_sizes)
+        assert isinstance(cat_particles, torch.Tensor) and cat_particles.shape[-1] == sum(self.rv_sizes)
 
         assert self.dist_class is not None, \
             "No distribution class has been registered. No way to translate given particle event values."
@@ -685,7 +687,7 @@ class KnowledgeServer:
         else:
             result = cat_particles
 
-        assert result.shape[0] == cat_particles.shape[0]
+        assert result.shape[:-1] == cat_particles.shape[:-1]
         return result
 
     def event2cognitive_event(self, particles):
@@ -694,14 +696,15 @@ class KnowledgeServer:
         Parameters
         ----------
         particles : torch.Tensor
-            A 2D tensor representing the list of concatenated particle events in PyTorch format.
+            A tensor representing the particle events in PyTorch-compatible format. Its last dimension will be taken
+            as the event dimension, while all other dimensions will be taken as the sample dimensions.
 
         Returns
         -------
         torch.Tensor
-            A 2D tensor representing a list of translated particle events from `cat_particles`. Its 1st dimension size
-            is equal to the 1st dimension size of `cat_particles`, and 2nd dimension size equal to the sum of rv sizes
-            in ``self.rv_sizes``.
+            A concatenated tensor representing a list of translated particle events from `cat_particles`, where the
+            events are concatenated along the last dimension, with size of each chunk in accordance with
+            `self.rv_sizes`, and the sizes of all other dimensions are the same as `particles`.
 
         Notes
         -----
@@ -710,7 +713,7 @@ class KnowledgeServer:
         ``self.dict_2cognitive_event`` using the registered distribution class ``self.dist_class``. If no entry is
         found, then will assume no special translation is necessary and will return the input `cat_particles` as is.
         """
-        assert isinstance(particles, torch.Tensor) and particles.dim() == 2
+        assert isinstance(particles, torch.Tensor)
 
         assert self.dist_class is not None, \
             "No distribution class has been registered. No way to translate given particle event values."
@@ -720,7 +723,7 @@ class KnowledgeServer:
         else:
             result = particles
 
-        assert result.shape[0] == particles.shape[0] and result.shape[1] == sum(self.rv_sizes)
+        assert result.shape[:-1] == particles.shape[:-1] and result.shape[-1] == sum(self.rv_sizes)
         return result
 
     """
@@ -786,7 +789,41 @@ class KnowledgeServer:
                 sampling densities .
     """
     def _default_draw(self, batched_dist):
-        pass
+        assert isinstance(batched_dist, Distribution)
+        b_dims = len(batched_dist.batch_shape)
+
+        # Acquire raw joint particles in PyTorch format
+        max_num_ptcl = max(self.rv_num_particles)
+        raw_ptcl = DistributionServer.draw_particles(batched_dist, max_num_ptcl)
+
+        # Translate to cognitive format, split and adjust sample sizes
+        joint_ptcl = self.event2cognitive_event(raw_ptcl)
+        marg_ptcl_full = torch.split(joint_ptcl, self.rv_sizes, dim=-1)
+        marg_ptcl_narrow = list(torch.narrow(p, dim=0, start=0, length=self.rv_num_particles[j])
+                                for j, p in marg_ptcl_full)
+        assert all(p.shape == torch.Size([self.s_shape[j], self.e_shape[j]]) for j, p in enumerate(marg_ptcl_narrow))
+
+        # Obtain log densities w.r.t. the combinatorially concatenated event lattice
+        comb_cat_ptcl = KnowledgeServer.combinatorial_cat(marg_ptcl_narrow)
+        raw_comb_cat_ptcl = self.event2torch_event(comb_cat_ptcl)      # back to torch format again so DS can understand
+        comb_log_dens = DistributionServer.log_prob(batched_dist, raw_comb_cat_ptcl)
+
+        # Marginalize the lattice densities, by first marginalize over batch dims then individual rv dims for each rv
+        lattice_dens = torch.exp(comb_log_dens)
+        for i in range(b_dims):
+            lattice_dens = torch.sum(lattice_dens, dim=0)
+        assert lattice_dens.shape == self.s_shape
+        marg_log_dens = []
+        for j in range(self.num_rvs):
+            marg_dens_j = lattice_dens
+            for i in list(i for i in range(self.num_rvs) if i != j):
+                marg_dens_j = torch.sum(marg_dens_j, dim=i, keepdim=True)
+            marg_log_dens_j = torch.log(marg_dens_j.view(-1))
+            marg_log_dens.append(marg_log_dens_j)
+        assert all(d.shape == torch.Size(self.s_shape[j]) for j, d in enumerate(marg_log_dens))
+
+        return tuple(marg_ptcl_narrow), tuple(marg_log_dens)
+
     """
         Categorical distribution. Assumes all RV have size 1
             - event translation from pred to torch:

@@ -317,7 +317,7 @@ sufficiently described in the argument <cite>dist_info</cite> in a prior consent
 
 <dl class="py method">
 <dt id="pysigma.utils.DistributionServer.draw_particles">
-<em class="property">classmethod </em><code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">num_particles</span></em>, <em class="sig-param"><span class="n">b_shape</span></em>, <em class="sig-param"><span class="n">e_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.draw_particles" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">num_particles</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.draw_particles" title="Permalink to this definition">¶</a></dt>
 <dd><div class="admonition-todo admonition" id="id2">
 <p class="admonition-title">Todo</p>
 <p>Gibbs sampling procedure</p>
@@ -346,7 +346,7 @@ not be empty.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dist</strong> (<em>torch.distributions.Distribution</em>) – A batched distribution instance. Its batch shape <code class="docutils literal notranslate"><span class="pre">dist.batch_shape</span></code> should not be empty.</p></li>
-<li><p><strong>values</strong> (<em>torch.Tensor</em>) – A 2D tensor with shape <code class="docutils literal notranslate"><span class="pre">(sample_shape</span> <span class="pre">+</span> <span class="pre">[event_size])</span></code></p></li>
+<li><p><strong>values</strong> (<em>torch.Tensor</em>) – A tensor with shape <code class="docutils literal notranslate"><span class="pre">(sample_shape</span> <span class="pre">+</span> <span class="pre">[event_size])</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -642,12 +642,14 @@ particles in order (either those provided by <cite>alt_particles</cite> or those
 distribution class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>cat_particles</strong> (<em>torch.Tensor</em>) – A 2D tensor representing the list of concatenated particle events in Cognitive format. Its 2nd dimension
-size should be equal to the sum of rv sizes in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>.</p>
+<dd class="field-odd"><p><strong>cat_particles</strong> (<em>torch.Tensor</em>) – A tensor representing the list of concatenated particle events in Cognitive format. Its last dimension will
+be taken as the event dimension and should be equal to the sum of rv sizes in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>, while all
+other dimensions will be taken as the sample dimensions.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A 2D tensor representing a list of translated particle events from <cite>cat_particles</cite>. Its 1st dimension size
-is equal to the 1st dimension size of <cite>cat_particles</cite>.</p>
+<dd class="field-even"><p>A tensor representing a list of translated particle events from <cite>cat_particles</cite>. Its last dimension size
+depends on the PyTorch format representation of events, while the sizes of other dimensions are the same as
+<cite>cat_particles</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>torch.Tensor</p>
@@ -666,12 +668,13 @@ translation is necessary and will return the input <cite>cat_particles</cite> as
 <dd><p>Translates joint particle event values from the PyTorch distribution class format to Cognitive format.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>particles</strong> (<em>torch.Tensor</em>) – A 2D tensor representing the list of concatenated particle events in PyTorch format.</p>
+<dd class="field-odd"><p><strong>particles</strong> (<em>torch.Tensor</em>) – A tensor representing the particle events in PyTorch-compatible format. Its last dimension will be taken
+as the event dimension, while all other dimensions will be taken as the sample dimensions.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A 2D tensor representing a list of translated particle events from <cite>cat_particles</cite>. Its 1st dimension size
-is equal to the 1st dimension size of <cite>cat_particles</cite>, and 2nd dimension size equal to the sum of rv sizes
-in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>.</p>
+<dd class="field-even"><p>A concatenated tensor representing a list of translated particle events from <cite>cat_particles</cite>, where the
+events are concatenated along the last dimension, with size of each chunk in accordance with
+<cite>self.rv_sizes</cite>, and the sizes of all other dimensions are the same as <cite>particles</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>torch.Tensor</p>

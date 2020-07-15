@@ -403,7 +403,7 @@
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="DistributionServer.draw_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.draw_particles">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            .. todo::</span>
 <span class="sd">               Gibbs sampling procedure</span>
@@ -433,7 +433,7 @@
                                                                <span class="n">weights</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sampling_log_densities</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sampling_log_densities</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span>
 
-        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span></div>
+        <span class="k">return</span> <span class="n">particles</span></div>
 
 <div class="viewcode-block" id="DistributionServer.log_prob"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.log_prob">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">log_prob</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
@@ -453,7 +453,7 @@
 <span class="sd">        dist : torch.distributions.Distribution</span>
 <span class="sd">            A batched distribution instance. Its batch shape ``dist.batch_shape`` should not be empty.</span>
 <span class="sd">        values : torch.Tensor</span>
-<span class="sd">            A 2D tensor with shape ``(sample_shape + [event_size])``</span>
+<span class="sd">            A tensor with shape ``(sample_shape + [event_size])``</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -696,7 +696,7 @@
         <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_sizes</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">rv_sizes</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_constraints</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">rv_constraints</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_num_particles</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">rv_num_particles</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_num_particles</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">rv_num_particles</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist_info</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="o">=</span> <span class="n">dist_class</span>
@@ -708,6 +708,7 @@
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">])</span>
 
         <span class="c1"># Cache</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="kc">None</span>
@@ -784,10 +785,10 @@
             <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_draw</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">)</span>
         <span class="c1"># Check shape and type</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> \
-            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span>
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span>
                 <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particles</span><span class="p">))</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">log_densities</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> \
-            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span>
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
                 <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">log_densities</span><span class="p">))</span>
 
         <span class="c1"># Cache the particle list if asked for</span>
@@ -865,14 +866,16 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        cat_particles : torch.Tensor</span>
-<span class="sd">            A 2D tensor representing the list of concatenated particle events in Cognitive format. Its 2nd dimension</span>
-<span class="sd">            size should be equal to the sum of rv sizes in ``self.rv_sizes``.</span>
+<span class="sd">            A tensor representing the list of concatenated particle events in Cognitive format. Its last dimension will</span>
+<span class="sd">            be taken as the event dimension and should be equal to the sum of rv sizes in ``self.rv_sizes``, while all</span>
+<span class="sd">            other dimensions will be taken as the sample dimensions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        torch.Tensor</span>
-<span class="sd">            A 2D tensor representing a list of translated particle events from `cat_particles`. Its 1st dimension size</span>
-<span class="sd">            is equal to the 1st dimension size of `cat_particles`.</span>
+<span class="sd">            A tensor representing a list of translated particle events from `cat_particles`. Its last dimension size</span>
+<span class="sd">            depends on the PyTorch format representation of events, while the sizes of other dimensions are the same as</span>
+<span class="sd">            `cat_particles`.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -881,8 +884,7 @@
 <span class="sd">        using the registered distribution class ``self.dist_class``. If no entry is found, then will assume no special</span>
 <span class="sd">        translation is necessary and will return the input `cat_particles` as is.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> \
-            <span class="n">cat_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
 
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
             <span class="s2">&quot;No distribution class has been registered. No way to translate given particle event values.&quot;</span>
@@ -892,7 +894,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">cat_particles</span>
 
-        <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
 <div class="viewcode-block" id="KnowledgeServer.event2cognitive_event"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.event2cognitive_event">[docs]</a>    <span class="k">def</span> <span class="nf">event2cognitive_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
@@ -901,14 +903,15 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        particles : torch.Tensor</span>
-<span class="sd">            A 2D tensor representing the list of concatenated particle events in PyTorch format.</span>
+<span class="sd">            A tensor representing the particle events in PyTorch-compatible format. Its last dimension will be taken</span>
+<span class="sd">            as the event dimension, while all other dimensions will be taken as the sample dimensions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        torch.Tensor</span>
-<span class="sd">            A 2D tensor representing a list of translated particle events from `cat_particles`. Its 1st dimension size</span>
-<span class="sd">            is equal to the 1st dimension size of `cat_particles`, and 2nd dimension size equal to the sum of rv sizes</span>
-<span class="sd">            in ``self.rv_sizes``.</span>
+<span class="sd">            A concatenated tensor representing a list of translated particle events from `cat_particles`, where the</span>
+<span class="sd">            events are concatenated along the last dimension, with size of each chunk in accordance with</span>
+<span class="sd">            `self.rv_sizes`, and the sizes of all other dimensions are the same as `particles`.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -917,7 +920,7 @@
 <span class="sd">        ``self.dict_2cognitive_event`` using the registered distribution class ``self.dist_class``. If no entry is</span>
 <span class="sd">        found, then will assume no special translation is necessary and will return the input `cat_particles` as is.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">particles</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
 
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
             <span class="s2">&quot;No distribution class has been registered. No way to translate given particle event values.&quot;</span>
@@ -927,7 +930,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">particles</span>
 
-        <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>
@@ -993,7 +996,41 @@
 <span class="sd">                sampling densities .</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">_default_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_dist</span><span class="p">):</span>
-        <span class="k">pass</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="n">b_dims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batched_dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
+
+        <span class="c1"># Acquire raw joint particles in PyTorch format</span>
+        <span class="n">max_num_ptcl</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">)</span>
+        <span class="n">raw_ptcl</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">draw_particles</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">max_num_ptcl</span><span class="p">)</span>
+
+        <span class="c1"># Translate to cognitive format, split and adjust sample sizes</span>
+        <span class="n">joint_ptcl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2cognitive_event</span><span class="p">(</span><span class="n">raw_ptcl</span><span class="p">)</span>
+        <span class="n">marg_ptcl_full</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">joint_ptcl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">marg_ptcl_narrow</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">marg_ptcl_full</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">))</span>
+
+        <span class="c1"># Obtain log densities w.r.t. the combinatorially concatenated event lattice</span>
+        <span class="n">comb_cat_ptcl</span> <span class="o">=</span> <span class="n">KnowledgeServer</span><span class="o">.</span><span class="n">combinatorial_cat</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">)</span>
+        <span class="n">raw_comb_cat_ptcl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2torch_event</span><span class="p">(</span><span class="n">comb_cat_ptcl</span><span class="p">)</span>      <span class="c1"># back to torch format again so DS can understand</span>
+        <span class="n">comb_log_dens</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">raw_comb_cat_ptcl</span><span class="p">)</span>
+
+        <span class="c1"># Marginalize the lattice densities, by first marginalize over batch dims then individual rv dims for each rv</span>
+        <span class="n">lattice_dens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">comb_log_dens</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">b_dims</span><span class="p">):</span>
+            <span class="n">lattice_dens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lattice_dens</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">lattice_dens</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span>
+        <span class="n">marg_log_dens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">):</span>
+            <span class="n">marg_dens_j</span> <span class="o">=</span> <span class="n">lattice_dens</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">):</span>
+                <span class="n">marg_dens_j</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">marg_dens_j</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">marg_log_dens_j</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">marg_dens_j</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">marg_log_dens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marg_log_dens_j</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">)</span>
+
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Categorical distribution. Assumes all RV have size 1</span>
 <span class="sd">            - event translation from pred to torch:</span>
