@@ -618,6 +618,11 @@ class WMVN(VariableNode):
 
     Gate node connecting predicate structure to conditionals.
 
+    WMVN will attempt to combine incoming messages, regardless of whether they come from alpha terminals in Conditional
+    subgraphs, or from other nodes in the Predicate subgraph. The combined message generally yields the semantics of
+    marginal belief coming from a certain part of the graphical model, and is sent to downstream nodes for further
+    processing.
+
     A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
     particles needs to be queried.
 
@@ -805,7 +810,17 @@ class LTMFN(FactorNode):
     :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>`
     for more details.
 
-    Particles should be drawn during modification phase of each cognitive cycle by calling `init_msg()` method,
+    `init_msg()` should be called during modification phase of a cognitive cycle so that the message to be sent to
+    downstream nodes during the next cognitive cycle is prepared herein. This includes gathering new parameters that
+    are ready to be read from the incoming `param` linkdata at the end of the previous decision phase, as well as
+    optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated from the
+    newly gathered parameters. The latter behavior can be set by calling `toggle_draw()` method. In general, it is
+    expected to include as much information as possible in the outgoing message, and so drawing mode should be turned
+    on, but there are also circumstances in which this behavior should be avoided, for instance when the Predicate is
+    perceiving observations / evidence from PBFN, where the particle values should be determined by the observation feed
+    rather than be drawn here at the LTMFN.
+
+    Particles can optionally be drawn during modification phase of each cognitive cycle by calling `init_msg()` method,
     which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling
     procedure.
 
@@ -823,6 +838,8 @@ class LTMFN(FactorNode):
         Iterable of indexing variables.
     ran_var_list : iterable of Variable
         Iterable of random variables, corresponding to the predicate's random arguments.
+    to_draw : bool, optional
+        Initialize whether this LTMFN should be drawing particles in `init_msg()`. Defaults to ``True``.
 
     Attributes
     ----------
@@ -831,6 +848,7 @@ class LTMFN(FactorNode):
     param_var
     index_var_list
     ran_var_list
+    to_draw
     b_shape : torch.Size
         The batch shape.
     p_shape : torch.Size
@@ -842,7 +860,7 @@ class LTMFN(FactorNode):
     msg_cache : Message
         The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.
     """
-    def __init__(self, name, ks, rel_var_list, param_var, index_var_list, ran_var_list):
+    def __init__(self, name, ks, rel_var_list, param_var, index_var_list, ran_var_list, to_draw=True):
         super(LTMFN, self).__init__(name)
         self.pretty_log["node type"] = "Long-Term Memory Factor Node"
 
@@ -860,6 +878,7 @@ class LTMFN(FactorNode):
         self.param_var = param_var
         self.index_var_list = tuple(index_var_list)
         self.ran_var_list = tuple(ran_var_list)
+        self.to_draw = to_draw
 
         self.b_shape = torch.Size([v.size for v in self.rel_var_list])
         self.p_shape = torch.Size([self.param_var.size])
@@ -913,6 +932,17 @@ class LTMFN(FactorNode):
         
         super(LTMFN, self).add_link(linkdata)
 
+    def toggle_draw(self, to_draw):
+        """Sets whether this LTMFN should draw particles in `init_msg()` and send `MessageType.Both` type message, or
+        not draw particles and send `MessageType.Parameter` message
+
+        Parameters
+        ----------
+        to_draw : bool
+            Whether to draw particles or not.
+        """
+        self.to_draw = to_draw
+
     def init_msg(self):
         """Draws particles and instantiate new message for next cognitive cycle.
 
@@ -940,17 +970,27 @@ class LTMFN(FactorNode):
 
         # Combine parameter messages and extract the parameter tensor
         param = sum(param_msgs).parameter
-        # Query KnowledgeServer to extract components of a particle list.
-        particles, log_densities = self.ks.draw_particles(param, self.b_shape, update_cache=True)
-        log_prob = self.ks.surrogate_log_prob(param)
 
-        # Instantiate a temporary message with uniform weight and use Message method to obtain re-weighted message
-        tmp_msg = Message(MessageType.Both,
-                          batch_shape=self.b_shape, param_shape=self.p_shape,
-                          sample_shape=self.s_shape, event_shape=self.e_shape,
-                          parameter=param, particles=particles, weight=1, log_densities=log_densities,
-                          dist_info=self.ks.dist_info)
-        self.msg_cache = tmp_msg.event_reweight(log_prob)
+        if self.to_draw:
+            # Query KnowledgeServer to extract components of a particle list.
+            particles, log_densities = self.ks.draw_particles(param, self.b_shape, update_cache=True)
+            log_prob = self.ks.surrogate_log_prob(param)
+
+            # Instantiate a temporary message with uniform weight and use Message method to obtain re-weighted message
+            tmp_msg = Message(MessageType.Both,
+                              batch_shape=self.b_shape, param_shape=self.p_shape,
+                              sample_shape=self.s_shape, event_shape=self.e_shape,
+                              parameter=param, particles=particles, weight=1, log_densities=log_densities,
+                              dist_info=self.ks.dist_info)
+            new_msg = tmp_msg.event_reweight(log_prob)
+        else:
+            # If not to draw particles, simply cache a Parameter message
+            new_msg = Message(MessageType.Parameter,
+                              batch_shape=self.b_shape, param_shape=self.p_shape,
+                              parameter=param,
+                              dist_ino=self.ks.dist_info)
+
+        self.msg_cache = new_msg
 
     def compute(self):
         """

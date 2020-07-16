@@ -221,6 +221,10 @@
 <em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">WMVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#WMVN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.WMVN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Working Memory Variable Node.</p>
 <p>Gate node connecting predicate structure to conditionals.</p>
+<p>WMVN will attempt to combine incoming messages, regardless of whether they come from alpha terminals in Conditional
+subgraphs, or from other nodes in the Predicate subgraph. The combined message generally yields the semantics of
+marginal belief coming from a certain part of the graphical model, and is sent to downstream nodes for further
+processing.</p>
 <p>A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
 particles needs to be queried.</p>
 <dl class="field-list simple">
@@ -307,7 +311,7 @@ share the same set of incoming links that provide the messages, previously compu
 <h2>Long-Term Memory Factor Node<a class="headerlink" href="#long-term-memory-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical._nodes.LTMFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">LTMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span></em>, <em class="sig-param"><span class="n">index_var_list</span></em>, <em class="sig-param"><span class="n">ran_var_list</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">LTMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span></em>, <em class="sig-param"><span class="n">index_var_list</span></em>, <em class="sig-param"><span class="n">ran_var_list</span></em>, <em class="sig-param"><span class="n">to_draw</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Long-Term Memory Factor Node.</p>
 <p>Memorizes and updates the predicate’s knowledge across decision cycles. Hosts and maintains the associated
 KnowledgeServer instance to provide service to downstream nodes.</p>
@@ -320,7 +324,16 @@ feeds.</p>
 the parameters. See
 <a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a>
 for more details.</p>
-<p>Particles should be drawn during modification phase of each cognitive cycle by calling <cite>init_msg()</cite> method,
+<p><cite>init_msg()</cite> should be called during modification phase of a cognitive cycle so that the message to be sent to
+downstream nodes during the next cognitive cycle is prepared herein. This includes gathering new parameters that
+are ready to be read from the incoming <cite>param</cite> linkdata at the end of the previous decision phase, as well as
+optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated from the
+newly gathered parameters. The latter behavior can be set by calling <cite>toggle_draw()</cite> method. In general, it is
+expected to include as much information as possible in the outgoing message, and so drawing mode should be turned
+on, but there are also circumstances in which this behavior should be avoided, for instance when the Predicate is
+perceiving observations / evidence from PBFN, where the particle values should be determined by the observation feed
+rather than be drawn here at the LTMFN.</p>
+<p>Particles can optionally be drawn during modification phase of each cognitive cycle by calling <cite>init_msg()</cite> method,
 which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling
 procedure.</p>
 <dl class="field-list simple">
@@ -332,6 +345,7 @@ procedure.</p>
 <li><p><strong>param_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a>) – The parameter variable.</p></li>
 <li><p><strong>index_var_list</strong> (<em>iterable of Variable</em>) – Iterable of indexing variables.</p></li>
 <li><p><strong>ran_var_list</strong> (<em>iterable of Variable</em>) – Iterable of random variables, corresponding to the predicate’s random arguments.</p></li>
+<li><p><strong>to_draw</strong> (<em>bool</em><em>, </em><em>optional</em>) – Initialize whether this LTMFN should be drawing particles in <cite>init_msg()</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -358,6 +372,11 @@ procedure.</p>
 <dl class="py attribute">
 <dt id="pysigma.graphical._nodes.LTMFN.ran_var_list">
 <code class="sig-name descname">ran_var_list</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.ran_var_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.LTMFN.to_draw">
+<code class="sig-name descname">to_draw</code><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.to_draw" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -434,6 +453,18 @@ dict.</p>
     <code class="docutils literal notranslate"><span class="pre">'event'</span></code> nor <code class="docutils literal notranslate"><span class="pre">'param'</span></code>.</p></li>
 <li><p><strong>AssertionError</strong> – If attempting to register more than one <cite>event</cite> incoming link.</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.LTMFN.toggle_draw">
+<code class="sig-name descname">toggle_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">to_draw</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LTMFN.toggle_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LTMFN.toggle_draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets whether this LTMFN should draw particles in <cite>init_msg()</cite> and send <cite>MessageType.Both</cite> type message, or
+not draw particles and send <cite>MessageType.Parameter</cite> message</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>to_draw</strong> (<em>bool</em>) – Whether to draw particles or not.</p>
 </dd>
 </dl>
 </dd></dl>
