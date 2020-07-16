@@ -317,18 +317,42 @@ sufficiently described in the argument <cite>dist_info</cite> in a prior consent
 
 <dl class="py method">
 <dt id="pysigma.utils.DistributionServer.draw_particles">
-<em class="property">classmethod </em><code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">num_particles</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.draw_particles" title="Permalink to this definition">¶</a></dt>
-<dd><div class="admonition-todo admonition" id="id2">
-<p class="admonition-title">Todo</p>
-<p>Gibbs sampling procedure</p>
-</div>
-<dl class="simple">
-<dt>Draw a given number of particles from the given batch of distribution instances. Return a tuple:</dt><dd><p>(particles, weights, sampling_log_densities)</p>
+<em class="property">classmethod </em><code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">num_particles</span></em>, <em class="sig-param"><span class="n">dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.draw_particles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a list of <cite>num_particles</cite> event particles from the given distribution specified by <cite>dist</cite>. The event
+particles drawn will be in the format compatible with DistributionServer and PyTorch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dist</strong> (<em>torch.distributions.Distribution</em>) – The distribution instance from which to sample particles</p></li>
+<li><p><strong>num_particles</strong> (<em>int</em>) – The number of particles to be drawn</p></li>
+<li><p><strong>dist_info</strong> (<em>dict</em><em>, </em><em>optional</em>) – Additional dist info necessary for drawing particles in the correct format.</p></li>
+</ul>
 </dd>
-<dt>The Gibbs’ Sampling procedure is used to draw a single list of particles that will be used by each</dt><dd><p>distribution instance in the batch to derive individual weights by importance weighting.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the list of particles drawn, of shape <code class="docutils literal notranslate"><span class="pre">[num_particles,</span> <span class="pre">event_size]</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – If the given distribution yields multi-dimensional events, and no corresponding special drawing method is
+    found in <code class="docutils literal notranslate"><span class="pre">cls.dict_draw_particles</span></code> method map.</p>
 </dd>
 </dl>
-<p>Particles drawn are in the format compatible with PyTorch’s distribution class</p>
+<p class="rubric">Notes</p>
+<p>Unless distribution-class-specific drawing method is specified and registered in <code class="docutils literal notranslate"><span class="pre">cls.dict_draw_particles</span></code>
+method map, the distribution instance <cite>dist</cite> will be directly queried to draw the list of samples.</p>
+<p>The distribution instance <cite>dist</cite> is assumed batched, with a variable batch size(shape). However, we want to draw
+a single unique list of particles that is representative of each and every single distribution in the batch,
+i.e., draw a list of particles from the joint distribution regardless of the batch dimensions. Therefore, we
+take the view that drawing samples from <cite>dist</cite> simultaneously across the batch, which results in a sample tensor
+that involves the batch dimension, and ignoring the batch dimensions, is equivalent to first selecting uniformly
+which single distribution in the batch we wish draw from, and drawing samples from it, and repeating this
+process over and over again. The latter approach, when the samples are aggregated, yields a particle list
+that is representative of the joint distribution of the whole batch.</p>
+<p>Accordingly, the sampling process is implemented by drawing <cite>n</cite> batched samples from <cite>dist</cite>, where
+<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">num_particles</span> <span class="pre">//</span> <span class="pre">batch_size</span> <span class="pre">+</span> <span class="pre">1</span></code>, collapses the batch dimensions, random shuffle across the collapsed
+sample dimension, and truncate to select only a number of <code class="docutils literal notranslate"><span class="pre">num_particles</span></code> samples.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -370,7 +394,7 @@ not be empty.</p>
 <dl class="py method">
 <dt id="pysigma.utils.DistributionServer.transform_param">
 <em class="property">classmethod </em><code class="sig-name descname">transform_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param</span></em>, <em class="sig-param"><span class="n">dist_info</span></em>, <em class="sig-param"><span class="n">trans</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.transform_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.transform_param" title="Permalink to this definition">¶</a></dt>
-<dd><div class="admonition-todo admonition" id="id3">
+<dd><div class="admonition-todo admonition" id="id2">
 <p class="admonition-title">Todo</p>
 <p>To implement</p>
 </div>

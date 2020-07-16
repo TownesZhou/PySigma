@@ -196,35 +196,70 @@ class DistributionServer:
         return cls.dict_get_moments[dist_class](dist, n_moments)
 
     @classmethod
-    def draw_particles(cls, dist, num_particles):
-        """
-            .. todo::
-               Gibbs sampling procedure
-            Draw a given number of particles from the given batch of distribution instances. Return a tuple:
-                    (particles, weights, sampling_log_densities)
+    def draw_particles(cls, dist, num_particles, dist_info=None):
+        """Draw a list of `num_particles` event particles from the given distribution specified by `dist`. The event
+        particles drawn will be in the format compatible with DistributionServer and PyTorch.
 
-            The Gibbs' Sampling procedure is used to draw a single list of particles that will be used by each
-                distribution instance in the batch to derive individual weights by importance weighting.
+        Parameters
+        ----------
+        dist : torch.distributions.Distribution
+            The distribution instance from which to sample particles
+        num_particles : int
+            The number of particles to be drawn
+        dist_info : dict, optional
+            Additional dist info necessary for drawing particles in the correct format.
 
-            Particles drawn are in the format compatible with PyTorch's distribution class
+        Returns
+        -------
+        torch.Tensor
+            the list of particles drawn, of shape ``[num_particles, event_size]``
+
+        Raises
+        ------
+        NotImplementedError
+            If the given distribution yields multi-dimensional events, and no corresponding special drawing method is
+            found in ``cls.dict_draw_particles`` method map.
+
+        Notes
+        -----
+        Unless distribution-class-specific drawing method is specified and registered in ``cls.dict_draw_particles``
+        method map, the distribution instance `dist` will be directly queried to draw the list of samples.
+
+        The distribution instance `dist` is assumed batched, with a variable batch size(shape). However, we want to draw
+        a single unique list of particles that is representative of each and every single distribution in the batch,
+        i.e., draw a list of particles from the joint distribution regardless of the batch dimensions. Therefore, we
+        take the view that drawing samples from `dist` simultaneously across the batch, which results in a sample tensor
+        that involves the batch dimension, and ignoring the batch dimensions, is equivalent to first selecting uniformly
+        which single distribution in the batch we wish draw from, and drawing samples from it, and repeating this
+        process over and over again. The latter approach, when the samples are aggregated, yields a particle list
+        that is representative of the joint distribution of the whole batch.
+
+        Accordingly, the sampling process is implemented by drawing `n` batched samples from `dist`, where
+        ``n = num_particles // batch_size + 1``, collapses the batch dimensions, random shuffle across the collapsed
+        sample dimension, and truncate to select only a number of ``num_particles`` samples.
         """
         assert isinstance(dist, Distribution)
         assert isinstance(num_particles, int)
-        assert isinstance(b_shape, torch.Size)
-        assert isinstance(e_shape, torch.Size)
+        assert dist_info is None or isinstance(dist_info, dict)
 
         dist_class = type(dist)
-        if dist_class not in cls.dict_draw_particles.keys():
-            raise NotImplementedError("Draw particles method for distribution class '{}' not yet implemented"
-                                      .format(dist_class))
-        particles, weights, sampling_log_densities = cls.dict_draw_particles[dist_class](dist, num_particles)
-
-        # shape check
-        s_shape = torch.Size([num_particles])
-        assert isinstance(particles, torch.Tensor) and particles.shape == s_shape + b_shape + e_shape
-        assert (isinstance(weights, int) and weights == 1) or (isinstance(weights, torch.Tensor) and
-                                                               weights.shape == s_shape + b_shape)
-        assert isinstance(sampling_log_densities, torch.Tensor) and sampling_log_densities.shape == s_shape + b_shape
+        if dist_class in cls.dict_draw_particles.keys():
+            particles = cls.dict_draw_particles[dist_class](dist, num_particles, dist_info)
+            assert particles.shape[0] == num_particles
+        else:
+            if len(dist.event_shape) > 1:
+                raise NotImplementedError("Default particle drawing procedure only supports distribution class with "
+                                          "1-dimensional events. For distribution class that yields multi-dimensional "
+                                          "events, special method needs to be implemented and registered in "
+                                          "`DistributionServer.dict_draw_particles` method map. Found distribution "
+                                          "of type {} with event shape {}".format(dist_class, dist.batch_shape))
+            batch_size = dist.batch_shape.numel()
+            n = num_particles // batch_size + 1
+            btch_ptcl = dist.sample_n(n)        # Draw n batched particles
+            assert btch_ptcl.shape == torch.Size([n]) + dist.batch_shape + dist.event_shape
+            flat_ptcl = btch_ptcl.view(-1, dist.event_shape[0])
+            shuf_ptcl = flat_ptcl[torch.randperm(flat_ptcl.shape[0])]       # shuffle across collapsed sample dimension
+            particles = torch.narrow(shuf_ptcl, dim=0, start=0, length=num_particles)   # truncate
 
         return particles
 
@@ -791,10 +826,11 @@ class KnowledgeServer:
     def _default_draw(self, batched_dist):
         assert isinstance(batched_dist, Distribution)
         b_dims = len(batched_dist.batch_shape)
+        b_size = batched_dist.batch_shape.numel()
 
         # Acquire raw joint particles in PyTorch format
         max_num_ptcl = max(self.rv_num_particles)
-        raw_ptcl = DistributionServer.draw_particles(batched_dist, max_num_ptcl)
+        raw_ptcl = DistributionServer.draw_particles(batched_dist, max_num_ptcl, self.dist_info)
 
         # Translate to cognitive format, split and adjust sample sizes
         joint_ptcl = self.event2cognitive_event(raw_ptcl)
@@ -808,11 +844,18 @@ class KnowledgeServer:
         raw_comb_cat_ptcl = self.event2torch_event(comb_cat_ptcl)      # back to torch format again so DS can understand
         comb_log_dens = DistributionServer.log_prob(batched_dist, raw_comb_cat_ptcl)
 
-        # Marginalize the lattice densities, by first marginalize over batch dims then individual rv dims for each rv
+        # Marginalize the lattice densities, by first taking average over batch dims then marginalize over individual
+        # rv dims for each rv
+        # Note that for the batch dims we take average, instead of marginalization by taking sum. This is because
+        # lattice_dens is the CONDITIONAL probability of joint rv events conditioned on the batch index, NOT the joint
+        # probability which involves the batch index as rv as well. We also assume the prior probability over the batch
+        # index as rv is uniform.
         lattice_dens = torch.exp(comb_log_dens)
         for i in range(b_dims):
             lattice_dens = torch.sum(lattice_dens, dim=0)
+        lattice_dens /= b_size     # IMPORTANT: normalize by the batch size, otherwise not valid probabilities
         assert lattice_dens.shape == self.s_shape
+
         marg_log_dens = []
         for j in range(self.num_rvs):
             marg_dens_j = lattice_dens
