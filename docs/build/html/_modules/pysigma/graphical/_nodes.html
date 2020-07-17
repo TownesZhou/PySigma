@@ -973,8 +973,7 @@
                     <span class="n">out_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">in_lds</span><span class="p">]</span>
                 <span class="c1"># Otherwise, compute combined message</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">new_param</span> <span class="o">=</span> <span class="mi">0</span>
-                    <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">None</span>
+                    <span class="n">param_msg</span><span class="p">,</span> <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
                     <span class="n">in_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="n">in_lds</span><span class="p">)</span>
 
                     <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span>
@@ -986,7 +985,7 @@
                     <span class="c1"># Only if all incoming messages contain parameters should we combine the parameters</span>
                     <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
                         <span class="n">param_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">)</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">)</span>
-                        <span class="n">new_param</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">param_msgs</span><span class="p">)</span><span class="o">.</span><span class="n">parameter</span>
+                        <span class="n">param_msg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">param_msgs</span><span class="p">)</span>
 
                     <span class="c1"># If any incoming message contains particles, we should proceed to combine them</span>
                     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
@@ -1017,9 +1016,15 @@
                             <span class="n">candidate_msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">surrogate_msg</span><span class="p">)</span>
 
                         <span class="c1"># Combine messages</span>
-                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">candidate_msgs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">candidate_msgs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-                            <span class="n">out_msg</span> <span class="o">+=</span> <span class="n">msg</span>
+                        <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">candidate_msgs</span><span class="p">)</span>
+
+                    <span class="c1"># Compose components</span>
+                    <span class="k">if</span> <span class="n">param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ptcl_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">param_msg</span><span class="p">,</span> <span class="n">ptcl_msg</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">param_msg</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">ptcl_msg</span>
 
                 <span class="c1"># Cache result</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">in_lds</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_msg</span>

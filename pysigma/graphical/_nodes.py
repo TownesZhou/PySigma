@@ -673,6 +673,8 @@ class WMVN(VariableNode):
         Raises
         ------
         AssertionError
+            If found that not all incoming messages contain either parameter or particles, or both.
+        AssertionError
             If the ``MessageType.Particles`` type messages in the incoming links do not share the same particles
             (including particle value tensors and/or particle log sampling density tensors)
 
@@ -687,25 +689,46 @@ class WMVN(VariableNode):
         -----
         Following combination procedure is carried out to conform to the standard of all inference methods
 
-        1. If all messages are of type ``MessageType.Parameter`` or ``MessageType.Both``, i.e., all containing parameters,
-           then the default combination behavior is to take the sum over all the parameters. The assumption made here is
-           that these parameters reside in some parameter vector space, and that the addition operation is well-defined.
-           See :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more
-           details.
+        1. If incoming messages all contains parameter, then these parameters will be combined. The outgoing message
+           will contain the combined parameter. Otherwise if any incoming message does not contain parameter, this
+           procedure will not be performed and the outgoing message will not contain parameter, but rather a combined
+           particle list will be computed. See the followings.
 
-           The parameter representation of distributions is given a higher priority than the particle representation.
-           Therefore, in this case, the particles in ``MessageType.Both`` type message would be discarded by calling
-           `reduce_type()` method on the message.
+           For the parameter message combination procedure and accompanying assumptions, see
+           :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more details.
 
-        2. If there exists ``MessageType.Particles`` type incoming message, meaning that it contains only particles:
+        2. If any incoming message also contains particles, then it is imperative that all such messages contain the
+           same particle values as well as particle log sampling densities. The particle weights will be gathered from
+           these messages and combined. For all other parameter messages that only contain parameters, the particles
+           from these particles messages will be used as the surrogate particles to generate a particle message as
+           approximation, which will take part in the particles combination procedure.
 
-           a. Find all messages of such type, and ensure that their particles are homogeneous.
-           b. If there are other ``MessageType.Parameter`` or ``MessageType.Both`` type messages, then the particles in
-              above messages will be borrowed as the surrogate particles, and be importance weighted w.r.t. the distribution
-              parameter to form a ``MessageType.Particles`` type message.
-           c. As all message now possess particles as representation for the distributions, the combination will be taken
-              by taking the element-wise multiplication of the weight tensors with normalization. See
-              :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more details.
+        In short, here is a summary listing the correspondence between incoming message types and outgoing message
+        types:
+
+        +----------------------------------+--------------------------+
+        |   Incoming Message Types         |    Outgoing Message Type |
+        +==================================+==========================+
+        |   Parameter                      |    Parameter             |
+        +----------------------------------+--------------------------+
+        |   Particles                      |    Particles             |
+        +----------------------------------+--------------------------+
+        |   Both                           |    Both                  |
+        +----------------------------------+--------------------------+
+        |   Parameter + Particles          |    Particles             |
+        +----------------------------------+--------------------------+
+        |   Parameter + Both               |    Both                  |
+        +----------------------------------+--------------------------+
+        |   Particles + Both               |    Particles             |
+        +----------------------------------+--------------------------+
+        |   Parameter + Particles + Both   |    Particles             |
+        +----------------------------------+--------------------------+
+
+        Or, logically speaking, the outgoing message will contain particles if **any** incoming message also contains
+        particles, but it will contain parameter only if **all** incoming messages contain parameters.
+
+        Note that in any case, incoming message can not be ``MessageType.Undefined`` type, in which case an exception
+        will be raised.
 
         When combining messages, will exclude message from the link to which the combined message is to send to (if
         such a bidirected link exists). This implements the Sum-Product algorithm's variable node semantics, if
@@ -713,8 +736,6 @@ class WMVN(VariableNode):
 
         Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
         share the same set of incoming links that provide the messages, previously computed result will be reused
-
-
         """
         super(WMVN, self).compute()
         # Relay message if only one incoming link
@@ -745,12 +766,26 @@ class WMVN(VariableNode):
                     out_msg = self._cache[in_lds]
                 # Otherwise, compute combined message
                 else:
+                    param_msg, ptcl_msg = None, None
                     in_msgs = tuple(in_ld.read() for in_ld in in_lds)
-                    # 1. Find if there's any Particles message
-                    if any(msg.type is MessageType.Particles for msg in in_msgs):
+
+                    assert all(MessageType.Parameter in msg.type or MessageType.Particles in msg.type
+                               for msg in in_msgs), \
+                        "At {}: Expect all incoming messages to contain either parameter or particles, or both, but " \
+                        "the types of the incoming messages are: {}"\
+                        .format(self.name, list(msg.type for msg in in_msgs))
+
+                    # Only if all incoming messages contain parameters should we combine the parameters
+                    if all(MessageType.Parameter in msg.type for msg in in_msgs):
+                        param_msgs = tuple(msg.reduce_type(MessageType.Parameter) for msg in in_msgs)
+                        param_msg = sum(param_msgs)
+
+                    # If any incoming message contains particles, we should proceed to combine them
+                    if any(MessageType.Particles in msg.type for msg in in_msgs):
                         # 1.a. Ensure all particle lists are homogeneous
-                        particle_msgs = tuple(msg for msg in in_msgs if msg.type is MessageType.Particles)
-                        particle_lds = tuple(ld for ld in in_lds if ld.read().type is MessageType.Particles)
+                        particle_msgs = tuple(msg.reduce_type(MessageType.Particles) for msg in in_msgs
+                                              if MessageType.Particles in msg.type)
+                        particle_lds = tuple(ld for ld in in_lds if MessageType.Particles in ld.read().type)
                         tmp_msg, tmp_ld = particle_msgs[0], particle_lds[0]
                         assert isinstance(tmp_msg, Message)
                         for msg, in_ld in zip(particle_msgs, particle_lds):
@@ -761,9 +796,9 @@ class WMVN(VariableNode):
                                 "message from linkdata '{}'" \
                                 .format(self.name, in_ld, tmp_ld)
 
-                        # 1.b Find message that contains parameter. If they exist, use the particles from the above
+                        # 1.b Find message that only contains parameter. If they exist, use the particles from the above
                         # messages as surrogate particle list and query its log prob w.r.t. the parameter.
-                        param_msgs = tuple(msg for msg in in_msgs if MessageType.Parameter in msg.type)
+                        param_msgs = tuple(msg for msg in in_msgs if MessageType.Particles not in msg.type)
                         particles = tmp_msg.particles
 
                         # 2.b Compute particle weights w.r.t. distributions induced by the Parameter type messages
@@ -774,15 +809,15 @@ class WMVN(VariableNode):
                             candidate_msgs.append(surrogate_msg)
 
                         # Combine messages
-                        out_msg = candidate_msgs[0]
-                        for msg in candidate_msgs[1:]:
-                            out_msg += msg
+                        ptcl_msg = sum(candidate_msgs)
 
-                    # 2. Otherwise all messages are Parameter type
+                    # Compose components
+                    if param_msg is not None and ptcl_msg is not None:
+                        out_msg = Message.compose(param_msg, ptcl_msg)
+                    elif param_msg is not None:
+                        out_msg = param_msg
                     else:
-                        out_msg = in_msgs[0]
-                        for msg in in_msgs[1:]:
-                            out_msg += msg
+                        out_msg = ptcl_msg
 
                 # Cache result
                 self._cache[in_lds] = out_msg
@@ -1014,12 +1049,11 @@ class LTMFN(FactorNode):
 
 
 class PBFN(FactorNode):
-    """
-        Perception Buffer Factor Node.
+    """Perception Buffer Factor Node.
 
-        Receive perception / observation / evidence as particle list and send to WMVN.
-            Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
-            in the caller of set_perception()
+    Receives perception / observation / evidence as particle list from `perceive()` and send particles message to WMVN.
+        Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
+        in the caller of set_perception()
 
         Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.
 
