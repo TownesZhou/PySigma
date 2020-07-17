@@ -1837,6 +1837,8 @@ class Message:
                           batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
                           particles=new_particles, weight=new_weight, log_densities=new_densities, **self.attr)
 
+        return new_msg
+
 
 
 # TODO: Enum class of all the inference method
