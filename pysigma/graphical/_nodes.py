@@ -1052,56 +1052,62 @@ class PBFN(FactorNode):
     """Perception Buffer Factor Node.
 
     Receives perception / observation / evidence as particle list from `perceive()` and send particles message to WMVN.
-        Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
-        in the caller of set_perception()
 
-        Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.
+    Do not support incoming link. Can only have one outgoing link connecting to a WMVN.
 
-        Perception is buffered, and will be latched to next cycle if no new observation is specified.
+    Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the
+    previously buffered observation, a ``None`` observation needs to be perceived.
 
-        Overwrite check_quiesce() so that quiescence is determined by self.visited, i.e., whether compute() has been
-            carried out
+    Overwrite `check_quiesce()` so that quiescence is determined by self.visited, i.e., whether `compute()` has been
+    carried out
+
+    Parameters
+    ----------
+    name : str
+        Name of this node
+    event_shape : torch.Size
+        The event shape of any observation / evidence event particles, except for ``None`` observation.
+
+    Attributes
+    ----------
+    buffer : torch.Tensor
+        The perceptual buffer. It is a 2D tensor whose last dimension is the event dimension with size equal to
+        ``self.e_shape``.
+    e_shape : torch.Size
+        Set by `event_shape`.
     """
-    def __init__(self, name):
+    def __init__(self, name, event_shape):
+        assert isinstance(event_shape, torch.Size) and len(event_shape) == 1
         super(PBFN, self).__init__(name)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
-        # Perception buffer
+        # Perceptual buffer
         self.buffer = None
-        self.weights = None
-        self.s_shape = None
-        self.b_shape = None
-        self.e_shape = None
+        self.e_shape = event_shape
 
-    def set_perception(self, obs, weights, num_obs, b_shape, e_shape):
+    def perceive(self, observation=None):
+        """Perceive a new piece of observation / evidence event particles, specified by `observation`. Sets the
+        perceptual buffer.
+
+        This method should be called prior to the decision phase of a cognitive cycle for the perceived observation
+        be sent to downstream nodes during the decision phase.
+
+        Parameters
+        ----------
+        observation : torch.Tensor or None, optional
+            If not ``None``, must be a 2D tensor representing the observation / evidence event particles. Its last
+            dimension is assumed the event dimension and must be equal to the preset ``self.e_shape``. Its first
+            dimension is assumed the sample dimension, whose size indicates the number of events to perceive.
         """
-            Update the perception buffer with new observation tensor. Should be called by the cognitive architecture
-            Need to specify weights corresponding to the observation particles. Sampling log density on the other hand
-                will be set to 0 in the outgoing Particle message.
+        assert observation is None or isinstance(observation, torch.Tensor) and observation.dim() == 2 and \
+            observation.shape[-1:] == self.e_shape
 
-            :param obs:     Observations. torch.Tensor. shape ([num_obs] + b_shape + e_shape)
-            :param weights: Weights. torch.Tensor or int. shape ([num_obs] + b_shape) if tensor, otherwise an int of 1
-                                to indicate uniform weights
-            :param num_obs: torch.Size
-            :param b_shape: torch.Size
-            :param e_shape: torch.Size
-        """
-        assert isinstance(obs, torch.Tensor)
-        assert isinstance(weights, (torch.Tensor, int))
-        assert isinstance(num_obs, int)
-        assert isinstance(b_shape, torch.Size)
-        assert isinstance(e_shape, torch.Size)
-        assert obs.shape == torch.Size([num_obs]) + b_shape + e_shape
-        assert (isinstance(weights, torch.Tensor) and weights.shape == torch.Size([num_obs]) + b_shape) or \
-               (isinstance(weights, int) and weights == 1)
-
-        self.buffer = obs
-        self.weights = weights
-        self.s_shape = torch.Size([num_obs])
-        self.b_shape = b_shape
-        self.e_shape = e_shape
+        self.buffer = observation
 
     def add_link(self, linkdata):
+        """For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.
+
+        """
         # Ensure that no incoming link and only one outgoing link connecting to a WMVN
         assert isinstance(linkdata, LinkData)
         assert not linkdata.to_fn
@@ -1110,6 +1116,13 @@ class PBFN(FactorNode):
         super(PBFN, self).add_link(linkdata)
 
     def compute(self):
+        """Sends the contents in perceptual buffer to the connected WMVN.
+
+        If the perceptual buffer ``self.buffer`` is not ``None``, then a particle message will be generated with
+        ``self.buffer`` as the particle values, a uniform particle weight and a uniform log sampling density. Otherwise,
+        a ``MessageType.Both`` type identity message will be generated
+
+        """
         super(PBFN, self).compute()
         # If no perception has been set in the buffer, then do not send
         if self.buffer is None:

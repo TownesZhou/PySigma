@@ -211,7 +211,7 @@
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span><span class="p">,</span> <span class="n">Transform</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
-<span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="k">import</span> <span class="n">cosine_similarity</span>
+<span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="k">import</span> <span class="n">l1_loss</span>
 <span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">auto</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -330,8 +330,9 @@
 <span class="sd">    ----------</span>
 <span class="sd">    msg_type : {``MessageType.Undefined``, ``MessageType.Parameter``, ``MessageType.Particles``, ``MessageType.Both``}</span>
 <span class="sd">        The type of this message.</span>
-<span class="sd">    batch_shape : torch.Size</span>
-<span class="sd">        The size of the batch dimensions. Must be a shape of **at least** length 1.</span>
+<span class="sd">    batch_shape : torch.Size, optional</span>
+<span class="sd">        The size of the batch dimensions. Must specify and be a shape of **at least** length 1, unless the message is</span>
+<span class="sd">        representing an identity. See `Notes` section below for more details on identity message.</span>
 <span class="sd">    param_shape : torch.Size, optional</span>
 <span class="sd">        The size of the parameter dimension of `parameter`. Must specify if `msg_type` is ``MessageType.Parameter`` with</span>
 <span class="sd">        a length of **exactly** 1. Default to an empty shape ``torch.Size([])``.</span>
@@ -346,23 +347,26 @@
 <span class="sd">    parameter : torch.Tensor or an int of 0, optional</span>
 <span class="sd">        The parameter tensor to the batch of distributions this message is encoding. Must specify if the message type is</span>
 <span class="sd">        ``MessageType.Parameter``. A torch.Tensor of shape ``batch_shape + param_shape`` if the parameters do not</span>
-<span class="sd">        represent the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity.</span>
-<span class="sd">        Default to an int of 0.</span>
+<span class="sd">        represent the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity,</span>
+<span class="sd">        in which case it is not necessary to specify `batch_shape`. Default to an int of 0.</span>
 <span class="sd">    particles : iterable of torch.Tensor, optional</span>
 <span class="sd">        The list of particles representing events w.r.t. each random variable respectively whose collective joint</span>
-<span class="sd">        distribution this message is encoding. Must specify if the message type is ``MessageType.Particles``. The jth</span>
+<span class="sd">        distribution this message is encoding. Must specify if the message type is ``MessageType.Particles``, unless</span>
+<span class="sd">        `weight` is 1, in which case the message represents a universal identity in the particles space. The jth</span>
 <span class="sd">        entry of the iterable should have shape ``sample_shape[j] + event_shape[j]``.</span>
-<span class="sd">    weights : torch.Tensor or an int of 1, optional</span>
+<span class="sd">    weight : torch.Tensor or an int of 1, optional</span>
 <span class="sd">        The importance weight tensor that, when multiplied with the exponential of the cross product of the log sampling</span>
 <span class="sd">        densities in `log_densities`, yields the pdf of each combined particle w.r.t. the target distribution that this</span>
 <span class="sd">        message is encoding. Must specify if the message type is ``MessageType.Particles``. If the weights are</span>
 <span class="sd">        non-uniform, must be a **positively valued** tensor of shape ``batch_shape + sample_shape``. The supplied tensor</span>
 <span class="sd">        will be normalized during initialization so that it sums to 1 across the subspace spanned by the sample</span>
-<span class="sd">        dimensions. Alternatively, can be an int of 1 to specify the uniform weight. Default to 1.</span>
+<span class="sd">        dimensions. Alternatively, can be an int of 1 to specify the identity (uniform weight), in which case it is not</span>
+<span class="sd">        necessary to specify `batch_shape`. Default to 1.</span>
 <span class="sd">    log_densities : iterable of torch.Tensor, optional</span>
 <span class="sd">        The jth entry in the iterable represents the log pdf of the jth particle in `particles` w.r.t. the (marginal)</span>
 <span class="sd">        sampling distribution from which the jth particle was originally drawn. Must specify if the message type is</span>
-<span class="sd">        ``MessageType.Particles``. The jth entry must have shape ``sample_shape[j]``.</span>
+<span class="sd">        ``MessageType.Particles``, unless `weight` is 1, in which case the message represents a universal identity in</span>
+<span class="sd">        the particles space. The jth entry must have shape ``sample_shape[j]``.</span>
 <span class="sd">    **kwargs</span>
 <span class="sd">        Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is</span>
 <span class="sd">        cloned. Note that any `dist_info` required by DistributionServer regarding the specification of the parameters</span>
@@ -388,6 +392,8 @@
 <span class="sd">        Particle weight tensor</span>
 <span class="sd">    log_densities : list of torch.Tensor or None</span>
 <span class="sd">        Tuple of particles log sampling tensors</span>
+<span class="sd">    num_rvs : int</span>
+<span class="sd">        The number of random variables. Inferred from the length of `particles`.</span>
 <span class="sd">    attr : dict</span>
 <span class="sd">        Miscellaneous optional attributes, specified by **kwargs in the constructor.</span>
 
@@ -453,8 +459,8 @@
 
 <span class="sd">        * The following two operations are defined as operations on the particle weights, and meaningful only</span>
 <span class="sd">          for Particle messages that share the same particle values and the same sampling log densities of the</span>
-<span class="sd">          particles. In addition, results from these two operations are normalized so that the weight tensor</span>
-<span class="sd">          sums to 1 across the sample dimensions.</span>
+<span class="sd">          particles, **except for the message that represents particle identity** (See more below). In addition, results</span>
+<span class="sd">          from these two operations are normalized so that the weight tensor sums to 1 across the sample dimensions.</span>
 <span class="sd">        * *Addition* operation is defined as element-wise multiplication of particle weights tensors, up to a</span>
 <span class="sd">          normalization factor.</span>
 <span class="sd">        * *Scalar Multiplication* is defined as taking elements of the particle weights tensor to the power</span>
@@ -464,16 +470,27 @@
 <span class="sd">          to consider the log quotient space over one dimension, which reduces to standard real space with one less</span>
 <span class="sd">          dimension.</span>
 
+<span class="sd">    Regarding the identity messages:</span>
+
+<span class="sd">    * The ``MessageType.Parameter`` type identity message is one whose ``parameter`` field is 0.</span>
+<span class="sd">    * The ``MessageType.Particles`` type identity message is one whose ``weight`` field is 1, **regardless of its</span>
+<span class="sd">      particle values ``particles`` or sampling log densities ``log_densities``.</span>
+<span class="sd">    * The ``MessageType.Both`` type identity message is the composition of the above two identity messages.</span>
+
 <span class="sd">    Accordingly, the &#39;+&#39; and &#39;*&#39; operator are overloaded according the to the specifications above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">,</span>
-                 <span class="n">batch_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span> <span class="n">event_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span>
+                 <span class="n">batch_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span>
+                 <span class="n">param_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span> <span class="n">event_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span>
                  <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">particles</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg_type</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="s2">&quot;`param_shape` must be a torch.Size of length at most 1. Found </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_shape</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_shape</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_shape</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">),</span> \
+            <span class="s2">&quot;`sample_shape` and `event_shape` must both be torch.Size with the same length. Found &quot;</span> \
+            <span class="s2">&quot;(sample_shape, event_shape) = (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">)</span>
 
         <span class="k">assert</span> <span class="n">parameter</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">particles</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span>
@@ -497,28 +514,55 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span> <span class="o">=</span> <span class="n">param_shape</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">sample_shape</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">event_shape</span>
+        <span class="c1"># Number of random variabels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
 
         <span class="c1"># Check whether necessary arguments are provided</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+                <span class="s2">&quot;For a Parameter message, the length of the parameter shape must be exactly 1. Found param_shape = </span><span class="si">{}</span><span class="s2">&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+                <span class="s2">&quot;Must specify `parameter` for a Parameter message.&quot;</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> \
+                <span class="s2">&quot;For a Particles message, the length of the sample / event shape must be at least 1. Found &quot;</span> \
+                <span class="s2">&quot;sample_shape = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span>
+            <span class="c1"># does not care whether particles is specified if it&#39;s a particles identity</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+                <span class="s2">&quot;Must specify the particle values tensor via `particles` for a Particles message, unless the message &quot;</span> \
+                <span class="s2">&quot;represents the identity.&quot;</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+                <span class="s2">&quot;Must specify the particle weight tensor via `weight` for a Particles message, unless the message &quot;</span> \
+                <span class="s2">&quot;represents the identity.&quot;</span>
+            <span class="c1"># similarly does not care if it&#39;s identity</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+                <span class="s2">&quot;Must specify the particles log density tensor via `log_densities` for a Particles message, unless &quot;</span> \
+                <span class="s2">&quot;the message represents the identity.&quot;</span>
 
         <span class="c1"># Check shape and values. Adjust if necessary</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># Parameter tensor should have shape (b_shape + p_shape)</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">shape</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> \
+                <span class="s2">&quot;When specified, the parameter tensor should have shape (batch_shape + param_shape). Expect </span><span class="si">{}</span><span class="s2">, but &quot;</span> \
+                <span class="s2">&quot;instead found </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># jth particle tensor should have shape (s_shape[j] + e_shape[j])</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span>
-            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="o">==</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> \
+                <span class="s2">&quot;When specified, the number of entries in the iterable `particles` must equal to the length of &quot;</span> \
+                <span class="s2">&quot;`sample_shape` and `event_shape`. Expect </span><span class="si">{}</span><span class="s2">, but instead found </span><span class="si">{}</span><span class="s2"> entries.&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="o">==</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span>
+                       <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)),</span> \
+                <span class="s2">&quot;When specified, The j-th particle tensor specified in the iterable `particles` should have shape &quot;</span> \
+                <span class="s2">&quot;(sample_shape[j] + event_shape[j]). Expect shapes </span><span class="si">{}</span><span class="s2">, but instead found particle tensor shapes </span><span class="si">{}</span><span class="s2">.&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)),</span>
+                        <span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">))</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
             <span class="c1"># Weights tensor should have shape (b_shape + s_shape)</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> \
+                <span class="s2">&quot;When specified, the particles weight should have shape (batch_shape + sample_shape). Expect </span><span class="si">{}</span><span class="s2">, but &quot;</span> \
+                <span class="s2">&quot;intead found </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
             <span class="c1"># Check that values are non-negative</span>
             <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;Found negative values in particle weights. Minimum value: </span><span class="si">{}</span><span class="s2">&quot;</span> \
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">))</span>
@@ -527,8 +571,33 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">sample_dims</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># jth log density tensor vector should have shape (s_shape[j])</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span>
-            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="o">==</span> <span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">,</span> \
+                <span class="s2">&quot;When specified, the iterable `log_densities` must have the same number of entries as `particles`. &quot;</span> \
+                <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> entries in `particles`, but </span><span class="si">{}</span><span class="s2"> entries in `log_densities`&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="o">==</span> <span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)),</span> \
+                <span class="s2">&quot;When specified, the j-th log density tensor specified in the iterable `log_densities` should have &quot;</span> \
+                <span class="s2">&quot;shape (sample_shape[j]). Expect shapes </span><span class="si">{}</span><span class="s2">, but instead found log density tensor shapes </span><span class="si">{}</span><span class="s2">.&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)),</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">))</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Member properties</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">isid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Whether `self` is an identity message.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">)</span> <span class="ow">and</span> \
+               <span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> \
+               <span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Shape of the message. Equivalent to calling size()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overload arithmetic operators</span>
@@ -549,14 +618,20 @@
 <span class="sd">        ``MessageType.Undefined``, and in any case a ``MessageType.Undefined`` type message cannot be added.</span>
 
 <span class="sd">        There are more restrictions for ``MessageType.Particles`` type messages. Messages of such type can only be</span>
-<span class="sd">        added together if their ``particles`` and ``log_densities`` fields are equal.</span>
+<span class="sd">        added together if their ``particles`` and ``log_densities`` fields are equal, unless one (or both) is the</span>
+<span class="sd">        identity Particles message.</span>
 
 <span class="sd">        If two messages with compatible but not identical types are added together, the resulting message will have the</span>
 <span class="sd">        smaller type, meaning only the common components will be added. For example, the result of adding a</span>
 <span class="sd">        ``MessageType.Parameter`` type message with a ``MessageType.Both`` type message is a ``MessageType.Parameter``</span>
-<span class="sd">        type message.</span>
+<span class="sd">        type message. But if two ``MessageType.Both`` type messages are added, the resulting message will also have</span>
+<span class="sd">        type ``MessageType.Both``, containing both parameter and particles components.</span>
 
-<span class="sd">        All contents are first cloned before taking the operations and returning the result.</span>
+<span class="sd">        Note that the identity messages (Parameter message with ``parameter == 0``, Particles message with</span>
+<span class="sd">        ``weight == 1``, or Both message with both conditions) are assumed universal, i.e., they can be added with</span>
+<span class="sd">        any other message that has a compatible type but may or may not have a compatible shape. The resulting message</span>
+<span class="sd">        will be the other message itself. If both `self` and `other` are identity messages, the returning message will</span>
+<span class="sd">        be the identity message with the larger type.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -576,7 +651,8 @@
 <span class="sd">        AssertionError</span>
 <span class="sd">            If either `self` or `other`&#39;s message type is ``MessageType.Undefined``.</span>
 <span class="sd">        AssertionError</span>
-<span class="sd">            If contents of `self` and `other` have conflicting shapes.</span>
+<span class="sd">            If contents of `self` and `other` have conflicting shapes, when both `self` and `other` are not identity</span>
+<span class="sd">            messages.</span>
 <span class="sd">        AssertionError</span>
 <span class="sd">            If `self` and `other` have particles message contents to be added, but their particle values do not match,</span>
 <span class="sd">            or their log sampling density tensors do not match.</span>
@@ -600,6 +676,17 @@
         <span class="k">assert</span> <span class="n">s_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Undefined</span><span class="p">,</span> \
             <span class="s2">&quot;Message of undefined type cannot be added. First operand has type &#39;</span><span class="si">{}</span><span class="s2">&#39;, while the second one has type &quot;</span> \
             <span class="s2">&quot;&#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+
+        <span class="c1"># Check if either self or other is an identity message. If so, return the other message directly.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">other</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">other</span>
+        <span class="k">elif</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
 
         <span class="n">param_msg</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="kc">None</span>
@@ -668,6 +755,8 @@
 
 <span class="sd">        Message of type ``MessageType.Undefined`` cannot be scalar multiplied.</span>
 
+<span class="sd">        If `self` is an identity message, returns `self` unchanged directly.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        other : int, float, or torch.Tensor</span>
@@ -696,6 +785,10 @@
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Undefined</span><span class="p">,</span> \
             <span class="s2">&quot;Message of undefined type cannot be scalar multiplied. The message has type &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span> \
             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+
+        <span class="c1"># If self is identity, return directly.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
 
         <span class="c1"># Expand scalar tensor dimension if it is a batched scalars</span>
         <span class="n">b_p_other</span> <span class="o">=</span> <span class="n">other</span>
@@ -775,6 +868,8 @@
         <span class="sd">&quot;&quot;&quot;Composes a ``MessageType.Particles`` message with a ``MessageType.Parameters`` message to return a</span>
 <span class="sd">        ``MessageType.Both`` message that contain all components from both messages.</span>
 
+<span class="sd">        Both `msg1` and `msg2` cannot be identity messages.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        msg1 : Message</span>
@@ -802,6 +897,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg1</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg2</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
         <span class="k">assert</span> <span class="p">{</span><span class="n">msg1</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">msg2</span><span class="o">.</span><span class="n">type</span><span class="p">}</span> <span class="o">==</span> <span class="p">{</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">}</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">msg1</span><span class="o">.</span><span class="n">isid</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">msg2</span><span class="o">.</span><span class="n">isid</span><span class="p">,</span> \
+            <span class="s2">&quot;`msg1` and `msg2` both cannot be identity messages when composing new messages.&quot;</span>
 
         <span class="n">param_msg</span> <span class="o">=</span> <span class="n">msg1</span> <span class="k">if</span> <span class="n">msg1</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="k">else</span> <span class="n">msg2</span>
         <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="n">msg1</span> <span class="k">if</span> <span class="n">msg1</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="k">else</span> <span class="n">msg2</span>
@@ -849,7 +946,12 @@
 
 <span class="sd">        .. note::</span>
 
-<span class="sd">           Will always return ``False`` if `self` or `other` does not have particles.</span>
+<span class="sd">           Will always return ``False`` if `self` or `other` is not Particles message.</span>
+
+<span class="sd">        .. note::</span>
+
+<span class="sd">           Will always return ``True`` if both `self` and `other` are Particles message and one (or both) is the</span>
+<span class="sd">           identity.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -862,8 +964,14 @@
 <span class="sd">            True if `self` has the same particles as the `other` message.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> \
-                <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">s_shape</span><span class="p">):</span>
+        <span class="c1"># Return False is message is not event Particles message</span>
+        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># Return True if one is the identity</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="c1"># Otherwise, if number of random variables are different, return False directly</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="n">same</span> <span class="o">=</span> <span class="kc">True</span>
@@ -892,7 +1000,7 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        torch.Tensor</span>
+<span class="sd">        torch.Tensor or 0</span>
 <span class="sd">            The batch average L2 distance.</span>
 
 <span class="sd">        Raises</span>
@@ -907,6 +1015,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">and</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span>
+
+        <span class="c1"># Returns 0 if both are identity</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
         <span class="c1"># Parameter has shape (batch_shape, param_shape), with param_shape of exactly length one</span>
         <span class="n">diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">val</span> <span class="o">=</span> <span class="n">diff</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
@@ -915,10 +1028,7 @@
 <div class="viewcode-block" id="Message.diff_weight"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.diff_weight">[docs]</a>    <span class="k">def</span> <span class="nf">diff_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute the difference between the weight of `self` and `other`.</span>
 
-<span class="sd">        Returns a batch average cosine_similarity between the two weight tensors. Since weights have shape</span>
-<span class="sd">        ``(batch_shape, weight_shape)``, with ``weight_shape`` of perhaps more than length 1, the weight tensors are</span>
-<span class="sd">        first flattened across the sample shape, then the cosine_similarity is calculated across the flattened</span>
-<span class="sd">        dimension.</span>
+<span class="sd">        Returns a mean element-wise absolute value difference between the two weight tensors.</span>
 
 <span class="sd">        Note that calculating the difference of weights only makes sense if both messages have the *same* particle value</span>
 <span class="sd">        tensors and particle log sampling density tensors. Therefore, `same_particles_as()` will first be called for a</span>
@@ -931,7 +1041,7 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        torch.Tensor</span>
+<span class="sd">        torch.Tensor or 0</span>
 <span class="sd">            The batch average cosine similarity.</span>
 
 <span class="sd">        Raises</span>
@@ -949,10 +1059,15 @@
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">and</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">same_particles_as</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
-        <span class="c1"># weights have shape (batch_shape, weight_shape). Flatten weight_shape</span>
-        <span class="n">x1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
-        <span class="n">x2</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="c1"># Returns 0 if both are identity</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="c1"># If one is identity, create a uniform weight tensor of the same size as the other message&#39;s weight tensor</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span> <span class="o">/</span> <span class="n">other</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">weight</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+        <span class="n">val</span> <span class="o">=</span> <span class="n">l1_loss</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">val</span></div>
 
 <div class="viewcode-block" id="Message.reduce_type"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.reduce_type">[docs]</a>    <span class="k">def</span> <span class="nf">reduce_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">):</span>
@@ -1740,7 +1855,10 @@
 
 <span class="sd">        `self` contents will be cloned before being passed to the transformed message.</span>
 
-<span class="sd">        For particles:</span>
+<span class="sd">        For now, only Particles message support transformations. `reduce_type()` will first be called to eliminate the</span>
+<span class="sd">        parameter components before performing the transformation.</span>
+
+<span class="sd">        The adjustment made to the particle values and log sampling densities:</span>
 
 <span class="sd">        * Apply the transformation directly on the particle tensors in ``self.particles``.</span>
 <span class="sd">        * Log sampling density tensors in ``self.log_densities`` will be adjusted by adding the log absolute determinant</span>
@@ -1749,12 +1867,6 @@
 <span class="sd">             log P(Y) = log P(X) + log |det (dX / dY)|</span>
 
 <span class="sd">        * Weights are kept the same, but the tensor will be cloned.</span>
-
-<span class="sd">        For parameters:</span>
-
-<span class="sd">        * ``&quot;dist_info&quot;`` -keyed attribute must be present in ``self.attr`` to inform `DistributionServer` of the</span>
-<span class="sd">          attribute of the distribution parameter.</span>
-<span class="sd">        * Query `DistributionServer` to obtained the transformed parameter.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1776,24 +1888,21 @@
 <span class="sd">        `torch.distributions.Transform &lt;https://pytorch.org/docs/stable/distributions.html#torch.distributions.transforms.Transform&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="n">Transform</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span>
 
-        <span class="c1"># First clone</span>
-        <span class="n">cloned_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-        <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">parameter</span>
+        <span class="c1"># First clone and reduce</span>
+        <span class="n">cloned_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">)</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span>
         <span class="n">new_log_densities</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_densities</span>
 
-        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="s1">&#39;dist_info&#39;</span> <span class="ow">in</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">,</span> \
-                <span class="s2">&quot;Missing &#39;dist_info&#39; message attribute when transforming a message that contains parameters.&quot;</span>
-            <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">transform_param</span><span class="p">(</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;dist_info&#39;</span><span class="p">],</span> <span class="n">trans</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="n">new_particles</span> <span class="o">=</span> <span class="n">trans</span><span class="p">(</span><span class="n">new_particles</span><span class="p">)</span>
-            <span class="n">new_log_densities</span> <span class="o">+=</span> <span class="n">trans</span><span class="o">.</span><span class="n">log_abs_det_jacobian</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">)</span>
+        <span class="n">new_particles</span> <span class="o">=</span> <span class="n">trans</span><span class="p">(</span><span class="n">new_particles</span><span class="p">)</span>
+        <span class="n">new_log_densities</span> <span class="o">+=</span> <span class="n">trans</span><span class="o">.</span><span class="n">log_abs_det_jacobian</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="n">cloned_msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+                          <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span>
+                          <span class="n">sample_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">particles</span><span class="o">=</span><span class="n">new_particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+                          <span class="n">log_densities</span><span class="o">=</span><span class="n">new_log_densities</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.event_reweight"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_reweight">[docs]</a>    <span class="k">def</span> <span class="nf">event_reweight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_log_prob</span><span class="p">):</span>
@@ -1953,9 +2062,11 @@
         <span class="sd">&quot;&quot;&quot;Concatenate the particle events corresponding to the event dimensions specified by `cat_event_dims`. The new</span>
 <span class="sd">        concatenated events will be placed at `target_event_dim` dimension.</span>
 
-<span class="sd">        To concatenate events means to 1) combinatorially concatenate the particle value tensors, 2) to take the</span>
-<span class="sd">        cross product of associated marginal sampling density tensors and flatten it, 3) reshape the weight tensor</span>
-<span class="sd">        into correct flattened shape.</span>
+<span class="sd">        To concatenate events means to</span>
+
+<span class="sd">        1. combinatorially concatenate the particle value tensors,</span>
+<span class="sd">        2. take the cross product of associated marginal sampling density tensors and flatten it,</span>
+<span class="sd">        3. reshape the weight tensor into correct flattened shape.</span>
 
 <span class="sd">        Note that the event dimensions will be concatenated in the order given by `cat_event_dims`.</span>
 
@@ -2028,17 +2139,19 @@
 
         <span class="c1"># Reshape weight tensor into correct flattened shape</span>
         <span class="c1"># First permute cat_event_dims to the last dimensions</span>
-        <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>        <span class="c1"># of shape (b_shape + sample_shape)</span>
-        <span class="n">b_cat_event_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">)</span>      <span class="c1"># Account for batch dims at front</span>
-        <span class="n">b_target_event_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">target_event_dim</span>
-        <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">b_cat_event_dims</span><span class="p">:</span>
-            <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">())</span> <span class="k">if</span> <span class="n">d</span> <span class="o">!=</span> <span class="n">dim</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">dim</span><span class="p">]</span>
-            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">):]</span> <span class="o">==</span> <span class="n">cat_s_shape</span>
-        <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">]))</span>     <span class="c1"># flatten</span>
-        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
-        <span class="n">perm_order</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">b_target_event_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>         <span class="c1"># Permute flattened dims to target_event_dim</span>
+        <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="c1"># of shape (b_shape + sample_shape)</span>
+            <span class="n">b_cat_event_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">)</span>      <span class="c1"># Account for batch dims at front</span>
+            <span class="n">b_target_event_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">target_event_dim</span>
+            <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">b_cat_event_dims</span><span class="p">:</span>
+                <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">())</span> <span class="k">if</span> <span class="n">d</span> <span class="o">!=</span> <span class="n">dim</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">dim</span><span class="p">]</span>
+                <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">):]</span> <span class="o">==</span> <span class="n">cat_s_shape</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">]))</span>     <span class="c1"># flatten</span>
+            <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">perm_order</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">b_target_event_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>         <span class="c1"># Permute flattened dims to target_event_dim</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
                           <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">new_s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="n">new_e_shape</span><span class="p">,</span>

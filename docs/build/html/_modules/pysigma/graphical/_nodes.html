@@ -1259,56 +1259,62 @@
     <span class="sd">&quot;&quot;&quot;Perception Buffer Factor Node.</span>
 
 <span class="sd">    Receives perception / observation / evidence as particle list from `perceive()` and send particles message to WMVN.</span>
-<span class="sd">        Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level</span>
-<span class="sd">        in the caller of set_perception()</span>
 
-<span class="sd">        Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.</span>
+<span class="sd">    Do not support incoming link. Can only have one outgoing link connecting to a WMVN.</span>
 
-<span class="sd">        Perception is buffered, and will be latched to next cycle if no new observation is specified.</span>
+<span class="sd">    Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the</span>
+<span class="sd">    previously buffered observation, a ``None`` observation needs to be perceived.</span>
 
-<span class="sd">        Overwrite check_quiesce() so that quiescence is determined by self.visited, i.e., whether compute() has been</span>
-<span class="sd">            carried out</span>
+<span class="sd">    Overwrite `check_quiesce()` so that quiescence is determined by self.visited, i.e., whether `compute()` has been</span>
+<span class="sd">    carried out</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this node</span>
+<span class="sd">    event_shape : torch.Size</span>
+<span class="sd">        The event shape of any observation / evidence event particles, except for ``None`` observation.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    buffer : torch.Tensor</span>
+<span class="sd">        The perceptual buffer. It is a 2D tensor whose last dimension is the event dimension with size equal to</span>
+<span class="sd">        ``self.e_shape``.</span>
+<span class="sd">    e_shape : torch.Size</span>
+<span class="sd">        Set by `event_shape`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Perceptual Buffer Function Node&quot;</span>
 
-        <span class="c1"># Perception buffer</span>
+        <span class="c1"># Perceptual buffer</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">event_shape</span>
 
-<div class="viewcode-block" id="PBFN.set_perception"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.set_perception">[docs]</a>    <span class="k">def</span> <span class="nf">set_perception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">num_obs</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Update the perception buffer with new observation tensor. Should be called by the cognitive architecture</span>
-<span class="sd">            Need to specify weights corresponding to the observation particles. Sampling log density on the other hand</span>
-<span class="sd">                will be set to 0 in the outgoing Particle message.</span>
+<div class="viewcode-block" id="PBFN.perceive"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.perceive">[docs]</a>    <span class="k">def</span> <span class="nf">perceive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perceive a new piece of observation / evidence event particles, specified by `observation`. Sets the</span>
+<span class="sd">        perceptual buffer.</span>
 
-<span class="sd">            :param obs:     Observations. torch.Tensor. shape ([num_obs] + b_shape + e_shape)</span>
-<span class="sd">            :param weights: Weights. torch.Tensor or int. shape ([num_obs] + b_shape) if tensor, otherwise an int of 1</span>
-<span class="sd">                                to indicate uniform weights</span>
-<span class="sd">            :param num_obs: torch.Size</span>
-<span class="sd">            :param b_shape: torch.Size</span>
-<span class="sd">            :param e_shape: torch.Size</span>
+<span class="sd">        This method should be called prior to the decision phase of a cognitive cycle for the perceived observation</span>
+<span class="sd">        be sent to downstream nodes during the decision phase.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        observation : torch.Tensor or None, optional</span>
+<span class="sd">            If not ``None``, must be a 2D tensor representing the observation / evidence event particles. Its last</span>
+<span class="sd">            dimension is assumed the event dimension and must be equal to the preset ``self.e_shape``. Its first</span>
+<span class="sd">            dimension is assumed the sample dimension, whose size indicates the number of events to perceive.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_obs</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">num_obs</span><span class="p">])</span> <span class="o">+</span> <span class="n">b_shape</span> <span class="o">+</span> <span class="n">e_shape</span>
-        <span class="k">assert</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">weights</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">num_obs</span><span class="p">])</span> <span class="o">+</span> <span class="n">b_shape</span><span class="p">)</span> <span class="ow">or</span> \
-               <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">weights</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">observation</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">observation</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">observation</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> \
+            <span class="n">observation</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">obs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">num_obs</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="n">b_shape</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">e_shape</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">observation</span></div>
 
 <div class="viewcode-block" id="PBFN.add_link"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Ensure that no incoming link and only one outgoing link connecting to a WMVN</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
         <span class="k">assert</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span>
@@ -1317,6 +1323,13 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PBFN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sends the contents in perceptual buffer to the connected WMVN.</span>
+
+<span class="sd">        If the perceptual buffer ``self.buffer`` is not ``None``, then a particle message will be generated with</span>
+<span class="sd">        ``self.buffer`` as the particle values, a uniform particle weight and a uniform log sampling density. Otherwise,</span>
+<span class="sd">        a ``MessageType.Both`` type identity message will be generated</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="c1"># If no perception has been set in the buffer, then do not send</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

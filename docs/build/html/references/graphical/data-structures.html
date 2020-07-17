@@ -351,7 +351,7 @@ variable’s metatype is <code class="docutils literal notranslate"><span class=
 <p>The Message class constitutes the most fundamental data structure in PySigma Graphical Architecture.</p>
 <dl class="py class">
 <dt id="pysigma.defs.Message">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">Message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_type</span></em>, <em class="sig-param"><span class="n">batch_shape</span></em>, <em class="sig-param"><span class="n">param_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">sample_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">event_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">parameter</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">particles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weight</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">log_densities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">Message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_type</span></em>, <em class="sig-param"><span class="n">batch_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">param_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">sample_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">event_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">parameter</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">particles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weight</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">log_densities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message" title="Permalink to this definition">¶</a></dt>
 <dd><p>Message to be propagated between nodes in the graphical architecture.</p>
 <p>The <cite>Message</cite> class is the most fundamental data structure in PySigma that carries the knowledge of a batch of
 distributions to be processed by downstream graphs.</p>
@@ -359,7 +359,8 @@ distributions to be processed by downstream graphs.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg_type</strong> ({<code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>, <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>}) – The type of this message.</p></li>
-<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – The size of the batch dimensions. Must be a shape of <strong>at least</strong> length 1.</p></li>
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the batch dimensions. Must specify and be a shape of <strong>at least</strong> length 1, unless the message is
+representing an identity. See <cite>Notes</cite> section below for more details on identity message.</p></li>
 <li><p><strong>param_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the parameter dimension of <cite>parameter</cite>. Must specify if <cite>msg_type</cite> is <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> with
 a length of <strong>exactly</strong> 1. Default to an empty shape <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>.</p></li>
 <li><p><strong>sample_shape</strong> (<em>torch.Size</em><em>, </em><em>optional</em>) – The size of the sample dimensions of each particle tensor in <cite>particles</cite> respectively in order. Must specify if
@@ -370,20 +371,23 @@ message type is <code class="docutils literal notranslate"><span class="pre">Mes
 empty shape <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>.</p></li>
 <li><p><strong>parameter</strong> (<em>torch.Tensor</em><em> or </em><em>an int of 0</em><em>, </em><em>optional</em>) – The parameter tensor to the batch of distributions this message is encoding. Must specify if the message type is
 <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>. A torch.Tensor of shape <code class="docutils literal notranslate"><span class="pre">batch_shape</span> <span class="pre">+</span> <span class="pre">param_shape</span></code> if the parameters do not
-represent the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity.
-Default to an int of 0.</p></li>
+represent the identity in the parameter vector space. Alternatively, can be an int of 0 to specify the identity,
+in which case it is not necessary to specify <cite>batch_shape</cite>. Default to an int of 0.</p></li>
 <li><p><strong>particles</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>optional</em>) – The list of particles representing events w.r.t. each random variable respectively whose collective joint
-distribution this message is encoding. Must specify if the message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>. The jth
+distribution this message is encoding. Must specify if the message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>, unless
+<cite>weight</cite> is 1, in which case the message represents a universal identity in the particles space. The jth
 entry of the iterable should have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span> <span class="pre">+</span> <span class="pre">event_shape[j]</span></code>.</p></li>
-<li><p><strong>weights</strong> (<em>torch.Tensor</em><em> or </em><em>an int of 1</em><em>, </em><em>optional</em>) – The importance weight tensor that, when multiplied with the exponential of the cross product of the log sampling
+<li><p><strong>weight</strong> (<em>torch.Tensor</em><em> or </em><em>an int of 1</em><em>, </em><em>optional</em>) – The importance weight tensor that, when multiplied with the exponential of the cross product of the log sampling
 densities in <cite>log_densities</cite>, yields the pdf of each combined particle w.r.t. the target distribution that this
 message is encoding. Must specify if the message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>. If the weights are
 non-uniform, must be a <strong>positively valued</strong> tensor of shape <code class="docutils literal notranslate"><span class="pre">batch_shape</span> <span class="pre">+</span> <span class="pre">sample_shape</span></code>. The supplied tensor
 will be normalized during initialization so that it sums to 1 across the subspace spanned by the sample
-dimensions. Alternatively, can be an int of 1 to specify the uniform weight. Default to 1.</p></li>
+dimensions. Alternatively, can be an int of 1 to specify the identity (uniform weight), in which case it is not
+necessary to specify <cite>batch_shape</cite>. Default to 1.</p></li>
 <li><p><strong>log_densities</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>optional</em>) – The jth entry in the iterable represents the log pdf of the jth particle in <cite>particles</cite> w.r.t. the (marginal)
 sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
-<code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>. The jth entry must have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>, unless <cite>weight</cite> is 1, in which case the message represents a universal identity in
+the particles space. The jth entry must have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span></code>.</p></li>
 <li><p><strong>**kwargs</strong> – Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
 cloned. Note that any <cite>dist_info</cite> required by DistributionServer regarding the specification of the parameters
 should be associated with the key <code class="docutils literal notranslate"><span class="pre">&quot;dist_info&quot;</span></code>.</p></li>
@@ -490,6 +494,17 @@ should be associated with the key <code class="docutils literal notranslate"><sp
 </dd></dl>
 
 <dl class="py attribute">
+<dt id="pysigma.defs.Message.num_rvs">
+<code class="sig-name descname">num_rvs</code><a class="headerlink" href="#pysigma.defs.Message.num_rvs" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of random variables. Inferred from the length of <cite>particles</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
 <dt id="pysigma.defs.Message.attr">
 <code class="sig-name descname">attr</code><a class="headerlink" href="#pysigma.defs.Message.attr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Miscellaneous optional attributes, specified by <a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs in the constructor.</p>
@@ -559,8 +574,8 @@ operations – <em>Addition</em> and <em>Scalar Multiplication</em> – are defi
 <div><ul class="simple">
 <li><p>The following two operations are defined as operations on the particle weights, and meaningful only
 for Particle messages that share the same particle values and the same sampling log densities of the
-particles. In addition, results from these two operations are normalized so that the weight tensor
-sums to 1 across the sample dimensions.</p></li>
+particles, <strong>except for the message that represents particle identity</strong> (See more below). In addition, results
+from these two operations are normalized so that the weight tensor sums to 1 across the sample dimensions.</p></li>
 <li><p><em>Addition</em> operation is defined as element-wise multiplication of particle weights tensors, up to a
 normalization factor.</p></li>
 <li><p><em>Scalar Multiplication</em> is defined as taking elements of the particle weights tensor to the power
@@ -573,7 +588,26 @@ dimension.</p></li>
 </div></blockquote>
 </li>
 </ul>
+<p>Regarding the identity messages:</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type identity message is one whose <code class="docutils literal notranslate"><span class="pre">parameter</span></code> field is 0.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type identity message is one whose <code class="docutils literal notranslate"><span class="pre">weight</span></code> field is 1, <a href="#id3"><span class="problematic" id="id4">**</span></a>regardless of its
+particle values <code class="docutils literal notranslate"><span class="pre">particles</span></code> or sampling log densities <code class="docutils literal notranslate"><span class="pre">log_densities</span></code>.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type identity message is the composition of the above two identity messages.</p></li>
+</ul>
 <p>Accordingly, the ‘+’ and ‘*’ operator are overloaded according the to the specifications above.</p>
+<dl class="py method">
+<dt id="pysigma.defs.Message.isid">
+<em class="property">property </em><code class="sig-name descname">isid</code><a class="headerlink" href="#pysigma.defs.Message.isid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether <cite>self</cite> is an identity message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.defs.Message.shape">
+<em class="property">property </em><code class="sig-name descname">shape</code><a class="headerlink" href="#pysigma.defs.Message.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shape of the message. Equivalent to calling size()</p>
+</dd></dl>
+
 <dl class="py method">
 <dt id="pysigma.defs.Message.__add__">
 <code class="sig-name descname">__add__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__add__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__add__" title="Permalink to this definition">¶</a></dt>
@@ -588,12 +622,18 @@ be added with one of type <code class="docutils literal notranslate"><span class
 <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>. <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type message can be added with any other type except
 <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code>, and in any case a <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code> type message cannot be added.</p>
 <p>There are more restrictions for <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type messages. Messages of such type can only be
-added together if their <code class="docutils literal notranslate"><span class="pre">particles</span></code> and <code class="docutils literal notranslate"><span class="pre">log_densities</span></code> fields are equal.</p>
+added together if their <code class="docutils literal notranslate"><span class="pre">particles</span></code> and <code class="docutils literal notranslate"><span class="pre">log_densities</span></code> fields are equal, unless one (or both) is the
+identity Particles message.</p>
 <p>If two messages with compatible but not identical types are added together, the resulting message will have the
 smaller type, meaning only the common components will be added. For example, the result of adding a
 <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message with a <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type message is a <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code>
-type message.</p>
-<p>All contents are first cloned before taking the operations and returning the result.</p>
+type message. But if two <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type messages are added, the resulting message will also have
+type <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, containing both parameter and particles components.</p>
+<p>Note that the identity messages (Parameter message with <code class="docutils literal notranslate"><span class="pre">parameter</span> <span class="pre">==</span> <span class="pre">0</span></code>, Particles message with
+<code class="docutils literal notranslate"><span class="pre">weight</span> <span class="pre">==</span> <span class="pre">1</span></code>, or Both message with both conditions) are assumed universal, i.e., they can be added with
+any other message that has a compatible type but may or may not have a compatible shape. The resulting message
+will be the other message itself. If both <cite>self</cite> and <cite>other</cite> are identity messages, the returning message will
+be the identity message with the larger type.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message"><em>Message</em></a>) – The other message instance to be added together with <cite>self</cite>. It should have a compatible message type with
@@ -609,7 +649,8 @@ type message.</p>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>AssertionError</strong> – If <cite>other</cite>’s message type is incompatible with <cite>self</cite>.</p></li>
 <li><p><strong>AssertionError</strong> – If either <cite>self</cite> or <cite>other</cite>’s message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code>.</p></li>
-<li><p><strong>AssertionError</strong> – If contents of <cite>self</cite> and <cite>other</cite> have conflicting shapes.</p></li>
+<li><p><strong>AssertionError</strong> – If contents of <cite>self</cite> and <cite>other</cite> have conflicting shapes, when both <cite>self</cite> and <cite>other</cite> are not identity
+    messages.</p></li>
 <li><p><strong>AssertionError</strong> – If <cite>self</cite> and <cite>other</cite> have particles message contents to be added, but their particle values do not match,
     or their log sampling density tensors do not match.</p></li>
 </ul>
@@ -642,6 +683,7 @@ used to implement the semantics are different for different message contents. Se
 <a class="reference internal" href="#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes regarding arithmetic structures</span></a>
 for more details.</p>
 <p>Message of type <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code> cannot be scalar multiplied.</p>
+<p>If <cite>self</cite> is an identity message, returns <cite>self</cite> unchanged directly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>other</strong> (<em>int</em><em>, </em><em>float</em><em>, or </em><em>torch.Tensor</em>) – The scalar to the multiplication. If a torch.Tensor, can be a singleton tensor representing a single scalar,
@@ -675,6 +717,7 @@ each distribution instance in the batch.</p>
 <em class="property">static </em><code class="sig-name descname">compose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg1</span></em>, <em class="sig-param"><span class="n">msg2</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.compose"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.compose" title="Permalink to this definition">¶</a></dt>
 <dd><p>Composes a <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> message with a <code class="docutils literal notranslate"><span class="pre">MessageType.Parameters</span></code> message to return a
 <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> message that contain all components from both messages.</p>
+<p>Both <cite>msg1</cite> and <cite>msg2</cite> cannot be identity messages.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -737,7 +780,12 @@ each distribution instance in the batch.</p>
 tensors as well as checking the list of particle log sampling density tensors.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Will always return <code class="docutils literal notranslate"><span class="pre">False</span></code> if <cite>self</cite> or <cite>other</cite> does not have particles.</p>
+<p>Will always return <code class="docutils literal notranslate"><span class="pre">False</span></code> if <cite>self</cite> or <cite>other</cite> is not Particles message.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Will always return <code class="docutils literal notranslate"><span class="pre">True</span></code> if both <cite>self</cite> and <cite>other</cite> are Particles message and one (or both) is the
+identity.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -767,7 +815,7 @@ tensors as well as checking the list of particle log sampling density tensors.</
 <dd class="field-even"><p>The batch average L2 distance.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>torch.Tensor</p>
+<dd class="field-odd"><p>torch.Tensor or 0</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><p><strong>AssertionError</strong> – If <cite>self</cite> and/or <cite>other</cite> do not have parameters.</p>
@@ -784,10 +832,7 @@ tensors as well as checking the list of particle log sampling density tensors.</
 <dt id="pysigma.defs.Message.diff_weight">
 <code class="sig-name descname">diff_weight</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.diff_weight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.diff_weight" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the difference between the weight of <cite>self</cite> and <cite>other</cite>.</p>
-<p>Returns a batch average cosine_similarity between the two weight tensors. Since weights have shape
-<code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">weight_shape)</span></code>, with <code class="docutils literal notranslate"><span class="pre">weight_shape</span></code> of perhaps more than length 1, the weight tensors are
-first flattened across the sample shape, then the cosine_similarity is calculated across the flattened
-dimension.</p>
+<p>Returns a mean element-wise absolute value difference between the two weight tensors.</p>
 <p>Note that calculating the difference of weights only makes sense if both messages have the <em>same</em> particle value
 tensors and particle log sampling density tensors. Therefore, <cite>same_particles_as()</cite> will first be called for a
 sanity check. An assertion error will be raised if <cite>same_particles_as()</cite> returns <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
@@ -799,7 +844,7 @@ sanity check. An assertion error will be raised if <cite>same_particles_as()</ci
 <dd class="field-even"><p>The batch average cosine similarity.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>torch.Tensor</p>
+<dd class="field-odd"><p>torch.Tensor or 0</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
@@ -1205,7 +1250,9 @@ will be called so that the returning content tensors are contiguous.</p>
 <code class="sig-name descname">event_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trans</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Applies a transformation on the <cite>self</cite>’s event values. Returns the transformed message.</p>
 <p><cite>self</cite> contents will be cloned before being passed to the transformed message.</p>
-<p>For particles:</p>
+<p>For now, only Particles message support transformations. <cite>reduce_type()</cite> will first be called to eliminate the
+parameter components before performing the transformation.</p>
+<p>The adjustment made to the particle values and log sampling densities:</p>
 <ul>
 <li><p>Apply the transformation directly on the particle tensors in <code class="docutils literal notranslate"><span class="pre">self.particles</span></code>.</p></li>
 <li><p>Log sampling density tensors in <code class="docutils literal notranslate"><span class="pre">self.log_densities</span></code> will be adjusted by adding the log absolute determinant
@@ -1215,12 +1262,6 @@ of the Jacobian of the transformation:</p>
 </div>
 </li>
 <li><p>Weights are kept the same, but the tensor will be cloned.</p></li>
-</ul>
-<p>For parameters:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;dist_info&quot;</span></code> -keyed attribute must be present in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code> to inform <cite>DistributionServer</cite> of the
-attribute of the distribution parameter.</p></li>
-<li><p>Query <cite>DistributionServer</cite> to obtained the transformed parameter.</p></li>
 </ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1324,9 +1365,12 @@ constant factor.</p>
 <code class="sig-name descname">event_concatenate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cat_event_dims</span></em>, <em class="sig-param"><span class="n">target_event_dim</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_concatenate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_concatenate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Concatenate the particle events corresponding to the event dimensions specified by <cite>cat_event_dims</cite>. The new
 concatenated events will be placed at <cite>target_event_dim</cite> dimension.</p>
-<p>To concatenate events means to 1) combinatorially concatenate the particle value tensors, 2) to take the
-cross product of associated marginal sampling density tensors and flatten it, 3) reshape the weight tensor
-into correct flattened shape.</p>
+<p>To concatenate events means to</p>
+<ol class="arabic simple">
+<li><p>combinatorially concatenate the particle value tensors,</p></li>
+<li><p>take the cross product of associated marginal sampling density tensors and flatten it,</p></li>
+<li><p>reshape the weight tensor into correct flattened shape.</p></li>
+</ol>
 <p>Note that the event dimensions will be concatenated in the order given by <cite>cat_event_dims</cite>.</p>
 <p>Only messages with particles support this operation. If <cite>self</cite>’s message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, a
 <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message will be returned, where the parameter of <cite>self</cite> is discarded.</p>

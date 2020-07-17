@@ -543,37 +543,57 @@ A new list of particles will then be drawn in the cognitive format by querying t
 <h2>Perceptual Buffer Node<a class="headerlink" href="#perceptual-buffer-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical._nodes.PBFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">PBFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">PBFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">event_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perception Buffer Factor Node.</p>
-<dl>
-<dt>Receives perception / observation / evidence as particle list from <cite>perceive()</cite> and send particles message to WMVN.</dt><dd><p>Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
-in the caller of set_perception()</p>
-<p>Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.</p>
-<p>Perception is buffered, and will be latched to next cycle if no new observation is specified.</p>
-<dl class="simple">
-<dt>Overwrite check_quiesce() so that quiescence is determined by self.visited, i.e., whether compute() has been</dt><dd><p>carried out</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="pysigma.graphical._nodes.PBFN.set_perception">
-<code class="sig-name descname">set_perception</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">weights</span></em>, <em class="sig-param"><span class="n">num_obs</span></em>, <em class="sig-param"><span class="n">b_shape</span></em>, <em class="sig-param"><span class="n">e_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.set_perception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.set_perception" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update the perception buffer with new observation tensor. Should be called by the cognitive architecture
-Need to specify weights corresponding to the observation particles. Sampling log density on the other hand</p>
-<blockquote>
-<div><p>will be set to 0 in the outgoing Particle message.</p>
-</div></blockquote>
+<p>Receives perception / observation / evidence as particle list from <cite>perceive()</cite> and send particles message to WMVN.</p>
+<p>Do not support incoming link. Can only have one outgoing link connecting to a WMVN.</p>
+<p>Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the
+previously buffered observation, a <code class="docutils literal notranslate"><span class="pre">None</span></code> observation needs to be perceived.</p>
+<p>Overwrite <cite>check_quiesce()</cite> so that quiescence is determined by self.visited, i.e., whether <cite>compute()</cite> has been
+carried out</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>obs</strong> – Observations. torch.Tensor. shape ([num_obs] + b_shape + e_shape)</p></li>
-<li><p><strong>weights</strong> – Weights. torch.Tensor or int. shape ([num_obs] + b_shape) if tensor, otherwise an int of 1
-to indicate uniform weights</p></li>
-<li><p><strong>num_obs</strong> – torch.Size</p></li>
-<li><p><strong>b_shape</strong> – torch.Size</p></li>
-<li><p><strong>e_shape</strong> – torch.Size</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
+<li><p><strong>event_shape</strong> (<em>torch.Size</em>) – The event shape of any observation / evidence event particles, except for <code class="docutils literal notranslate"><span class="pre">None</span></code> observation.</p></li>
 </ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.PBFN.buffer">
+<code class="sig-name descname">buffer</code><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>The perceptual buffer. It is a 2D tensor whose last dimension is the event dimension with size equal to
+<code class="docutils literal notranslate"><span class="pre">self.e_shape</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.PBFN.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.e_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set by <cite>event_shape</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.PBFN.perceive">
+<code class="sig-name descname">perceive</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">observation</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.perceive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.perceive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perceive a new piece of observation / evidence event particles, specified by <cite>observation</cite>. Sets the
+perceptual buffer.</p>
+<p>This method should be called prior to the decision phase of a cognitive cycle for the perceived observation
+be sent to downstream nodes during the decision phase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>observation</strong> (<em>torch.Tensor</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If not <code class="docutils literal notranslate"><span class="pre">None</span></code>, must be a 2D tensor representing the observation / evidence event particles. Its last
+dimension is assumed the event dimension and must be equal to the preset <code class="docutils literal notranslate"><span class="pre">self.e_shape</span></code>. Its first
+dimension is assumed the sample dimension, whose size indicates the number of events to perceive.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -581,23 +601,16 @@ to indicate uniform weights</p></li>
 <dl class="py method">
 <dt id="pysigma.graphical._nodes.PBFN.add_link">
 <code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.add_link" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a linkdata connecting to a variable node</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
-</dd>
-</dl>
+<dd><p>For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical._nodes.PBFN.compute">
 <code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute method to be called to propagate messages during decision phase.</p>
-<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
-node-level statistics logging is taken care of herein.</p>
-<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>check_quiesce()</cite> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>,
-without logging anything or performing any further computation. Note that such behavior may or may not be
-desired by child node class.</p>
+<dd><p>Sends the contents in perceptual buffer to the connected WMVN.</p>
+<p>If the perceptual buffer <code class="docutils literal notranslate"><span class="pre">self.buffer</span></code> is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, then a particle message will be generated with
+<code class="docutils literal notranslate"><span class="pre">self.buffer</span></code> as the particle values, a uniform particle weight and a uniform log sampling density. Otherwise,
+a <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type identity message will be generated</p>
 </dd></dl>
 
 <dl class="py method">
