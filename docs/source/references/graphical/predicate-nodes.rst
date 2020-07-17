@@ -20,6 +20,10 @@ Long-Term Memory Factor Node
 Perceptual Buffer Node
 ----------------------
 
+.. autoclass:: pysigma.graphical._nodes.PBFN
+   :members:
+   :undoc-members:
+
 
 Working Memory Factor Node
 --------------------------

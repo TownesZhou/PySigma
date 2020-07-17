@@ -549,6 +549,61 @@ class Message:
         #            f"Weights: {weights_str}\nLog_Density: {log_density_str}"
         raise NotImplementedError("String representation for Message instance is yet to be implemented.")
 
+    """
+        Static utility methods of Message class
+    """
+    @staticmethod
+    def compose(msg1, msg2):
+        """Composes a ``MessageType.Particles`` message with a ``MessageType.Parameters`` message to return a
+        ``MessageType.Both`` message that contain all components from both messages.
+
+        Parameters
+        ----------
+        msg1 : Message
+            The first message to be composed. Its type must be either `MessageType.Particles`` or
+            ``MessageType.Parameters``, but must be different from that of `msg2`.
+        msg2 : Message
+            The second message to be composed. Its type must be either `MessageType.Particles`` or
+            ``MessageType.Parameters``, but must be different from that of `msg1`.
+
+        Returns
+        -------
+        Message
+            A message with type ``MessageType.Both`` that contains all components from both `msg1` and `msg2`.
+
+        Raises
+        ------
+        AssertionError
+            If `msg1` and `msg2` have conflicting attributes, such as batch shape.
+
+        Warnings
+        --------
+        The attribute dictionary ``msg1.attr`` and ``msg2.attr`` will be merged. If there are conflicting entries
+        (key-value pairs with same key but different values), those from ``msg2.attr`` will overwrite those from
+        ``msg1.attr``.
+        """
+        assert isinstance(msg1, Message) and isinstance(msg2, Message)
+        assert {msg1.type, msg2.type} == {MessageType.Parameter, MessageType.Particles}
+
+        param_msg = msg1 if msg1.type is MessageType.Parameter else msg2
+        ptcl_msg = msg1 if msg1.type is MessageType.Particles else msg2
+        # Check consistency of other Message attributes
+        assert param_msg.b_shape == ptcl_msg.b_shape, \
+            "Attempting to compose a parameter message with a particles message, but found conflicting batch shapes: " \
+            "{}".format([msg1.b_shape, msg2.b_shape])
+
+        new_msg = Message(MessageType.Both,
+                          batch_shape=param_msg.b_shape, param_shape=param_msg.p_shape,
+                          sample_shape=ptcl_msg.s_shape, event_shape=ptcl_msg.e_shape,
+                          parameter=param_msg.parameter,
+                          particles=ptcl_msg.particles, weight=ptcl_msg.weight, log_densities=ptcl_msg.log_densities,
+                          **{**msg1.attr, **msg2.attr})
+        return new_msg
+
+    """
+        General utility member methods
+    """
+
     def size(self):
         """Returns a tuple of the message's shapes: ``(batch_shape, param_shape, sample_shape, event_shape)``
 
@@ -1771,72 +1826,6 @@ class Message:
                           batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
                           particles=new_particles, weight=new_weight, log_densities=new_densities, **self.attr)
 
-    # @staticmethod
-    # def event_translate_2pred(msg, translator):
-    #     """Translates `msg`'s particle tensors in ``msg.particles`` from PyTorch format to Cognitive format, using the
-    #     given `translator`.
-    #
-    #     If there are multiple random variables, then returns a tuple of translated messages. Elements in the tuple
-    #     corresponds to each random variable specified in the translator respectively. In this case, the particle weight
-    #     tensor ``msg.weight`` and log sampling density tensors in ``msg.log_densities`` will be cloned for each returned
-    #     message in the tuple.
-    #
-    #     Parameters
-    #     ----------
-    #     msg : Message
-    #         The message to be translated.
-    #     translator : KnowledgeTranslator
-    #         The translator instance.
-    #
-    #     Returns
-    #     -------
-    #     Message or tuple of Message
-    #         Returns a single Message instance if there is only a single random variable, otherwise returns a tuple of
-    #         Message instances.
-    #     """
-    #     assert isinstance(msg, Message)
-    #     assert isinstance(translator, KnowledgeTranslator)
-    #     assert MessageType.Particles in msg.type
-    #
-    #     result_particles = translator.event2pred_event(msg.particles)
-    #
-    #     result_msgs = []
-    #     if not isinstance(result_particles, tuple):
-    #         assert isinstance(result_particles, torch.Tensor)
-    #         result_particles = tuple([result_particles])
-    #     for particles in result_particles:
-    #         # Shape check
-    #         assert isinstance(particles, torch.Tensor) and particles.dim() == 2 and particles.shape[0] == msg.s_shape
-    #         # Clone message
-    #         cloned_msg = msg.clone()
-    #         new_msg = Message(cloned_msg.type,
-    #                           cloned_msg.p_shape, cloned_msg.s_shape, cloned_msg.b_shape, particles.shape[1],
-    #                           cloned_msg.parameters, particles, cloned_msg.weights, cloned_msg.log_density,
-    #                           **cloned_msg.attr)
-    #         result_msgs.append(new_msg)
-    #
-    #     return tuple(result_msgs)
-    #
-    # @staticmethod
-    # def event_translate_2torch(msgs, translator):
-    #     """
-    #         Translate provided iterable of messages' particles from Cognitive format to form a message with particles in
-    #             PyTorch format, using the given translator.
-    #
-    #         The message order in the given iterable should conform to the random variable order specified in the
-    #             translator.
-    #
-    #         Return a single message.
-    #
-    #         :param msgs:        an iterable of Message instances. Order should be compatible with the order of random
-    #                                 variables specified in the given translator.
-    #         :param translator:  a KnowledgeTranslator instance.
-    #     """
-    #     assert isinstance(msgs, Iterable) and all(isinstance(msg, Message) for msg in msgs)
-    #     assert isinstance(translator, KnowledgeTranslator)
-    #     assert all(MessageType.Particles in msg.type for msg in msgs)
-    #
-    #     result_particles = translator.event2torch_event(tuple(msgs))
 
 
 # TODO: Enum class of all the inference method
