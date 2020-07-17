@@ -880,6 +880,8 @@
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        AssertionError</span>
+<span class="sd">            If found that not all incoming messages contain either parameter or particles, or both.</span>
+<span class="sd">        AssertionError</span>
 <span class="sd">            If the ``MessageType.Particles`` type messages in the incoming links do not share the same particles</span>
 <span class="sd">            (including particle value tensors and/or particle log sampling density tensors)</span>
 
@@ -894,25 +896,46 @@
 <span class="sd">        -----</span>
 <span class="sd">        Following combination procedure is carried out to conform to the standard of all inference methods</span>
 
-<span class="sd">        1. If all messages are of type ``MessageType.Parameter`` or ``MessageType.Both``, i.e., all containing parameters,</span>
-<span class="sd">           then the default combination behavior is to take the sum over all the parameters. The assumption made here is</span>
-<span class="sd">           that these parameters reside in some parameter vector space, and that the addition operation is well-defined.</span>
-<span class="sd">           See :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;` for more</span>
-<span class="sd">           details.</span>
+<span class="sd">        1. If incoming messages all contains parameter, then these parameters will be combined. The outgoing message</span>
+<span class="sd">           will contain the combined parameter. Otherwise if any incoming message does not contain parameter, this</span>
+<span class="sd">           procedure will not be performed and the outgoing message will not contain parameter, but rather a combined</span>
+<span class="sd">           particle list will be computed. See the followings.</span>
 
-<span class="sd">           The parameter representation of distributions is given a higher priority than the particle representation.</span>
-<span class="sd">           Therefore, in this case, the particles in ``MessageType.Both`` type message would be discarded by calling</span>
-<span class="sd">           `reduce_type()` method on the message.</span>
+<span class="sd">           For the parameter message combination procedure and accompanying assumptions, see</span>
+<span class="sd">           :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;` for more details.</span>
 
-<span class="sd">        2. If there exists ``MessageType.Particles`` type incoming message, meaning that it contains only particles:</span>
+<span class="sd">        2. If any incoming message also contains particles, then it is imperative that all such messages contain the</span>
+<span class="sd">           same particle values as well as particle log sampling densities. The particle weights will be gathered from</span>
+<span class="sd">           these messages and combined. For all other parameter messages that only contain parameters, the particles</span>
+<span class="sd">           from these particles messages will be used as the surrogate particles to generate a particle message as</span>
+<span class="sd">           approximation, which will take part in the particles combination procedure.</span>
 
-<span class="sd">           a. Find all messages of such type, and ensure that their particles are homogeneous.</span>
-<span class="sd">           b. If there are other ``MessageType.Parameter`` or ``MessageType.Both`` type messages, then the particles in</span>
-<span class="sd">              above messages will be borrowed as the surrogate particles, and be importance weighted w.r.t. the distribution</span>
-<span class="sd">              parameter to form a ``MessageType.Particles`` type message.</span>
-<span class="sd">           c. As all message now possess particles as representation for the distributions, the combination will be taken</span>
-<span class="sd">              by taking the element-wise multiplication of the weight tensors with normalization. See</span>
-<span class="sd">              :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;` for more details.</span>
+<span class="sd">        In short, here is a summary listing the correspondence between incoming message types and outgoing message</span>
+<span class="sd">        types:</span>
+
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Incoming Message Types         |    Outgoing Message Type |</span>
+<span class="sd">        +==================================+==========================+</span>
+<span class="sd">        |   Parameter                      |    Parameter             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Particles                      |    Particles             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Both                           |    Both                  |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Parameter + Particles          |    Particles             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Parameter + Both               |    Both                  |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Particles + Both               |    Particles             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Parameter + Particles + Both   |    Particles             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+
+<span class="sd">        Or, logically speaking, the outgoing message will contain particles if **any** incoming message also contains</span>
+<span class="sd">        particles, but it will contain parameter only if **all** incoming messages contain parameters.</span>
+
+<span class="sd">        Note that in any case, incoming message can not be ``MessageType.Undefined`` type, in which case an exception</span>
+<span class="sd">        will be raised.</span>
 
 <span class="sd">        When combining messages, will exclude message from the link to which the combined message is to send to (if</span>
 <span class="sd">        such a bidirected link exists). This implements the Sum-Product algorithm&#39;s variable node semantics, if</span>
@@ -920,8 +943,6 @@
 
 <span class="sd">        Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links</span>
 <span class="sd">        share the same set of incoming links that provide the messages, previously computed result will be reused</span>
-
-
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">WMVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="c1"># Relay message if only one incoming link</span>
@@ -952,12 +973,27 @@
                     <span class="n">out_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">in_lds</span><span class="p">]</span>
                 <span class="c1"># Otherwise, compute combined message</span>
                 <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_param</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">None</span>
                     <span class="n">in_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="n">in_lds</span><span class="p">)</span>
-                    <span class="c1"># 1. Find if there&#39;s any Particles message</span>
-                    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
+
+                    <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span>
+                               <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">),</span> \
+                        <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Expect all incoming messages to contain either parameter or particles, or both, but &quot;</span> \
+                        <span class="s2">&quot;the types of the incoming messages are: </span><span class="si">{}</span><span class="s2">&quot;</span>\
+                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">))</span>
+
+                    <span class="c1"># Only if all incoming messages contain parameters should we combine the parameters</span>
+                    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
+                        <span class="n">param_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">)</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">)</span>
+                        <span class="n">new_param</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">param_msgs</span><span class="p">)</span><span class="o">.</span><span class="n">parameter</span>
+
+                    <span class="c1"># If any incoming message contains particles, we should proceed to combine them</span>
+                    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
                         <span class="c1"># 1.a. Ensure all particle lists are homogeneous</span>
-                        <span class="n">particle_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span> <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">)</span>
-                        <span class="n">particle_lds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ld</span> <span class="k">for</span> <span class="n">ld</span> <span class="ow">in</span> <span class="n">in_lds</span> <span class="k">if</span> <span class="n">ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">)</span>
+                        <span class="n">particle_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">)</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span>
+                                              <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+                        <span class="n">particle_lds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ld</span> <span class="k">for</span> <span class="n">ld</span> <span class="ow">in</span> <span class="n">in_lds</span> <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
                         <span class="n">tmp_msg</span><span class="p">,</span> <span class="n">tmp_ld</span> <span class="o">=</span> <span class="n">particle_msgs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">particle_lds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tmp_msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
                         <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">particle_msgs</span><span class="p">,</span> <span class="n">particle_lds</span><span class="p">):</span>
@@ -968,9 +1004,9 @@
                                 <span class="s2">&quot;message from linkdata &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span> \
                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">tmp_ld</span><span class="p">)</span>
 
-                        <span class="c1"># 1.b Find message that contains parameter. If they exist, use the particles from the above</span>
+                        <span class="c1"># 1.b Find message that only contains parameter. If they exist, use the particles from the above</span>
                         <span class="c1"># messages as surrogate particle list and query its log prob w.r.t. the parameter.</span>
-                        <span class="n">param_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span> <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+                        <span class="n">param_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span> <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
                         <span class="n">particles</span> <span class="o">=</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">particles</span>
 
                         <span class="c1"># 2.b Compute particle weights w.r.t. distributions induced by the Parameter type messages</span>
@@ -983,12 +1019,6 @@
                         <span class="c1"># Combine messages</span>
                         <span class="n">out_msg</span> <span class="o">=</span> <span class="n">candidate_msgs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                         <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">candidate_msgs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-                            <span class="n">out_msg</span> <span class="o">+=</span> <span class="n">msg</span>
-
-                    <span class="c1"># 2. Otherwise all messages are Parameter type</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">in_msgs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
                             <span class="n">out_msg</span> <span class="o">+=</span> <span class="n">msg</span>
 
                 <span class="c1"># Cache result</span>
@@ -1220,13 +1250,12 @@
         <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span><span class="p">)</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">PBFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Perception Buffer Factor Node.</span>
+<div class="viewcode-block" id="PBFN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN">[docs]</a><span class="k">class</span> <span class="nc">PBFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Perception Buffer Factor Node.</span>
 
-<span class="sd">        Receive perception / observation / evidence as particle list and send to WMVN.</span>
-<span class="sd">            Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level</span>
-<span class="sd">            in the caller of set_perception()</span>
+<span class="sd">    Receives perception / observation / evidence as particle list from `perceive()` and send particles message to WMVN.</span>
+<span class="sd">        Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level</span>
+<span class="sd">        in the caller of set_perception()</span>
 
 <span class="sd">        Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.</span>
 
@@ -1246,7 +1275,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">set_perception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">num_obs</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
+<div class="viewcode-block" id="PBFN.set_perception"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.set_perception">[docs]</a>    <span class="k">def</span> <span class="nf">set_perception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">num_obs</span><span class="p">,</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Update the perception buffer with new observation tensor. Should be called by the cognitive architecture</span>
 <span class="sd">            Need to specify weights corresponding to the observation particles. Sampling log density on the other hand</span>
@@ -1272,17 +1301,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">num_obs</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="n">b_shape</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">e_shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">e_shape</span></div>
 
-    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+<div class="viewcode-block" id="PBFN.add_link"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
         <span class="c1"># Ensure that no incoming link and only one outgoing link connecting to a WMVN</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
         <span class="k">assert</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="p">,</span> <span class="n">WMVN</span><span class="p">)</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="PBFN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="c1"># If no perception has been set in the buffer, then do not send</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1294,12 +1323,12 @@
         <span class="n">out_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
                           <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">particles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_msg</span><span class="p">)</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_msg</span><span class="p">)</span></div>
 
     <span class="c1"># Override check_quiesce() so that quiescence is equivalent to visited</span>
-    <span class="k">def</span> <span class="nf">check_quiesce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="PBFN.check_quiesce"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.check_quiesce">[docs]</a>    <span class="k">def</span> <span class="nf">check_quiesce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">visited</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">WMFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>

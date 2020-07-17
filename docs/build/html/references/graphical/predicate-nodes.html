@@ -264,8 +264,11 @@ Particles type messages but all of them are homogeneous (sharing the same partic
 log densities).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>AssertionError</strong> – If the <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type messages in the incoming links do not share the same particles
-    (including particle value tensors and/or particle log sampling density tensors)</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If found that not all incoming messages contain either parameter or particles, or both.</p></li>
+<li><p><strong>AssertionError</strong> – If the <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type messages in the incoming links do not share the same particles
+    (including particle value tensors and/or particle log sampling density tensors)</p></li>
+</ul>
 </dd>
 <dt class="field-even">Warns</dt>
 <dd class="field-even"><p><strong>UserWarning</strong> – If there is only one incoming link, but this link is connected to a factor node that is also connected from
@@ -276,27 +279,59 @@ will also be neglected during compute() and no new message will ever be propagat
 <p class="rubric">Notes</p>
 <p>Following combination procedure is carried out to conform to the standard of all inference methods</p>
 <ol class="arabic">
-<li><p>If all messages are of type <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, i.e., all containing parameters,
-then the default combination behavior is to take the sum over all the parameters. The assumption made here is
-that these parameters reside in some parameter vector space, and that the addition operation is well-defined.
-See <a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more
-details.</p>
-<p>The parameter representation of distributions is given a higher priority than the particle representation.
-Therefore, in this case, the particles in <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type message would be discarded by calling
-<cite>reduce_type()</cite> method on the message.</p>
+<li><p>If incoming messages all contains parameter, then these parameters will be combined. The outgoing message
+will contain the combined parameter. Otherwise if any incoming message does not contain parameter, this
+procedure will not be performed and the outgoing message will not contain parameter, but rather a combined
+particle list will be computed. See the followings.</p>
+<p>For the parameter message combination procedure and accompanying assumptions, see
+<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more details.</p>
 </li>
-<li><p>If there exists <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type incoming message, meaning that it contains only particles:</p>
-<ol class="loweralpha simple">
-<li><p>Find all messages of such type, and ensure that their particles are homogeneous.</p></li>
-<li><p>If there are other <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type messages, then the particles in
-above messages will be borrowed as the surrogate particles, and be importance weighted w.r.t. the distribution
-parameter to form a <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message.</p></li>
-<li><p>As all message now possess particles as representation for the distributions, the combination will be taken
-by taking the element-wise multiplication of the weight tensors with normalization. See
-<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more details.</p></li>
+<li><p>If any incoming message also contains particles, then it is imperative that all such messages contain the
+same particle values as well as particle log sampling densities. The particle weights will be gathered from
+these messages and combined. For all other parameter messages that only contain parameters, the particles
+from these particles messages will be used as the surrogate particles to generate a particle message as
+approximation, which will take part in the particles combination procedure.</p></li>
 </ol>
-</li>
-</ol>
+<p>In short, here is a summary listing the correspondence between incoming message types and outgoing message
+types:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 57%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Incoming Message Types</p></th>
+<th class="head"><p>Outgoing Message Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Parameter</p></td>
+<td><p>Parameter</p></td>
+</tr>
+<tr class="row-odd"><td><p>Particles</p></td>
+<td><p>Particles</p></td>
+</tr>
+<tr class="row-even"><td><p>Both</p></td>
+<td><p>Both</p></td>
+</tr>
+<tr class="row-odd"><td><p>Parameter + Particles</p></td>
+<td><p>Particles</p></td>
+</tr>
+<tr class="row-even"><td><p>Parameter + Both</p></td>
+<td><p>Both</p></td>
+</tr>
+<tr class="row-odd"><td><p>Particles + Both</p></td>
+<td><p>Particles</p></td>
+</tr>
+<tr class="row-even"><td><p>Parameter + Particles + Both</p></td>
+<td><p>Particles</p></td>
+</tr>
+</tbody>
+</table>
+<p>Or, logically speaking, the outgoing message will contain particles if <strong>any</strong> incoming message also contains
+particles, but it will contain parameter only if <strong>all</strong> incoming messages contain parameters.</p>
+<p>Note that in any case, incoming message can not be <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code> type, in which case an exception
+will be raised.</p>
 <p>When combining messages, will exclude message from the link to which the combined message is to send to (if
 such a bidirected link exists). This implements the Sum-Product algorithm’s variable node semantics, if
 this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.</p>
@@ -506,6 +541,87 @@ A new list of particles will then be drawn in the cognitive format by querying t
 </div>
 <div class="section" id="perceptual-buffer-node">
 <h2>Perceptual Buffer Node<a class="headerlink" href="#perceptual-buffer-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical._nodes.PBFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">PBFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perception Buffer Factor Node.</p>
+<dl>
+<dt>Receives perception / observation / evidence as particle list from <cite>perceive()</cite> and send particles message to WMVN.</dt><dd><p>Shape is assumed correct, so shape check as well as value check should be performed at the Cognitive level
+in the caller of set_perception()</p>
+<p>Currently do not support incoming link. Can only have one outgoing link connecting to a WMVN.</p>
+<p>Perception is buffered, and will be latched to next cycle if no new observation is specified.</p>
+<dl class="simple">
+<dt>Overwrite check_quiesce() so that quiescence is determined by self.visited, i.e., whether compute() has been</dt><dd><p>carried out</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.PBFN.set_perception">
+<code class="sig-name descname">set_perception</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">weights</span></em>, <em class="sig-param"><span class="n">num_obs</span></em>, <em class="sig-param"><span class="n">b_shape</span></em>, <em class="sig-param"><span class="n">e_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.set_perception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.set_perception" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the perception buffer with new observation tensor. Should be called by the cognitive architecture
+Need to specify weights corresponding to the observation particles. Sampling log density on the other hand</p>
+<blockquote>
+<div><p>will be set to 0 in the outgoing Particle message.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obs</strong> – Observations. torch.Tensor. shape ([num_obs] + b_shape + e_shape)</p></li>
+<li><p><strong>weights</strong> – Weights. torch.Tensor or int. shape ([num_obs] + b_shape) if tensor, otherwise an int of 1
+to indicate uniform weights</p></li>
+<li><p><strong>num_obs</strong> – torch.Size</p></li>
+<li><p><strong>b_shape</strong> – torch.Size</p></li>
+<li><p><strong>e_shape</strong> – torch.Size</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.PBFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a linkdata connecting to a variable node</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.PBFN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute method to be called to propagate messages during decision phase.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
+node-level statistics logging is taken care of herein.</p>
+<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>check_quiesce()</cite> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+without logging anything or performing any further computation. Note that such behavior may or may not be
+desired by child node class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.PBFN.check_quiesce">
+<code class="sig-name descname">check_quiesce</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.check_quiesce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.check_quiesce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check <code class="docutils literal notranslate"><span class="pre">new</span></code> attribute of incoming linkdata to determine whether this node has reached quiescence.</p>
+<p>By default, a node is determined quiesced if and only if <strong>all</strong> incoming linkdata has no <cite>new</cite> message.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Certain nodes may desire a different behavior for checking quiescence. In that case, this method should be
+overridden.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if this node has reached quiescence.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="working-memory-factor-node">
 <h2>Working Memory Factor Node<a class="headerlink" href="#working-memory-factor-node" title="Permalink to this headline">¶</a></h2>

@@ -617,8 +617,9 @@ type message.</p>
 </dl>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Note that all auxiliary attributes stored in <code class="docutils literal notranslate"><span class="pre">attr</span></code>, supplied via additional keyword arguments in the Message
-class constructor, of both <cite>self</cite> and <cite>other</cite> will be discarded in the returned message.</p>
+<p>The attribute dictionaries <code class="docutils literal notranslate"><span class="pre">self.attr</span></code> and <code class="docutils literal notranslate"><span class="pre">other.attr</span></code> from the two messages will be merged. However, if
+there exist conflicting entries, some would be overwritten by the other. In general, it is the last operand
+in the expression, i.e., <cite>other</cite>, whose attribute entries persist, but this behavior should not be counted on.</p>
 </div>
 </dd></dl>
 
@@ -671,6 +672,38 @@ the Message class constructor, will be discarded in the returned message.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#pysigma.defs.Message.__mul__" title="pysigma.defs.Message.__mul__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__mul__()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.defs.Message.compose">
+<em class="property">static </em><code class="sig-name descname">compose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg1</span></em>, <em class="sig-param"><span class="n">msg2</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.compose"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.compose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Composes a <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> message with a <code class="docutils literal notranslate"><span class="pre">MessageType.Parameters</span></code> message to return a
+<code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> message that contain all components from both messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg1</strong> (<a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message"><em>Message</em></a>) – The first message to be composed. Its type must be either <cite>MessageType.Particles`</cite> or
+<code class="docutils literal notranslate"><span class="pre">MessageType.Parameters</span></code>, but must be different from that of <cite>msg2</cite>.</p></li>
+<li><p><strong>msg2</strong> (<a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message"><em>Message</em></a>) – The second message to be composed. Its type must be either <cite>MessageType.Particles`</cite> or
+<code class="docutils literal notranslate"><span class="pre">MessageType.Parameters</span></code>, but must be different from that of <cite>msg1</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A message with type <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> that contains all components from both <cite>msg1</cite> and <cite>msg2</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>msg1</cite> and <cite>msg2</cite> have conflicting attributes, such as batch shape.</p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The attribute dictionaries <code class="docutils literal notranslate"><span class="pre">msg1.attr</span></code> and <code class="docutils literal notranslate"><span class="pre">msg2.attr</span></code> will be merged. If there exists conflicting entries
+(key-value pairs with same key but different values), those from <code class="docutils literal notranslate"><span class="pre">msg2.attr</span></code> will overwrite those from
+<code class="docutils literal notranslate"><span class="pre">msg1.attr</span></code>.</p>
 </div>
 </dd></dl>
 

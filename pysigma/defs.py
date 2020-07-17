@@ -376,8 +376,9 @@ class Message:
 
         Warnings
         --------
-        Note that all auxiliary attributes stored in ``attr``, supplied via additional keyword arguments in the Message
-        class constructor, of both `self` and `other` will be discarded in the returned message.
+        The attribute dictionaries ``self.attr`` and ``other.attr`` from the two messages will be merged. However, if
+        there exist conflicting entries, some would be overwritten by the other. In general, it is the last operand
+        in the expression, i.e., `other`, whose attribute entries persist, but this behavior should not be counted on.
         """
         assert isinstance(other, Message), "Message can only be added with another Message"
         assert self.type in other.type or other.type in self.type, \
@@ -393,8 +394,9 @@ class Message:
             "Message of undefined type cannot be added. First operand has type '{}', while the second one has type " \
             "'{}'".format(self.type, other.type)
 
+        param_msg = None
+        ptcl_msg = None
         # Addition for Parameter type
-        new_msg = None
         if MessageType.Parameter in s_type:
             assert self.b_shape == other.b_shape and self.p_shape == other.p_shape, \
                 "Only Messages with the same shape can be added together. The messages being added are of Parameter " \
@@ -403,7 +405,7 @@ class Message:
             # Tensor addition
             new_parameter = self.parameter + other.parameter
 
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter)
+            param_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter)
 
         # Addition for Particles type
         if MessageType.Particles in s_type:
@@ -423,9 +425,21 @@ class Message:
             # Clone self tensor contents
             cloned_particles = tuple(p.clone() for p in self.particles)
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
-            new_msg = Message(s_type,
-                              batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                              particles=cloned_particles, weights=new_weights, log_densities=cloned_log_densities)
+            ptcl_msg = Message(s_type,
+                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                               particles=cloned_particles, weights=new_weights, log_densities=cloned_log_densities)
+
+        # Compose if we are adding two Both type messages, otherwise return the proper one
+        if param_msg is not None and ptcl_msg is not None:
+            new_msg = Message.compose(param_msg, ptcl_msg)
+        elif param_msg is not None:
+            new_msg = param_msg
+        else:
+            new_msg = ptcl_msg
+
+        # Merge and set attributes
+        new_msg.attr = {**self.attr, **other.attr}
+
         return new_msg
 
     def __iadd__(self, other):
@@ -578,7 +592,7 @@ class Message:
 
         Warnings
         --------
-        The attribute dictionary ``msg1.attr`` and ``msg2.attr`` will be merged. If there are conflicting entries
+        The attribute dictionaries ``msg1.attr`` and ``msg2.attr`` will be merged. If there exists conflicting entries
         (key-value pairs with same key but different values), those from ``msg2.attr`` will overwrite those from
         ``msg1.attr``.
         """
