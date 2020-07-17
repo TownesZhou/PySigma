@@ -684,11 +684,6 @@
 <span class="sd">        ------</span>
 <span class="sd">        AssertionError</span>
 <span class="sd">            Attempting to scalar multiply a message of type ``MessageType.Undefined``.</span>
-
-<span class="sd">        Warnings</span>
-<span class="sd">        --------</span>
-<span class="sd">        Note that all auxiliary attributes stored in ``attr`` of `self`, supplied via additional keyword arguments in</span>
-<span class="sd">        the Message class constructor, will be discarded in the returned message.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)),</span> \
             <span class="s2">&quot;Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. &quot;</span> \
@@ -736,7 +731,9 @@
             <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
             <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                               <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                              <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">)</span>
+                              <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">,</span>
+                              <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.__imul__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__imul__">[docs]</a>    <span class="k">def</span> <span class="nf">__imul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>

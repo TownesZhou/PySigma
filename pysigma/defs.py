@@ -477,11 +477,6 @@ class Message:
         ------
         AssertionError
             Attempting to scalar multiply a message of type ``MessageType.Undefined``.
-
-        Warnings
-        --------
-        Note that all auxiliary attributes stored in ``attr`` of `self`, supplied via additional keyword arguments in
-        the Message class constructor, will be discarded in the returned message.
         """
         assert isinstance(other, (int, float, torch.Tensor)), \
             "Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. " \
@@ -529,7 +524,9 @@ class Message:
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
             new_msg = Message(self.type,
                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                              particles=cloned_particles, weights=new_weight, log_densities=cloned_log_densities)
+                              particles=cloned_particles, weights=new_weight, log_densities=cloned_log_densities,
+                              **self.attr)
+
         return new_msg
 
     def __imul__(self, other):
