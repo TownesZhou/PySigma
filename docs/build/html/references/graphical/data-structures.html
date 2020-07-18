@@ -136,6 +136,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#utility-functions">Utility Functions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../utils.html#distributionserver">DistributionServer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../utils.html#knowledgeserver">KnowledgeServer</a></li>
 </ul>
@@ -768,20 +769,6 @@ each distribution instance in the batch.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>tuple of torch.Size</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="pysigma.defs.Message.same_size_as">
-<code class="sig-name descname">same_size_as</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.same_size_as"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.same_size_as" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check if self has the same shape as the other message.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>True if self has the same shape as the other message.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1579,6 +1566,8 @@ shape <code class="docutils literal notranslate"><span class="pre">torch.Size([]
 <code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_msg</span></em>, <em class="sig-param"><span class="n">check_diff</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clone</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LinkData.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes to the link message memory with the new message specified via <cite>new_msg</cite>. Once a new message is
 written, <code class="docutils literal notranslate"><span class="pre">self.new</span></code> will be set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p>The message shape <code class="docutils literal notranslate"><span class="pre">new_msg.shape</span></code> will first be checked against <code class="docutils literal notranslate"><span class="pre">self.msg_shape</span></code> to ensure that the message
+is compatible in shape. See <cite>compatible_shape()</cite> for more details.</p>
 <p>If <cite>check_diff</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, will check if the new message is different from the existing one before
 replacing the existing with the new one.</p>
 <p>If <cite>clone</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then will first clone <cite>new_msg</cite> and store the cloned message in the memory buffer.</p>
@@ -1590,6 +1579,9 @@ replacing the existing with the new one.</p>
 the new message and set <code class="docutils literal notranslate"><span class="pre">self.new</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 <li><p><strong>clone</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to clone <cite>new_msg</cite> before storing it in the memory buffer.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If new message’s shape is not compatible.</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>

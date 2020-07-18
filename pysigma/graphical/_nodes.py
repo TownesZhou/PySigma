@@ -6,10 +6,10 @@ import torch
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from torch.distributions import Distribution, Transform
+from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from defs import VariableMetatype, Variable, MessageType, Message
-from utils import DistributionServer, KnowledgeServer
+from utils import KnowledgeServer, compatible_shape
 from structures import VariableMap, Summarization
 
 
@@ -134,6 +134,9 @@ class LinkData:
         """Writes to the link message memory with the new message specified via `new_msg`. Once a new message is
         written, ``self.new`` will be set to ``True``.
 
+        The message shape ``new_msg.shape`` will first be checked against ``self.msg_shape`` to ensure that the message
+        is compatible in shape. See `compatible_shape()` for more details.
+
         If `check_diff` is ``True``, will check if the new message is different from the existing one before
         replacing the existing with the new one.
 
@@ -148,6 +151,11 @@ class LinkData:
                 the new message and set ``self.new`` to ``True``.
             clone : bool, optional
                 Whether to clone `new_msg` before storing it in the memory buffer.
+
+        Raises
+        ------
+        AssertionError
+            If new message's shape is not compatible.
 
         Notes
         -----
@@ -175,8 +183,9 @@ class LinkData:
         """
         assert isinstance(new_msg, Message)
         # Check new message shape
-        assert self.msg_shape == new_msg.size()
-        assert self.memory is None or self.memory.same_size_as(new_msg)
+        assert compatible_shape(self.msg_shape, new_msg.shape), \
+            "At {}: Attempt to write a message with incompatible shape. Expect message shape {}, instead encountered " \
+            "{}".format(str(self), self.msg_shape, new_msg.shape)
 
         # Will replace the memory immediately if any one of the following conditions is met:
         #   - self.memory is None

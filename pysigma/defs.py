@@ -2,14 +2,14 @@
     Basic structures in the graphical architecture
 """
 import torch
-from torch.distributions import Distribution, Transform
+from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from torch.nn.functional import l1_loss
 from enum import Enum, Flag, auto
 from collections.abc import Iterable
 import numpy as np
 from copy import deepcopy
-from utils import DistributionServer, KnowledgeServer
+from utils import KnowledgeServer
 
 
 # Variable Metatypes and Variable for general inference
@@ -730,16 +730,16 @@ class Message:
         """
         return self.b_shape, self.p_shape, self.s_shape, self.e_shape
 
-    def same_size_as(self, other):
-        """Check if self has the same shape as the other message.
-
-        Returns
-        -------
-        bool
-            True if self has the same shape as the other message.
-        """
-        assert isinstance(other, Message)
-        return self.size() == other.size()
+    # def same_size_as(self, other):
+    #     """Check if self has the same shape as the other message.
+    #
+    #     Returns
+    #     -------
+    #     bool
+    #         True if self has the same shape as the other message.
+    #     """
+    #     assert isinstance(other, Message)
+    #     return self.size() == other.size()
 
     def same_particles_as(self, other):
         """Check if `self` has the same particles as the other message. This include checking the list of particle value

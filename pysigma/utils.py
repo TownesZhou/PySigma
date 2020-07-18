@@ -42,6 +42,32 @@ def extern_name(name: str, struc_type: str):
     return name[6:-1]
 
 
+def compatible_shape(msg_shape1, msg_shape2):
+    """Checks whether the two given message shapes are compatible.
+
+    Both `msg_shape1` and `msg_shape2` should be an iterable of `torch.Size` and have the contents
+    ``(batch_shape, param_shape, sample_shape, event_shape)``. An empty shape, i.e., ``torch.Size([])``, will be deemed
+    compatible with any other shape. `msg_shape1` is compatible with `msg_shape2` if and only if all of its four entries
+    are compatible with their counterpart in `msg_shape2`.
+
+    Parameters
+    ----------
+    msg_shape1 : tuple of torch.Size
+        First shape. Should have the format ``(batch_shape, param_shape, sample_shape, event_shape)``.
+    msg_shape2 : tuple of torch.Size
+        Second shape. Same as `msg_shape1`.
+
+    Returns
+    -------
+    bool
+        True if both shape are compatible.
+    """
+    assert isinstance(msg_shape1, tuple) and len(msg_shape1) == 4 and all(isinstance(s, torch.Size) for s in msg_shape1)
+    assert isinstance(msg_shape2, tuple) and len(msg_shape2) == 4 and all(isinstance(s, torch.Size) for s in msg_shape2)
+
+    return all(s1 == torch.Size([]) or s2 == torch.Size([]) or s1 == s2 for s1, s2 in zip(msg_shape1, msg_shape2))
+
+
 # TODO: Global dictionary that designates which PyTorch's distribution class is finite discrete
 FINITE_DISCRETE_CLASSES = [
     torch.distributions.Categorical,

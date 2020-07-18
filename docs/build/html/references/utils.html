@@ -136,6 +136,7 @@
 </ul>
 </li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#utility-functions">Utility Functions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#distributionserver">DistributionServer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#knowledgeserver">KnowledgeServer</a></li>
 </ul>
@@ -212,6 +213,33 @@
             
   <div class="section" id="utils">
 <h1>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="utility-functions">
+<h2>Utility Functions<a class="headerlink" href="#utility-functions" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="pysigma.utils.compatible_shape">
+<code class="sig-prename descclassname">pysigma.utils.</code><code class="sig-name descname">compatible_shape</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_shape1</span></em>, <em class="sig-param"><span class="n">msg_shape2</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#compatible_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.compatible_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whether the two given message shapes are compatible.</p>
+<p>Both <cite>msg_shape1</cite> and <cite>msg_shape2</cite> should be an iterable of <cite>torch.Size</cite> and have the contents
+<code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code>. An empty shape, i.e., <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>, will be deemed
+compatible with any other shape. <cite>msg_shape1</cite> is compatible with <cite>msg_shape2</cite> if and only if all of its four entries
+are compatible with their counterpart in <cite>msg_shape2</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg_shape1</strong> (<em>tuple of torch.Size</em>) – First shape. Should have the format <code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code>.</p></li>
+<li><p><strong>msg_shape2</strong> (<em>tuple of torch.Size</em>) – Second shape. Same as <cite>msg_shape1</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if both shape are compatible.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 <div class="section" id="distributionserver">
 <h2>DistributionServer<a class="headerlink" href="#distributionserver" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">

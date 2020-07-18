@@ -1,6 +1,12 @@
 Utils
 =====
 
+Utility Functions
+-----------------
+
+.. autofunction:: pysigma.utils.compatible_shape
+
+
 DistributionServer
 ------------------
 

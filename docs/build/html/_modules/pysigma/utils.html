@@ -134,6 +134,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../references/utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#utility-functions">Utility Functions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#distributionserver">DistributionServer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#knowledgeserver">KnowledgeServer</a></li>
 </ul>
@@ -247,6 +248,32 @@
     <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;conditional&quot;</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;COND_[&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
     <span class="k">return</span> <span class="n">name</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="compatible_shape"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.compatible_shape">[docs]</a><span class="k">def</span> <span class="nf">compatible_shape</span><span class="p">(</span><span class="n">msg_shape1</span><span class="p">,</span> <span class="n">msg_shape2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks whether the two given message shapes are compatible.</span>
+
+<span class="sd">    Both `msg_shape1` and `msg_shape2` should be an iterable of `torch.Size` and have the contents</span>
+<span class="sd">    ``(batch_shape, param_shape, sample_shape, event_shape)``. An empty shape, i.e., ``torch.Size([])``, will be deemed</span>
+<span class="sd">    compatible with any other shape. `msg_shape1` is compatible with `msg_shape2` if and only if all of its four entries</span>
+<span class="sd">    are compatible with their counterpart in `msg_shape2`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    msg_shape1 : tuple of torch.Size</span>
+<span class="sd">        First shape. Should have the format ``(batch_shape, param_shape, sample_shape, event_shape)``.</span>
+<span class="sd">    msg_shape2 : tuple of torch.Size</span>
+<span class="sd">        Second shape. Same as `msg_shape1`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if both shape are compatible.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg_shape1</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg_shape1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">msg_shape1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg_shape2</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg_shape2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">msg_shape2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">s1</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([])</span> <span class="ow">or</span> <span class="n">s2</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([])</span> <span class="ow">or</span> <span class="n">s1</span> <span class="o">==</span> <span class="n">s2</span> <span class="k">for</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">msg_shape1</span><span class="p">,</span> <span class="n">msg_shape2</span><span class="p">))</span></div>
 
 
 <span class="c1"># TODO: Global dictionary that designates which PyTorch&#39;s distribution class is finite discrete</span>
@@ -1130,8 +1157,14 @@
         <span class="k">return</span> <span class="n">result</span>
 
     <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="c1"># TODO</span>
-        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span></div>
+        <span class="sd">&quot;&quot;&quot;Draw particles components for Categorical distributions. Returns a finite discrete well-spaced lattice as the</span>
+<span class="sd">        particle values and uniform log sampling densities.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+        <span class="n">particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
+        <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">span</span><span class="p">)</span> <span class="o">/</span> <span class="n">span</span><span class="p">)</span> <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span></div>
 </pre></div>
 
            </div>

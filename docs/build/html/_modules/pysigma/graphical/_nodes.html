@@ -134,6 +134,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../references/utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#utility-functions">Utility Functions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#distributionserver">DistributionServer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#knowledgeserver">KnowledgeServer</a></li>
 </ul>
@@ -213,10 +214,10 @@
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span><span class="p">,</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Transform</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
 <span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">DistributionServer</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">KnowledgeServer</span><span class="p">,</span> <span class="n">compatible_shape</span>
 <span class="kn">from</span> <span class="nn">structures</span> <span class="k">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
 
 
@@ -341,6 +342,9 @@
         <span class="sd">&quot;&quot;&quot;Writes to the link message memory with the new message specified via `new_msg`. Once a new message is</span>
 <span class="sd">        written, ``self.new`` will be set to ``True``.</span>
 
+<span class="sd">        The message shape ``new_msg.shape`` will first be checked against ``self.msg_shape`` to ensure that the message</span>
+<span class="sd">        is compatible in shape. See `compatible_shape()` for more details.</span>
+
 <span class="sd">        If `check_diff` is ``True``, will check if the new message is different from the existing one before</span>
 <span class="sd">        replacing the existing with the new one.</span>
 
@@ -355,6 +359,11 @@
 <span class="sd">                the new message and set ``self.new`` to ``True``.</span>
 <span class="sd">            clone : bool, optional</span>
 <span class="sd">                Whether to clone `new_msg` before storing it in the memory buffer.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If new message&#39;s shape is not compatible.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -382,8 +391,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
         <span class="c1"># Check new message shape</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg_shape</span> <span class="o">==</span> <span class="n">new_msg</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">same_size_as</span><span class="p">(</span><span class="n">new_msg</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">compatible_shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg_shape</span><span class="p">,</span> <span class="n">new_msg</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> \
+            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Attempt to write a message with incompatible shape. Expect message shape </span><span class="si">{}</span><span class="s2">, instead encountered &quot;</span> \
+            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg_shape</span><span class="p">,</span> <span class="n">new_msg</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
         <span class="c1"># Will replace the memory immediately if any one of the following conditions is met:</span>
         <span class="c1">#   - self.memory is None</span>
