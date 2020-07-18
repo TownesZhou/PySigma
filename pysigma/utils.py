@@ -923,5 +923,11 @@ class KnowledgeServer:
         return result
 
     def _categorical_draw(self, *args):
-        # TODO
+        """Draw particles components for Categorical distributions. Returns a finite discrete well-spaced lattice as the
+        particle values and uniform log sampling densities.
+        """
         var_span = self._categorical_var_span()
+        particles = tuple(torch.arange(c.lower_bound, c.upper_bound + 1, 1.0) for c in self.rv_constraints)
+        log_densities = tuple(torch.log(torch.ones(span) / span) for span in var_span)
+
+        return particles, log_densities
