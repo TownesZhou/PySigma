@@ -160,6 +160,9 @@ class Message:
         sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
         ``MessageType.Particles``, unless `weight` is 1, in which case the message represents a universal identity in
         the particles space. The jth entry must have shape ``sample_shape[j]``.
+    device : str, optional
+        The device where the tensor components are hosted. ``.to(device)`` will be called on the tensor arguments
+        during initialization. Defaults to 'cpu'.
     **kwargs
         Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
         cloned. Note that any `dist_info` required by DistributionServer regarding the specification of the parameters
@@ -187,6 +190,8 @@ class Message:
         Tuple of particles log sampling tensors
     num_rvs : int
         The number of random variables. Inferred from the length of `particles`.
+    device : str
+        The device where the tensor components are hosted.
     attr : dict
         Miscellaneous optional attributes, specified by **kwargs in the constructor.
 
@@ -275,7 +280,7 @@ class Message:
     def __init__(self, msg_type,
                  batch_shape=torch.Size([]),
                  param_shape=torch.Size([]), sample_shape=torch.Size([]), event_shape=torch.Size([]),
-                 parameter=0, particles=None, weight=1, log_densities=None, **kwargs):
+                 parameter=0, particles=None, weight=1, log_densities=None, device='cpu', **kwargs):
         assert isinstance(msg_type, MessageType)
         assert isinstance(batch_shape, torch.Size)
         assert isinstance(param_shape, torch.Size) and len(param_shape) <= 1, \
@@ -294,12 +299,15 @@ class Message:
 
         # Message type, of type MessageType
         self.type = msg_type
+        # Device
+        self.device = device
         # Parameter
-        self.parameter = parameter
+        self.parameter = parameter.to(device=self.device) if isinstance(parameter, torch.Tensor) else parameter
         # Particle list
-        self.particles = tuple(particles) if particles is not None else None
-        self.weight = weight
-        self.log_densities = tuple(log_densities) if log_densities is not None else None
+        self.particles = tuple(p.to(device=self.device) for p in particles) if particles is not None else None
+        self.weight = weight.to(device=self.device) if isinstance(weight, torch.Tensor) else weight
+        self.log_densities = tuple(d.to(device=self.device) for d in log_densities) if log_densities is not None else \
+            None
         # Additional important attributes
         self.attr = kwargs
         # Shapes.
@@ -857,8 +865,8 @@ class Message:
         if self.isid and other.isid:
             return 0
         # If one is identity, create a uniform weight tensor of the same size as the other message's weight tensor
-        x1 = self.weight if not self.isid else torch.ones_like(other.weight) / other.weight.numel()
-        x2 = other.weight if not other.isid else torch.ones_like(self.weight) / self.weight.numel()
+        x1 = self.weight if not self.isid else torch.ones_like(other.weight, device=self.device) / other.weight.numel()
+        x2 = other.weight if not other.isid else torch.ones_like(self.weight, device=self.device) / self.weight.numel()
 
         val = l1_loss(x1, x2, reduction='mean')
         return val
@@ -933,6 +941,39 @@ class Message:
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, self.b_shape, self.e_shape,
                           parameters, particles, weight, log_densities, **attr)
+        return new_msg
+
+    def to_device(self, device):
+        """Returns a version of `self` where the tensor components are hosted on the specified `device`.
+
+        Per PyTorch design, the original tensors will be returned without copying if target `device` is the current
+        device, otherwise a copied version will be returned.
+
+        .. note::
+
+           Any tensor stored in the optional attribute dictionary ``self.attr`` will NOT be inspected and be moved to
+           the target device.
+
+        Parameters
+        ----------
+        device : str
+            The target device
+
+        Returns
+        -------
+        Message
+            `self` on target `device`.
+        """
+        new_parameter = self.parameter.to(device=device) if isinstance(self.parameter, torch.Tensor) else self.parameter
+        new_particles = tuple(p.to(device=device) for p in self.particles) if self.particles is not None else None
+        new_weight = self.weight.to(device=device) if isinstance(self.weight, torch.Tensor) else self.weight
+        new_densities = tuple(d.to(device=device) for d in self.log_densities) \
+            if self.log_densities is not None else None
+
+        new_msg = Message(self.type,
+                          self.b_shape, self.p_shape, self.s_shape, self.e_shape,
+                          new_parameter, new_particles, new_weight, new_densities,
+                          device=device, **self.attr)
         return new_msg
 
     """
@@ -1146,7 +1187,7 @@ class Message:
         if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
             # Identity value tensor
-            to_fill = torch.zeros(new_b_shape + self.p_shape)
+            to_fill = torch.zeros(new_b_shape + self.p_shape, device=self.device)
             # Transpose target dimension with the first dimension
             to_fill = torch.transpose(to_fill, dim0=0, dim1=dim)
             t_param = torch.transpose(new_parameter, dim0=0, dim1=dim)
@@ -1157,7 +1198,7 @@ class Message:
         if isinstance(new_weight, torch.Tensor):
             # weights has shape (b_shape + s_shape)
             # Identity value tensor. Use ones here because we assume Message constructor will take care of normalization
-            to_fill = torch.ones(new_b_shape + self.s_shape)
+            to_fill = torch.ones(new_b_shape + self.s_shape, device=self.device)
             # Transpose target dimension with the first dimension
             to_fill = torch.transpose(to_fill, dim0=0, dim1=dim)
             t_weight = torch.transpose(new_weight, dim0=0, dim1=dim)
@@ -1431,14 +1472,14 @@ class Message:
             # parameters has shape (b_shape + p_shape)
             to_concat_shape = self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + \
                               self.b_shape[dim + 1:] + self.p_shape
-            to_concat = torch.zeros(to_concat_shape)
+            to_concat = torch.zeros(to_concat_shape, device=self.device)
             new_parameter = torch.cat([new_parameter, to_concat], dim=dim)
             new_parameter = new_parameter.contiguous()
         if isinstance(new_weight, torch.Tensor):
             # weights has shape (b_shape + s_shape)
             to_concat_shape = self.b_shape[:dim] + torch.Size([length - self.b_shape[dim]]) + \
                               self.b_shape[dim + 1:] + self.s_shape
-            to_concat = torch.ones(to_concat_shape)
+            to_concat = torch.ones(to_concat_shape, device=self.device)
             new_weight = torch.cat([new_weight, to_concat], dim=dim)
             new_weight = new_weight.contiguous()
 

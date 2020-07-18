@@ -351,7 +351,7 @@ variable’s metatype is <code class="docutils literal notranslate"><span class=
 <p>The Message class constitutes the most fundamental data structure in PySigma Graphical Architecture.</p>
 <dl class="py class">
 <dt id="pysigma.defs.Message">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">Message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_type</span></em>, <em class="sig-param"><span class="n">batch_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">param_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">sample_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">event_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">parameter</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">particles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weight</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">log_densities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.defs.</code><code class="sig-name descname">Message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_type</span></em>, <em class="sig-param"><span class="n">batch_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">param_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">sample_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">event_shape</span><span class="o">=</span><span class="default_value">torch.Size([])</span></em>, <em class="sig-param"><span class="n">parameter</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">particles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weight</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">log_densities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">'cpu'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message" title="Permalink to this definition">¶</a></dt>
 <dd><p>Message to be propagated between nodes in the graphical architecture.</p>
 <p>The <cite>Message</cite> class is the most fundamental data structure in PySigma that carries the knowledge of a batch of
 distributions to be processed by downstream graphs.</p>
@@ -388,6 +388,8 @@ necessary to specify <cite>batch_shape</cite>. Default to 1.</p></li>
 sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
 <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>, unless <cite>weight</cite> is 1, in which case the message represents a universal identity in
 the particles space. The jth entry must have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span></code>.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em>, </em><em>optional</em>) – The device where the tensor components are hosted. <code class="docutils literal notranslate"><span class="pre">.to(device)</span></code> will be called on the tensor arguments
+during initialization. Defaults to ‘cpu’.</p></li>
 <li><p><strong>**kwargs</strong> – Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
 cloned. Note that any <cite>dist_info</cite> required by DistributionServer regarding the specification of the parameters
 should be associated with the key <code class="docutils literal notranslate"><span class="pre">&quot;dist_info&quot;</span></code>.</p></li>
@@ -500,6 +502,17 @@ should be associated with the key <code class="docutils literal notranslate"><sp
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.defs.Message.device">
+<code class="sig-name descname">device</code><a class="headerlink" href="#pysigma.defs.Message.device" title="Permalink to this definition">¶</a></dt>
+<dd><p>The device where the tensor components are hosted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
 </dd>
 </dl>
 </dd></dl>
@@ -893,6 +906,30 @@ sanity check. An assertion error will be raised if <cite>same_particles_as()</ci
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.defs.Message.to_device">
+<code class="sig-name descname">to_device</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">device</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.to_device"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.to_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a version of <cite>self</cite> where the tensor components are hosted on the specified <cite>device</cite>.</p>
+<p>Per PyTorch design, the original tensors will be returned without copying if target <cite>device</cite> is the current
+device, otherwise a copied version will be returned.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Any tensor stored in the optional attribute dictionary <code class="docutils literal notranslate"><span class="pre">self.attr</span></code> will NOT be inspected and be moved to
+the target device.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>device</strong> (<em>str</em>) – The target device</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>self</cite> on target <cite>device</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
 </dd></dl>
