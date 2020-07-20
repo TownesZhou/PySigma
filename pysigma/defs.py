@@ -11,7 +11,9 @@ import numpy as np
 from copy import deepcopy
 from utils import KnowledgeServer
 
-
+"""
+    All PySigma global variables / constants should be declared below.
+"""
 # Global numerical precision
 NP_EPSILON = 10e-7
 
