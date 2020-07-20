@@ -12,6 +12,10 @@ from copy import deepcopy
 from utils import KnowledgeServer
 
 
+# Global numerical precision
+NP_EPSILON = 10e-7
+
+
 # Variable Metatypes and Variable for general inference
 class VariableMetatype(Enum):
     """Enum class for Variable metatypes.
