@@ -544,19 +544,22 @@ A new list of particles will then be drawn in the cognitive format by querying t
 <h2>Perceptual Buffer Node<a class="headerlink" href="#perceptual-buffer-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical._nodes.PBFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">PBFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">event_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">PBFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">batch_shape</span></em>, <em class="sig-param"><span class="n">event_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perception Buffer Factor Node.</p>
 <p>Receives perception / observation / evidence as particle list from <cite>perceive()</cite> and send particles message to WMVN.</p>
-<p>Do not support incoming link. Can only have one outgoing link connecting to a WMVN.</p>
+<p>Does not admit any incoming link. Only admits one outgoing link connecting to a WMVN.</p>
 <p>Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the
 previously buffered observation, a <code class="docutils literal notranslate"><span class="pre">None</span></code> observation needs to be perceived.</p>
-<p>Overwrite <cite>check_quiesce()</cite> so that quiescence is determined by self.visited, i.e., whether <cite>compute()</cite> has been
-carried out</p>
+<p>Overwrites <cite>check_quiesce()</cite> so that quiescence is determined by <code class="docutils literal notranslate"><span class="pre">self.visited</span></code>, i.e., whether <cite>compute()</cite> has
+been carried out.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
-<li><p><strong>event_shape</strong> (<em>torch.Size</em>) – The event shape of any observation / evidence event particles, except for <code class="docutils literal notranslate"><span class="pre">None</span></code> observation.</p></li>
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – The batch shape of the Predicate’s knowledge. In a PBFN this is solely used to align the particle weight tensor
+in the outgoing message to the correct shape.</p></li>
+<li><p><strong>event_shape</strong> (<em>torch.Size</em>) – The event shape of any observation / evidence event particles, except for <code class="docutils literal notranslate"><span class="pre">None</span></code> observation. Its length
+should match the number of predicate random arguments. See more details in following <cite>perceive()</cite> method.</p></li>
 </ul>
 </dd>
 </dl>
@@ -568,6 +571,17 @@ carried out</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.PBFN.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.b_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set by <cite>batch_shape</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
 </dd>
 </dl>
 </dd></dl>
@@ -585,16 +599,51 @@ carried out</p>
 
 <dl class="py method">
 <dt id="pysigma.graphical._nodes.PBFN.perceive">
-<code class="sig-name descname">perceive</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">observation</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.perceive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.perceive" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perceive a new piece of observation / evidence event particles, specified by <cite>observation</cite>. Sets the
+<code class="sig-name descname">perceive</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weight</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'joint'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.perceive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.perceive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perceives a new piece of observation / evidence particle events, specified by <cite>obs</cite>, with optional weight
+specified by <cite>weight</cite>. instantiate the perception message to be sent by <cite>compute()</cite> and store it in the
 perceptual buffer.</p>
+<p>If <cite>obs</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, a <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type identity message will be instantiated. Otherwise, it is a
+<code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> message with particle values from <cite>obs</cite>, particles weight reflecting <cite>weight</cite> (uniform
+if <cite>weight</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>), and uniform log sampling densities.</p>
+<p>The particle weight tensor will be copied and expanded to include full batch dimension shape <code class="docutils literal notranslate"><span class="pre">self.b_shape</span></code>.</p>
+<p>There are two perception mode: <cite>joint</cite> or <cite>marginal</cite>, specified by <cite>mode</cite>. This distinction makes a difference
+mostly for predicates with multiple random arguments:</p>
+<ul>
+<li><p>When in <cite>joint</cite> mode, the observations should be list of joint particle events. Accordingly, <cite>obs</cite> must be a
+2D tensor with the last dimension being the joint event dimension having a size equal to the sum of all random
+variables’ sizes (sum of <code class="docutils literal notranslate"><span class="pre">self.e_shape</span></code>), and the first dimension being the sample (indexing) dimension.
+‘weight’ must a 1D tensor with its length equal to the size of <cite>obs</cite> ‘s first dimension.</p>
+<p>Internally, in order to conform to standard message format, this joint event tensor <cite>obs</cite> will be broken up
+into chunks along the event dimension according to the sizes of the random variables. Each chunk thus
+represents a list of marginal event values, corresponding to one of the random variables, on an axis of a
+high-dimensional event lattice in the joint event space. A weight tensor of the same dimensional shape will be
+created to annotate this event lattice, with entries equal to values found in <cite>weight</cite> for the slots that
+corresponds to those joint events in <cite>obs</cite>, and other entries set to NP_EPSILON (representing numerically
+stable 0 weight).</p>
+</li>
+<li><p>When in <cite>marginal</cite> mode, the observations are tuple of marginal events for each random variable, and the
+assumption is taken that these marginal events for each random variable are mutually independent. Accordingly,
+<cite>obs</cite> must be an ITERABLE of 2D tensors, with the last dimension size of each entry equal to the size of the
+corresponding random variable, in the order specified by <code class="docutils literal notranslate"><span class="pre">self.e_shape</span></code>. Similarly, <cite>weight</cite> must also be
+an ITERABLE with the same length as <cite>obs</cite>, containing 1D tensors.</p></li>
+</ul>
+<p>The weights for duplicate events would be added together. However, this behavior should not be counted on and it
+is recommended to avoid duplicate entries in <cite>obs</cite> and instead use <cite>weight</cite> to signal the relative importance
+of each observation.</p>
+<p>Note that it is not necessary that <cite>weight</cite> is normalized and sums to 1; they will be automatically normalized
+when the outgoing message is instantiated. However <cite>weight</cite> must contain only positive values.</p>
 <p>This method should be called prior to the decision phase of a cognitive cycle for the perceived observation
 be sent to downstream nodes during the decision phase.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>observation</strong> (<em>torch.Tensor</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If not <code class="docutils literal notranslate"><span class="pre">None</span></code>, must be a 2D tensor representing the observation / evidence event particles. Its last
-dimension is assumed the event dimension and must be equal to the preset <code class="docutils literal notranslate"><span class="pre">self.e_shape</span></code>. Its first
-dimension is assumed the sample dimension, whose size indicates the number of events to perceive.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obs</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>torch.Tensor</em><em>, or </em><em>None. optional</em>) – If not <code class="docutils literal notranslate"><span class="pre">None</span></code>, must be a 2D tensor if <cite>mode</cite> is <code class="docutils literal notranslate"><span class="pre">joint</span></code>, or an iterable of 2D tensors if <cite>mode</cite> is
+<code class="docutils literal notranslate"><span class="pre">marginal</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>weight</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>torch.Tensor</em><em>, or </em><em>None. optional</em>) – If not <code class="docutils literal notranslate"><span class="pre">None</span></code>, must be a 1D tensor if <cite>mode</cite> is <code class="docutils literal notranslate"><span class="pre">joint</span></code>, or an iterable of 1D tensors if <cite>mode</cite> is
+<code class="docutils literal notranslate"><span class="pre">marginal</span></code>. If <cite>obs</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, this value will be ignored. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>mode</strong> (<em>{&quot;joint&quot;</em><em>, </em><em>&quot;marginal&quot;}</em>) – The perception mode. Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;joint&quot;</span></code>.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -609,29 +658,12 @@ dimension is assumed the sample dimension, whose size indicates the number of ev
 <dt id="pysigma.graphical._nodes.PBFN.compute">
 <code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sends the contents in perceptual buffer to the connected WMVN.</p>
-<p>If the perceptual buffer <code class="docutils literal notranslate"><span class="pre">self.buffer</span></code> is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, then a particle message will be generated with
-<code class="docutils literal notranslate"><span class="pre">self.buffer</span></code> as the particle values, a uniform particle weight and a uniform log sampling density. Otherwise,
-a <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type identity message will be generated</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical._nodes.PBFN.check_quiesce">
 <code class="sig-name descname">check_quiesce</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PBFN.check_quiesce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PBFN.check_quiesce" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check <code class="docutils literal notranslate"><span class="pre">new</span></code> attribute of incoming linkdata to determine whether this node has reached quiescence.</p>
-<p>By default, a node is determined quiesced if and only if <strong>all</strong> incoming linkdata has no <cite>new</cite> message.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Certain nodes may desire a different behavior for checking quiescence. In that case, this method should be
-overridden.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if this node has reached quiescence.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>bool</p>
-</dd>
-</dl>
+<dd><p>Overrides default behavior so now PBFN’s quiescence is determined by whether <cite>compute()</cite> has been called.</p>
 </dd></dl>
 
 </dd></dl>

@@ -219,6 +219,12 @@
 <span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">KnowledgeServer</span>
 
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    All PySigma global variables / constants should be declared below.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Global numerical precision</span>
+<span class="n">NP_EPSILON</span> <span class="o">=</span> <span class="mf">10e-7</span>
+
 
 <span class="c1"># Variable Metatypes and Variable for general inference</span>
 <div class="viewcode-block" id="VariableMetatype"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.VariableMetatype">[docs]</a><span class="k">class</span> <span class="nc">VariableMetatype</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>

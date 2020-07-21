@@ -216,7 +216,7 @@
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
 <span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Transform</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
-<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span>
+<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
 <span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">KnowledgeServer</span><span class="p">,</span> <span class="n">compatible_shape</span>
 <span class="kn">from</span> <span class="nn">structures</span> <span class="k">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
 
@@ -1270,56 +1270,195 @@
 
 <span class="sd">    Receives perception / observation / evidence as particle list from `perceive()` and send particles message to WMVN.</span>
 
-<span class="sd">    Do not support incoming link. Can only have one outgoing link connecting to a WMVN.</span>
+<span class="sd">    Does not admit any incoming link. Only admits one outgoing link connecting to a WMVN.</span>
 
 <span class="sd">    Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the</span>
 <span class="sd">    previously buffered observation, a ``None`` observation needs to be perceived.</span>
 
-<span class="sd">    Overwrite `check_quiesce()` so that quiescence is determined by self.visited, i.e., whether `compute()` has been</span>
-<span class="sd">    carried out</span>
+<span class="sd">    Overwrites `check_quiesce()` so that quiescence is determined by ``self.visited``, i.e., whether `compute()` has</span>
+<span class="sd">    been carried out.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    name : str</span>
 <span class="sd">        Name of this node</span>
+<span class="sd">    batch_shape : torch.Size</span>
+<span class="sd">        The batch shape of the Predicate&#39;s knowledge. In a PBFN this is solely used to align the particle weight tensor</span>
+<span class="sd">        in the outgoing message to the correct shape.</span>
 <span class="sd">    event_shape : torch.Size</span>
-<span class="sd">        The event shape of any observation / evidence event particles, except for ``None`` observation.</span>
+<span class="sd">        The event shape of any observation / evidence event particles, except for ``None`` observation. Its length</span>
+<span class="sd">        should match the number of predicate random arguments. See more details in following `perceive()` method.</span>
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
 <span class="sd">    buffer : torch.Tensor</span>
 <span class="sd">        The perceptual buffer. It is a 2D tensor whose last dimension is the event dimension with size equal to</span>
 <span class="sd">        ``self.e_shape``.</span>
+<span class="sd">    b_shape : torch.Size</span>
+<span class="sd">        Set by `batch_shape`.</span>
 <span class="sd">    e_shape : torch.Size</span>
 <span class="sd">        Set by `event_shape`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">):</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Perceptual Buffer Function Node&quot;</span>
 
-        <span class="c1"># Perceptual buffer</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Perceptual buffer. Initialize to identity message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="n">batch_shape</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">event_shape</span>
 
-<div class="viewcode-block" id="PBFN.perceive"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.perceive">[docs]</a>    <span class="k">def</span> <span class="nf">perceive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Perceive a new piece of observation / evidence event particles, specified by `observation`. Sets the</span>
+<div class="viewcode-block" id="PBFN.perceive"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.perceive">[docs]</a>    <span class="k">def</span> <span class="nf">perceive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;joint&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight</span>
+<span class="sd">        specified by `weight`. instantiate the perception message to be sent by `compute()` and store it in the</span>
 <span class="sd">        perceptual buffer.</span>
+
+<span class="sd">        If `obs` is ``None``, a ``MessageType.Both`` type identity message will be instantiated. Otherwise, it is a</span>
+<span class="sd">        ``MessageType.Particles`` message with particle values from `obs`, particles weight reflecting `weight` (uniform</span>
+<span class="sd">        if `weight` is ``None``), and uniform log sampling densities.</span>
+
+<span class="sd">        The particle weight tensor will be copied and expanded to include full batch dimension shape ``self.b_shape``.</span>
+
+<span class="sd">        There are two perception mode: `joint` or `marginal`, specified by `mode`. This distinction makes a difference</span>
+<span class="sd">        mostly for predicates with multiple random arguments:</span>
+
+<span class="sd">        * When in `joint` mode, the observations should be list of joint particle events. Accordingly, `obs` must be a</span>
+<span class="sd">          2D tensor with the last dimension being the joint event dimension having a size equal to the sum of all random</span>
+<span class="sd">          variables&#39; sizes (sum of ``self.e_shape``), and the first dimension being the sample (indexing) dimension.</span>
+<span class="sd">          &#39;weight&#39; must a 1D tensor with its length equal to the size of `obs` &#39;s first dimension.</span>
+
+<span class="sd">          Internally, in order to conform to standard message format, this joint event tensor `obs` will be broken up</span>
+<span class="sd">          into chunks along the event dimension according to the sizes of the random variables. Each chunk thus</span>
+<span class="sd">          represents a list of marginal event values, corresponding to one of the random variables, on an axis of a</span>
+<span class="sd">          high-dimensional event lattice in the joint event space. A weight tensor of the same dimensional shape will be</span>
+<span class="sd">          created to annotate this event lattice, with entries equal to values found in `weight` for the slots that</span>
+<span class="sd">          corresponds to those joint events in `obs`, and other entries set to NP_EPSILON (representing numerically</span>
+<span class="sd">          stable 0 weight).</span>
+
+<span class="sd">        * When in `marginal` mode, the observations are tuple of marginal events for each random variable, and the</span>
+<span class="sd">          assumption is taken that these marginal events for each random variable are mutually independent. Accordingly,</span>
+<span class="sd">          `obs` must be an ITERABLE of 2D tensors, with the last dimension size of each entry equal to the size of the</span>
+<span class="sd">          corresponding random variable, in the order specified by ``self.e_shape``. Similarly, `weight` must also be</span>
+<span class="sd">          an ITERABLE with the same length as `obs`, containing 1D tensors.</span>
+
+<span class="sd">        The weights for duplicate events would be added together. However, this behavior should not be counted on and it</span>
+<span class="sd">        is recommended to avoid duplicate entries in `obs` and instead use `weight` to signal the relative importance</span>
+<span class="sd">        of each observation.</span>
+
+<span class="sd">        Note that it is not necessary that `weight` is normalized and sums to 1; they will be automatically normalized</span>
+<span class="sd">        when the outgoing message is instantiated. However `weight` must contain only positive values.</span>
 
 <span class="sd">        This method should be called prior to the decision phase of a cognitive cycle for the perceived observation</span>
 <span class="sd">        be sent to downstream nodes during the decision phase.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        observation : torch.Tensor or None, optional</span>
-<span class="sd">            If not ``None``, must be a 2D tensor representing the observation / evidence event particles. Its last</span>
-<span class="sd">            dimension is assumed the event dimension and must be equal to the preset ``self.e_shape``. Its first</span>
-<span class="sd">            dimension is assumed the sample dimension, whose size indicates the number of events to perceive.</span>
+<span class="sd">        obs : iterable of torch.Tensor, torch.Tensor, or None. optional</span>
+<span class="sd">            If not ``None``, must be a 2D tensor if `mode` is ``joint``, or an iterable of 2D tensors if `mode` is</span>
+<span class="sd">            ``marginal``. Defaults to ``None``.</span>
+<span class="sd">        weight : iterable of torch.Tensor, torch.Tensor, or None. optional</span>
+<span class="sd">            If not ``None``, must be a 1D tensor if `mode` is ``joint``, or an iterable of 1D tensors if `mode` is</span>
+<span class="sd">            ``marginal``. If `obs` is ``None``, this value will be ignored. Defaults to ``None``.</span>
+<span class="sd">        mode : {&quot;joint&quot;, &quot;marginal&quot;}</span>
+<span class="sd">            The perception mode. Defaults to ``&quot;joint&quot;``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="n">observation</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">observation</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">observation</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> \
-            <span class="n">observation</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span>
+        <span class="k">assert</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;joint&#39;</span><span class="p">,</span> <span class="s1">&#39;marginal&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">obs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;joint&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obs</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;marginal&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span>
+             <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">o</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;joint&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">weight</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">weight</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;marginal&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span>
+             <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">w</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">w</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weight</span><span class="p">))</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">observation</span></div>
+        <span class="c1"># Set buffer to identity message and return directly if obs is None</span>
+        <span class="k">if</span> <span class="n">obs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">obs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="k">else</span> <span class="n">obs</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="k">else</span> <span class="n">weight</span>
+        <span class="c1"># Check event size</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;joint&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;joint&#39; perception mode, the size of the observation&#39;s event dimension must match the &quot;</span> \
+                <span class="s2">&quot;sum of random variable sizes. Expect </span><span class="si">{}</span><span class="s2">, but encountered </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">assert</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;joint&#39; perception mode, when specified, the weight tensor must have same length as the &quot;</span> \
+                <span class="s2">&quot;observation tensor&#39;s first dimension. Found weight length </span><span class="si">{}</span><span class="s2">, and observation tensor&#39;s first &quot;</span> \
+                <span class="s2">&quot;dimension size </span><span class="si">{}</span><span class="s2">&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;marginal&#39; perception mode, the number of observations must match the number of random &quot;</span> \
+                <span class="s2">&quot;variables. Found </span><span class="si">{}</span><span class="s2"> entries in `obs` but </span><span class="si">{}</span><span class="s2"> entries in `self.e_shape`.&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">weight</span><span class="p">),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;marginal&#39; perception mode, the number of observations must match the number of weights. &quot;</span> \
+                <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> entries in `obs` but </span><span class="si">{}</span><span class="s2"> entries in `weight`.&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">weight</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obs</span><span class="p">)),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;marginal&#39; perception mode, the size of each marginal observation&#39;s event dimension must &quot;</span> \
+                <span class="s2">&quot;match the size of the corresponding random variable. Expect event sizes </span><span class="si">{}</span><span class="s2">, but encountered </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">weight</span><span class="p">)),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: the first dimension size of each observation tensor in `obs` should match the length of the &quot;</span> \
+                <span class="s2">&quot;corresponding weight tensor in `weight`. Found observation first dimension sizes </span><span class="si">{}</span><span class="s2">, and weight &quot;</span> \
+                <span class="s2">&quot;lengths </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weight</span><span class="p">))</span>
+
+        <span class="c1"># If mode is &#39;joint&#39;, split joint events and create sparse weight lattice</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;joint&#39;</span><span class="p">:</span>
+            <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">))</span>
+            <span class="c1"># split and find unique marginal event values</span>
+            <span class="n">split_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">unique_ptcl</span><span class="p">,</span> <span class="n">inverse_ids</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">split_ptcl</span><span class="p">))</span>
+
+            <span class="c1"># Create lattice weight, sample shape only.</span>
+            <span class="c1"># If weight is None, create a uniform weight list</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">weight</span>
+            <span class="n">stacked_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">inverse_ids</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">ptcl_ids</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">stacked_ids</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+            <span class="n">ptcl_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">NP_EPSILON</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ptcl_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ptcl_ids</span><span class="p">):</span>
+                <span class="n">ptcl_weight</span><span class="p">[</span><span class="n">ptcl_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="c1"># Expand weight to include full batch dims</span>
+            <span class="n">ptcl_weight</span> <span class="o">=</span> <span class="n">ptcl_weight</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">))</span> <span class="o">+</span> <span class="n">s_shape</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="n">s_shape</span><span class="p">)</span>
+
+            <span class="c1"># Uniform log densities</span>
+            <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">),)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span>
+
+            <span class="n">perceptual_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
+                                     <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                                     <span class="n">particles</span><span class="o">=</span><span class="n">unique_ptcl</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">ptcl_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">log_densities</span><span class="p">)</span>
+
+        <span class="c1"># If mode is &#39;marginal&#39;, take cross product of weights if not None and init msg directly</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ptcl_weight</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">expanded_log_weight</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)):</span>
+                    <span class="n">view_dim</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">view_dim</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">expanded_log_weight</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">weight</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">view_dim</span><span class="p">)))</span>
+                <span class="n">sum_log_weight</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">expanded_log_weight</span><span class="p">)</span>
+                <span class="n">ptcl_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">sum_log_weight</span><span class="p">)</span>
+
+            <span class="c1"># Uniform log densities</span>
+            <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">),</span> <span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span>
+
+            <span class="n">perceptual_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
+                                     <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                                     <span class="n">particles</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">ptcl_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">log_densities</span><span class="p">)</span>
+
+        <span class="c1"># set buffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">perceptual_msg</span></div>
 
 <div class="viewcode-block" id="PBFN.add_link"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.</span>
@@ -1335,26 +1474,18 @@
 <div class="viewcode-block" id="PBFN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sends the contents in perceptual buffer to the connected WMVN.</span>
 
-<span class="sd">        If the perceptual buffer ``self.buffer`` is not ``None``, then a particle message will be generated with</span>
-<span class="sd">        ``self.buffer`` as the particle values, a uniform particle weight and a uniform log sampling density. Otherwise,</span>
-<span class="sd">        a ``MessageType.Both`` type identity message will be generated</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
-        <span class="c1"># If no perception has been set in the buffer, then do not send</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span>
 
-        <span class="c1"># Otherwise, send either way. Sampling log density set to uniform 0</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
         <span class="n">out_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
-                          <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">particles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_msg</span><span class="p">)</span></div>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">)</span></div>
 
     <span class="c1"># Override check_quiesce() so that quiescence is equivalent to visited</span>
 <div class="viewcode-block" id="PBFN.check_quiesce"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.check_quiesce">[docs]</a>    <span class="k">def</span> <span class="nf">check_quiesce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Overrides default behavior so now PBFN&#39;s quiescence is determined by whether `compute()` has been called.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">visited</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span></div></div>
 
