@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
-from defs import VariableMetatype, Variable, MessageType, Message
+from defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
 from utils import KnowledgeServer, compatible_shape
 from structures import VariableMap, Summarization
 
@@ -1062,56 +1062,195 @@ class PBFN(FactorNode):
 
     Receives perception / observation / evidence as particle list from `perceive()` and send particles message to WMVN.
 
-    Do not support incoming link. Can only have one outgoing link connecting to a WMVN.
+    Does not admit any incoming link. Only admits one outgoing link connecting to a WMVN.
 
     Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the
     previously buffered observation, a ``None`` observation needs to be perceived.
 
-    Overwrite `check_quiesce()` so that quiescence is determined by self.visited, i.e., whether `compute()` has been
-    carried out
+    Overwrites `check_quiesce()` so that quiescence is determined by ``self.visited``, i.e., whether `compute()` has
+    been carried out.
 
     Parameters
     ----------
     name : str
         Name of this node
+    batch_shape : torch.Size
+        The batch shape of the Predicate's knowledge. In a PBFN this is solely used to align the particle weight tensor
+        in the outgoing message to the correct shape.
     event_shape : torch.Size
-        The event shape of any observation / evidence event particles, except for ``None`` observation.
+        The event shape of any observation / evidence event particles, except for ``None`` observation. Its length
+        should match the number of predicate random arguments. See more details in following `perceive()` method.
 
     Attributes
     ----------
     buffer : torch.Tensor
         The perceptual buffer. It is a 2D tensor whose last dimension is the event dimension with size equal to
         ``self.e_shape``.
+    b_shape : torch.Size
+        Set by `batch_shape`.
     e_shape : torch.Size
         Set by `event_shape`.
     """
-    def __init__(self, name, event_shape):
-        assert isinstance(event_shape, torch.Size) and len(event_shape) == 1
+    def __init__(self, name, batch_shape, event_shape):
+        assert isinstance(batch_shape, torch.Size)
+        assert isinstance(event_shape, torch.Size)
         super(PBFN, self).__init__(name)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
-        # Perceptual buffer
-        self.buffer = None
+        # Perceptual buffer. Initialize to identity message
+        self.buffer = Message(MessageType.Both, batch_shape=self.b_shape, parameter=0, weight=1)
+        self.b_shape = batch_shape
         self.e_shape = event_shape
 
-    def perceive(self, observation=None):
-        """Perceive a new piece of observation / evidence event particles, specified by `observation`. Sets the
+    def perceive(self, obs=None, weight=None, mode='joint'):
+        """Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight
+        specified by `weight`. instantiate the perception message to be sent by `compute()` and store it in the
         perceptual buffer.
+
+        If `obs` is ``None``, a ``MessageType.Both`` type identity message will be instantiated. Otherwise, it is a
+        ``MessageType.Particles`` message with particle values from `obs`, particles weight reflecting `weight` (uniform
+        if `weight` is ``None``), and uniform log sampling densities.
+
+        The particle weight tensor will be copied and expanded to include full batch dimension shape ``self.b_shape``.
+
+        There are two perception mode: `joint` or `marginal`, specified by `mode`. This distinction makes a difference
+        mostly for predicates with multiple random arguments:
+
+        * When in `joint` mode, the observations should be list of joint particle events. Accordingly, `obs` must be a
+          2D tensor with the last dimension being the joint event dimension having a size equal to the sum of all random
+          variables' sizes (sum of ``self.e_shape``), and the first dimension being the sample (indexing) dimension.
+          'weight' must a 1D tensor with its length equal to the size of `obs` 's first dimension.
+
+          Internally, in order to conform to standard message format, this joint event tensor `obs` will be broken up
+          into chunks along the event dimension according to the sizes of the random variables. Each chunk thus
+          represents a list of marginal event values, corresponding to one of the random variables, on an axis of a
+          high-dimensional event lattice in the joint event space. A weight tensor of the same dimensional shape will be
+          created to annotate this event lattice, with entries equal to values found in `weight` for the slots that
+          corresponds to those joint events in `obs`, and other entries set to NP_EPSILON (representing numerically
+          stable 0 weight).
+
+        * When in `marginal` mode, the observations are tuple of marginal events for each random variable, and the
+          assumption is taken that these marginal events for each random variable are mutually independent. Accordingly,
+          `obs` must be an ITERABLE of 2D tensors, with the last dimension size of each entry equal to the size of the
+          corresponding random variable, in the order specified by ``self.e_shape``. Similarly, `weight` must also be
+          an ITERABLE with the same length as `obs`, containing 1D tensors.
+
+        The weights for duplicate events would be added together. However, this behavior should not be counted on and it
+        is recommended to avoid duplicate entries in `obs` and instead use `weight` to signal the relative importance
+        of each observation.
+
+        Note that it is not necessary that `weight` is normalized and sums to 1; they will be automatically normalized
+        when the outgoing message is instantiated. However `weight` must contain only positive values.
 
         This method should be called prior to the decision phase of a cognitive cycle for the perceived observation
         be sent to downstream nodes during the decision phase.
 
         Parameters
         ----------
-        observation : torch.Tensor or None, optional
-            If not ``None``, must be a 2D tensor representing the observation / evidence event particles. Its last
-            dimension is assumed the event dimension and must be equal to the preset ``self.e_shape``. Its first
-            dimension is assumed the sample dimension, whose size indicates the number of events to perceive.
+        obs : iterable of torch.Tensor, torch.Tensor, or None. optional
+            If not ``None``, must be a 2D tensor if `mode` is ``joint``, or an iterable of 2D tensors if `mode` is
+            ``marginal``. Defaults to ``None``.
+        weight : iterable of torch.Tensor, torch.Tensor, or None. optional
+            If not ``None``, must be a 1D tensor if `mode` is ``joint``, or an iterable of 1D tensors if `mode` is
+            ``marginal``. If `obs` is ``None``, this value will be ignored. Defaults to ``None``.
+        mode : {"joint", "marginal"}
+            The perception mode. Defaults to ``"joint"``.
         """
-        assert observation is None or isinstance(observation, torch.Tensor) and observation.dim() == 2 and \
-            observation.shape[-1:] == self.e_shape
+        assert mode in ['joint', 'marginal']
+        assert obs is None or (mode == 'joint' and isinstance(obs, torch.Tensor) and obs.dim() == 2) or \
+            (mode == 'marginal' and isinstance(obs, Iterable) and
+             all(isinstance(o, torch.Tensor) and o.dim() == 2 for o in obs))
+        assert weight is None or \
+            (mode == 'joint' and isinstance(weight, torch.Tensor) and weight.dim() == 1 and torch.all(weight > 0)) or \
+            (mode == 'marginal' and isinstance(weight, Iterable) and
+             all(isinstance(w, torch.Tensor) and w.dim() == 1 and torch.all(w > 0) for w in weight))
 
-        self.buffer = observation
+        # Set buffer to identity message and return directly if obs is None
+        if obs is None:
+            self.buffer = Message(MessageType.Both, batch_shape=self.b_shape, parameter=0, weight=1)
+            return
+
+        obs = tuple(obs) if isinstance(obs, Iterable) else obs
+        weight = tuple(weight) if isinstance(weight, Iterable) else weight
+        # Check event size
+        if mode == 'joint':
+            assert obs.shape[-1] == sum(self.e_shape), \
+                "At {}: in 'joint' perception mode, the size of the observation's event dimension must match the " \
+                "sum of random variable sizes. Expect {}, but encountered {}."\
+                .format(self.name, sum(self.e_shape), obs.shape[-1])
+            assert weight is None or weight.shape[0] == obs.shape[0], \
+                "At {}: in 'joint' perception mode, when specified, the weight tensor must have same length as the " \
+                "observation tensor's first dimension. Found weight length {}, and observation tensor's first " \
+                "dimension size {}"\
+                .format(self.name, weight.shape[0], obs.shape[0])
+        else:
+            assert len(obs) == len(self.e_shape), \
+                "At {}: in 'marginal' perception mode, the number of observations must match the number of random " \
+                "variables. Found {} entries in `obs` but {} entries in `self.e_shape`." \
+                .format(self.name, len(obs), len(self.e_shape))
+            assert len(obs) == len(weight), \
+                "At {}: in 'marginal' perception mode, the number of observations must match the number of weights. " \
+                "Found {} entries in `obs` but {} entries in `weight`." \
+                .format(self.name, len(obs), len(weight))
+            assert all(o.shape[-1] == self.e_shape[i] for i, o in enumerate(obs)), \
+                "At {}: in 'marginal' perception mode, the size of each marginal observation's event dimension must " \
+                "match the size of the corresponding random variable. Expect event sizes {}, but encountered {}."\
+                .format(self.name, list(self.e_shape), list(o.shape[-1] for o in obs))
+            assert all(o.shape[0] == w.shape[0] for o, w in zip(obs, weight)), \
+                "At {}: the first dimension size of each observation tensor in `obs` should match the length of the " \
+                "corresponding weight tensor in `weight`. Found observation first dimension sizes {}, and weight " \
+                "lengths {}."\
+                .format(self.name, list(o.shape[0] for o in obs), list(w.shape[0] for w in weight))
+
+        # If mode is 'joint', split joint events and create sparse weight lattice
+        if mode == 'joint':
+            s_shape = torch.Size([obs.shape[0]] * len(self.e_shape))
+            # split and find unique marginal event values
+            split_ptcl = torch.split(obs, self.e_shape, dim=-1)
+            unique_ptcl, inverse_ids = zip(*tuple(torch.unique(p, return_inverse=True, dim=0) for p in split_ptcl))
+
+            # Create lattice weight, sample shape only.
+            # If weight is None, create a uniform weight list
+            weight = torch.ones(obs.shape[0], dtype=torch.float) if weight is None else weight
+            stacked_ids = torch.stack(inverse_ids, dim=1)
+            ptcl_ids = tuple(torch.squeeze(i) for i in torch.split(stacked_ids, 1, dim=0))
+            ptcl_weight = torch.ones(s_shape) * NP_EPSILON
+            for i, ptcl_id in enumerate(ptcl_ids):
+                ptcl_weight[ptcl_id] = weight[i]
+
+            # Expand weight to include full batch dims
+            ptcl_weight = ptcl_weight.view(torch.Size([1] * len(self.b_shape)) + s_shape).expand(self.b_shape + s_shape)
+
+            # Uniform log densities
+            log_densities = tuple(torch.zeros(obs.shape[0], dtype=torch.float),) * len(self.e_shape)
+
+            perceptual_msg = Message(MessageType.Particles,
+                                     batch_shape=self.b_shape, sample_shape=s_shape, event_shape=self.e_shape,
+                                     particles=unique_ptcl, weight=ptcl_weight, log_densities=log_densities)
+
+        # If mode is 'marginal', take cross product of weights if not None and init msg directly
+        else:
+            s_shape = torch.Size([o.shape[0] for o in obs])
+            if weight is None:
+                ptcl_weight = 1
+            else:
+                expanded_log_weight = []
+                for i in range(len(self.e_shape)):
+                    view_dim = [1] * (len(self.e_shape) - 1)
+                    view_dim.insert(i, -1)
+                    expanded_log_weight.append(torch.log(weight[i].view(view_dim)))
+                sum_log_weight = sum(expanded_log_weight)
+                ptcl_weight = torch.exp(sum_log_weight)
+
+            # Uniform log densities
+            log_densities = tuple(torch.zeros(obs.shape[0], dtype=torch.float), ) * len(self.e_shape)
+
+            perceptual_msg = Message(MessageType.Particles,
+                                     batch_shape=self.b_shape, sample_shape=s_shape, event_shape=self.e_shape,
+                                     particles=obs, weight=ptcl_weight, log_densities=log_densities)
+
+        # set buffer
+        self.buffer = perceptual_msg
 
     def add_link(self, linkdata):
         """For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.
@@ -1127,26 +1266,18 @@ class PBFN(FactorNode):
     def compute(self):
         """Sends the contents in perceptual buffer to the connected WMVN.
 
-        If the perceptual buffer ``self.buffer`` is not ``None``, then a particle message will be generated with
-        ``self.buffer`` as the particle values, a uniform particle weight and a uniform log sampling density. Otherwise,
-        a ``MessageType.Both`` type identity message will be generated
-
         """
         super(PBFN, self).compute()
-        # If no perception has been set in the buffer, then do not send
-        if self.buffer is None:
-            return
 
-        # Otherwise, send either way. Sampling log density set to uniform 0
         assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
-        out_msg = Message(MessageType.Particles,
-                          sample_shape=self.s_shape, batch_shape=self.b_shape, event_shape=self.e_shape,
-                          particles=self.buffer, weights=self.weights, log_density=0)
-        out_ld.write(out_msg)
+        out_ld.write(self.buffer)
 
     # Override check_quiesce() so that quiescence is equivalent to visited
     def check_quiesce(self):
+        """Overrides default behavior so now PBFN's quiescence is determined by whether `compute()` has been called.
+
+        """
         self.quiescence = self.visited
         return self.quiescence
 
