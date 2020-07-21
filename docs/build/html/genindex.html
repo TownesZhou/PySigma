@@ -113,6 +113,7 @@
 <li class="toctree-l3"><a class="reference internal" href="references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#parameter-store-factor-node">Parameter Store Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
 </ul>
@@ -265,6 +266,8 @@
 </li>
         <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.add_link">(pysigma.graphical._nodes.PBFN method)</a>
 </li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PSFN.add_link">(pysigma.graphical._nodes.PSFN method)</a>
+</li>
         <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.add_link">(pysigma.graphical._nodes.VariableNode method)</a>
 </li>
       </ul></li>
@@ -289,6 +292,8 @@
 </li>
         <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.b_shape">(pysigma.graphical._nodes.PBFN attribute)</a>
 </li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PSFN.b_shape">(pysigma.graphical._nodes.PSFN attribute)</a>
+</li>
         <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.b_shape">(pysigma.graphical._nodes.VariableNode attribute)</a>
 </li>
       </ul></li>
@@ -300,10 +305,10 @@
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_expand">batch_expand() (pysigma.defs.Message method)</a>
 </li>
-      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_flatten">batch_flatten() (pysigma.defs.Message method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_flatten">batch_flatten() (pysigma.defs.Message method)</a>
+</li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_put">batch_index_put() (pysigma.defs.Message method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_select">batch_index_select() (pysigma.defs.Message method)</a>
@@ -342,8 +347,6 @@
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.compose">compose() (pysigma.defs.Message static method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DFN.compute">compute() (pysigma.graphical._nodes.DFN method)</a>
 
       <ul>
@@ -355,9 +358,13 @@
 </li>
         <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PBFN.compute">(pysigma.graphical._nodes.PBFN method)</a>
 </li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PSFN.compute">(pysigma.graphical._nodes.PSFN method)</a>
+</li>
         <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.WMVN.compute">(pysigma.graphical._nodes.WMVN method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.constraints">constraints (pysigma.defs.Variable attribute)</a>
 </li>
   </ul></td>
@@ -593,9 +600,13 @@
       <ul>
         <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.LTMFN.p_shape">(pysigma.graphical._nodes.LTMFN attribute)</a>
 </li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PSFN.p_shape">(pysigma.graphical._nodes.PSFN attribute)</a>
+</li>
         <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode.p_shape">(pysigma.graphical._nodes.VariableNode attribute)</a>
 </li>
       </ul></li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PSFN.param">param (pysigma.graphical._nodes.PSFN attribute)</a>
+</li>
       <li><a href="references/utils.html#pysigma.utils.DistributionServer.param2dist">param2dist() (pysigma.utils.DistributionServer class method)</a>
 </li>
       <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical._nodes.DFN.param_var">param_var (pysigma.graphical._nodes.DFN attribute)</a>
@@ -632,6 +643,8 @@
         <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical._nodes.Node.pretty_log">(pysigma.graphical._nodes.Node attribute)</a>
 </li>
       </ul></li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PSFN">PSFN (class in pysigma.graphical._nodes)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -671,6 +684,8 @@
 </li>
       </ul></li>
       <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Relational">Relational (pysigma.defs.VariableMetatype attribute)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical._nodes.PSFN.reset_param">reset_param() (pysigma.graphical._nodes.PSFN method)</a>
 </li>
       <li><a href="references/graphical/data-structures.html#pysigma.graphical._nodes.LinkData.reset_shape">reset_shape() (pysigma.graphical._nodes.LinkData method)</a>
 </li>

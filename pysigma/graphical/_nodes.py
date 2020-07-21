@@ -6,6 +6,7 @@ import torch
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from torch.nn import Parameter
 from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
@@ -1055,6 +1056,80 @@ class LTMFN(FactorNode):
             "to calling this method."
         out_ld = self.out_linkdata[0]
         out_ld.write(self.msg_cache)
+
+
+class PSFN(FactorNode):
+    """Parameter Store Factor Node
+
+    Stores the batched distribution parameters of the Predicate's knowledge and feeds them to LTMFN via DVN. Admits
+    no incoming links and only one outgoing link to a DVN.
+
+    This node is typically used in combination with a LTMFN, where a PSFN handles the actual storage and updates of the
+    distribution parameter, and LTMFN uses this parameter to derive the event messages to be sent to WMVN gate node.
+
+    By default, the parameter tensor is stored using a torch.nn.Parameter wrapper, so that any downstream processing
+    and derived tensors automatically turns on gradient tracing.
+
+    Parameters
+    ----------
+    batch_shape : torch.Size
+        The batch shape of the distribution parameter.
+    param_shape : torch.Size
+        The parameter shape of the distribution parameter.
+    init_param : torch.Tensor or None
+        The initialized parameter tensor. If not None, should be a tensor of shape (batch_shape + param_shape). Defaults
+        to None.
+
+    Attributes
+    ----------
+    b_shape
+    p_shape
+    param : torch.nn.Parameter
+        The parameter buffer. Should be a tensor of shape ``(batch_shape + param_shape)``. Value defaults to a zero
+        tensor, when `init_param` is None during initialization.
+    """
+    def __init__(self, name, batch_shape, param_shape, init_param=None):
+        assert isinstance(batch_shape, torch.Size)
+        assert isinstance(param_shape, torch.Size)
+        assert init_param is None or \
+            (isinstance(init_param, torch.Tensor) and init_param.shape == batch_shape + param_shape)
+        super(PSFN, self).__init__(name)
+
+        self.b_shape = batch_shape
+        self.p_shape = param_shape
+
+        # Parameter buffer
+        self.param = Parameter(init_param, requires_grad=True) if init_param is not None else \
+            Parameter(torch.zeros(self.b_shape + self.p_shape, dtype=torch.float), requires_grad=True)
+
+    def reset_param(self, param):
+        """Resets the parameter tensor.
+
+        Parameters
+        ----------
+        param : torch.Tensor
+            The tensor to be set as the parameter value. Should have shape ``(self.b_shape + self.p_shape)``.
+        """
+        assert isinstance(param, torch.Tensor) and param.shape == self.b_shape + self.p_shape
+
+        self.param = Parameter(param, requires_grad=True)
+
+    def add_link(self, linkdata):
+        """For PSFN, only one outgoing link is admitted.
+
+        """
+        assert not linkdata.to_fn and len(self.out_linkdata) == 0
+        super(PSFN, self).add_link(linkdata)
+
+    def compute(self):
+        """Instantiates and sends a Parameter message.
+
+        """
+        super(PSFN, self).compute()
+        assert len(self.out_linkdata) > 0
+        out_msg = Message(MessageType.Parameter, batch_shape=self.b_shape, param_shape=self.p_shape,
+                          parameter=self.param)
+        self.out_linkdata[0].write(out_msg)
 
 
 class PBFN(FactorNode):

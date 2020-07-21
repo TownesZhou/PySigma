@@ -115,6 +115,7 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Predicate Subgraph Nodes</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#working-memory-variable-node">Working Memory Variable Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#parameter-store-factor-node">Parameter Store Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#perceptual-buffer-node">Perceptual Buffer Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#working-memory-factor-node">Working Memory Factor Node</a></li>
 </ul>
@@ -535,6 +536,76 @@ A new list of particles will then be drawn in the cognitive format by querying t
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="parameter-store-factor-node">
+<h2>Parameter Store Factor Node<a class="headerlink" href="#parameter-store-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical._nodes.PSFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">PSFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">batch_shape</span></em>, <em class="sig-param"><span class="n">param_shape</span></em>, <em class="sig-param"><span class="n">init_param</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PSFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PSFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameter Store Factor Node</p>
+<p>Stores the batched distribution parameters of the Predicate’s knowledge and feeds them to LTMFN via DVN. Admits
+no incoming links and only one outgoing link to a DVN.</p>
+<p>This node is typically used in combination with a LTMFN, where a PSFN handles the actual storage and updates of the
+distribution parameter, and LTMFN uses this parameter to derive the event messages to be sent to WMVN gate node.</p>
+<p>By default, the parameter tensor is stored using a torch.nn.Parameter wrapper, so that any downstream processing
+and derived tensors automatically turns on gradient tracing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – The batch shape of the distribution parameter.</p></li>
+<li><p><strong>param_shape</strong> (<em>torch.Size</em>) – The parameter shape of the distribution parameter.</p></li>
+<li><p><strong>init_param</strong> (<em>torch.Tensor</em><em> or </em><em>None</em>) – The initialized parameter tensor. If not None, should be a tensor of shape (batch_shape + param_shape). Defaults
+to None.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.PSFN.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.PSFN.b_shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.PSFN.p_shape">
+<code class="sig-name descname">p_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.PSFN.p_shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical._nodes.PSFN.param">
+<code class="sig-name descname">param</code><a class="headerlink" href="#pysigma.graphical._nodes.PSFN.param" title="Permalink to this definition">¶</a></dt>
+<dd><p>The parameter buffer. Should be a tensor of shape <code class="docutils literal notranslate"><span class="pre">(batch_shape</span> <span class="pre">+</span> <span class="pre">param_shape)</span></code>. Value defaults to a zero
+tensor, when <cite>init_param</cite> is None during initialization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.nn.Parameter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.PSFN.reset_param">
+<code class="sig-name descname">reset_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PSFN.reset_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PSFN.reset_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the parameter tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>param</strong> (<em>torch.Tensor</em>) – The tensor to be set as the parameter value. Should have shape <code class="docutils literal notranslate"><span class="pre">(self.b_shape</span> <span class="pre">+</span> <span class="pre">self.p_shape)</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.PSFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PSFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PSFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>For PSFN, only one outgoing link is admitted.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical._nodes.PSFN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#PSFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.PSFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiates and sends a Parameter message.</p>
 </dd></dl>
 
 </dd></dl>

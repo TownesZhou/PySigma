@@ -16,6 +16,13 @@ Long-Term Memory Factor Node
    :members:
    :undoc-members:
 
+Parameter Store Factor Node
+---------------------------
+
+.. autoclass:: pysigma.graphical._nodes.PSFN
+   :members:
+   :undoc-members:
+
 
 Perceptual Buffer Node
 ----------------------
