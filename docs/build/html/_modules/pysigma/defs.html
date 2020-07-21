@@ -876,7 +876,7 @@
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;String representation for Message instance is yet to be implemented.&quot;</span><span class="p">)</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Static utility methods of Message class</span>
+<span class="sd">        Message class static utility methods </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Message.compose"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.compose">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">compose</span><span class="p">(</span><span class="n">msg1</span><span class="p">,</span> <span class="n">msg2</span><span class="p">):</span>
@@ -929,6 +929,28 @@
                           <span class="n">particles</span><span class="o">=</span><span class="n">ptcl_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">ptcl_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">ptcl_msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">,</span>
                           <span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">msg1</span><span class="o">.</span><span class="n">attr</span><span class="p">,</span> <span class="o">**</span><span class="n">msg2</span><span class="o">.</span><span class="n">attr</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
+
+<div class="viewcode-block" id="Message.identity"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.identity">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">identity</span><span class="p">(</span><span class="n">msg_type</span><span class="o">=</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a minimum identity message (without declaration of shapes) of the specified type.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        msg_type : MessageType</span>
+<span class="sd">            Target message type. Defaults to ``MessageType.Both``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The identity message.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg_type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg_type</span>
+        <span class="k">if</span> <span class="n">msg_type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">msg_type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        General utility member methods</span>

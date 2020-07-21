@@ -85,8 +85,8 @@ class LinkData:
         assert isinstance(to_fn, bool)
         assert isinstance(epsilon, float)
 
-        # Message memory, of type Message
-        self.memory = None
+        # Message memory. Initialized to the identity message
+        self.memory = Message.identity()
         # Whether this message is new, and haven't been read by recipient node. Of type bool
         self.new = False
         # Incident nodes and their variable list

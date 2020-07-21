@@ -760,6 +760,23 @@ each distribution instance in the batch.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="pysigma.defs.Message.identity">
+<em class="property">static </em><code class="sig-name descname">identity</code><span class="sig-paren">(</span><em class="sig-param">msg_type=&lt;MessageType.Both: 3&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.identity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.identity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a minimum identity message (without declaration of shapes) of the specified type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>msg_type</strong> (<a class="reference internal" href="#pysigma.defs.MessageType" title="pysigma.defs.MessageType"><em>MessageType</em></a>) – Target message type. Defaults to <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The identity message.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pysigma.defs.Message.size">
 <code class="sig-name descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a tuple of the message’s shapes: <code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code></p>

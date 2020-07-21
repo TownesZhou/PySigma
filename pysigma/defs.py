@@ -668,7 +668,7 @@ class Message:
         raise NotImplementedError("String representation for Message instance is yet to be implemented.")
 
     """
-        Static utility methods of Message class
+        Message class static utility methods 
     """
     @staticmethod
     def compose(msg1, msg2):
@@ -721,6 +721,28 @@ class Message:
                           particles=ptcl_msg.particles, weight=ptcl_msg.weight, log_densities=ptcl_msg.log_densities,
                           **{**msg1.attr, **msg2.attr})
         return new_msg
+
+    @staticmethod
+    def identity(msg_type=MessageType.Both):
+        """Returns a minimum identity message (without declaration of shapes) of the specified type.
+
+        Parameters
+        ----------
+        msg_type : MessageType
+            Target message type. Defaults to ``MessageType.Both``.
+
+        Returns
+        -------
+        Message
+            The identity message.
+        """
+        assert MessageType.Parameter in msg_type or MessageType.Particles in msg_type
+        if msg_type is MessageType.Both:
+            return Message(MessageType.Both, parameter=0, weight=1)
+        elif msg_type is MessageType.Parameter:
+            return Message(MessageType.Parameter, parameter=0)
+        else:
+            return Message(MessageType.Particles, weight=1)
 
     """
         General utility member methods

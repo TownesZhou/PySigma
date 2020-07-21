@@ -293,8 +293,8 @@
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">to_fn</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">epsilon</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
 
-        <span class="c1"># Message memory, of type Message</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">memory</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Message memory. Initialized to the identity message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">identity</span><span class="p">()</span>
         <span class="c1"># Whether this message is new, and haven&#39;t been read by recipient node. Of type bool</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">new</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="c1"># Incident nodes and their variable list</span>
