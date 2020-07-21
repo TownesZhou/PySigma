@@ -34,3 +34,7 @@ Perceptual Buffer Node
 
 Working Memory Factor Node
 --------------------------
+
+.. autoclass:: pysigma.graphical._nodes.WMFN
+   :members:
+   :undoc-members:

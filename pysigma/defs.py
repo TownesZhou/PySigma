@@ -1,14 +1,15 @@
 """
     Basic structures in the graphical architecture
 """
+
+from copy import deepcopy
+from enum import Enum, Flag, auto
+from collections.abc import Iterable
 import torch
 from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from torch.nn.functional import l1_loss
-from enum import Enum, Flag, auto
-from collections.abc import Iterable
 import numpy as np
-from copy import deepcopy
 from utils import KnowledgeServer
 
 """
@@ -409,7 +410,6 @@ class Message:
     """
         Overload arithmetic operators
     """
-
     def __add__(self, other):
         """Overloads the addition operation ``+``.
 
@@ -488,11 +488,10 @@ class Message:
         if self.isid and other.isid:
             if self.type in other.type:
                 return other
-            else:
-                return self
-        elif self.isid:
+            return self
+        if self.isid:
             return other
-        elif other.isid:
+        if other.isid:
             return self
 
         param_msg = None
@@ -591,7 +590,7 @@ class Message:
         # Undefined type cannot be scalar multiplied
         assert self.type is not MessageType.Undefined, \
             "Message of undefined type cannot be scalar multiplied. The message has type '{}'" \
-            .format(self.type, other.type)
+            .format(self.type)
 
         # If self is identity, return directly.
         if self.isid:
@@ -623,8 +622,8 @@ class Message:
                 # Extract int/float from singleton scalar tensor
                 if isinstance(b_s_other, torch.Tensor) and b_s_other.dim() == 0:
                     b_s_other = b_s_other.item()
-                # Take weights tensor to the power of the scaler
-                new_weights = torch.pow(new_weight, b_s_other)
+                # Take weights tensor to the power of the scalar
+                new_weight = torch.pow(new_weight, b_s_other)
 
             # Clone tensor contents
             cloned_particles = tuple(p.clone() for p in self.particles)
@@ -739,15 +738,13 @@ class Message:
         assert MessageType.Parameter in msg_type or MessageType.Particles in msg_type
         if msg_type is MessageType.Both:
             return Message(MessageType.Both, parameter=0, weight=1)
-        elif msg_type is MessageType.Parameter:
+        if msg_type is MessageType.Parameter:
             return Message(MessageType.Parameter, parameter=0)
-        else:
-            return Message(MessageType.Particles, weight=1)
+        return Message(MessageType.Particles, weight=1)
 
     """
         General utility member methods
     """
-
     def size(self):
         """Returns a tuple of the message's shapes: ``(batch_shape, param_shape, sample_shape, event_shape)``
 
@@ -1155,7 +1152,7 @@ class Message:
 
         if isinstance(new_parameter, torch.Tensor):
             # parameters has shape (b_shape + p_shape)
-            new_parameters = torch.index_select(new_parameter, dim, index)
+            new_parameter = torch.index_select(new_parameter, dim, index)
         if isinstance(new_weight, torch.Tensor):
             # weights has shape (b_shape + s_shape)
             new_weight = torch.index_select(new_weight, dim, index)
@@ -1580,8 +1577,9 @@ class Message:
         Message
             The flattened message of `self`.
         """
-        assert dims is None or (isinstance(dims, Iterable) and all(isinstance(dim, int) and
-                                -len(self.b_shape) <= dim <= len(self.b_shape) - 1 for dim in dims))
+        assert dims is None or (isinstance(dims, Iterable) and
+                                all(isinstance(dim, int) and
+                                    -len(self.b_shape) <= dim <= len(self.b_shape) - 1 for dim in dims))
 
         # Translate dim value to positive if it's negative
         dims = list(len(self.b_shape) + dim if dim < 0 else dim for dim in dims) if dims is not None else \
@@ -2020,7 +2018,6 @@ class Message:
                           particles=new_particles, weight=new_weight, log_densities=new_densities, **self.attr)
 
         return new_msg
-
 
 
 # TODO: Enum class of all the inference method

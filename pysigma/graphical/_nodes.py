@@ -2,10 +2,10 @@
     All kinds of nodes in the graphical architecture
 """
 import copy
-import torch
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+import torch
 from torch.nn import Parameter
 from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
@@ -109,8 +109,7 @@ class LinkData:
         vn_name = self.vn.name
         if self.to_fn:
             return vn_name + " --> " + fn_name
-        else:
-            return fn_name + " --> " + vn_name
+        return fn_name + " --> " + vn_name
 
     def reset_shape(self, msg_shape):
         """Reset shape for the Message
@@ -341,15 +340,7 @@ class FactorNode(Node, ABC):
     """Factor node abstract base class.
 
     Guarantees that all incident nodes are variable nodes.
-
-    Parameters
-    ----------
-    name : str
-        Name of this factor node.
     """
-    def __init__(self, name):
-        super(FactorNode, self).__init__(name)
-
     def add_link(self, linkdata):
         """Add a linkdata connecting to a variable node
 
@@ -974,7 +965,6 @@ class LTMFN(FactorNode):
             if linkdata.attr['type'] == 'event':
                 assert len(list(ld for ld in self.in_linkdata if ld.attr['type'] == 'event')) == 0,\
                     "At {}: Attempting to register more than one incoming event type linkdata"
-        
         super(LTMFN, self).add_link(linkdata)
 
     def toggle_draw(self, to_draw):
@@ -1070,6 +1060,9 @@ class PSFN(FactorNode):
     By default, the parameter tensor is stored using a torch.nn.Parameter wrapper, so that any downstream processing
     and derived tensors automatically turns on gradient tracing.
 
+    The `check_quiesce()` method is overridden so that PSFN's quiescence state is determined by whether this node is
+    visited during the decision phase, i.e., whether `compute()` is called.
+
     Parameters
     ----------
     batch_shape : torch.Size
@@ -1094,6 +1087,7 @@ class PSFN(FactorNode):
         assert init_param is None or \
             (isinstance(init_param, torch.Tensor) and init_param.shape == batch_shape + param_shape)
         super(PSFN, self).__init__(name)
+        self.pretty_log["node type"] = "Parameter Store Factor Node"
 
         self.b_shape = batch_shape
         self.p_shape = param_shape
@@ -1131,6 +1125,13 @@ class PSFN(FactorNode):
                           parameter=self.param)
         self.out_linkdata[0].write(out_msg)
 
+    def check_quiesce(self):
+        """Overrides so that PSFN's quiescence state is equivalent to its visited state
+
+        """
+        self.quiescence = self.visited
+        return self.quiescence
+
 
 class PBFN(FactorNode):
     """Perception Buffer Factor Node.
@@ -1142,7 +1143,7 @@ class PBFN(FactorNode):
     Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the
     previously buffered observation, a ``None`` observation needs to be perceived.
 
-    Overwrites `check_quiesce()` so that quiescence is determined by ``self.visited``, i.e., whether `compute()` has
+    Overrides `check_quiesce()` so that quiescence is determined by ``self.visited``, i.e., whether `compute()` has
     been carried out.
 
     Parameters
@@ -1172,10 +1173,10 @@ class PBFN(FactorNode):
         super(PBFN, self).__init__(name)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
-        # Perceptual buffer. Initialize to identity message
-        self.buffer = Message(MessageType.Both, batch_shape=self.b_shape, parameter=0, weight=1)
         self.b_shape = batch_shape
         self.e_shape = event_shape
+        # Perceptual buffer. Initialize to identity message
+        self.buffer = Message(MessageType.Both, batch_shape=self.b_shape, parameter=0, weight=1)
 
     def perceive(self, obs=None, weight=None, mode='joint'):
         """Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight
@@ -1358,48 +1359,53 @@ class PBFN(FactorNode):
 
 
 class WMFN(FactorNode):
+    """Working Memory Factor Node.
+
+    Effectively a buffer node that contains a memory buffer, WMFN mixes the incoming message with its stored memory by
+    taking a weight sum during the modification phase, updates its memory with the result, and sends this updated memory
+    during the decision phase at the next cognitive cycle. The first two steps are performed by `update_memory()`,
+    whereas sending the message is, as always, performed by `compute()`.
+
+    The weighted sum mixture behavior can be described as follows::
+
+        new_memory = new_msg + (1 - decay_rate) * old_memory
+
+    where ``decay_rate`` is a real number in range [0, 1]. The vector addition and scalar multiplication for messages
+    of different types are mathematically defined by the Message class. See
+    :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more details.
+
+    The incoming message will always be cloned before weighted sum update is performed. This is to prevent
+    any components of the memory message from in-place change by some parts elsewhere in the graph.
+
+    Admits only one incoming and one outgoing links. Note that WMFN does not check the message shape of messages and
+    memory contents. These should be guaranteed compatible by linkdata and neighboring nodes.
+
+    The `check_quiesce()` method is overridden so that PSFN's quiescence state is determined by whether this node is
+    visited during the decision phase, i.e., whether `compute()` is called.
+
+    Parameters
+    ----------
+    name : str
+        The name of this node
+    decay_rate : float
+        The decay rate of the memory contents.
+
+    Attributes
+    ----------
     """
-        Working Memory Factor Node.
-
-        Effectively a buffer node that contains a memory buffer, whose content will be sent
-            as outgoing message only until the next decision cycle. During modification phase, the memory buffer content
-            can either be replaced entirely by, or taken a weighted sum with incoming message.
-
-        WMFN can buffer either parameters memory or event memory. However, each of them entails different handling.
-            Therefore, one must specify a type to be either 'param' or 'event' during initialization.
-
-        Can specify a decay rate. The new memory is then derived via
-                old_content * (1 - decay_rate) + new_content
-            therefore if decay_rate is 1 (default value), the old content will be completely forgotten.
-
-        The weighted sum procedure is viewed as a linear combination process in the message space. The linear operator
-            (addition, scalar multiplication) definitions are different depending on the content type. Please see
-            Message class documentation for more info.
-
-        Note that the incoming message will always be cloned before performing weighted sum update. This is to prevent
-            any parts of the memory message from in-place change by some parts elsewhere in the graph.
-
-        Can admit only one incoming and one outgoing links.
-    """
-    def __init__(self, name, content_type, decay_rate=1):
-        """
-            :param content_type: one of 'param' or 'event'
-            :param decay_rate:   The decay rate at which the old memory vanished. Within range [0, 1]
-                                 Default to 1, i.e., entirely forgetting old memory and replace with new content
-        """
+    def __init__(self, name, decay_rate=1):
+        assert isinstance(decay_rate, (float, int)) and 0 <= decay_rate <= 1
         super(WMFN, self).__init__(name)
         self.pretty_log["node type"] = "Working Memory Function Node"
 
-        assert content_type in ['param', 'event']
-        assert isinstance(decay_rate, (float, int)) and 0 <= decay_rate <= 1
-
-        self.content_type = content_type
         self.decay_rate = decay_rate
-        # memory buffer.
-        self.memory = None
+        # memory buffer. Initialized to a universal identity message
+        self.memory = Message.identity()
 
-    # Override so that only allow one incoming link and one outgoing link
     def add_link(self, linkdata):
+        """WMFN only admits one incoming link and one outgoing link.
+
+        """
         if linkdata.to_fn:
             assert len(self.in_linkdata) == 0
         else:
@@ -1408,35 +1414,33 @@ class WMFN(FactorNode):
         super(WMFN, self).add_link(linkdata)
 
     def update_memory(self):
-        """
-            Update the content in memory using message from incoming link.
-            Should only be called during modification phase
+        """Updates the content in memory using message from incoming link.
+
+        This step should be called during the modification phase.
         """
         assert len(self.in_linkdata) > 0
         in_ld = self.in_linkdata[0]
         # Clone incoming message
         new_msg = in_ld.read().clone()
-        assert self.memory is None or (isinstance(self.memory, Message) and new_msg.type == self.memory.type and
-                                       new_msg.size() == self.memory.size())
+        assert compatible_shape(self.memory, new_msg), \
+            "At {}: found incompatible message shapes. The new message has shape {}, whereas the current working " \
+            "memory content has shape {}".format(self.name, new_msg.shape, self.memory.shape)
 
-        # If memory is None or decay_rate is 1, directly replace memory buffer content
-        if self.memory is None or self.decay_rate == 1:
-            self.memory = new_msg
-        # Otherwise, perform weighted sum update
-        else:
-            self.memory = new_msg + self.memory * (1 - self.decay_rate)
+        # perform weighted sum update
+        self.memory = new_msg + self.memory * (1 - self.decay_rate)
 
     def compute(self):
-        """
-            Sends memory content toward outgoing link (if memory is not None)
+        """Sends memory content toward outgoing link
+
         """
         super(WMFN, self).compute()
         assert len(self.out_linkdata) > 0
-        if self.memory is not None:
-            self.out_linkdata[0].write(self.memory)
+        self.out_linkdata[0].write(self.memory)
 
-    # Overrides so that quiescence for WMFN is equivalent to visited
     def check_quiesce(self):
+        """Overrides so that quiescence for WMFN is equivalent to visited
+
+        """
         self.quiescence = self.visited
         return self.quiescence
 
@@ -1480,7 +1484,6 @@ class AlphaFactorNode(FactorNode, ABC):
         else:
             assert len(self.out_linkdata) == 0 or linkdata.attr['direction'] != self.out_linkdata[0].attr['direction']
             assert len(self.out_linkdata) <= 1
-            
         super(AlphaFactorNode, self).add_link(linkdata)
 
         # If the other ld of this ld pair has not been added, then temporarily register this ld instance directly
@@ -1547,7 +1550,6 @@ class RMFN(AlphaFactorNode):
         """
         super(RMFN, self).__init__(name)
         self.pretty_log["node type"] = "Relation Variable Mapping Node"
-        
         assert isinstance(name, str)
         assert isinstance(arg2var, dict) and all(isinstance(k, Variable) for k in arg2var.keys()) and \
                all(isinstance(v, Variable) for v in arg2var.values())
@@ -2144,24 +2146,4 @@ class GFN:
         Induce a message computation task for each of the outgoing link.
     """
     pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

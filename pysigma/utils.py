@@ -1,13 +1,13 @@
 """
     Utility functions
 """
+from collections.abc import Iterable
+import numpy as np
 import torch
 import torch.distributions
-from torch.distributions import Distribution, ExponentialFamily
+from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint, integer_interval
 from torch.distributions.kl import kl_divergence
-from collections.abc import Iterable
-import math
 
 
 def intern_name(name: str, struc_type: str):
@@ -19,11 +19,11 @@ def intern_name(name: str, struc_type: str):
     """
     assert struc_type in ["type", "predicate", "conditional"], "unknown type for processing structure name"
     assert isinstance(name, str)
-    if struc_type is "type":
+    if struc_type == "type":
         return "TYPE_[" + name.upper() + "]"
-    elif struc_type is "predicate":
+    elif struc_type == "predicate":
         return "PRED_[" + name.upper() + "]"
-    elif struc_type is "conditional":
+    else:
         return "COND_[" + name.upper() + "]"
 
 
@@ -33,11 +33,11 @@ def extern_name(name: str, struc_type: str):
     """
     assert struc_type in ["type", "predicate", "conditional"], "unknown type for processing structure name"
     assert isinstance(name, str)
-    if struc_type is "type":
+    if struc_type == "type":
         assert name.find("TYPE_") >= 0
-    if struc_type is "predicate":
+    if struc_type == "predicate":
         assert name.find("PRED_[") >= 0
-    if struc_type is "conditional":
+    if struc_type == "conditional":
         assert name.find("COND_[") >= 0
     return name[6:-1]
 
@@ -937,7 +937,7 @@ class KnowledgeServer:
         # Treat values as volume products and take mod w.r.t. variables' spans
         modulo_list = []
         residue = particles
-        base = math.prod(var_span)
+        base = np.prod(var_span)
         # Going forward through spans to take modulo
         for span in var_span:
             base /= span
