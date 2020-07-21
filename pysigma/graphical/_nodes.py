@@ -251,9 +251,6 @@ class Node(ABC):
     ----------
     name : str
         Name of the node.
-    quiescence : bool
-        Indicates whether this node has reached quiescence, and no further computation at this node is necessary at
-        the current cycle. Will default to ``False`` at the start of the cycle.
     visited : bool
         Indicates whether this node has been visited at all, i.e., `compute()` method being called at the current cycle.
         Default to ``False`` at the start of the cycle.
@@ -269,9 +266,6 @@ class Node(ABC):
 
     def __init__(self, name):
         self.name = name
-        # Flag indicating whether quiescence reached in current cycle. If so, no sum-product local processing needed at
-        #   this node.
-        self.quiescence = False
         # Flag indicating whether this node has been visited (compute() method called) during a decision cycle
         self.visited = False
 
@@ -288,28 +282,22 @@ class Node(ABC):
         # override to provide the node's name as its string representation
         return self.name
 
-    def check_quiesce(self):
-        """Check ``new`` attribute of incoming linkdata to determine whether this node has reached quiescence.
+    @property
+    def quiescence(self):
+        """Indicates whether this node has reached quiescence state, and no further message update computations, i.e.,
+        `compute()`, is necessary at the decision phase of the current cognitive cycle. This property thus plays an
+        important role in deciding the node traversing schedule of the graphical architecture.
 
-        By default, a node is determined quiesced if and only if **all** incoming linkdata has no `new` message.
+        The default behavior is to check whether any incoming linkdata contains a new unread message. If so, it is
+        decided that this node has breached quiescence and should carry out `compute()`, otherwise this nodes stays
+        quiesced.
 
-        .. note::
-
-            Certain nodes may desire a different behavior for checking quiescence. In that case, this method should be
-            overridden.
-
-        Returns
-        -------
-        bool
-            ``True`` if this node has reached quiescence.
+        This property should be overridden by subclass that desires a different quiescence checking behavior. For
+        example for certain nodes, `compute()` may only be called once *all* incoming linkdata contain new messages, not
+        *any*, and for other nodes their quiescence states depend only on whether `compute()` has ever been called
+        within the current decision phase.
         """
-        quiesced = True
-        for in_ld in self.in_linkdata:
-            if in_ld.new:
-                quiesced = False
-                break
-        self.quiescence = quiesced
-        return self.quiescence
+        return any(in_ld.new for in_ld in self.in_linkdata)
 
     @abstractmethod
     def add_link(self, linkdata):
@@ -320,20 +308,29 @@ class Node(ABC):
 
     @abstractmethod
     def compute(self):
-        """Compute method to be called to propagate messages during decision phase.
+        """Compute method to be called to propagate messages during decision phases.
 
         Note that ``super()`` must be called within `compute()` method in any child class, because all abstract
         node-level statistics logging is taken care of herein.
 
-        The default quiescence behavior for `compute()` is to return directly if `check_quiesce()` returns ``True``,
+        The default quiescence behavior for `compute()` is to return directly if `self.quiescence` is ``True``,
         without logging anything or performing any further computation. Note that such behavior may or may not be
         desired by child node class.
         """
         # Return directly if quiesced
-        if self.check_quiesce():
+        if self.quiescence:
             return
-        # TODO: Other general logging regarding node computation statistics to be added here
+        # General logging regarding node computation statistics to be added here
         self.visited = True
+
+    def reset_state(self):
+        """Clears and resets the node's message propagation statistics to prepare logging for the imminent decision
+        phase computation.
+
+        .. note::  This method should be called prior to the first call to compute() at every cognitive cycle.
+        """
+        # Clears visited state
+        self.visited = False
 
 
 class FactorNode(Node, ABC):
@@ -627,6 +624,14 @@ class WMVN(VariableNode):
     A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
     particles needs to be queried.
 
+    WMVN quiescence state:
+        A WMVN reaches quiescence state if and only if **any** incoming linkdata contains new message.
+
+    It is defined as such so that, although inefficiency may be induced due to WMVN having to fire multiple times while
+    sending partially complete messages, it is guaranteed that no new arriving message would be blocked herein simply
+    because other messages were blocked elsewhere and did not arrive at this node, consequently blocking all downstream
+    processing.
+
     Parameters
     ----------
     name : str
@@ -860,6 +865,8 @@ class LTMFN(FactorNode):
     which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling
     procedure.
 
+    .. todo::  Define LTMFN's quiescence behavior.
+
     Parameters
     ----------
     name : str
@@ -1060,8 +1067,10 @@ class PSFN(FactorNode):
     By default, the parameter tensor is stored using a torch.nn.Parameter wrapper, so that any downstream processing
     and derived tensors automatically turns on gradient tracing.
 
-    The `check_quiesce()` method is overridden so that PSFN's quiescence state is determined by whether this node is
-    visited during the decision phase, i.e., whether `compute()` is called.
+    PSFN quiescence state:
+        A PSFN reaches quiescence state if and only if it has been visited.
+
+    The `quiescence` property is therefore overridden to conform to this definition.
 
     Parameters
     ----------
@@ -1125,26 +1134,28 @@ class PSFN(FactorNode):
                           parameter=self.param)
         self.out_linkdata[0].write(out_msg)
 
-    def check_quiesce(self):
+    @property
+    def quiescence(self):
         """Overrides so that PSFN's quiescence state is equivalent to its visited state
 
         """
-        self.quiescence = self.visited
-        return self.quiescence
+        return self.visited
 
 
 class PBFN(FactorNode):
     """Perception Buffer Factor Node.
 
-    Receives perception / observation / evidence as particle list from `perceive()` and send particles message to WMVN.
+    Receives perception / observation / evidence as particle list from `perceive()` and sends particles message to WMVN.
 
     Does not admit any incoming link. Only admits one outgoing link connecting to a WMVN.
 
     Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the
     previously buffered observation, a ``None`` observation needs to be perceived.
 
-    Overrides `check_quiesce()` so that quiescence is determined by ``self.visited``, i.e., whether `compute()` has
-    been carried out.
+    PBFN quiescence state:
+        A PBFN reaches quiescence state if and only if it has been visited.
+
+    The `quiescence` property is therefore overridden to conform to this definition.
 
     Parameters
     ----------
@@ -1349,13 +1360,12 @@ class PBFN(FactorNode):
         out_ld = self.out_linkdata[0]
         out_ld.write(self.buffer)
 
-    # Override check_quiesce() so that quiescence is equivalent to visited
-    def check_quiesce(self):
+    @property
+    def quiescence(self):
         """Overrides default behavior so now PBFN's quiescence is determined by whether `compute()` has been called.
 
         """
-        self.quiescence = self.visited
-        return self.quiescence
+        return self.visited
 
 
 class WMFN(FactorNode):
@@ -1392,6 +1402,8 @@ class WMFN(FactorNode):
 
     Attributes
     ----------
+    decay_rate
+    memory
     """
     def __init__(self, name, decay_rate=1):
         assert isinstance(decay_rate, (float, int)) and 0 <= decay_rate <= 1
@@ -1452,12 +1464,12 @@ class WMFN(FactorNode):
 
 
 class AlphaFactorNode(FactorNode, ABC):
-    """
-        Abstract base class for any factor node belonging to a alpha subgraph
+    """Abstract base class for any factor node belonging to an alpha subgraph.
 
-        The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and
-            outgoing link. Additionally, links must declare a special attribute 'direction' with value 'inward' or
-            'outward' to indicate whether it is pointing toward the conditional gamma factor node or not.
+    Captures the commonality of all alpha subgraph nodes:
+    The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and
+        outgoing link. Additionally, links must declare a special attribute 'direction' with value 'inward' or
+        'outward' to indicate whether it is pointing toward the conditional gamma factor node or not.
 
         Such link check is implemented in add_link() to be inherited by concrete alpha factor node class. Also
             implemented in this method is the registration of labeled pairs of linkdata in self.labeled_ld_pair

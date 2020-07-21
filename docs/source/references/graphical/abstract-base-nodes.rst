@@ -27,5 +27,9 @@ Variable Node
 Alpha Factor Node
 -----------------
 
+.. autoclass:: pysigma.graphical._nodes.AlphaFactorNode
+   :members:
+   :undoc-members:
+
 Beta Factor Node
 ----------------
