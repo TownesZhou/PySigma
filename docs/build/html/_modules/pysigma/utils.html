@@ -210,13 +210,13 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Utility functions</span>
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.distributions</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span><span class="p">,</span> <span class="n">ExponentialFamily</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span><span class="p">,</span> <span class="n">integer_interval</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.kl</span> <span class="k">import</span> <span class="n">kl_divergence</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
-<span class="kn">import</span> <span class="nn">math</span>
 
 
 <span class="k">def</span> <span class="nf">intern_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">struc_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
@@ -228,11 +228,11 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="n">struc_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;predicate&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span> <span class="s2">&quot;unknown type for processing structure name&quot;</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;TYPE_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
-    <span class="k">elif</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;predicate&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;predicate&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;PRED_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
-    <span class="k">elif</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;conditional&quot;</span><span class="p">:</span>
+    <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;COND_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
 
 
@@ -242,11 +242,11 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="n">struc_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;predicate&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span> <span class="s2">&quot;unknown type for processing structure name&quot;</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;TYPE_&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
-    <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;predicate&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;predicate&quot;</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;PRED_[&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
-    <span class="k">if</span> <span class="n">struc_type</span> <span class="ow">is</span> <span class="s2">&quot;conditional&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;conditional&quot;</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;COND_[&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
     <span class="k">return</span> <span class="n">name</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
@@ -1146,7 +1146,7 @@
         <span class="c1"># Treat values as volume products and take mod w.r.t. variables&#39; spans</span>
         <span class="n">modulo_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">residue</span> <span class="o">=</span> <span class="n">particles</span>
-        <span class="n">base</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">var_span</span><span class="p">)</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">var_span</span><span class="p">)</span>
         <span class="c1"># Going forward through spans to take modulo</span>
         <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">:</span>
             <span class="n">base</span> <span class="o">/=</span> <span class="n">span</span>

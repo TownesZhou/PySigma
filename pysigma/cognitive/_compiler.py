@@ -3,7 +3,8 @@
 
     Compiler implementation - compile predicates and conditionals into underlying factor subgraph
 """
-from ..graphical._nodes import *
+from graphical import LTMFN, PBFN, WMFN
+from ..graphical.basic_nodes import *
 from defs import *
 
 

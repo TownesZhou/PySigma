@@ -4,7 +4,7 @@ Predicate Subgraph Nodes
 Working Memory Variable Node
 ----------------------------
 
-.. autoclass:: pysigma.graphical._nodes.WMVN
+.. autoclass:: pysigma.graphical.predicate_nodes.WMVN
    :members:
    :undoc-members:
 
@@ -12,14 +12,14 @@ Working Memory Variable Node
 Long-Term Memory Factor Node
 ----------------------------
 
-.. autoclass:: pysigma.graphical._nodes.LTMFN
+.. autoclass:: pysigma.graphical.predicate_nodes.LTMFN
    :members:
    :undoc-members:
 
 Parameter Store Factor Node
 ---------------------------
 
-.. autoclass:: pysigma.graphical._nodes.PSFN
+.. autoclass:: pysigma.graphical.predicate_nodes.PSFN
    :members:
    :undoc-members:
 
@@ -27,7 +27,7 @@ Parameter Store Factor Node
 Perceptual Buffer Node
 ----------------------
 
-.. autoclass:: pysigma.graphical._nodes.PBFN
+.. autoclass:: pysigma.graphical.predicate_nodes.PBFN
    :members:
    :undoc-members:
 
@@ -35,6 +35,6 @@ Perceptual Buffer Node
 Working Memory Factor Node
 --------------------------
 
-.. autoclass:: pysigma.graphical._nodes.WMFN
+.. autoclass:: pysigma.graphical.predicate_nodes.WMFN
    :members:
    :undoc-members:

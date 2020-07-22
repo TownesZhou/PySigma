@@ -1,6 +1,5 @@
 from pysigma.graphical import Graph
-from defs import *
-from pysigma.graphical._nodes import *
+from pysigma.graphical.basic_nodes import *
 
 
 def generate_var_list(var_names, var_sizes):

@@ -1443,8 +1443,8 @@ concatenated events will be placed at <cite>target_event_dim</cite> dimension.</
 <div class="section" id="linkdata">
 <h2>LinkData<a class="headerlink" href="#linkdata" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="pysigma.graphical._nodes.LinkData">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">LinkData</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vn</span></em>, <em class="sig-param"><span class="n">fn</span></em>, <em class="sig-param"><span class="n">to_fn</span></em>, <em class="sig-param"><span class="n">msg_shape</span></em>, <em class="sig-param"><span class="n">epsilon</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LinkData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LinkData" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">LinkData</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vn</span></em>, <em class="sig-param"><span class="n">fn</span></em>, <em class="sig-param"><span class="n">to_fn</span></em>, <em class="sig-param"><span class="n">msg_shape</span></em>, <em class="sig-param"><span class="n">epsilon</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#LinkData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData" title="Permalink to this definition">¶</a></dt>
 <dd><p>Identifies the data of a directed link between a factor node and a variable node. Stores intermediate messages in
 its message memory.</p>
 <p>Note that links are directional, and two of such links should be specified with opposite directions to represent
@@ -1454,8 +1454,8 @@ an edge.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>vn</strong> (<a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode" title="pysigma.graphical._nodes.VariableNode"><em>VariableNode</em></a>) – VariableNode instance that this link is incident to.</p></li>
-<li><p><strong>fn</strong> (<a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical._nodes.FactorNode" title="pysigma.graphical._nodes.FactorNode"><em>FactorNode</em></a>) – FactorNode instance that this link is incident to.</p></li>
+<li><p><strong>vn</strong> (<a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode" title="pysigma.graphical.basic_nodes.VariableNode"><em>VariableNode</em></a>) – VariableNode instance that this link is incident to.</p></li>
+<li><p><strong>fn</strong> (<a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical.basic_nodes.FactorNode" title="pysigma.graphical.basic_nodes.FactorNode"><em>FactorNode</em></a>) – FactorNode instance that this link is incident to.</p></li>
 <li><p><strong>to_fn</strong> (<em>bool</em>) – True if this link is pointing toward the factor node.</p></li>
 <li><p><strong>msg_shape</strong> (<em>tuple of torch.Size</em>) – The shape of the message to carry. Used for sanity check of message shapes. Should be in the format
 <code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code>. An empty shape <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code> should be used as
@@ -1465,8 +1465,8 @@ the default none shape.</p></li>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.memory">
-<code class="sig-name descname">memory</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.memory" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.memory">
+<code class="sig-name descname">memory</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.memory" title="Permalink to this definition">¶</a></dt>
 <dd><p>The message memory buffer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -1476,8 +1476,8 @@ the default none shape.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.new">
-<code class="sig-name descname">new</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.new" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.new">
+<code class="sig-name descname">new</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.new" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indicates if this link-data has received a new message in the current decision phase.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -1487,30 +1487,30 @@ the default none shape.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.vn">
-<code class="sig-name descname">vn</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.vn" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.vn">
+<code class="sig-name descname">vn</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.vn" title="Permalink to this definition">¶</a></dt>
 <dd><p>The incident variable node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical._nodes.VariableNode" title="pysigma.graphical._nodes.VariableNode">VariableNode</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode" title="pysigma.graphical.basic_nodes.VariableNode">VariableNode</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.fn">
-<code class="sig-name descname">fn</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.fn" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.fn">
+<code class="sig-name descname">fn</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.fn" title="Permalink to this definition">¶</a></dt>
 <dd><p>The incident factor node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical._nodes.FactorNode" title="pysigma.graphical._nodes.FactorNode">FactorNode</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical.basic_nodes.FactorNode" title="pysigma.graphical.basic_nodes.FactorNode">FactorNode</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.msg_shape">
-<code class="sig-name descname">msg_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.msg_shape" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.msg_shape">
+<code class="sig-name descname">msg_shape</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.msg_shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>The allowable message shape, in the format <code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -1520,8 +1520,8 @@ the default none shape.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.to_fn">
-<code class="sig-name descname">to_fn</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.to_fn" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.to_fn">
+<code class="sig-name descname">to_fn</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.to_fn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indicates if this link-data is pointing towards a factor node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -1531,8 +1531,8 @@ the default none shape.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.epsilon">
-<code class="sig-name descname">epsilon</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.epsilon" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.epsilon">
+<code class="sig-name descname">epsilon</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.epsilon" title="Permalink to this definition">¶</a></dt>
 <dd><p>Epsilon upper bound for checking message difference.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -1542,8 +1542,8 @@ the default none shape.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.attr">
-<code class="sig-name descname">attr</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.attr" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.attr">
+<code class="sig-name descname">attr</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.attr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Additional special attributes specified via <cite>kwargs</cite> in the constructor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -1553,8 +1553,8 @@ the default none shape.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.LinkData.pretty_log">
-<code class="sig-name descname">pretty_log</code><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.pretty_log" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.pretty_log">
+<code class="sig-name descname">pretty_log</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.pretty_log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pretty logging for front-end visualization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -1564,8 +1564,8 @@ the default none shape.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.LinkData.reset_shape">
-<code class="sig-name descname">reset_shape</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LinkData.reset_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.reset_shape" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.reset_shape">
+<code class="sig-name descname">reset_shape</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg_shape</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#LinkData.reset_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.reset_shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reset shape for the Message</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1580,8 +1580,8 @@ shape <code class="docutils literal notranslate"><span class="pre">torch.Size([]
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.LinkData.write">
-<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_msg</span></em>, <em class="sig-param"><span class="n">check_diff</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clone</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LinkData.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.write" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_msg</span></em>, <em class="sig-param"><span class="n">check_diff</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clone</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#LinkData.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes to the link message memory with the new message specified via <cite>new_msg</cite>. Once a new message is
 written, <code class="docutils literal notranslate"><span class="pre">self.new</span></code> will be set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 <p>The message shape <code class="docutils literal notranslate"><span class="pre">new_msg.shape</span></code> will first be checked against <code class="docutils literal notranslate"><span class="pre">self.msg_shape</span></code> to ensure that the message
@@ -1630,8 +1630,8 @@ is first called so that shape check works for the new message.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.LinkData.read">
-<code class="sig-name descname">read</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clone</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#LinkData.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.LinkData.read" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.LinkData.read">
+<code class="sig-name descname">read</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clone</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#LinkData.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData.read" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the current content stored in memory. Set <code class="docutils literal notranslate"><span class="pre">self.new</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code> to indicate this link message
 has been read in the current decision phase.</p>
 <dl class="field-list simple">

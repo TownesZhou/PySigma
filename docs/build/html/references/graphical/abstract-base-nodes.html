@@ -219,8 +219,8 @@
 <div class="section" id="node">
 <h2>Node<a class="headerlink" href="#node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="pysigma.graphical._nodes.Node">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">Node</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.Node" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.Node">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">Node</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node" title="Permalink to this definition">¶</a></dt>
 <dd><p>The base class for all nodes in PySigma graphical architecture.</p>
 <p>Declares common attributes between <cite>FactorNode</cite> and <cite>VariableNode</cite>, for example a flag indicating whether this node
 has reach quiescence, i.e., whether no new message shall be sent via adjacent links in current cycle. During
@@ -231,8 +231,8 @@ construction of the graph, its instance should be passed to <cite>NetworkX</cite
 </dd>
 </dl>
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.Node.name">
-<code class="sig-name descname">name</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.name" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.Node.name">
+<code class="sig-name descname">name</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Name of the node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -242,20 +242,8 @@ construction of the graph, its instance should be passed to <cite>NetworkX</cite
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.Node.quiescence">
-<code class="sig-name descname">quiescence</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.quiescence" title="Permalink to this definition">¶</a></dt>
-<dd><p>Indicates whether this node has reached quiescence, and no further computation at this node is necessary at
-the current cycle. Will default to <code class="docutils literal notranslate"><span class="pre">False</span></code> at the start of the cycle.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="pysigma.graphical._nodes.Node.visited">
-<code class="sig-name descname">visited</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.visited" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.Node.visited">
+<code class="sig-name descname">visited</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.visited" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indicates whether this node has been visited at all, i.e., <cite>compute()</cite> method being called at the current cycle.
 Default to <code class="docutils literal notranslate"><span class="pre">False</span></code> at the start of the cycle.</p>
 <dl class="field-list simple">
@@ -266,8 +254,8 @@ Default to <code class="docutils literal notranslate"><span class="pre">False</s
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.Node.in_linkdata">
-<code class="sig-name descname">in_linkdata</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.in_linkdata" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.Node.in_linkdata">
+<code class="sig-name descname">in_linkdata</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.in_linkdata" title="Permalink to this definition">¶</a></dt>
 <dd><p>List of incoming linkdata.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -277,8 +265,8 @@ Default to <code class="docutils literal notranslate"><span class="pre">False</s
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.Node.out_linkdata">
-<code class="sig-name descname">out_linkdata</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.out_linkdata" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.Node.out_linkdata">
+<code class="sig-name descname">out_linkdata</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.out_linkdata" title="Permalink to this definition">¶</a></dt>
 <dd><p>List of outgoing linkdata.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -288,8 +276,8 @@ Default to <code class="docutils literal notranslate"><span class="pre">False</s
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.Node.log">
-<code class="sig-name descname">log</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.log" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.Node.log">
+<code class="sig-name descname">log</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Internal log</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -299,8 +287,8 @@ Default to <code class="docutils literal notranslate"><span class="pre">False</s
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.Node.pretty_log">
-<code class="sig-name descname">pretty_log</code><a class="headerlink" href="#pysigma.graphical._nodes.Node.pretty_log" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.Node.pretty_log">
+<code class="sig-name descname">pretty_log</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.pretty_log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pretty log for beautiful front-end visualization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -310,40 +298,46 @@ Default to <code class="docutils literal notranslate"><span class="pre">False</s
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.Node.check_quiesce">
-<code class="sig-name descname">check_quiesce</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#Node.check_quiesce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.Node.check_quiesce" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check <code class="docutils literal notranslate"><span class="pre">new</span></code> attribute of incoming linkdata to determine whether this node has reached quiescence.</p>
-<p>By default, a node is determined quiesced if and only if <strong>all</strong> incoming linkdata has no <cite>new</cite> message.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Certain nodes may desire a different behavior for checking quiescence. In that case, this method should be
-overridden.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if this node has reached quiescence.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>bool</p>
-</dd>
-</dl>
+<dt id="pysigma.graphical.basic_nodes.Node.quiescence">
+<em class="property">property </em><code class="sig-name descname">quiescence</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.quiescence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether this node has reached quiescence state, and no further message update computations, i.e.,
+<cite>compute()</cite>, is necessary at the decision phase of the current cognitive cycle. This property thus plays an
+important role in deciding the node traversing schedule of the graphical architecture.</p>
+<p>The default behavior is to check whether any incoming linkdata contains a new unread message. If so, it is
+decided that this node has breached quiescence and should carry out <cite>compute()</cite>, otherwise this nodes stays
+quiesced.</p>
+<p>This property should be overridden by subclass that desires a different quiescence checking behavior. For
+example for certain nodes, <cite>compute()</cite> may only be called once <em>all</em> incoming linkdata contain new messages, not
+<em>any</em>, and for other nodes their quiescence states depend only on whether <cite>compute()</cite> has ever been called
+within the current decision phase.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.Node.add_link">
-<em class="property">abstract </em><code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#Node.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.Node.add_link" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.Node.add_link">
+<em class="property">abstract </em><code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.add_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adding linkdata connecting to this node.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.Node.compute">
-<em class="property">abstract </em><code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#Node.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.Node.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute method to be called to propagate messages during decision phase.</p>
+<dt id="pysigma.graphical.basic_nodes.Node.compute">
+<em class="property">abstract </em><code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute method to be called to propagate messages during decision phases.</p>
 <p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
 node-level statistics logging is taken care of herein.</p>
-<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>check_quiesce()</cite> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>self.quiescence</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>,
 without logging anything or performing any further computation. Note that such behavior may or may not be
 desired by child node class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.basic_nodes.Node.reset_state">
+<code class="sig-name descname">reset_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.reset_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.reset_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears and resets the node’s message propagation statistics to prepare logging for the imminent decision
+phase computation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method should be called prior to the first call to compute() at every cognitive cycle.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -352,22 +346,17 @@ desired by child node class.</p>
 <div class="section" id="factor-node">
 <h2>Factor Node<a class="headerlink" href="#factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="pysigma.graphical._nodes.FactorNode">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">FactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#FactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.FactorNode" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.FactorNode">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">FactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#FactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.FactorNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Factor node abstract base class.</p>
 <p>Guarantees that all incident nodes are variable nodes.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Name of this factor node.</p>
-</dd>
-</dl>
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.FactorNode.add_link">
-<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#FactorNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.FactorNode.add_link" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.FactorNode.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#FactorNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.FactorNode.add_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a linkdata connecting to a variable node</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -378,8 +367,8 @@ desired by child node class.</p>
 <div class="section" id="variable-node">
 <h2>Variable Node<a class="headerlink" href="#variable-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="pysigma.graphical._nodes.VariableNode">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">VariableNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#VariableNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">VariableNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#VariableNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Variable node abstract base class.</p>
 <p>Guarantees that all incident nodes are factor nodes</p>
 <dl class="field-list simple">
@@ -398,8 +387,8 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.VariableNode.rel_vars">
-<code class="sig-name descname">rel_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.rel_vars" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.rel_vars">
+<code class="sig-name descname">rel_vars</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.rel_vars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tuple of relational variables, specified by <cite>rel_var_list</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -409,8 +398,8 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.VariableNode.param_var">
-<code class="sig-name descname">param_var</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.param_var" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.param_var">
+<code class="sig-name descname">param_var</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.param_var" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parameter variable, specified by <cite>param_var</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> if <cite>param_var</cite> is not specified.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -420,8 +409,8 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.VariableNode.index_vars">
-<code class="sig-name descname">index_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.index_vars" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.index_vars">
+<code class="sig-name descname">index_vars</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.index_vars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tuple of indexing variables, specified by <cite>index_var_list</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> if <cite>index_var_list</cite> is not
 specified.</p>
 <dl class="field-list simple">
@@ -432,8 +421,8 @@ specified.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.VariableNode.ran_vars">
-<code class="sig-name descname">ran_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.ran_vars" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.ran_vars">
+<code class="sig-name descname">ran_vars</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.ran_vars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tuple of random variables, specified by <cite>ran_var_list</cite>. Default sto <code class="docutils literal notranslate"><span class="pre">None</span></code> if <cite>ran_var_list</cite> is not specified.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -443,8 +432,8 @@ specified.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.VariableNode.b_shape">
-<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.b_shape" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.b_shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Batch dimension sizes. Inferred from <cite>rel_vars</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -454,8 +443,8 @@ specified.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.VariableNode.p_shape">
-<code class="sig-name descname">p_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.p_shape" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.p_shape">
+<code class="sig-name descname">p_shape</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.p_shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parameter dimension sizes. Inferred from <cite>param_var</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -465,8 +454,8 @@ specified.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.VariableNode.s_shape">
-<code class="sig-name descname">s_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.s_shape" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.s_shape">
+<code class="sig-name descname">s_shape</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.s_shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sample dimension sizes. Inferred from <cite>index_vars</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -476,8 +465,8 @@ specified.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.VariableNode.e_shape">
-<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.e_shape" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.e_shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Event dimension sizes. Inferred from <cite>ran_vars</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -487,14 +476,14 @@ specified.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.VariableNode.add_link">
-<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#VariableNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.VariableNode.add_link" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.VariableNode.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#VariableNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.VariableNode.add_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register the LinkData connecting a factor node to this variable node.</p>
 <p>Checks that the preset message shape specified in <cite>linkdata</cite> agrees with the inferred message shape at this
 variable node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><p><strong>AssertionError</strong> – If the linkdata to be added does not impose the same message shape restriction as this variable node does.</p>
@@ -507,6 +496,60 @@ variable node.</p>
 </div>
 <div class="section" id="alpha-factor-node">
 <h2>Alpha Factor Node<a class="headerlink" href="#alpha-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">AlphaFactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract base class for any factor node belonging to an alpha subgraph.</p>
+<p>Captures the commonality of all alpha subgraph nodes:
+The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and</p>
+<blockquote>
+<div><p>outgoing link. Additionally, links must declare a special attribute ‘direction’ with value ‘inward’ or
+‘outward’ to indicate whether it is pointing toward the conditional gamma factor node or not.</p>
+<dl class="simple">
+<dt>Such link check is implemented in add_link() to be inherited by concrete alpha factor node class. Also</dt><dd><p>implemented in this method is the registration of labeled pairs of linkdata in self.labeled_ld_pair</p>
+</dd>
+<dt>compute() is implemented so that it execute inward_compute() and/or outward_compute() based on the presence of</dt><dd><p>linkdata pairs.</p>
+</dd>
+<dt>inward_compute() and outward_compute() are now abstract methods that must be implemented by child classes, but</dt><dd><p>compute() should not be override.</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a linkdata connecting to a variable node</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute method to be called to propagate messages during decision phases.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
+node-level statistics logging is taken care of herein.</p>
+<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>self.quiescence</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+without logging anything or performing any further computation. Note that such behavior may or may not be
+desired by child node class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.inward_compute">
+<em class="property">abstract </em><code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inward message computation. To be implemented by child class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute">
+<em class="property">abstract </em><code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outward message computation. To be implemented by child class.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="beta-factor-node">
 <h2>Beta Factor Node<a class="headerlink" href="#beta-factor-node" title="Permalink to this headline">¶</a></h2>

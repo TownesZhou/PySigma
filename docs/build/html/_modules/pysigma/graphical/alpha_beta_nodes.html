@@ -1,0 +1,917 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pysigma.graphical.alpha_beta_nodes &mdash; PySigma  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../references/index.html">API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../references/cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#conditional">Conditional</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../references/graphical/index.html">Graphical Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#beta-factor-node">Beta Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#parameter-store-factor-node">Parameter Store Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../references/utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#utility-functions">Utility Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>pysigma.graphical.alpha_beta_nodes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pysigma.graphical.alpha_beta_nodes</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    All nodes related to a conditional subgraph</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
+<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
+<span class="kn">from</span> <span class="nn">graphical.basic_nodes</span> <span class="k">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">KnowledgeServer</span>
+<span class="kn">from</span> <span class="nn">structures</span> <span class="k">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
+
+
+<div class="viewcode-block" id="AlphaFactorNode"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode">[docs]</a><span class="k">class</span> <span class="nc">AlphaFactorNode</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Abstract base class for any factor node belonging to an alpha subgraph.</span>
+
+<span class="sd">    Captures the commonality of all alpha subgraph nodes:</span>
+<span class="sd">    The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and</span>
+<span class="sd">        outgoing link. Additionally, links must declare a special attribute &#39;direction&#39; with value &#39;inward&#39; or</span>
+<span class="sd">        &#39;outward&#39; to indicate whether it is pointing toward the conditional gamma factor node or not.</span>
+
+<span class="sd">        Such link check is implemented in add_link() to be inherited by concrete alpha factor node class. Also</span>
+<span class="sd">            implemented in this method is the registration of labeled pairs of linkdata in self.labeled_ld_pair</span>
+
+<span class="sd">        compute() is implemented so that it execute inward_compute() and/or outward_compute() based on the presence of</span>
+<span class="sd">            linkdata pairs.</span>
+
+<span class="sd">        inward_compute() and outward_compute() are now abstract methods that must be implemented by child classes, but</span>
+<span class="sd">            compute() should not be override.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Pairs of incoming and outgoing linkdata labeled with their directionality w.r.t. the alpha structure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="AlphaFactorNode.add_link"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="s1">&#39;direction&#39;</span> <span class="ow">in</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;inward&#39;</span><span class="p">,</span> <span class="s1">&#39;outward&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+
+        <span class="c1"># If the other ld of this ld pair has not been added, then temporarily register this ld instance directly</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">direction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span> <span class="o">=</span> <span class="n">linkdata</span>
+        <span class="c1"># Otherwise, take out the other ld of this ld pair from the dict and replace entry with a tuple</span>
+        <span class="c1">#   Make sure that incoming ld is the first element of the tuple and outgoing ld the second element</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">other_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">other_ld</span><span class="p">)</span> <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span> <span class="k">else</span> <span class="p">(</span><span class="n">other_ld</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AlphaFactorNode.compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+        <span class="c1"># Carry out directional computation based on presence of link in self.labeled_ld_pair</span>
+        <span class="k">for</span> <span class="n">direction</span><span class="p">,</span> <span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inward_compute</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">outward_compute</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AlphaFactorNode.inward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.inward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Inward message computation. To be implemented by child class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AlphaFactorNode.outward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Outward message computation. To be implemented by child class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">RMFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Relation Variable Mapping Node</span>
+
+<span class="sd">        Convert between predicate arguments and pattern variables. Apply relational variable&#39;s VariableMap (if declared)</span>
+<span class="sd">            by selecting and placing entries among the message batch dimensions. This node can thus carry out</span>
+<span class="sd">            inner-pattern relational variable matching by itself.</span>
+
+<span class="sd">        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing</span>
+<span class="sd">            links. Link must declare special attribute &#39;direction&#39; with value &#39;inward&#39; or &#39;outward&#39; to indicate whether</span>
+<span class="sd">            it is pointing toward the conditional gamma factor node or not.</span>
+
+<span class="sd">        For inward direction, inner-pattern relational variable matching is handled by selecting entries on the</span>
+<span class="sd">            diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto</span>
+<span class="sd">            the diagonals of a larger message tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arg2var</span><span class="p">,</span> <span class="n">var2arg</span><span class="p">,</span> <span class="n">arg2var_map</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Necessary data structure:</span>
+
+<span class="sd">            :param  arg2var:    dictionary mapping predicate argument Variable instance to pattern variable Variable</span>
+<span class="sd">                                    instance</span>
+<span class="sd">            :param  var2arg:    dictionary mapping pattern variable Variable instance to LIST of predicate argument</span>
+<span class="sd">                                    Variable instance(s)</span>
+<span class="sd">            :param  arg2var_map:    dictionary mapping predicate argument Variable instance to VariableMap instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Relation Variable Mapping Node&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg2var</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
+               <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">arg2var</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var2arg</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
+               <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">var2arg</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg2var_map</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg2var_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
+               <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">VariableMap</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">arg2var_map</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span> <span class="o">=</span> <span class="n">arg2var</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span> <span class="o">=</span> <span class="n">var2arg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span> <span class="o">=</span> <span class="n">arg2var_map</span>
+
+        <span class="c1"># Obtain mapping dictionary and inverse mapping dictionary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span> <span class="o">=</span> <span class="p">{</span><span class="n">arg</span><span class="p">:</span> <span class="n">var_map</span><span class="o">.</span><span class="n">get_map</span><span class="p">()</span> <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_inv_tuple</span> <span class="o">=</span> <span class="p">{</span><span class="n">arg</span><span class="p">:</span> <span class="n">var_map</span><span class="o">.</span><span class="n">get_inverse_map</span><span class="p">()</span> <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Inward computation. Convert predicate relational arguments to pattern relational variables. Apply mappings</span>
+<span class="sd">                to relational variable&#39;s values, if specified.</span>
+
+<span class="sd">            For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the</span>
+<span class="sd">                inverse mapping should be used to map predicate arguments to pattern variables.</span>
+
+<span class="sd">            Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument</span>
+<span class="sd">                and pattern variable respectively. However to be user friendly this should be checked beforehand by</span>
+<span class="sd">                compiler.</span>
+
+<span class="sd">            Note that domain should be a subset of predicate argument size range, but image should be exactly equal to</span>
+<span class="sd">                the pattern variable size range</span>
+
+<span class="sd">            The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, &amp; permute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+        <span class="n">in_rel_var_list</span><span class="p">,</span> <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
+
+        <span class="c1"># Check that given data structures agree with variable lists of the incident variable node</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="c1"># Check that mapping&#39;s domain and image agree with variables&#39; sizes</span>
+        <span class="c1">#   Note that for inward computation we are using the inverse map</span>
+        <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map_tuple</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_inv_tuple</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">pat_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">image</span> <span class="o">=</span> <span class="n">var_map_tuple</span>
+            <span class="k">assert</span> <span class="n">domain</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">size</span><span class="p">)))</span>
+            <span class="k">assert</span> <span class="n">image</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+
+        <span class="c1"># 1. First, translate predicate arguments to pattern variables. This step involves broadening the variable</span>
+        <span class="c1">#       dimension if predicate argument size is smaller than pattern variable size, or map predicate argument</span>
+        <span class="c1">#       values to pattern variable values if a VariableMap is specified for the given predicate argument.</span>
+        <span class="c1">#    For the mapping we should use original forward mapping, because we are selecting &quot;image&quot; to place in</span>
+        <span class="c1">#       &quot;domain&quot;, in the order mandated by domain.</span>
+        <span class="c1">#    Note that we have guaranteed that forward mapping&#39;s domain is equal to pattern variable&#39;s size range</span>
+        <span class="c1">#    A running list of variables is maintained to keep track of variable dimensions</span>
+        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">):</span>
+            <span class="n">pat_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="p">[</span><span class="n">pred_arg</span><span class="p">]</span>
+            <span class="c1"># Apply map if VariableMap is specified</span>
+            <span class="k">if</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">map_dict</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="p">[</span><span class="n">pred_arg</span><span class="p">]</span>
+                <span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_dict</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_index_select</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
+            <span class="c1"># Broaden the variable dimension size if currently it is smaller than the pattern variable&#39;s size</span>
+            <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_broaden</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="c1"># Change predicate argument to pattern variable Variable instance</span>
+            <span class="n">mapped_var_list</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">=</span> <span class="n">pat_var</span>
+
+        <span class="c1"># 2. The step above guarantees that for any dimensions that share the same pattern variable, their axis values</span>
+        <span class="c1">#       are semantically identical to the pattern variable&#39;s value.</span>
+        <span class="c1">#    Now we should collapse the dimensions that share the same pattern variable, by selecting the diagonal</span>
+        <span class="c1">#       entries across these dimensions.</span>
+        <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">mapped_var_list</span><span class="p">:</span>
+            <span class="c1"># Current position of pt_var in the moving mapped_var_list. Using enumerate() iterator will not return</span>
+            <span class="c1">#   index of value w.r.t. a moving list</span>
+            <span class="n">dim1</span> <span class="o">=</span> <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+            <span class="c1"># Find any repetition in later part of the list</span>
+            <span class="k">if</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">mapped_var_list</span><span class="p">[</span><span class="n">dim1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]:</span>
+                <span class="c1"># Current index of the first repetition</span>
+                <span class="n">dim2</span> <span class="o">=</span> <span class="n">mapped_var_list</span><span class="p">[</span><span class="n">dim1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span> <span class="o">+</span> <span class="n">dim1</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="c1"># Remove these two entries from the list</span>
+                <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+                <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+                <span class="c1"># Append one to the end</span>
+                <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+                <span class="c1"># Selecting diagonal entries in message</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_diagonal</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+
+        <span class="c1"># 3. With all predicate argument dimension converted to pattern variable dimensions and all repetitions</span>
+        <span class="c1">#       diagonalized, we guarantee that all predicate variable appears in mapped_var_list.</span>
+        <span class="c1">#    The last thing to do is to permute the batch dimensions so that the processed message&#39;s dimension match</span>
+        <span class="c1">#       exactly with out_rel_var_list</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span> <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">])</span>
+
+        <span class="c1"># Send message</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Outward computation. Convert pattern relational variables to predicate relational arguments. Apply mappings</span>
+<span class="sd">                to relational variable&#39;s values, if specified.</span>
+
+<span class="sd">            For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the</span>
+<span class="sd">                original forward mapping should be used to map pattern variables to predicate arguments.</span>
+
+<span class="sd">            Will check anyway if domain and image of the forward map agree with the size range of the predicate argument</span>
+<span class="sd">                and pattern variable respectively. However to be user friendly this should be checked beforehand by</span>
+<span class="sd">                compiler.</span>
+
+<span class="sd">            Note that image of the map should be a subset of predicate argument size range, but its domain should be</span>
+<span class="sd">                exactly equal to the pattern variable size range.</span>
+
+<span class="sd">            The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, &amp; permute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+        <span class="n">in_rel_var_list</span><span class="p">,</span> <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
+
+        <span class="c1"># Check that given data structures agree with variable lists of the incident variable node</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="c1"># Check that mapping&#39;s domain and image agree with variables&#39; sizes</span>
+        <span class="c1">#   For outward computation we are using the forward map</span>
+        <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map_tuple</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">pt_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">image</span> <span class="o">=</span> <span class="n">var_map_tuple</span>
+            <span class="k">assert</span> <span class="n">image</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">size</span><span class="p">)))</span>
+            <span class="k">assert</span> <span class="n">domain</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pt_var</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+
+        <span class="c1"># 1. First, translate pattern variables to predicate arguments. This step involves unbinding the predicate</span>
+        <span class="c1">#       variables that are referenced by multiple predicate arguments.</span>
+        <span class="c1">#    Computationally, this is achieved by un-diagonalize, or embed entries along that predicate variables&#39;</span>
+        <span class="c1">#       dimension into a 2D plane (higher dimensional space if there are more than 2 such predicate arguments).</span>
+        <span class="c1">#    A running list of variables is maintained to keep track of variable dimensions</span>
+        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">mapped_var_list</span><span class="p">:</span>
+            <span class="c1"># Look up how many predicate arguments reference this single pattern variable. If only 1, simply change</span>
+            <span class="c1">#   variable. Otherwise, need to do more</span>
+            <span class="c1"># Use .index() to get the position of current variable, instead of from enumerate() iterator, because the</span>
+            <span class="c1">#   the latter does not keep up with a running list.</span>
+            <span class="n">dim1</span> <span class="o">=</span> <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="p">[</span><span class="n">pt_var</span><span class="p">]</span>
+            <span class="n">num_shared</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">num_shared</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="c1"># Switch pattern variable to predicate argument in-place anyway. If the pattern variable is associated with</span>
+            <span class="c1">#   multiple predicate arguments, process further.</span>
+            <span class="n">mapped_var_list</span><span class="p">[</span><span class="n">dim1</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">num_shared</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Iterate over rest of the associated predicate arguments</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+                    <span class="c1"># Only arguments from the second one will be processed. First associated argument stays in-place.</span>
+                    <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="c1"># Un-diagonalize the message by embedding the entries along the i-th dimension of the original</span>
+                    <span class="c1">#   message into a 2D plane specified by the i-th and the last dimension of the new message</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_diag_embed</span><span class="p">(</span><span class="n">diag_dim</span><span class="o">=</span><span class="n">dim1</span><span class="p">,</span> <span class="n">target_dim1</span><span class="o">=</span><span class="n">dim1</span><span class="p">,</span> <span class="n">target_dim2</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="c1"># This corresponds to append the other dimension to the end, so we append the currently referenced</span>
+                    <span class="c1">#   predicate argument Variable instance to the running variable list</span>
+                    <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+
+        <span class="c1"># 2. The step above guarantees a symbolic one-to-one mapping between message dimensions and predicate arguments&#39;</span>
+        <span class="c1">#       variable dimensions. We now need to narrow the variable dimension if the predicate argument&#39;s size is</span>
+        <span class="c1">#       smaller than the associated pattern variable&#39;s size, or to map pattern variable&#39;s value to predicate</span>
+        <span class="c1">#       argument&#39;s value if a VariableMap is specified.</span>
+        <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">):</span>
+            <span class="n">pat_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="p">[</span><span class="n">pred_arg</span><span class="p">]</span>
+            <span class="c1"># Apply map if VariableMap is specified</span>
+            <span class="k">if</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">map_dict</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="p">[</span><span class="n">pred_arg</span><span class="p">]</span>
+                <span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_dict</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_index_put</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
+            <span class="c1"># Broaden the variable dimension size if currently it is smaller than the pattern variable&#39;s size</span>
+            <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">pred_arg</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_narrow</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">pred_arg</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="c1"># 3. Finally, with all pattern variables converted to predicate arguments and the values are now with respect to</span>
+        <span class="c1">#       the predicate arguments, the last thing to do is to permute the batch dimensions so that the processed</span>
+        <span class="c1">#       message&#39;s dimensions match exactly with out-_rel_var_list</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pred_arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">])</span>
+
+        <span class="c1"># Send message</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ESFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Expansion / Summarization Node</span>
+
+<span class="sd">        This node is a component of the alpha conditional subgraph, so admits up to two pairs of incoming and outgoing</span>
+<span class="sd">            links. Link must declare special attribute &#39;direction&#39; with value &#39;inward&#39; or &#39;outward&#39; to indicate whether</span>
+<span class="sd">            it is pointing toward the conditional gamma factor node or not.</span>
+
+<span class="sd">        For inward direction, it expands and permutes the incoming message&#39;s relational variable dimensions to match the</span>
+<span class="sd">            full relational variable dimensions determined by the conditional. For outward direction, it summarizes</span>
+<span class="sd">            over irrelevant relational variables and permute the dimensions to match the relational variable dimensions</span>
+<span class="sd">            of this pattern.</span>
+
+<span class="sd">        Note that the expanded dimensions will be of size 1, so that the expanded tensor is broadcastable along this</span>
+<span class="sd">            dimension.</span>
+
+<span class="sd">        The summarization step can be thought of as a search or optimization problem, where one finds a single</span>
+<span class="sd">            distribution instance that best &quot;summarizes&quot; the behaviors of an entire space of distribution instances,</span>
+<span class="sd">            where the dimensions of the space is defined and spanned by the irrelevant relational variables. Depending</span>
+<span class="sd">            on the user-specified summarization criteria, different semantics can be interpreted for this step.</span>
+
+<span class="sd">        A sum_op should be specified during initialization to specify special summarization semantics, such as Max</span>
+<span class="sd">            Product semantics or searching. If not specified, will default to Sum-Product alike summarization. Please</span>
+<span class="sd">            refer to Message class documentation for more information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sum_op</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Necessary data structure:</span>
+
+<span class="sd">            :param sum_op:      None or a Summarization instance. Default is None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ESFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Expansion Summarization Factor Node&quot;</span>
+
+        <span class="k">assert</span> <span class="n">sum_op</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sum_op</span><span class="p">,</span> <span class="n">Summarization</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sum_op</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Summarization operation using Summarization instance is not yet implemented.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span> <span class="o">=</span> <span class="n">sum_op</span>
+
+    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Expansion operation. Expand and permutes the incoming message&#39;s relational variable dimensions to match the</span>
+<span class="sd">                outgoing relational relational variable dimensions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+        <span class="n">in_rel_var_list</span><span class="p">,</span> <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
+        <span class="c1"># Check that the set of relational variables of incoming message is a subset of that of outgoing message</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">))</span>
+
+        <span class="c1"># Keep a running list of variables</span>
+        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
+
+        <span class="c1"># For every relational variable in out_rel_var_list that is not in in_rel_var_list, unsqueeze a dimension of the</span>
+        <span class="c1">#   message as the last dimension.</span>
+        <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pt_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">in_rel_var_list</span><span class="p">:</span>
+                <span class="c1"># Unsqueeze message</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="c1"># Append the pt_var to the end of running var list</span>
+                <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+
+        <span class="c1"># Permute message dimension so that it matches the order given by out_rel_var_list</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+
+        <span class="c1"># Expand to full relational variable dimension shape</span>
+        <span class="n">target_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">])</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_expand</span><span class="p">(</span><span class="n">target_shape</span><span class="p">)</span>
+
+        <span class="c1"># Send message</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Summarization operation. Summarize over incoming message&#39;s relational variable dimensions that are not</span>
+<span class="sd">                referenced by outgoing message&#39;s relational variables.</span>
+
+<span class="sd">            The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,</span>
+<span class="sd">                uses default summarization semantic defined at the Message level.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+        <span class="n">in_rel_var_list</span><span class="p">,</span> <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
+        <span class="c1"># Check that the set of relational variables of outgoing message is a subset of that of incoming message</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">))</span>
+
+        <span class="c1"># Keep a running list of variables</span>
+        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
+
+        <span class="c1"># Summarize using custom sum_op</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the</span>
+            <span class="c1">#   former as the last dimension and the latter as the first batch dimension</span>
+            <span class="n">sum_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+            <span class="n">other_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sum_dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">sum_dims</span><span class="p">)</span>
+                <span class="c1"># Process using the sum_op</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="c1"># Reshape</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_reshape</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
+
+        <span class="c1"># Otherwise if sum_op is None, carry out default summarization</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Iterate over all relational variables not referenced by out_rel_var_list</span>
+            <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">in_rel_var_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pt_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">:</span>
+                    <span class="n">dim</span> <span class="o">=</span> <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+                    <span class="c1"># Summarize over the message batch dimension</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_summarize</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+                    <span class="c1"># Remove the variable from the running list</span>
+                    <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+
+        <span class="c1"># Permute message dimension so that it matches the order given by out_rel_var_list</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+
+        <span class="c1"># Send message</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">BetaFactorNode</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Abstract base class for nodes belonging to the beta subgraph of a conditional.</span>
+
+<span class="sd">            Captures the commonality of Beta factor nodes, including link connectivity and inward &amp; outward message</span>
+<span class="sd">                propagation pattern:</span>
+<span class="sd">                - Groups links in terms of whether the messages moves inward to the Gamma Factor node or not.</span>
+<span class="sd">                - During compute, perform inward and outward computation separately in turn by calling inward_compute()</span>
+<span class="sd">                    and outward_compute()</span>
+
+<span class="sd">            Different from Alpha nodes, there&#39;s no restriction on the number of incoming or outgoing linkdata, as long as</span>
+<span class="sd">                they can be identified in terms of their messaging directionality.</span>
+
+<span class="sd">            Need to specify &quot;direction&quot; attribute in linkdata</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;inward&#39;</span><span class="p">:</span> <span class="p">([],</span> <span class="p">[]),</span>
+            <span class="s1">&#39;outward&#39;</span><span class="p">:</span> <span class="p">([],</span> <span class="p">[])</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="s1">&#39;direction&#39;</span> <span class="ow">in</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;inward&#39;</span><span class="p">,</span> <span class="s1">&#39;outward&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="p">[</span><span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="p">[</span><span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">direction</span><span class="p">,</span> <span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_ld_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">inward_compute</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">outward_compute</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Inward message computation. To be implemented by child class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Outward message computation. To be implemented by child class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ESCFN</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Event Split / Combination Node</span>
+
+<span class="sd">        add link:</span>
+<span class="sd">            - check that for inward direction, there&#39;s only one incoming link; for outward direction, only one outgoing</span>
+<span class="sd">                link.</span>
+
+<span class="sd">        Inward direction compute:</span>
+<span class="sd">            1. Flatten batch dimensions into a single dimension</span>
+<span class="sd">            2. If there are multiple referenced random variables, ensure that incoming message contains Particles,</span>
+<span class="sd">                otherwise raise an alert.</span>
+<span class="sd">            3. Translate event particles from PyTorch format to Cognitive format. If multiple pattern random variables</span>
+<span class="sd">                are referenced, the events will/should be split in accordance to the size of each pattern r.v.</span>
+<span class="sd">            4. If &#39;reference&#39; is True, then will cache the incoming message after each inward compute.</span>
+<span class="sd">            5. If there is only one referenced pattern random variable, send translated message as is to the outgoing</span>
+<span class="sd">                link. Otherwise, send split event messages to each outgoing link with corresponding pattern r.v.</span>
+<span class="sd">                respectively.</span>
+
+<span class="sd">        Outward direction compute:</span>
+<span class="sd">            1. If there is inward propagation direction, check that the cache is not None. Check that incoming messages</span>
+<span class="sd">                holds the same particles as the cached message. Otherwise, raise an alert.</span>
+<span class="sd">            2. If there are multiple incoming links, check that messages from all incoming links have Particles. In</span>
+<span class="sd">                this case, if there is cached message, combine incoming messages&#39; event particles with alignment to</span>
+<span class="sd">                the cached message&#39;s event particles. Otherwise, combine incoming messages&#39; event particles randomly /</span>
+<span class="sd">                without alignment.</span>
+<span class="sd">            3. Reshape the single batch dimensions into full conditional batch dimensions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ESCFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="c1"># Whether to cache referenced event particle message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reference</span> <span class="o">=</span> <span class="n">reference</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ESCFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="p">[</span><span class="s1">&#39;inward&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;outward&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="p">[</span><span class="s1">&#39;outward&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">in_ld</span> <span class="o">=</span> <span class="n">in_ld_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ran_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_var_list</span>
+        <span class="c1"># Check that the number of outgoing links equal the number of random variables from the incoming link, and that</span>
+        <span class="c1"># there&#39;s one-to-one correspondence</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">set</span><span class="p">(</span><span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_var_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="n">out_ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+
+        <span class="c1"># 1. Flatten batch dimension</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">()</span>
+
+        <span class="c1"># 2. Ensure incoming message contain particles if multiple referenced r.v.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> \
+                <span class="s2">&quot;In </span><span class="si">{}</span><span class="s2">: Pattern has multiple referenced random variables: </span><span class="si">{}</span><span class="s2">, however the incoming message </span><span class="si">{}</span><span class="s2"> does &quot;</span> \
+                <span class="s2">&quot;not contain particles. &quot;</span>
+
+        <span class="c1"># 3. Translate event format</span>
+        <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">RTFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Random Variable Transformation Node</span>
+
+<span class="sd">        Carry out three core functionality:</span>
+
+<span class="sd">        1. Manipulate batch dimensions:</span>
+<span class="sd">            - For inward direction: flatten batch dimensions into a single dimension</span>
+<span class="sd">            - for outward direction: reshape the flattened batch dimension into full batch dimensions of the conditional</span>
+
+<span class="sd">        2. Apply transformation on events:</span>
+<span class="sd">            - For inward direction: apply pre-specified transformation on event.</span>
+<span class="sd">            - For outward direction: apply the INVERSE of the pre-specified transformation on events.</span>
+
+<span class="sd">        3. Check if event values meets the pre-specified constraints.</span>
+<span class="sd">            - This step will be automatically skipped if it&#39;s outward direction and/or the message does not contain</span>
+<span class="sd">                event particles.</span>
+<span class="sd">            - If constraints not satisfied and replaceable == False, raise an alert.</span>
+<span class="sd">            - If constraints not satisfied and replaceable == True, check if the incoming message type is Both.</span>
+<span class="sd">                - If yes, then reduce the message into Parameter message and send it to outgoing link.</span>
+<span class="sd">                - Otherwise, raise an alert.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">trans</span><span class="p">,</span> <span class="n">constraints</span><span class="p">,</span> <span class="n">replaceable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            :param trans:       torch.distributions.transforms.Transform. The transformation functor</span>
+<span class="sd">            :param constraints  a set of torch.distributions.constraints.Constraint. The value constraints of the target</span>
+<span class="sd">                                    conditional&#39;s pattern random variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RTFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Random Variable Transformation Node&quot;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="n">Transform</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">constraints</span><span class="p">,</span> <span class="nb">set</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">constraints</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">replaceable</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">trans</span> <span class="o">=</span> <span class="n">trans</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="n">constraints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replaceable</span> <span class="o">=</span> <span class="n">replaceable</span>
+
+    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+
+        <span class="c1"># 1. Flatten batch dimensions into a single dimension</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">()</span>
+
+        <span class="c1"># 2. Apply forward transformation.</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">event_transform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trans</span><span class="p">)</span>
+
+        <span class="c1"># 3. Check value constraints only if message involves particles</span>
+        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">constraint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">:</span>
+                <span class="n">valid</span> <span class="o">*=</span> <span class="n">constraint</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+            <span class="c1"># Raise an alert if not valid and particles not replaceable.</span>
+            <span class="k">assert</span> <span class="n">valid</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">replaceable</span><span class="p">,</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: It has been specified that particles in incoming messages are not replaceable, but encountered &quot;</span> \
+                <span class="s2">&quot;a message where the particle values do not meet pre-specified constraints: </span><span class="si">{}</span><span class="s2">&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">)</span>
+
+            <span class="c1"># Check message type if not valid but replaceable is True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">replaceable</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> \
+                    <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Message must contain parameter if it&#39;s particles are to be replaced when its own particles &quot;</span> \
+                    <span class="s2">&quot;do not meet the constraints. Instead, found one incoming message of type </span><span class="si">{}</span><span class="s2"> whose particles do &quot;</span> \
+                    <span class="s2">&quot;not meet the constraints.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+                <span class="c1"># Reduce the message into only parameters</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">)</span>
+
+        <span class="c1"># Send message</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+
+        <span class="c1"># 1. Reshape batch dimension into full conditional relational pattern variable dimensions</span>
+        <span class="n">out_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_reshape</span><span class="p">(</span><span class="n">out_dims</span><span class="p">)</span>
+
+        <span class="c1"># 2. Apply inverse transformation.</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trans</span><span class="o">.</span><span class="n">inv</span><span class="p">)</span>
+
+        <span class="c1"># Send message</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

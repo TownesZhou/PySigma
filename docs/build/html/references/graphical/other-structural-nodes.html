@@ -219,8 +219,8 @@
 <div class="section" id="default-factor-node">
 <h2>Default Factor Node<a class="headerlink" href="#default-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="pysigma.graphical._nodes.DFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">DFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#DFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.DFN" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">DFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Default (Dummy) Factor Node.</p>
 <p>No special computation. Simply relays message to one or multiple incident variable nodes. Requires that incident
 variable nodes share the same variables. Only admits one incoming link but can connect with multiple outgoing links.</p>
@@ -232,8 +232,8 @@ attributes.</p>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.DFN.rel_vars">
-<code class="sig-name descname">rel_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.DFN.rel_vars" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DFN.rel_vars">
+<code class="sig-name descname">rel_vars</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN.rel_vars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tuple of relational variables.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -243,8 +243,8 @@ attributes.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.DFN.param_var">
-<code class="sig-name descname">param_var</code><a class="headerlink" href="#pysigma.graphical._nodes.DFN.param_var" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DFN.param_var">
+<code class="sig-name descname">param_var</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN.param_var" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parameter variable.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -254,8 +254,8 @@ attributes.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.DFN.index_vars">
-<code class="sig-name descname">index_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.DFN.index_vars" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DFN.index_vars">
+<code class="sig-name descname">index_vars</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN.index_vars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tuple of indexing variables.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -265,8 +265,8 @@ attributes.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical._nodes.DFN.ran_vars">
-<code class="sig-name descname">ran_vars</code><a class="headerlink" href="#pysigma.graphical._nodes.DFN.ran_vars" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DFN.ran_vars">
+<code class="sig-name descname">ran_vars</code><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN.ran_vars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tuple of random variables.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -276,8 +276,8 @@ attributes.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.DFN.add_link">
-<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#DFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.DFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN.add_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks that all variable nodes on the other side of the linkdata share the same set of variables. Infer
 attribute values from the connected variable nodes’ variables.</p>
 <div class="admonition note">
@@ -286,7 +286,7 @@ attribute values from the connected variable nodes’ variables.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered.</p>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered.</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
@@ -299,8 +299,8 @@ attribute values from the connected variable nodes’ variables.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.DFN.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#DFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.DFN.compute" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DFN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Relay untempered message to downstream variable nodes.</p>
 </dd></dl>
 
@@ -310,8 +310,8 @@ attribute values from the connected variable nodes’ variables.</p>
 <div class="section" id="default-variable-node">
 <h2>Default Variable Node<a class="headerlink" href="#default-variable-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="pysigma.graphical._nodes.DVN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical._nodes.</code><code class="sig-name descname">DVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#DVN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.DVN" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DVN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">DVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DVN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DVN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Default (Dummy) Variable Node.</p>
 <p>No special computation. Simply relay message to one or multiple factor nodes. Only admits one incoming link but can
 connect with multiple outgoing links.</p>
@@ -331,12 +331,12 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.DVN.add_link">
-<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#DVN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.DVN.add_link" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DVN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DVN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DVN.add_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>Guarantees that no more than on incoming link is registered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical._nodes.LinkData" title="pysigma.graphical._nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered.</p>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered.</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><p><strong>AssertionError</strong> – If attempting to register more than one incoming linkdata.</p>
@@ -345,8 +345,8 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical._nodes.DVN.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/_nodes.html#DVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical._nodes.DVN.compute" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.basic_nodes.DVN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DVN.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Relay untempered message to downstream factor nodes.</p>
 </dd></dl>
 

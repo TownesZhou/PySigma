@@ -3,8 +3,8 @@
 """
 
 import networkx
-from defs import *
-from ._nodes import *
+from .basic_nodes import *
+from .predicate_nodes import WMVN, LTMFN, PBFN, WMFN
 
 
 class Graph(networkx.DiGraph):

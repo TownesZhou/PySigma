@@ -35,6 +35,6 @@ The Message class constitutes the most fundamental data structure in PySigma Gra
 LinkData
 --------
 
-.. autoclass:: pysigma.graphical._nodes.LinkData
+.. autoclass:: pysigma.graphical.basic_nodes.LinkData
    :members:
    :undoc-members:

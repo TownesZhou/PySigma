@@ -8,10 +8,10 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objects as go
-from textwrap import dedent as d
-import json
+
+from graphical import LTMFN, PBFN, WMFN
 from . import Sigma
-from .graphical._nodes import *
+from .graphical.basic_nodes import *
 
 from dash.dependencies import Input, Output
 

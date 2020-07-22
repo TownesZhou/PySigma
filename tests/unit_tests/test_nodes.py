@@ -1,9 +1,7 @@
-from pysigma.graphical._nodes import *
-import torch
-from torch.distributions import *
+from graphical import LTMFN, PBFN, WMFN
+from pysigma.graphical.basic_nodes import *
 import pytest
 from torch.distributions.normal import Normal
-from pysigma.defs import Variable
 from pysigma.structures import *
 
 
