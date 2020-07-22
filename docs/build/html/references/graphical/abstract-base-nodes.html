@@ -500,27 +500,30 @@ variable node.</p>
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode">
 <em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">AlphaFactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract base class for any factor node belonging to an alpha subgraph.</p>
-<p>Captures the commonality of all alpha subgraph nodes:
-The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and</p>
-<blockquote>
-<div><p>outgoing link. Additionally, links must declare a special attribute ‘direction’ with value ‘inward’ or
-‘outward’ to indicate whether it is pointing toward the conditional gamma factor node or not.</p>
-<dl class="simple">
-<dt>Such link check is implemented in add_link() to be inherited by concrete alpha factor node class. Also</dt><dd><p>implemented in this method is the registration of labeled pairs of linkdata in self.labeled_ld_pair</p>
-</dd>
-<dt>compute() is implemented so that it execute inward_compute() and/or outward_compute() based on the presence of</dt><dd><p>linkdata pairs.</p>
-</dd>
-<dt>inward_compute() and outward_compute() are now abstract methods that must be implemented by child classes, but</dt><dd><p>compute() should not be override.</p>
-</dd>
-</dl>
-</div></blockquote>
+<p>Captures the commonalities of all alpha subgraph nodes:</p>
+<ul class="simple">
+<li><p>Topology: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating
+messages inward toward the Gamma Factor Node, and the other pair propagating messages outward toward the predicate
+Working Memory Variable Node.</p></li>
+<li><p>Compute pattern: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,
+for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the
+inward incoming link. Accordingly, the <cite>compute()</cite> method is subdivided into an <cite>inward_compute()</cite> and an
+<cite>outward_compute()</cite> method.</p></li>
+<li><p>Quiescence state: an alpha node as a whole reaches quiescence if and only if <strong>all</strong> incoming linkdata do not
+contain new message. However, for the two subdivided method <cite>inward_compute()</cite> and <cite>outward_compute()</cite>, each of
+them should only be carried out if its incoming linkdata of interest contains new message.</p></li>
+</ul>
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link">
 <code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a linkdata connecting to a variable node</p>
+<dd><p>An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata.
+Furthermore, a <code class="docutils literal notranslate"><span class="pre">&quot;direction&quot;</span></code> key-ed attribute should be included in the linkdata’s optional attribute map
+with value <code class="docutils literal notranslate"><span class="pre">&quot;inward&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;outward&quot;</span></code> to indicate the message propagation direction of the linkdata. The two
+pairs of linkdata should have different message propagation directions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The incident linkdata to be registered.</p>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered. Must specify a <code class="docutils literal notranslate"><span class="pre">&quot;direction&quot;</span></code> attribute in its optional attribute map
+<code class="docutils literal notranslate"><span class="pre">linkdata.attr</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -528,12 +531,8 @@ The commonality of all alpha subgraph factor nodes is that they all only admit u
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute">
 <code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute method to be called to propagate messages during decision phases.</p>
-<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
-node-level statistics logging is taken care of herein.</p>
-<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>self.quiescence</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>,
-without logging anything or performing any further computation. Note that such behavior may or may not be
-desired by child node class.</p>
+<dd><p>Carries out <cite>inward_compute()</cite> and <cite>outward_compute()</cite> individually if their corresponding incoming linkdata
+contains new message.</p>
 </dd></dl>
 
 <dl class="py method">

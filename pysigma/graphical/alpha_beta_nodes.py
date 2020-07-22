@@ -15,19 +15,18 @@ from structures import VariableMap, Summarization
 class AlphaFactorNode(FactorNode, ABC):
     """Abstract base class for any factor node belonging to an alpha subgraph.
 
-    Captures the commonality of all alpha subgraph nodes:
-    The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and
-        outgoing link. Additionally, links must declare a special attribute 'direction' with value 'inward' or
-        'outward' to indicate whether it is pointing toward the conditional gamma factor node or not.
+    Captures the commonalities of all alpha subgraph nodes:
 
-        Such link check is implemented in add_link() to be inherited by concrete alpha factor node class. Also
-            implemented in this method is the registration of labeled pairs of linkdata in self.labeled_ld_pair
-
-        compute() is implemented so that it execute inward_compute() and/or outward_compute() based on the presence of
-            linkdata pairs.
-
-        inward_compute() and outward_compute() are now abstract methods that must be implemented by child classes, but
-            compute() should not be override.
+    * Topology: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating
+      messages inward toward the Gamma Factor Node, and the other pair propagating messages outward toward the predicate
+      Working Memory Variable Node.
+    * Compute pattern: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,
+      for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the
+      inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an
+      `outward_compute()` method.
+    * Quiescence state: an alpha node as a whole reaches quiescence if and only if **all** incoming linkdata do not
+      contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of
+      them should only be carried out if its incoming linkdata of interest contains new message.
     """
     def __init__(self, name):
         super(AlphaFactorNode, self).__init__(name)
@@ -36,6 +35,17 @@ class AlphaFactorNode(FactorNode, ABC):
         self.labeled_ld_pair = {}
 
     def add_link(self, linkdata):
+        """An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata.
+        Furthermore, a ``"direction"`` key-ed attribute should be included in the linkdata's optional attribute map
+        with value ``"inward"`` or ``"outward"`` to indicate the message propagation direction of the linkdata. The two
+        pairs of linkdata should have different message propagation directions.
+
+        Parameters
+        ----------
+        linkdata : LinkData
+            The linkdata to be registered. Must specify a ``"direction"`` attribute in its optional attribute map
+            ``linkdata.attr``.
+        """
         assert isinstance(linkdata, LinkData)
         assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
 
@@ -58,27 +68,30 @@ class AlphaFactorNode(FactorNode, ABC):
             self.labeled_ld_pair[direction] = (linkdata, other_ld) if linkdata.to_fn else (other_ld, linkdata)
 
     def compute(self):
+        """Carries out `inward_compute()` and `outward_compute()` individually if their corresponding incoming linkdata
+        contains new message.
+        """
         super(AlphaFactorNode, self).compute()
         assert len(self.in_linkdata) == len(self.out_linkdata) and len(self.in_linkdata) > 0
 
-        # Carry out directional computation based on presence of link in self.labeled_ld_pair
+        # Carry out directional computation
         for direction, (in_ld, out_ld) in self.labeled_ld_pair.items():
-            if direction == 'inward':
+            if direction == 'inward' and in_ld.new:
                 self.inward_compute(in_ld, out_ld)
-            else:
+            if direction == 'outward' and out_ld.new:
                 self.outward_compute(in_ld, out_ld)
 
     @abstractmethod
     def inward_compute(self, in_ld, out_ld):
-        """
-            Inward message computation. To be implemented by child class.
+        """Inward message computation. To be implemented by child class.
+
         """
         pass
 
     @abstractmethod
     def outward_compute(self, in_ld, out_ld):
-        """
-            Outward message computation. To be implemented by child class.
+        """Outward message computation. To be implemented by child class.
+
         """
         pass
 

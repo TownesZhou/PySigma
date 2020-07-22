@@ -230,7 +230,7 @@ processing.</p>
 <p>A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
 particles needs to be queried.</p>
 <dl class="simple">
-<dt>WMVN quiescence state:</dt><dd><p>A WMVN reaches quiescence state if and only if <strong>any</strong> incoming linkdata contains new message.</p>
+<dt>WMVN quiescence state:</dt><dd><p>A WMVN reaches quiescence state if and only if <strong>all</strong> incoming linkdata do not contain new message.</p>
 </dd>
 </dl>
 <p>It is defined as such so that, although inefficiency may be induced due to WMVN having to fire multiple times while

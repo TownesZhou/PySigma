@@ -25,7 +25,7 @@ class WMVN(VariableNode):
     particles needs to be queried.
 
     WMVN quiescence state:
-        A WMVN reaches quiescence state if and only if **any** incoming linkdata contains new message.
+        A WMVN reaches quiescence state if and only if **all** incoming linkdata do not contain new message.
 
     It is defined as such so that, although inefficiency may be induced due to WMVN having to fire multiple times while
     sending partially complete messages, it is guaranteed that no new arriving message would be blocked herein simply

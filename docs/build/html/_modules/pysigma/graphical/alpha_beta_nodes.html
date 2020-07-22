@@ -224,19 +224,18 @@
 <div class="viewcode-block" id="AlphaFactorNode"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode">[docs]</a><span class="k">class</span> <span class="nc">AlphaFactorNode</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Abstract base class for any factor node belonging to an alpha subgraph.</span>
 
-<span class="sd">    Captures the commonality of all alpha subgraph nodes:</span>
-<span class="sd">    The commonality of all alpha subgraph factor nodes is that they all only admit up to two paris of incoming and</span>
-<span class="sd">        outgoing link. Additionally, links must declare a special attribute &#39;direction&#39; with value &#39;inward&#39; or</span>
-<span class="sd">        &#39;outward&#39; to indicate whether it is pointing toward the conditional gamma factor node or not.</span>
+<span class="sd">    Captures the commonalities of all alpha subgraph nodes:</span>
 
-<span class="sd">        Such link check is implemented in add_link() to be inherited by concrete alpha factor node class. Also</span>
-<span class="sd">            implemented in this method is the registration of labeled pairs of linkdata in self.labeled_ld_pair</span>
-
-<span class="sd">        compute() is implemented so that it execute inward_compute() and/or outward_compute() based on the presence of</span>
-<span class="sd">            linkdata pairs.</span>
-
-<span class="sd">        inward_compute() and outward_compute() are now abstract methods that must be implemented by child classes, but</span>
-<span class="sd">            compute() should not be override.</span>
+<span class="sd">    * Topology: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating</span>
+<span class="sd">      messages inward toward the Gamma Factor Node, and the other pair propagating messages outward toward the predicate</span>
+<span class="sd">      Working Memory Variable Node.</span>
+<span class="sd">    * Compute pattern: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,</span>
+<span class="sd">      for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the</span>
+<span class="sd">      inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an</span>
+<span class="sd">      `outward_compute()` method.</span>
+<span class="sd">    * Quiescence state: an alpha node as a whole reaches quiescence if and only if **all** incoming linkdata do not</span>
+<span class="sd">      contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of</span>
+<span class="sd">      them should only be carried out if its incoming linkdata of interest contains new message.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -245,6 +244,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span> <span class="o">=</span> <span class="p">{}</span>
 
 <div class="viewcode-block" id="AlphaFactorNode.add_link"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata.</span>
+<span class="sd">        Furthermore, a ``&quot;direction&quot;`` key-ed attribute should be included in the linkdata&#39;s optional attribute map</span>
+<span class="sd">        with value ``&quot;inward&quot;`` or ``&quot;outward&quot;`` to indicate the message propagation direction of the linkdata. The two</span>
+<span class="sd">        pairs of linkdata should have different message propagation directions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        linkdata : LinkData</span>
+<span class="sd">            The linkdata to be registered. Must specify a ``&quot;direction&quot;`` attribute in its optional attribute map</span>
+<span class="sd">            ``linkdata.attr``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
         <span class="k">assert</span> <span class="s1">&#39;direction&#39;</span> <span class="ow">in</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;inward&#39;</span><span class="p">,</span> <span class="s1">&#39;outward&#39;</span><span class="p">]</span>
 
@@ -267,27 +277,30 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">other_ld</span><span class="p">)</span> <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span> <span class="k">else</span> <span class="p">(</span><span class="n">other_ld</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AlphaFactorNode.compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Carries out `inward_compute()` and `outward_compute()` individually if their corresponding incoming linkdata</span>
+<span class="sd">        contains new message.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
-        <span class="c1"># Carry out directional computation based on presence of link in self.labeled_ld_pair</span>
+        <span class="c1"># Carry out directional computation</span>
         <span class="k">for</span> <span class="n">direction</span><span class="p">,</span> <span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span> <span class="ow">and</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">new</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">inward_compute</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;outward&#39;</span> <span class="ow">and</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">new</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">outward_compute</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AlphaFactorNode.inward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.inward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Inward message computation. To be implemented by child class.</span>
+        <span class="sd">&quot;&quot;&quot;Inward message computation. To be implemented by child class.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="AlphaFactorNode.outward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Outward message computation. To be implemented by child class.</span>
+        <span class="sd">&quot;&quot;&quot;Outward message computation. To be implemented by child class.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div></div>
 
