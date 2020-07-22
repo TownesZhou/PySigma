@@ -1,13 +1,17 @@
 Conditional Subgraph Nodes
 ==========================
 
+Expansion / Summarization Factor Node
+-------------------------------------
+
+.. autoclass:: pysigma.graphical.alpha_beta_nodes.ESFN
+   :members:
+   :undoc-members:
+
 
 Relational Mapping Factor Node
 ------------------------------
 
-
-Expansion / Summarization Factor Node
--------------------------------------
 
 
 Concatenation, Marginalization, & Transformation Factor Node

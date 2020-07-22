@@ -121,8 +121,8 @@
 </ul>
 </li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Conditional Subgraph Nodes</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#event-resolution-factor-node">Event Resolution Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#beta-join-factor-node">Beta Join Factor Node</a></li>
@@ -216,11 +216,82 @@
             
   <div class="section" id="conditional-subgraph-nodes">
 <h1>Conditional Subgraph Nodes<a class="headerlink" href="#conditional-subgraph-nodes" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="relational-mapping-factor-node">
-<h2>Relational Mapping Factor Node<a class="headerlink" href="#relational-mapping-factor-node" title="Permalink to this headline">¶</a></h2>
-</div>
 <div class="section" id="expansion-summarization-factor-node">
 <h2>Expansion / Summarization Factor Node<a class="headerlink" href="#expansion-summarization-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.ESFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ESFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">sum_op</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#ESFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expansion / Summarization Factor Node</p>
+<p>This node should be connected to two DVNs that share the same set of random variables but perhaps different
+relational variables, with the DVN on the outward propagation side having a set of relational variables that is a
+subset of the set of relational variables of the DVN on the inward propagation side. The task of this node is to
+manipulate the incoming message’s batch dimensions so that they align with the relational variable dimensions of the
+target DVN. Specifically:</p>
+<ul class="simple">
+<li><p>For the inward propagation, since the target DVN may include relational variables that do not present in the
+source DVN, this procedure consists of <strong>expansion</strong> of the message’s batch dimensions to make space for these
+missing relational variables, as well as <strong>permutation</strong> of the expanded dimensions so that they are in the same
+order as demanded by the target DVN.</p></li>
+<li><p>For the outward propagation, it’s the exact opposite. <strong>Summarization</strong> across the message batch dimensions
+associated with those un-referenced relational variables is first carried out, followed by the same
+<strong>permutation</strong> procedure.</p></li>
+</ul>
+<p>The summarization step can be thought of as a search or optimization problem, for which one finds a single
+distribution instance that best “summarizes” the behaviors of an entire (finite) space of distribution instances,
+where the dimensions of the space are spanned by the un-referenced relational variables. The semantics of such
+summarization can vary depending on the use case. The default summarization procedure implements the semantics of
+“combining” distributions, i.e.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">p_1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">p_2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="o">...</span> <span class="o">*</span> <span class="n">p_k</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>but a custom summarization procedure can also be declared using the <cite>sum_op</cite> argument to implement other semantics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
+<li><p><strong>sum_op</strong> (<em>Summarization</em><em>, </em><em>optional</em>) – The summarization operation functor to be called during outward propagation. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>, in which case
+the “combination” semantic is implemented.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.ESFN.sum_op">
+<code class="sig-name descname">sum_op</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.sum_op" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#ESFN.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expands and permutes the incoming message’s relational variable dimensions to match the target outgoing
+relational variable dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If the set of source DVN’s relational variables is not a subset of the set of target DVN’s relational
+    variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#ESFN.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summarizes over incoming message’s un-referenced relational variable dimensions and permute to match the
+target outgoing relational variable dimensions.</p>
+<p>The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
+uses default summarization semantic defined at the Message level.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If the set of source DVN’s relational variables is not a subset of the set of target DVN’s relational
+    variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="relational-mapping-factor-node">
+<h2>Relational Mapping Factor Node<a class="headerlink" href="#relational-mapping-factor-node" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="concatenation-marginalization-transformation-factor-node">
 <h2>Concatenation, Marginalization, &amp; Transformation Factor Node<a class="headerlink" href="#concatenation-marginalization-transformation-factor-node" title="Permalink to this headline">¶</a></h2>

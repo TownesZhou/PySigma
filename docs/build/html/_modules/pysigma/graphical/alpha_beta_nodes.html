@@ -119,8 +119,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
@@ -303,6 +303,164 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="ESFN"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN">[docs]</a><span class="k">class</span> <span class="nc">ESFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Expansion / Summarization Factor Node</span>
+
+<span class="sd">    This node should be connected to two DVNs that share the same set of random variables but perhaps different</span>
+<span class="sd">    relational variables, with the DVN on the outward propagation side having a set of relational variables that is a</span>
+<span class="sd">    subset of the set of relational variables of the DVN on the inward propagation side. The task of this node is to</span>
+<span class="sd">    manipulate the incoming message&#39;s batch dimensions so that they align with the relational variable dimensions of the</span>
+<span class="sd">    target DVN. Specifically:</span>
+
+<span class="sd">    * For the inward propagation, since the target DVN may include relational variables that do not present in the</span>
+<span class="sd">      source DVN, this procedure consists of **expansion** of the message&#39;s batch dimensions to make space for these</span>
+<span class="sd">      missing relational variables, as well as **permutation** of the expanded dimensions so that they are in the same</span>
+<span class="sd">      order as demanded by the target DVN.</span>
+<span class="sd">    * For the outward propagation, it&#39;s the exact opposite. **Summarization** across the message batch dimensions</span>
+<span class="sd">      associated with those un-referenced relational variables is first carried out, followed by the same</span>
+<span class="sd">      **permutation** procedure.</span>
+
+<span class="sd">    The summarization step can be thought of as a search or optimization problem, for which one finds a single</span>
+<span class="sd">    distribution instance that best &quot;summarizes&quot; the behaviors of an entire (finite) space of distribution instances,</span>
+<span class="sd">    where the dimensions of the space are spanned by the un-referenced relational variables. The semantics of such</span>
+<span class="sd">    summarization can vary depending on the use case. The default summarization procedure implements the semantics of</span>
+<span class="sd">    &quot;combining&quot; distributions, i.e.::</span>
+
+<span class="sd">        p(x) = p_1(x) * p_2(x) * ... * p_k(x)</span>
+
+<span class="sd">    but a custom summarization procedure can also be declared using the `sum_op` argument to implement other semantics.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this node</span>
+<span class="sd">    sum_op : Summarization, optional</span>
+<span class="sd">        The summarization operation functor to be called during outward propagation. Defaults to ``None``, in which case</span>
+<span class="sd">        the &quot;combination&quot; semantic is implemented.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sum_op</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sum_op</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Necessary data structure:</span>
+
+<span class="sd">            :param sum_op:      None or a Summarization instance. Default is None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ESFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Expansion / Summarization Factor Node&quot;</span>
+
+        <span class="k">assert</span> <span class="n">sum_op</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sum_op</span><span class="p">,</span> <span class="n">Summarization</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sum_op</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Summarization operation using Summarization instance is not yet implemented.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span> <span class="o">=</span> <span class="n">sum_op</span>
+
+<div class="viewcode-block" id="ESFN.inward_compute"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute">[docs]</a>    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Expands and permutes the incoming message&#39;s relational variable dimensions to match the target outgoing</span>
+<span class="sd">        relational variable dimensions.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the set of source DVN&#39;s relational variables is not a subset of the set of target DVN&#39;s relational</span>
+<span class="sd">            variables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+        <span class="n">in_rel_vars</span><span class="p">,</span> <span class="n">out_rel_vars</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span>
+        <span class="c1"># Check that the set of relational variables of incoming message is a subset of that of outgoing message</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">out_rel_vars</span><span class="p">)),</span> \
+            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: during inward propagation, expect the set of source DVN&#39;s relational variables being a subset of &quot;</span> \
+            <span class="s2">&quot;the set of target DVN&#39;s relational variables. Found variables </span><span class="si">{}</span><span class="s2"> from incoming linkdata, but variables &quot;</span> \
+            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> from outgoing linkdata.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">in_rel_vars</span><span class="p">,</span> <span class="n">out_rel_vars</span><span class="p">)</span>
+
+        <span class="c1"># Keep a running list of variables</span>
+        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span>
+
+        <span class="c1"># For every relational variable in out_rel_var_list that is not in in_rel_var_list, unsqueeze a dimension of the</span>
+        <span class="c1">#   message as the last dimension.</span>
+        <span class="k">for</span> <span class="n">rel_var</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rel_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">in_rel_vars</span><span class="p">:</span>
+                <span class="c1"># Unsqueeze message</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="c1"># Append the pt_var to the end of running var list</span>
+                <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel_var</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_vars</span><span class="p">)</span>
+
+        <span class="c1"># Permute message batch dimension so that it matches the order given by out_rel_var_list</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+
+        <span class="c1"># Expand to full relational variable dimension shape</span>
+        <span class="n">target_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">])</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_expand</span><span class="p">(</span><span class="n">target_shape</span><span class="p">)</span>
+
+        <span class="c1"># Send message</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ESFN.outward_compute"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute">[docs]</a>    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Summarizes over incoming message&#39;s un-referenced relational variable dimensions and permute to match the</span>
+<span class="sd">        target outgoing relational variable dimensions.</span>
+
+<span class="sd">        The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,</span>
+<span class="sd">        uses default summarization semantic defined at the Message level.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the set of source DVN&#39;s relational variables is not a subset of the set of target DVN&#39;s relational</span>
+<span class="sd">            variables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+        <span class="n">in_rel_vars</span><span class="p">,</span> <span class="n">out_rel_vars</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span>
+        <span class="c1"># Check that the set of relational variables of outgoing message is a subset of that of incoming message</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">out_rel_vars</span><span class="p">))</span>
+
+        <span class="c1"># Keep a running list of variables</span>
+        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span>
+
+        <span class="c1"># Summarize using custom sum_op</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the</span>
+            <span class="c1">#   former as the last dimension and the latter as the first batch dimension</span>
+            <span class="n">sum_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">)</span>
+            <span class="n">other_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sum_dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">sum_dims</span><span class="p">)</span>
+                <span class="c1"># Process using the sum_op</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="c1"># Reshape</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_reshape</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
+
+        <span class="c1"># Otherwise if sum_op is None, carry out default summarization</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Iterate over all relational variables not referenced by out_rel_var_list</span>
+            <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">in_rel_vars</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pt_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">:</span>
+                    <span class="n">dim</span> <span class="o">=</span> <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+                    <span class="c1"># Summarize over the message batch dimension</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_summarize</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+                    <span class="c1"># Remove the variable from the running list</span>
+                    <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_vars</span><span class="p">)</span>
+
+        <span class="c1"># Permute message dimension so that it matches the outgoing relational variable order</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+
+        <span class="c1"># Send message</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">RMFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
@@ -523,137 +681,6 @@
         <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pred_arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">])</span>
-
-        <span class="c1"># Send message</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-
-
-<span class="k">class</span> <span class="nc">ESFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Expansion / Summarization Node</span>
-
-<span class="sd">        This node is a component of the alpha conditional subgraph, so admits up to two pairs of incoming and outgoing</span>
-<span class="sd">            links. Link must declare special attribute &#39;direction&#39; with value &#39;inward&#39; or &#39;outward&#39; to indicate whether</span>
-<span class="sd">            it is pointing toward the conditional gamma factor node or not.</span>
-
-<span class="sd">        For inward direction, it expands and permutes the incoming message&#39;s relational variable dimensions to match the</span>
-<span class="sd">            full relational variable dimensions determined by the conditional. For outward direction, it summarizes</span>
-<span class="sd">            over irrelevant relational variables and permute the dimensions to match the relational variable dimensions</span>
-<span class="sd">            of this pattern.</span>
-
-<span class="sd">        Note that the expanded dimensions will be of size 1, so that the expanded tensor is broadcastable along this</span>
-<span class="sd">            dimension.</span>
-
-<span class="sd">        The summarization step can be thought of as a search or optimization problem, where one finds a single</span>
-<span class="sd">            distribution instance that best &quot;summarizes&quot; the behaviors of an entire space of distribution instances,</span>
-<span class="sd">            where the dimensions of the space is defined and spanned by the irrelevant relational variables. Depending</span>
-<span class="sd">            on the user-specified summarization criteria, different semantics can be interpreted for this step.</span>
-
-<span class="sd">        A sum_op should be specified during initialization to specify special summarization semantics, such as Max</span>
-<span class="sd">            Product semantics or searching. If not specified, will default to Sum-Product alike summarization. Please</span>
-<span class="sd">            refer to Message class documentation for more information.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sum_op</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Necessary data structure:</span>
-
-<span class="sd">            :param sum_op:      None or a Summarization instance. Default is None.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ESFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Expansion Summarization Factor Node&quot;</span>
-
-        <span class="k">assert</span> <span class="n">sum_op</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sum_op</span><span class="p">,</span> <span class="n">Summarization</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">sum_op</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Summarization operation using Summarization instance is not yet implemented.&quot;</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span> <span class="o">=</span> <span class="n">sum_op</span>
-
-    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Expansion operation. Expand and permutes the incoming message&#39;s relational variable dimensions to match the</span>
-<span class="sd">                outgoing relational relational variable dimensions.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
-        <span class="n">in_rel_var_list</span><span class="p">,</span> <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
-        <span class="c1"># Check that the set of relational variables of incoming message is a subset of that of outgoing message</span>
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">))</span>
-
-        <span class="c1"># Keep a running list of variables</span>
-        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
-
-        <span class="c1"># For every relational variable in out_rel_var_list that is not in in_rel_var_list, unsqueeze a dimension of the</span>
-        <span class="c1">#   message as the last dimension.</span>
-        <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">pt_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">in_rel_var_list</span><span class="p">:</span>
-                <span class="c1"># Unsqueeze message</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-                <span class="c1"># Append the pt_var to the end of running var list</span>
-                <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
-
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
-
-        <span class="c1"># Permute message dimension so that it matches the order given by out_rel_var_list</span>
-        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
-
-        <span class="c1"># Expand to full relational variable dimension shape</span>
-        <span class="n">target_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">])</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_expand</span><span class="p">(</span><span class="n">target_shape</span><span class="p">)</span>
-
-        <span class="c1"># Send message</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Summarization operation. Summarize over incoming message&#39;s relational variable dimensions that are not</span>
-<span class="sd">                referenced by outgoing message&#39;s relational variables.</span>
-
-<span class="sd">            The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,</span>
-<span class="sd">                uses default summarization semantic defined at the Message level.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
-        <span class="n">in_rel_var_list</span><span class="p">,</span> <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
-        <span class="c1"># Check that the set of relational variables of outgoing message is a subset of that of incoming message</span>
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">))</span>
-
-        <span class="c1"># Keep a running list of variables</span>
-        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
-
-        <span class="c1"># Summarize using custom sum_op</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the</span>
-            <span class="c1">#   former as the last dimension and the latter as the first batch dimension</span>
-            <span class="n">sum_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
-            <span class="n">other_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sum_dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="c1"># First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">sum_dims</span><span class="p">)</span>
-                <span class="c1"># Process using the sum_op</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="c1"># Reshape</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_reshape</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
-
-        <span class="c1"># Otherwise if sum_op is None, carry out default summarization</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Iterate over all relational variables not referenced by out_rel_var_list</span>
-            <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">in_rel_var_list</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">pt_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">:</span>
-                    <span class="n">dim</span> <span class="o">=</span> <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
-                    <span class="c1"># Summarize over the message batch dimension</span>
-                    <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_summarize</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
-                    <span class="c1"># Remove the variable from the running list</span>
-                    <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span>
-
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
-
-        <span class="c1"># Permute message dimension so that it matches the order given by out_rel_var_list</span>
-        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
 
         <span class="c1"># Send message</span>
         <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>

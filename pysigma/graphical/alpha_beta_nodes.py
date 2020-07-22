@@ -96,6 +96,164 @@ class AlphaFactorNode(FactorNode, ABC):
         pass
 
 
+class ESFN(AlphaFactorNode):
+    """Expansion / Summarization Factor Node
+
+    This node should be connected to two DVNs that share the same set of random variables but perhaps different
+    relational variables, with the DVN on the outward propagation side having a set of relational variables that is a
+    subset of the set of relational variables of the DVN on the inward propagation side. The task of this node is to
+    manipulate the incoming message's batch dimensions so that they align with the relational variable dimensions of the
+    target DVN. Specifically:
+
+    * For the inward propagation, since the target DVN may include relational variables that do not present in the
+      source DVN, this procedure consists of **expansion** of the message's batch dimensions to make space for these
+      missing relational variables, as well as **permutation** of the expanded dimensions so that they are in the same
+      order as demanded by the target DVN.
+    * For the outward propagation, it's the exact opposite. **Summarization** across the message batch dimensions
+      associated with those un-referenced relational variables is first carried out, followed by the same
+      **permutation** procedure.
+
+    The summarization step can be thought of as a search or optimization problem, for which one finds a single
+    distribution instance that best "summarizes" the behaviors of an entire (finite) space of distribution instances,
+    where the dimensions of the space are spanned by the un-referenced relational variables. The semantics of such
+    summarization can vary depending on the use case. The default summarization procedure implements the semantics of
+    "combining" distributions, i.e.::
+
+        p(x) = p_1(x) * p_2(x) * ... * p_k(x)
+
+    but a custom summarization procedure can also be declared using the `sum_op` argument to implement other semantics.
+
+    Parameters
+    ----------
+    name : str
+        Name of this node
+    sum_op : Summarization, optional
+        The summarization operation functor to be called during outward propagation. Defaults to ``None``, in which case
+        the "combination" semantic is implemented.
+
+    Attributes
+    ----------
+    sum_op
+    """
+    def __init__(self, name, sum_op=None):
+        """
+            Necessary data structure:
+
+            :param sum_op:      None or a Summarization instance. Default is None.
+        """
+        super(ESFN, self).__init__(name)
+        self.pretty_log["node type"] = "Expansion / Summarization Factor Node"
+
+        assert sum_op is None or isinstance(sum_op, Summarization)
+        if sum_op is not None:
+            raise NotImplementedError("Summarization operation using Summarization instance is not yet implemented.")
+
+        self.sum_op = sum_op
+
+    def inward_compute(self, in_ld, out_ld):
+        """Expands and permutes the incoming message's relational variable dimensions to match the target outgoing
+        relational variable dimensions.
+
+        Raises
+        ------
+        AssertionError
+            If the set of source DVN's relational variables is not a subset of the set of target DVN's relational
+            variables.
+        """
+        msg = in_ld.read()
+        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
+        assert isinstance(msg, Message)
+        in_rel_vars, out_rel_vars = in_ld.vn.rel_vars, out_ld.vn.rel_vars
+        # Check that the set of relational variables of incoming message is a subset of that of outgoing message
+        assert set(in_rel_vars).issubset(set(out_rel_vars)), \
+            "At {}: during inward propagation, expect the set of source DVN's relational variables being a subset of " \
+            "the set of target DVN's relational variables. Found variables {} from incoming linkdata, but variables " \
+            "{} from outgoing linkdata.".format(self.name, in_rel_vars, out_rel_vars)
+
+        # Keep a running list of variables
+        mapped_var_list = list(in_rel_vars)
+
+        # For every relational variable in out_rel_var_list that is not in in_rel_var_list, unsqueeze a dimension of the
+        #   message as the last dimension.
+        for rel_var in out_rel_vars:
+            if rel_var not in in_rel_vars:
+                # Unsqueeze message
+                msg = msg.batch_unsqueeze(dim=-1)
+                # Append the pt_var to the end of running var list
+                mapped_var_list.append(rel_var)
+
+        assert set(mapped_var_list) == set(out_rel_vars)
+
+        # Permute message batch dimension so that it matches the order given by out_rel_var_list
+        perm_order = list(mapped_var_list.index(v) for v in out_rel_vars)
+        msg = msg.batch_permute(perm_order)
+
+        # Expand to full relational variable dimension shape
+        target_shape = torch.Size([v.size for v in out_rel_vars])
+        msg = msg.batch_expand(target_shape)
+
+        # Send message
+        out_ld.write(msg)
+
+    def outward_compute(self, in_ld, out_ld):
+        """Summarizes over incoming message's un-referenced relational variable dimensions and permute to match the
+        target outgoing relational variable dimensions.
+
+        The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
+        uses default summarization semantic defined at the Message level.
+
+        Raises
+        ------
+        AssertionError
+            If the set of source DVN's relational variables is not a subset of the set of target DVN's relational
+            variables.
+        """
+        msg = in_ld.read()
+        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
+        assert isinstance(msg, Message)
+        in_rel_vars, out_rel_vars = in_ld.vn.rel_vars, out_ld.vn.rel_vars
+        # Check that the set of relational variables of outgoing message is a subset of that of incoming message
+        assert set(in_rel_vars).issubset(set(out_rel_vars))
+
+        # Keep a running list of variables
+        mapped_var_list = list(in_rel_vars)
+
+        # Summarize using custom sum_op
+        if self.sum_op is not None:
+            # Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the
+            #   former as the last dimension and the latter as the first batch dimension
+            sum_dims = list(dim for dim, v in enumerate(in_rel_vars) if v not in out_rel_vars)
+            other_dims = list(dim for dim, v in enumerate(in_rel_vars) if v in out_rel_vars)
+            if len(sum_dims) > 0:
+                # First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim
+                msg = msg.batch_flatten(other_dims)
+                msg = msg.batch_flatten(sum_dims)
+                # Process using the sum_op
+                msg = self.sum_op(msg)
+                # Reshape
+                msg = msg.batch_reshape(other_dims)
+
+        # Otherwise if sum_op is None, carry out default summarization
+        else:
+            # Iterate over all relational variables not referenced by out_rel_var_list
+            for pt_var in in_rel_vars:
+                if pt_var not in out_rel_vars:
+                    dim = mapped_var_list.index(pt_var)
+                    # Summarize over the message batch dimension
+                    msg = msg.batch_summarize(dim)
+                    # Remove the variable from the running list
+                    mapped_var_list.remove(pt_var)
+
+        assert set(mapped_var_list) == set(out_rel_vars)
+
+        # Permute message dimension so that it matches the outgoing relational variable order
+        perm_order = list(mapped_var_list.index(v) for v in out_rel_vars)
+        msg = msg.batch_permute(perm_order)
+
+        # Send message
+        out_ld.write(msg)
+
+
 class RMFN(AlphaFactorNode):
     """
         Relation Variable Mapping Node
@@ -314,137 +472,6 @@ class RMFN(AlphaFactorNode):
         perm_order = list(mapped_var_list.index(pred_arg) for pred_arg in out_rel_var_list)
         msg = msg.batch_permute(perm_order)
         assert msg.b_shape == torch.Size([v.size for v in out_rel_var_list])
-
-        # Send message
-        out_ld.write(msg)
-
-
-class ESFN(AlphaFactorNode):
-    """
-        Expansion / Summarization Node
-
-        This node is a component of the alpha conditional subgraph, so admits up to two pairs of incoming and outgoing
-            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
-            it is pointing toward the conditional gamma factor node or not.
-
-        For inward direction, it expands and permutes the incoming message's relational variable dimensions to match the
-            full relational variable dimensions determined by the conditional. For outward direction, it summarizes
-            over irrelevant relational variables and permute the dimensions to match the relational variable dimensions
-            of this pattern.
-
-        Note that the expanded dimensions will be of size 1, so that the expanded tensor is broadcastable along this
-            dimension.
-
-        The summarization step can be thought of as a search or optimization problem, where one finds a single
-            distribution instance that best "summarizes" the behaviors of an entire space of distribution instances,
-            where the dimensions of the space is defined and spanned by the irrelevant relational variables. Depending
-            on the user-specified summarization criteria, different semantics can be interpreted for this step.
-
-        A sum_op should be specified during initialization to specify special summarization semantics, such as Max
-            Product semantics or searching. If not specified, will default to Sum-Product alike summarization. Please
-            refer to Message class documentation for more information.
-    """
-    def __init__(self, name, sum_op=None):
-        """
-            Necessary data structure:
-
-            :param sum_op:      None or a Summarization instance. Default is None.
-        """
-        super(ESFN, self).__init__(name)
-        self.pretty_log["node type"] = "Expansion Summarization Factor Node"
-
-        assert sum_op is None or isinstance(sum_op, Summarization)
-        if sum_op is not None:
-            raise NotImplementedError("Summarization operation using Summarization instance is not yet implemented.")
-
-        self.sum_op = sum_op
-
-    def inward_compute(self, in_ld, out_ld):
-        """
-            Expansion operation. Expand and permutes the incoming message's relational variable dimensions to match the
-                outgoing relational relational variable dimensions.
-        """
-        msg = in_ld.read()
-        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
-        assert isinstance(msg, Message)
-        in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
-        # Check that the set of relational variables of incoming message is a subset of that of outgoing message
-        assert set(in_rel_var_list).issubset(set(out_rel_var_list))
-
-        # Keep a running list of variables
-        mapped_var_list = copy.deepcopy(in_rel_var_list)
-
-        # For every relational variable in out_rel_var_list that is not in in_rel_var_list, unsqueeze a dimension of the
-        #   message as the last dimension.
-        for pt_var in out_rel_var_list:
-            if pt_var not in in_rel_var_list:
-                # Unsqueeze message
-                msg = msg.batch_unsqueeze(dim=-1)
-                # Append the pt_var to the end of running var list
-                mapped_var_list.append(pt_var)
-
-        assert set(mapped_var_list) == set(out_rel_var_list)
-
-        # Permute message dimension so that it matches the order given by out_rel_var_list
-        perm_order = list(mapped_var_list.index(v) for v in out_rel_var_list)
-        msg = msg.batch_permute(perm_order)
-
-        # Expand to full relational variable dimension shape
-        target_shape = torch.Size([v.size for v in out_rel_var_list])
-        msg = msg.batch_expand(target_shape)
-
-        # Send message
-        out_ld.write(msg)
-
-    def outward_compute(self, in_ld, out_ld):
-        """
-            Summarization operation. Summarize over incoming message's relational variable dimensions that are not
-                referenced by outgoing message's relational variables.
-
-            The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
-                uses default summarization semantic defined at the Message level.
-        """
-        msg = in_ld.read()
-        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
-        assert isinstance(msg, Message)
-        in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
-        # Check that the set of relational variables of outgoing message is a subset of that of incoming message
-        assert set(out_rel_var_list).issubset(set(in_rel_var_list))
-
-        # Keep a running list of variables
-        mapped_var_list = copy.deepcopy(in_rel_var_list)
-
-        # Summarize using custom sum_op
-        if self.sum_op is not None:
-            # Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the
-            #   former as the last dimension and the latter as the first batch dimension
-            sum_dims = list(dim for dim, v in enumerate(in_rel_var_list) if v not in out_rel_var_list)
-            other_dims = list(dim for dim, v in enumerate(in_rel_var_list) if v in out_rel_var_list)
-            if len(sum_dims) > 0:
-                # First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim
-                msg = msg.batch_flatten(other_dims)
-                msg = msg.batch_flatten(sum_dims)
-                # Process using the sum_op
-                msg = self.sum_op.process(msg)
-                # Reshape
-                msg = msg.batch_reshape(other_dims)
-
-        # Otherwise if sum_op is None, carry out default summarization
-        else:
-            # Iterate over all relational variables not referenced by out_rel_var_list
-            for pt_var in in_rel_var_list:
-                if pt_var not in out_rel_var_list:
-                    dim = mapped_var_list.index(pt_var)
-                    # Summarize over the message batch dimension
-                    msg = msg.batch_summarize(dim)
-                    # Remove the variable from the running list
-                    mapped_var_list.remove(pt_var)
-
-        assert set(mapped_var_list) == set(out_rel_var_list)
-
-        # Permute message dimension so that it matches the order given by out_rel_var_list
-        perm_order = list(mapped_var_list.index(v) for v in out_rel_var_list)
-        msg = msg.batch_permute(perm_order)
 
         # Send message
         out_ld.write(msg)
