@@ -508,6 +508,9 @@ variable node.</p>
 <li><p>Topology: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating
 messages inward toward the Gamma Factor Node, and the other pair propagating messages outward toward the predicate
 Working Memory Variable Node.</p></li>
+<li><p>Admissible variable nodes: an alpha node treats the relational variables and manipulates messages’ batch
+dimensions only, and leaves untouched the random variables and corresponding event dimensions. Therefore,
+incident variable nodes should have the same tuple of random variables.</p></li>
 <li><p>Compute pattern: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,
 for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the
 inward incoming link. Accordingly, the <cite>compute()</cite> method is subdivided into an <cite>inward_compute()</cite> and an
@@ -519,10 +522,11 @@ them should only be carried out if its incoming linkdata of interest contains ne
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link">
 <code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link" title="Permalink to this definition">¶</a></dt>
-<dd><p>An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata.
-Furthermore, a <code class="docutils literal notranslate"><span class="pre">&quot;direction&quot;</span></code> key-ed attribute should be included in the linkdata’s optional attribute map
-with value <code class="docutils literal notranslate"><span class="pre">&quot;inward&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;outward&quot;</span></code> to indicate the message propagation direction of the linkdata. The two
-pairs of linkdata should have different message propagation directions.</p>
+<dd><p>An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata. The
+incident variable nodes should have the same tuple of random variables. Furthermore, a <code class="docutils literal notranslate"><span class="pre">&quot;direction&quot;</span></code> key-ed
+attribute should be included in the linkdata’s optional attribute map with value <code class="docutils literal notranslate"><span class="pre">&quot;inward&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;outward&quot;</span></code>
+to indicate the message propagation direction of the linkdata. The two pairs of linkdata should have different
+message propagation directions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered. Must specify a <code class="docutils literal notranslate"><span class="pre">&quot;direction&quot;</span></code> attribute in its optional attribute map

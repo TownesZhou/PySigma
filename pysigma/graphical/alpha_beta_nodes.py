@@ -20,6 +20,9 @@ class AlphaFactorNode(FactorNode, ABC):
     * Topology: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating
       messages inward toward the Gamma Factor Node, and the other pair propagating messages outward toward the predicate
       Working Memory Variable Node.
+    * Admissible variable nodes: an alpha node treats the relational variables and manipulates messages' batch
+      dimensions only, and leaves untouched the random variables and corresponding event dimensions. Therefore,
+      incident variable nodes should have the same tuple of random variables.
     * Compute pattern: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,
       for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the
       inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an
@@ -33,12 +36,14 @@ class AlphaFactorNode(FactorNode, ABC):
 
         # Pairs of incoming and outgoing linkdata labeled with their directionality w.r.t. the alpha structure
         self.labeled_ld_pair = {}
+        self.ran_vars = None
 
     def add_link(self, linkdata):
-        """An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata.
-        Furthermore, a ``"direction"`` key-ed attribute should be included in the linkdata's optional attribute map
-        with value ``"inward"`` or ``"outward"`` to indicate the message propagation direction of the linkdata. The two
-        pairs of linkdata should have different message propagation directions.
+        """An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata. The
+        incident variable nodes should have the same tuple of random variables. Furthermore, a ``"direction"`` key-ed
+        attribute should be included in the linkdata's optional attribute map with value ``"inward"`` or ``"outward"``
+        to indicate the message propagation direction of the linkdata. The two pairs of linkdata should have different
+        message propagation directions.
 
         Parameters
         ----------
@@ -47,6 +52,12 @@ class AlphaFactorNode(FactorNode, ABC):
             ``linkdata.attr``.
         """
         assert isinstance(linkdata, LinkData)
+        # Check random variables
+        if self.ran_vars is None:
+            self.ran_vars = linkdata.vn.ran_vars
+        else:
+            assert self.ran_vars == linkdata.vn.ran_vars
+
         assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
 
         if linkdata.to_fn:
@@ -149,19 +160,6 @@ class ESFN(AlphaFactorNode):
             raise NotImplementedError("Summarization operation using Summarization instance is not yet implemented.")
 
         self.sum_op = sum_op
-        self.ran_vars = None
-
-    def add_link(self, linkdata):
-        """The variable nodes on the other side of all linkdata must have the same list of random variables.
-
-        """
-        assert isinstance(linkdata, LinkData)
-        if self.ran_vars is None:
-            self.ran_vars = linkdata.vn.ran_vars
-        else:
-            assert self.ran_vars == linkdata.vn.ran_vars
-
-        super(ESFN, self).add_link(linkdata)
 
     def inward_compute(self, in_ld, out_ld):
         """Expands and permutes the incoming message's relational variable dimensions to match the target outgoing
