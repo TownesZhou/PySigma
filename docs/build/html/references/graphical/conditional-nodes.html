@@ -93,6 +93,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../cognitive.html#type">Type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cognitive.html#predicate">Predicate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cognitive.html#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#summarization">Summarization</a></li>
 </ul>
 </li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical Architecture</a><ul class="current">
@@ -249,7 +252,7 @@ summarization can vary depending on the use case. The default summarization proc
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
-<li><p><strong>sum_op</strong> (<em>Summarization</em><em>, </em><em>optional</em>) – The summarization operation functor to be called during outward propagation. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>, in which case
+<li><p><strong>sum_op</strong> (<a class="reference internal" href="../cognitive.html#pysigma.structures.Summarization" title="pysigma.structures.Summarization"><em>Summarization</em></a><em>, </em><em>optional</em>) – The summarization operation functor to be called during outward propagation. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>, in which case
 the “combination” semantic is implemented.</p></li>
 </ul>
 </dd>

@@ -255,16 +255,13 @@ class ESFN(AlphaFactorNode):
 
 
 class RMFN(AlphaFactorNode):
-    """
-        Relation Variable Mapping Node
+    """Relation Variable Mapping Node
 
-        Convert between predicate arguments and pattern variables. Apply relational variable's VariableMap (if declared)
-            by selecting and placing entries among the message batch dimensions. This node can thus carry out
-            inner-pattern relational variable matching by itself.
+    Converts predicate arguments from and to pattern variables. Applies relational variable's `VariableMap` (if
+    specified) by manipulating message batch dimensions. This node can thus implements the semantic of inner-pattern
+    relational variable matching.
 
-        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing
-            links. Link must declare special attribute 'direction' with value 'inward' or 'outward' to indicate whether
-            it is pointing toward the conditional gamma factor node or not.
+
 
         For inward direction, inner-pattern relational variable matching is handled by selecting entries on the
             diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto

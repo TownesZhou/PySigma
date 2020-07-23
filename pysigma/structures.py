@@ -3,16 +3,16 @@
 
     Author of this file: Jincheng Zhou, University of Southern California
 """
-
+from collections.abc import Iterable
+from itertools import chain
+import warnings
+import functools
 import numpy as np
 import torch
 from torch import Size
 from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint
-from collections.abc import Iterable
-from itertools import chain
-import warnings
-from utils import intern_name, extern_name, KnowledgeServer
+from utils import intern_name, extern_name, DistributionServer, KnowledgeServer
 from defs import Variable, VariableMetatype, Message, MessageType
 
 
@@ -182,67 +182,134 @@ class FactorFunction:
 
 
 class Summarization:
-    """
-        Class type for declaring procedures for summarization over space of distribution instances spanned by relational
-            variable dimensions.
+    """The decorator class for the custom summarization callback procedures which will be called during the outward
+    summarization step in the Expansion / Summarization Factor Node (ESFN).
 
-        User should provide a functor that can be called to perform the summarization procedure. Generally, the functor
-            should be expecting to receive and process both Parameter representation of message and Particles
-            representation of message, with a flag indicating which type current input is.
+    Provides the decorator ``@Summarization``.
 
-        The functor Input/Output specification:
-            :param message_type:    "parameter", "particles", or "both"
-            :param message:         a dict. with the following schema:
-                                    - For "parameter" message type, expect the following:
-                                        {
-                                          "parameter": a torch.Tensor, with dimensions [batch_dim, sum_dim, param_dim]
-                                        }
-                                    - For "particles" message type, expect the following:
-                                        {
-                                          "particles": a dict mapping Random Variable name to torch.Tensor, with the
-                                                       following schema:
-                                                {
-                                                    a str, the random variable name: a torch.Tensor with dimensions
-                                                            [sample_dim, rv_dim]
-                                                }
-                                          "weights": a torch.Tensor, with dimensions [batch_dim, sum_dim, sample_dim],
-                                          "log_density": a torch.Tensor, with dimension [sample_dim]
-                                        }
-                                    - For "both" message type, expect a dictionary containing all of the contents above.
-            :return                 a torch.Tensor. Depending on the type of message:
-                                    - For "parameter" message type, expect the following:
-                                          "parameter": the processed parameter torch.Tensor, with dimension
-                                                    [batch_dim, param_dim]
-                                    - For "particles" message type, expect the following:
-                                          "weights": the processed weights torch.Tensor, with dimensions
-                                                    [batch_dim, sample_dim],
-                                    - For "both" message type, expect a TUPLE of torch.Tensor containing both of the
-                                        contents above. The first element is expected to be the "parameter" and the
-                                        second one is expected to be the "weights"
+    The custom callback function should have the following signature:
 
-        Explanation for the shapes:
-            - 'batch_dim': the batch dimension, as in machine learning. This dimension indexes batch of data instances,
-                            and should not be tampered with.
-            - 'sum_dim':   the dimension to be summarized over. This dimension should be reduced during the processing.
-            - 'param_dim': the dimension of the parameter.
-            - 'sample_dim':     the dimension that indexes particles in a particle list. Size of this dimension
-                                    corresponds to the number of particles drawn.
-            - 'rv_dim':      the dimension of the corresponding random variable. Same the same as the size of the RV.
+    Parameters
+    ----------
+    content_type : {'distribution', 'particles', 'both'}
+        The type of the content to process for the current execution.
+    rv_info : OrderedDict
+        Information / metadata regarding the random variables of the message. Each key-value pair in the dictionary is
+        key-ed by the random variable's name ``var_name : str`` and contains a 2-tuple
+        ``(var_size : int, constraints : set of torch.distributions.Constraint)`` as the value. Note that
+        `rv_info` is ordered, and this order of the random variables will be respected by entries in `events` and
+        `log_densities`.
+    batch_shape : torch.Size
+        A size-2 torch.Size list representing the batch dimension shapes. **The first dimension is the batch dimension
+        to be summarized over and reduced, and the second dimension should be left untouched.**
+    dist : torch.distributions.Distribution, optional
+        The batched distribution instance representing the message. `dist` 's batch shape is `batch_shape`, and its
+        event shape is the sum of the sizes of all random variables. This field will be provided when `content_type` is
+        ``distribution`` or ``both``, or will be left ``None`` when `content_type` is `particles`.
+    events : tuple of torch.Tensor, optional
+        The tuple of event value tensors. Each entry is a 2D tensor corresponding to one of the random variables
+        declared in `rv_info` associated with the message. The first dimension is the sample dimension with a size
+        equal to the number of event particles. The last dimension is the event dimension with a size equal to the
+        size of the corresponding random variable. This field will be provided when `content_type` is ``particles`` or
+        ``both``, or will be left ``None`` when `content_type` is ``parameter``.
+    log_densities : tuple of torch.Tensor, optional
+        The tuple of **marginal** log sampling densities of each of the event values in `events`. Each entry is a 1D
+        tensor annotating the event value tensor in `events` with the same tuple index. The dimension size equals to
+        the number of event particles. This field will be provided when `content_type` is ``particles`` or ``both``, or
+        will be left ``None`` when `content_type` is ``parameter``.
+    weight : torch.Tensor, optional
+        The event particles weight tensor. Have shape `(batch_shape + sample_shape)`, where `sample_shape` is the
+        concatenated list of the sample sizes of all event tensors in `events`. This field will be provided when
+        `content_type` is ``particles`` or ``both``, or will be left ``None`` when `content_type` is ``parameter``.
 
-        All input tensors will first be cloned before being fed to the functor, because we don't expect "particles"
-            and "log_density" tensors to be changed during summarization.
+    Returns
+    -------
+    tuple
+        A 2-tuple consisting of `(reduced_dist : torch.distributions.Distribution or None, reduced_weight :
+        torch.Tensor or None)`. `reduced_dist` will be ignored if `content_type` is ``particles``, and `reduced_weight`
+        will be ignored if `content_type` is ``parameter``. Both of the entries should have the reduced batch shape of
+        length 1.
     """
     def __init__(self, sum_func):
-        """
-            Initialize a summarization operation.
-
-            :param sum_func:    A python callable that implements the summarization procedure. See class docs for more
-                                    details regarding input/output specifications.
-        """
-        if not callable(sum_func):
-            raise ValueError("The input argument 'sum_func' should be a python callable.")
-
+        # Update wrapped function's information to enable introspection
+        functools.update_wrapper(self, sum_func)
         self.sum_func = sum_func
+
+    def __call__(self, msg, ran_vars):
+        # Sort out input data
+        assert isinstance(msg, Message) and len(msg.b_shape) == 2
+        assert MessageType.Parameter in msg.type or MessageType.Particles in msg.type
+        assert 'dist_info' in msg.attr.keys() and 'dist_class' in msg.attr['dist_info'].keys()
+        assert isinstance(ran_vars, tuple) and \
+            all(isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_vars)
+
+        if msg.type is MessageType.Parameter:
+            content_type = 'parameter'
+        elif msg.type is MessageType.Particles:
+            content_type = 'particles'
+        else:
+            content_type = 'both'
+        rv_info = {v.name: (v.size, v.constraints) for v in ran_vars}
+
+        # Clone tensor contents
+        dist = DistributionServer.param2dist(msg.attr['dist_info']['dist_class'], msg.parameter,
+                                             b_shape=msg.b_shape, e_shape=msg.e_shape, dist_info=msg.attr) \
+            if MessageType.Parameter in msg.type else None
+        events = tuple(p.clone() for p in msg.particles) if MessageType.Particles in msg.type else None
+        log_densities = tuple(d.clone() for d in msg.log_densities) if MessageType.Particles in msg.type else None
+        weight = msg.weight.clone() if MessageType.Particles in msg.type else None
+
+        # Obtain and check result
+        result = self.sum_func(content_type=content_type, rv_info=rv_info, batch_shape=msg.b_shape,
+                               dist=dist, events=events, log_densities=log_densities, weight=weight)
+        if not isinstance(result, tuple) and len(result) == 2:
+            raise ValueError("The result returned by a Summarization callback should be a 2-tuple. Found result type "
+                             "{}".format(type(result)))
+        reduced_dist, reduced_weight = result
+        if MessageType.Parameter in msg.type:
+            if not isinstance(reduced_dist, Distribution):
+                raise ValueError("When `content_type` is 'parameter' or 'both', the first result returned by a "
+                                 "Summarization callback should be a torch.distributions.Distribution instance. "
+                                 "Encountered result type: {}.".format(type(reduced_dist)))
+            if type(reduced_dist) != type(dist):
+                raise ValueError("When `content_type` is 'parameter' or 'both', the distribution instance returned by "
+                                 "the Summarization callback should belong to the same distribution class as the "
+                                 "original distribution. Expect class {}, encountered class {}."
+                                 .format(type(dist), type(reduced_dist)))
+            if len(reduced_dist.batch_shape) != 1 or reduced_dist.batch_shape[0] != msg.b_shape[-1]:
+                raise ValueError("When `content_type` is 'parameter' or 'both', the distribution instance returned "
+                                 "by the Summarization callback should have a batch shape of length 1 and have a size "
+                                 "equal to the second batch size of the original message. Expect size {}, encountered "
+                                 "batch shape {}".format(msg.b_shape[-1], reduced_dist.batch_shape))
+            if reduced_dist.event_shape != msg.e_shape:
+                raise ValueError("When `content_type` is 'parameter' or 'both', the distribution instance returned "
+                                 "by the Summarization callback should have the same event shape as does the original "
+                                 "message. Expect event shape {}, encountered event shape {}"
+                                 .format(msg.e_shape, reduced_dist.event_shape))
+        if MessageType.Particles in msg.type:
+            if not isinstance(reduced_weight, torch.Tensor):
+                raise ValueError("When 'content_type' is 'particles' or 'both', the second result returned by a "
+                                 "Summarization callback should be a torch.Tensor.. Encountered result type: {}."
+                                 .format(type(reduced_weight)))
+            if reduced_weight.shape != msg.b_shape[-1:] + msg.e_shape:
+                raise ValueError("When 'content_type' is 'particles' or 'both', expect the weight tensor returned by "
+                                 "the Summarization callback to have shape {}. Instead found {}."
+                                 .format(msg.b_shape[-1:] + msg.e_shape, reduced_weight.shape))
+
+        # Instantiate return message
+        param = 0
+        weight = 1
+        if MessageType.Parameter in msg.type:
+            param = DistributionServer.dist2param(reduced_dist, msg.attr['dist_info'])
+        if MessageType.Particles in msg.type:
+            weight = reduced_weight
+
+        return_msg = Message(msg.type,
+                             batch_shape=msg.b_shape[-1:],
+                             param_shape=msg.p_shape, sample_shape=msg.s_shape, event_shape=msg.e_shape,
+                             parameter=param, particles=msg.particles, weight=weight, log_densities=msg.log_densities,
+                             device=msg.device, **msg.attr)
+        return return_msg
 
     def process(self, msg, ran_var_list, translator):
         """

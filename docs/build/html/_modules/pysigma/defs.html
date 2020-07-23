@@ -91,6 +91,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#type">Type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#predicate">Predicate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#summarization">Summarization</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../references/graphical/index.html">Graphical Architecture</a><ul>
@@ -286,7 +289,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
         <span class="c1"># List of value constraints if the Variable is of Random metatype.</span>
         <span class="c1">#   Useful at Beta-join to select globally valid particle values</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="n">value_constraints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">value_constraints</span><span class="p">)</span> <span class="k">if</span> <span class="n">value_constraints</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="c1"># override so &#39;==&#39; operator test variable equality</span>

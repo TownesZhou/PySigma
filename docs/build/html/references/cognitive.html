@@ -93,6 +93,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#type">Type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#predicate">Predicate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#summarization">Summarization</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="graphical/index.html">Graphical Architecture</a><ul>
@@ -222,6 +225,81 @@
 </div>
 <div class="section" id="conditional">
 <h2>Conditional<a class="headerlink" href="#conditional" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="variablemap">
+<h2>VariableMap<a class="headerlink" href="#variablemap" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="factorfunction">
+<h2>FactorFunction<a class="headerlink" href="#factorfunction" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="summarization">
+<h2>Summarization<a class="headerlink" href="#summarization" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.structures.Summarization">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.structures.</code><code class="sig-name descname">Summarization</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sum_func</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#Summarization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.Summarization" title="Permalink to this definition">¶</a></dt>
+<dd><p>The decorator class for the custom summarization callback procedures which will be called during the outward
+summarization step in the Expansion / Summarization Factor Node (ESFN).</p>
+<p>Provides the decorator <code class="docutils literal notranslate"><span class="pre">&#64;Summarization</span></code>.</p>
+<p>The custom callback function should have the following signature:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>content_type</strong> (<em>{'distribution'</em><em>, </em><em>'particles'</em><em>, </em><em>'both'}</em>) – The type of the content to process for the current execution.</p></li>
+<li><p><strong>rv_info</strong> (<em>OrderedDict</em>) – Information / metadata regarding the random variables of the message. Each key-value pair in the dictionary is
+key-ed by the random variable’s name <code class="docutils literal notranslate"><span class="pre">var_name</span> <span class="pre">:</span> <span class="pre">str</span></code> and contains a 2-tuple
+<code class="docutils literal notranslate"><span class="pre">(var_size</span> <span class="pre">:</span> <span class="pre">int,</span> <span class="pre">constraints</span> <span class="pre">:</span> <span class="pre">set</span> <span class="pre">of</span> <span class="pre">torch.distributions.Constraint)</span></code> as the value. Note that
+<cite>rv_info</cite> is ordered, and this order of the random variables will be respected by entries in <cite>events</cite> and
+<cite>log_densities</cite>.</p></li>
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – A size-2 torch.Size list representing the batch dimension shapes. <strong>The first dimension is the batch dimension
+to be summarized over and reduced, and the second dimension should be left untouched.</strong></p></li>
+<li><p><strong>dist</strong> (<em>torch.distributions.Distribution</em><em>, </em><em>optional</em>) – The batched distribution instance representing the message. <cite>dist</cite> ‘s batch shape is <cite>batch_shape</cite>, and its
+event shape is the sum of the sizes of all random variables. This field will be provided when <cite>content_type</cite> is
+<code class="docutils literal notranslate"><span class="pre">distribution</span></code> or <code class="docutils literal notranslate"><span class="pre">both</span></code>, or will be left <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>content_type</cite> is <cite>particles</cite>.</p></li>
+<li><p><strong>events</strong> (<em>tuple of torch.Tensor</em><em>, </em><em>optional</em>) – The tuple of event value tensors. Each entry is a 2D tensor corresponding to one of the random variables
+declared in <cite>rv_info</cite> associated with the message. The first dimension is the sample dimension with a size
+equal to the number of event particles. The last dimension is the event dimension with a size equal to the
+size of the corresponding random variable. This field will be provided when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">particles</span></code> or
+<code class="docutils literal notranslate"><span class="pre">both</span></code>, or will be left <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">parameter</span></code>.</p></li>
+<li><p><strong>log_densities</strong> (<em>tuple of torch.Tensor</em><em>, </em><em>optional</em>) – The tuple of <strong>marginal</strong> log sampling densities of each of the event values in <cite>events</cite>. Each entry is a 1D
+tensor annotating the event value tensor in <cite>events</cite> with the same tuple index. The dimension size equals to
+the number of event particles. This field will be provided when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">particles</span></code> or <code class="docutils literal notranslate"><span class="pre">both</span></code>, or
+will be left <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">parameter</span></code>.</p></li>
+<li><p><strong>weight</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – The event particles weight tensor. Have shape <cite>(batch_shape + sample_shape)</cite>, where <cite>sample_shape</cite> is the
+concatenated list of the sample sizes of all event tensors in <cite>events</cite>. This field will be provided when
+<cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">particles</span></code> or <code class="docutils literal notranslate"><span class="pre">both</span></code>, or will be left <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">parameter</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A 2-tuple consisting of <cite>(reduced_dist : torch.distributions.Distribution or None, reduced_weight :
+torch.Tensor or None)</cite>. <cite>reduced_dist</cite> will be ignored if <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">particles</span></code>, and <cite>reduced_weight</cite>
+will be ignored if <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">parameter</span></code>. Both of the entries should have the reduced batch shape of
+length 1.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="pysigma.structures.Summarization.process">
+<code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">ran_var_list</span></em>, <em class="sig-param"><span class="n">translator</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#Summarization.process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.Summarization.process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should be called by nodes to perform the summarization. Shape checks will be carried out.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> – A flattened Message instance. The last batch dimension is the one assumed to be summarized
+over.</p></li>
+<li><p><strong>ran_var_list</strong> – List of random variables.</p></li>
+<li><p><strong>translator</strong> – A KnowledgeTranslator instance. To translate the particles tensor.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new message</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 

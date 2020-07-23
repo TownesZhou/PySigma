@@ -91,6 +91,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#type">Type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#predicate">Predicate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#summarization">Summarization</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../references/graphical/index.html">Graphical Architecture</a><ul>
@@ -464,16 +467,13 @@
 
 
 <span class="k">class</span> <span class="nc">RMFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Relation Variable Mapping Node</span>
+    <span class="sd">&quot;&quot;&quot;Relation Variable Mapping Node</span>
 
-<span class="sd">        Convert between predicate arguments and pattern variables. Apply relational variable&#39;s VariableMap (if declared)</span>
-<span class="sd">            by selecting and placing entries among the message batch dimensions. This node can thus carry out</span>
-<span class="sd">            inner-pattern relational variable matching by itself.</span>
+<span class="sd">    Converts predicate arguments from and to pattern variables. Applies relational variable&#39;s `VariableMap` (if</span>
+<span class="sd">    specified) by manipulating message batch dimensions. This node can thus implements the semantic of inner-pattern</span>
+<span class="sd">    relational variable matching.</span>
 
-<span class="sd">        This node is a component of the alpha conditionial subgraph, so admits up to two pairs of incoming and outgoing</span>
-<span class="sd">            links. Link must declare special attribute &#39;direction&#39; with value &#39;inward&#39; or &#39;outward&#39; to indicate whether</span>
-<span class="sd">            it is pointing toward the conditional gamma factor node or not.</span>
+
 
 <span class="sd">        For inward direction, inner-pattern relational variable matching is handled by selecting entries on the</span>
 <span class="sd">            diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto</span>

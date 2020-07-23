@@ -77,7 +77,7 @@ class Variable:
         self.size = size
         # List of value constraints if the Variable is of Random metatype.
         #   Useful at Beta-join to select globally valid particle values
-        self.constraints = value_constraints
+        self.constraints = set(value_constraints) if value_constraints is not None else None
 
     def __eq__(self, other):
         # override so '==' operator test variable equality
