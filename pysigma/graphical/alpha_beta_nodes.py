@@ -274,35 +274,59 @@ class RMFN(AlphaFactorNode):
     specified) by manipulating message batch dimensions. This node can thus implements the semantic of inner-pattern
     relational variable matching.
 
+    Mappings between the source relational arguments and target relational variables as well as that from source
+    relational arguments to `VariableMap` instances need to be provided.
 
+    Parameters
+    ----------
+    name : str
+        Name of this node
+    arg2var : dict
+        Dictionary mapping predicate relational argument `Variable` instance to pattern relational variable `Variable`
+        instance.
+    var2arg : dict
+        Dictionary mapping pattern relational variable `Variable` instance to LIST of predicate relational argument
+        `Variable` instances. The list length would be longer than 1 if the relational variable is being referenced
+        by multiple arguments.
+    arg2var_map : dict
+        Dictionary mapping predicate relational argument `Variable` instance to a `VariableMap` instance if one is
+        specified for this argument. If an argument is not associated with a `VariableMap`, it should not appear in this
+        dictionary.
 
-        For inward direction, inner-pattern relational variable matching is handled by selecting entries on the
-            diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto
-            the diagonals of a larger message tensor.
+    Attributes
+    ----------
+    arg2var
+    var2arg
+    arg2var_map
+    arg2var_map_tuple : dict
+        Obtained from `arg2var_map`. Mapping from predicate argument to the mapping dictionary (if a `VariableMap` is
+        specified).
+    arg2var_map_inv_tuple : dict
+        Obtained from `arg2var_map`. Mapping from predicate argument to the INVERSE mapping dictionary (if a
+        `VariableMap` is specified).
     """
     def __init__(self, name, arg2var, var2arg, arg2var_map):
-        """
-            Necessary data structure:
-
-            :param  arg2var:    dictionary mapping predicate argument Variable instance to pattern variable Variable
-                                    instance
-            :param  var2arg:    dictionary mapping pattern variable Variable instance to LIST of predicate argument
-                                    Variable instance(s)
-            :param  arg2var_map:    dictionary mapping predicate argument Variable instance to VariableMap instance
-        """
         super(RMFN, self).__init__(name)
         self.pretty_log["node type"] = "Relation Variable Mapping Node"
         assert isinstance(name, str)
         assert isinstance(arg2var, dict) and all(isinstance(k, Variable) for k in arg2var.keys()) and \
-               all(isinstance(v, Variable) for v in arg2var.values())
+            all(isinstance(v, Variable) for v in arg2var.values())
         assert isinstance(var2arg, dict) and all(isinstance(k, Variable) for k in var2arg.keys()) and \
-               all(isinstance(v, list) and all(isinstance(arg, Variable) for arg in v) for v in var2arg.values())
+            all(isinstance(v, list) and all(isinstance(arg, Variable) for arg in v) for v in var2arg.values())
         assert isinstance(arg2var_map, dict) and all(isinstance(k, Variable) for k in arg2var_map.keys()) and \
-               all(isinstance(v, VariableMap) for v in arg2var_map.values())
+            all(isinstance(v, VariableMap) for v in arg2var_map.values())
 
         self.arg2var = arg2var
         self.var2arg = var2arg
         self.arg2var_map = arg2var_map
+
+        # Sanity check
+        assert set(self.arg2var.values()) == set(self.var2arg.keys())
+        arg_set = set()
+        for arg_list in self.var2arg.values():
+            arg_set.union(set(arg_list))
+        assert arg_set == set(self.arg2var.keys())
+        assert set(self.arg2var_map.keys()).issubset(arg_set)
 
         # Obtain mapping dictionary and inverse mapping dictionary
         self.arg2var_map_tuple = {arg: var_map.get_map() for arg, var_map in self.arg2var_map.items()}

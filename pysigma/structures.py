@@ -17,39 +17,48 @@ from defs import Variable, VariableMetatype, Message, MessageType
 
 
 class VariableMap:
-    """
-        Class type for declaring mappings on relational variables in pattern elements
+    """Class type for declaring mappings on relational variables in pattern elements. Wraps around a user-defined
+    mapping function and records the one-to-one correspondence between inputs and outputs.
 
-        Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance
-            therefore declares an integer-valued mapping with finite domain.
+    Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance
+    therefore declares an integer-valued mapping with finite domain.
 
-        Every VariableMap instance should be able to tell the map's domain, codomain, and the mapping itself, with the
-            former two in the format of set of integers, and the latter one in the format of dictionary mapping integers
-            to integers.
+    The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
+    be computed either lazily at runtime or pre-computed at initialization. This flexibility is to allow dynamic
+    mappings such as neural attention modules.
 
-        The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
-            be computed lazily at runtime and returned by get_map(). This is to allow dynamic mappings such as
-            neural attention modules.
+    Only injective mapping can be accepted. This is because the semantic of mapping two relational variable's values
+    to a single value is ill-defined. The injectivity is checked during `set_map()` by comparing the cardinality of the
+    image and the cardinality of the domain.
 
-        Only injective mapping can be accepted. This is because the semantic of mapping two relational variable's values
-            to a single value can be ill-defined. The injectivity is checked during set_map() by comparing the
-            cardinality of the image and the cardinality of the domain.
+    Parameters
+    ----------
+    mapping_func : callable
+        a user-specified function. Takes a numpy array of integers as input, and returns a numpy array of integers of
+        the same size. Each entry in the output array corresponds to the value of `f(x)` of input `x` at the same index
+        in the input array.
+    domain : set of int
+        The domain of the mapping.
+    codomain : set of int
+        The codomain of the mapping.
+    dynamic : bool, optional
+        Indicates whether the mapping is dynamic. If ``True``, then `mapping_func` will be called each time a mapping
+        dictionary is desired, i.e., when `get_map()` or `get_inverse_map()` is called. Otherwise, `mapping_func` will
+        only be called once during initialization of this VariableMap instance, and the result will cached. Defaults
+        to ``False``.
+
+    Attributes
+    ----------
+    mapping_func
+    domain
+    codomain
+    dynamic
+    map : dict
+        The mapping cache.
+    image : set
+        Image of the map. Should be a subset of ``self.codomain``.
     """
     def __init__(self, mapping_func, domain, codomain, dynamic=False):
-        """
-            Initialize a VariableMap instance. Wraps around a user-specified function that implements the mapping
-                mechanism.
-
-            :param  mapping_func:   a user-specified function. Takes a numpy array of integers as input, and returns a
-                                        numpy array of integers of the same size. Each entry in the output array
-                                        corresponds to the value of f(x) of input x at the same index in the input array
-            :param  domain:         A set of integers. Declares the domain of the mapping.
-            :param  codomain:       A set of integers. Declares the codomain of the mapping.
-            :param  dynamic:        True or False. Defaults to False. Indicates whether the mapping is dynamic. If True,
-                                        then mapping_func will be called each time a mapping dictionary is desired.
-                                        Otherwise, mapping_func will only be called once during initialization of this
-                                        VariableMap instance, and the result will reused.
-        """
         # Argument validation
         if not callable(mapping_func):
             raise ValueError("The 1st argument 'mapping_func' should be a python callable, accepting a list of "
@@ -68,7 +77,7 @@ class VariableMap:
         self.domain = domain
         self.codomain = codomain
         self.dynamic = dynamic
-        # mapping chache. This field will be looked up later as definition of the mapping
+        # mapping cache. This field will be looked up later as definition of the mapping
         self.map = None
         # The image of the map, i.e., the set of values who has a corresponding input. It should be a subset of codomain
         self.image = None
@@ -78,8 +87,18 @@ class VariableMap:
             self.set_map()
 
     def set_map(self):
-        """
-            Set self.map by obtaining the mapping dictionary from self.mapping_func
+        """Set ``self.map`` by obtaining the mapping dictionary from ``self.mapping_func``.
+
+        Raises
+        ------
+        ValueError
+            If `self.mapping_func` does not return a numpy array or returns one with wrong data type.
+        ValueError
+            If ``self.mapping_func`` does not return a numpy array with the same size as the input array.
+        ValueError
+            If ``self.mapping_func`` contains values not in the codomain.
+        ValueError
+            If ``self.mapping_func`` is found to be not injective.
         """
         # Input list
         input = np.array(list(self.domain))
@@ -108,23 +127,31 @@ class VariableMap:
                              .format(len(self.image), len(self.domain)))
 
     def get_map(self):
-        """
-            Return the mapping dictionary, the map's domain, and the map's image.
+        """Returns the mapping dictionary, the map's domain, and the map's image.
 
-            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.
+        If dynamic, then calls `set_map()` to re-compute the dict first, otherwise returns the cached one.
+
+        Returns
+        -------
+        tuple
+            A 3-tuple containing the data ``(map_dict, domain, image)``.
         """
         if self.dynamic:
             self.set_map()
         return self.map, self.domain, self.image
 
     def get_inverse_map(self):
-        """
-            Return the inverse map's mapping dictionary, the inverse map's domain (original map's image), and the
-                inverse map's image (should be the same as the original map's domain)
+        """Returns the inverse map's mapping dictionary, the inverse map's domain (original map's image), and the
+        inverse map's image (should be the same as the original map's domain)
 
-            Note that because injectivity is guaranteed, computing an inverse map is possible.
+        Note that because injectivity is guaranteed, computing an inverse map is possible.
 
-            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.
+        If dynamic, then calls set_map() to re-compute the dict first, otherwise returns the cached one.
+
+        Returns
+        -------
+        tuple
+            A 3-tuple containing the data ``(inv_map_dict, inv_image, inv_domain)``.
         """
         if self.dynamic:
             self.set_map()

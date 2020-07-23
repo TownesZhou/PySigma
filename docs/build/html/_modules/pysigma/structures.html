@@ -228,40 +228,49 @@
 <span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">MessageType</span>
 
 
-<span class="k">class</span> <span class="nc">VariableMap</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Class type for declaring mappings on relational variables in pattern elements</span>
+<div class="viewcode-block" id="VariableMap"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.VariableMap">[docs]</a><span class="k">class</span> <span class="nc">VariableMap</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Class type for declaring mappings on relational variables in pattern elements. Wraps around a user-defined</span>
+<span class="sd">    mapping function and records the one-to-one correspondence between inputs and outputs.</span>
 
-<span class="sd">        Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance</span>
-<span class="sd">            therefore declares an integer-valued mapping with finite domain.</span>
+<span class="sd">    Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance</span>
+<span class="sd">    therefore declares an integer-valued mapping with finite domain.</span>
 
-<span class="sd">        Every VariableMap instance should be able to tell the map&#39;s domain, codomain, and the mapping itself, with the</span>
-<span class="sd">            former two in the format of set of integers, and the latter one in the format of dictionary mapping integers</span>
-<span class="sd">            to integers.</span>
+<span class="sd">    The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can</span>
+<span class="sd">    be computed either lazily at runtime or pre-computed at initialization. This flexibility is to allow dynamic</span>
+<span class="sd">    mappings such as neural attention modules.</span>
 
-<span class="sd">        The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can</span>
-<span class="sd">            be computed lazily at runtime and returned by get_map(). This is to allow dynamic mappings such as</span>
-<span class="sd">            neural attention modules.</span>
+<span class="sd">    Only injective mapping can be accepted. This is because the semantic of mapping two relational variable&#39;s values</span>
+<span class="sd">    to a single value is ill-defined. The injectivity is checked during `set_map()` by comparing the cardinality of the</span>
+<span class="sd">    image and the cardinality of the domain.</span>
 
-<span class="sd">        Only injective mapping can be accepted. This is because the semantic of mapping two relational variable&#39;s values</span>
-<span class="sd">            to a single value can be ill-defined. The injectivity is checked during set_map() by comparing the</span>
-<span class="sd">            cardinality of the image and the cardinality of the domain.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mapping_func : callable</span>
+<span class="sd">        a user-specified function. Takes a numpy array of integers as input, and returns a numpy array of integers of</span>
+<span class="sd">        the same size. Each entry in the output array corresponds to the value of `f(x)` of input `x` at the same index</span>
+<span class="sd">        in the input array.</span>
+<span class="sd">    domain : set of int</span>
+<span class="sd">        The domain of the mapping.</span>
+<span class="sd">    codomain : set of int</span>
+<span class="sd">        The codomain of the mapping.</span>
+<span class="sd">    dynamic : bool, optional</span>
+<span class="sd">        Indicates whether the mapping is dynamic. If ``True``, then `mapping_func` will be called each time a mapping</span>
+<span class="sd">        dictionary is desired, i.e., when `get_map()` or `get_inverse_map()` is called. Otherwise, `mapping_func` will</span>
+<span class="sd">        only be called once during initialization of this VariableMap instance, and the result will cached. Defaults</span>
+<span class="sd">        to ``False``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mapping_func</span>
+<span class="sd">    domain</span>
+<span class="sd">    codomain</span>
+<span class="sd">    dynamic</span>
+<span class="sd">    map : dict</span>
+<span class="sd">        The mapping cache.</span>
+<span class="sd">    image : set</span>
+<span class="sd">        Image of the map. Should be a subset of ``self.codomain``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping_func</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">codomain</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Initialize a VariableMap instance. Wraps around a user-specified function that implements the mapping</span>
-<span class="sd">                mechanism.</span>
-
-<span class="sd">            :param  mapping_func:   a user-specified function. Takes a numpy array of integers as input, and returns a</span>
-<span class="sd">                                        numpy array of integers of the same size. Each entry in the output array</span>
-<span class="sd">                                        corresponds to the value of f(x) of input x at the same index in the input array</span>
-<span class="sd">            :param  domain:         A set of integers. Declares the domain of the mapping.</span>
-<span class="sd">            :param  codomain:       A set of integers. Declares the codomain of the mapping.</span>
-<span class="sd">            :param  dynamic:        True or False. Defaults to False. Indicates whether the mapping is dynamic. If True,</span>
-<span class="sd">                                        then mapping_func will be called each time a mapping dictionary is desired.</span>
-<span class="sd">                                        Otherwise, mapping_func will only be called once during initialization of this</span>
-<span class="sd">                                        VariableMap instance, and the result will reused.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Argument validation</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">mapping_func</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The 1st argument &#39;mapping_func&#39; should be a python callable, accepting a list of &quot;</span>
@@ -280,7 +289,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">domain</span> <span class="o">=</span> <span class="n">domain</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">codomain</span> <span class="o">=</span> <span class="n">codomain</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dynamic</span> <span class="o">=</span> <span class="n">dynamic</span>
-        <span class="c1"># mapping chache. This field will be looked up later as definition of the mapping</span>
+        <span class="c1"># mapping cache. This field will be looked up later as definition of the mapping</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="c1"># The image of the map, i.e., the set of values who has a corresponding input. It should be a subset of codomain</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="kc">None</span>
@@ -289,9 +298,19 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">dynamic</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_map</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">set_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Set self.map by obtaining the mapping dictionary from self.mapping_func</span>
+<div class="viewcode-block" id="VariableMap.set_map"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.VariableMap.set_map">[docs]</a>    <span class="k">def</span> <span class="nf">set_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set ``self.map`` by obtaining the mapping dictionary from ``self.mapping_func``.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If `self.mapping_func` does not return a numpy array or returns one with wrong data type.</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``self.mapping_func`` does not return a numpy array with the same size as the input array.</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``self.mapping_func`` contains values not in the codomain.</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``self.mapping_func`` is found to be not injective.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Input list</span>
         <span class="nb">input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">))</span>
@@ -317,32 +336,40 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The specified mapping should be injective. However, found that the cardinality of the &quot;</span>
                              <span class="s2">&quot;mapping&#39;s image is &#39;</span><span class="si">{}</span><span class="s2">&#39;, whereas the cardinality of the specified domain is &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span>
-                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">)))</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">)))</span></div>
 
-    <span class="k">def</span> <span class="nf">get_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Return the mapping dictionary, the map&#39;s domain, and the map&#39;s image.</span>
+<div class="viewcode-block" id="VariableMap.get_map"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.VariableMap.get_map">[docs]</a>    <span class="k">def</span> <span class="nf">get_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the mapping dictionary, the map&#39;s domain, and the map&#39;s image.</span>
 
-<span class="sd">            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.</span>
+<span class="sd">        If dynamic, then calls `set_map()` to re-compute the dict first, otherwise returns the cached one.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            A 3-tuple containing the data ``(map_dict, domain, image)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_map</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span></div>
 
-    <span class="k">def</span> <span class="nf">get_inverse_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Return the inverse map&#39;s mapping dictionary, the inverse map&#39;s domain (original map&#39;s image), and the</span>
-<span class="sd">                inverse map&#39;s image (should be the same as the original map&#39;s domain)</span>
+<div class="viewcode-block" id="VariableMap.get_inverse_map"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.VariableMap.get_inverse_map">[docs]</a>    <span class="k">def</span> <span class="nf">get_inverse_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the inverse map&#39;s mapping dictionary, the inverse map&#39;s domain (original map&#39;s image), and the</span>
+<span class="sd">        inverse map&#39;s image (should be the same as the original map&#39;s domain)</span>
 
-<span class="sd">            Note that because injectivity is guaranteed, computing an inverse map is possible.</span>
+<span class="sd">        Note that because injectivity is guaranteed, computing an inverse map is possible.</span>
 
-<span class="sd">            If dynamic, then call set_map() to re-compute the dict first, otherwise return the cached one.</span>
+<span class="sd">        If dynamic, then calls set_map() to re-compute the dict first, otherwise returns the cached one.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            A 3-tuple containing the data ``(inv_map_dict, inv_image, inv_domain)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_map</span><span class="p">()</span>
 
         <span class="n">inverse_map</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
-        <span class="k">return</span> <span class="n">inverse_map</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span>
+        <span class="k">return</span> <span class="n">inverse_map</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">FactorFunction</span><span class="p">:</span>

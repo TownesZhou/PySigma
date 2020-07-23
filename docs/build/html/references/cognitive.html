@@ -228,6 +228,126 @@
 </div>
 <div class="section" id="variablemap">
 <h2>VariableMap<a class="headerlink" href="#variablemap" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.structures.VariableMap">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.structures.</code><code class="sig-name descname">VariableMap</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mapping_func</span></em>, <em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">codomain</span></em>, <em class="sig-param"><span class="n">dynamic</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#VariableMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.VariableMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class type for declaring mappings on relational variables in pattern elements. Wraps around a user-defined
+mapping function and records the one-to-one correspondence between inputs and outputs.</p>
+<p>Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance
+therefore declares an integer-valued mapping with finite domain.</p>
+<p>The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
+be computed either lazily at runtime or pre-computed at initialization. This flexibility is to allow dynamic
+mappings such as neural attention modules.</p>
+<p>Only injective mapping can be accepted. This is because the semantic of mapping two relational variable’s values
+to a single value is ill-defined. The injectivity is checked during <cite>set_map()</cite> by comparing the cardinality of the
+image and the cardinality of the domain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mapping_func</strong> (<em>callable</em>) – a user-specified function. Takes a numpy array of integers as input, and returns a numpy array of integers of
+the same size. Each entry in the output array corresponds to the value of <cite>f(x)</cite> of input <cite>x</cite> at the same index
+in the input array.</p></li>
+<li><p><strong>domain</strong> (<em>set of int</em>) – The domain of the mapping.</p></li>
+<li><p><strong>codomain</strong> (<em>set of int</em>) – The codomain of the mapping.</p></li>
+<li><p><strong>dynamic</strong> (<em>bool</em><em>, </em><em>optional</em>) – Indicates whether the mapping is dynamic. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, then <cite>mapping_func</cite> will be called each time a mapping
+dictionary is desired, i.e., when <cite>get_map()</cite> or <cite>get_inverse_map()</cite> is called. Otherwise, <cite>mapping_func</cite> will
+only be called once during initialization of this VariableMap instance, and the result will cached. Defaults
+to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.mapping_func">
+<code class="sig-name descname">mapping_func</code><a class="headerlink" href="#pysigma.structures.VariableMap.mapping_func" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.domain">
+<code class="sig-name descname">domain</code><a class="headerlink" href="#pysigma.structures.VariableMap.domain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.codomain">
+<code class="sig-name descname">codomain</code><a class="headerlink" href="#pysigma.structures.VariableMap.codomain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.dynamic">
+<code class="sig-name descname">dynamic</code><a class="headerlink" href="#pysigma.structures.VariableMap.dynamic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.map">
+<code class="sig-name descname">map</code><a class="headerlink" href="#pysigma.structures.VariableMap.map" title="Permalink to this definition">¶</a></dt>
+<dd><p>The mapping cache.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.image">
+<code class="sig-name descname">image</code><a class="headerlink" href="#pysigma.structures.VariableMap.image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Image of the map. Should be a subset of <code class="docutils literal notranslate"><span class="pre">self.codomain</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.structures.VariableMap.set_map">
+<code class="sig-name descname">set_map</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#VariableMap.set_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.VariableMap.set_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set <code class="docutils literal notranslate"><span class="pre">self.map</span></code> by obtaining the mapping dictionary from <code class="docutils literal notranslate"><span class="pre">self.mapping_func</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ValueError</strong> – If <cite>self.mapping_func</cite> does not return a numpy array or returns one with wrong data type.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.mapping_func</span></code> does not return a numpy array with the same size as the input array.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.mapping_func</span></code> contains values not in the codomain.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.mapping_func</span></code> is found to be not injective.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.structures.VariableMap.get_map">
+<code class="sig-name descname">get_map</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#VariableMap.get_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.VariableMap.get_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the mapping dictionary, the map’s domain, and the map’s image.</p>
+<p>If dynamic, then calls <cite>set_map()</cite> to re-compute the dict first, otherwise returns the cached one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A 3-tuple containing the data <code class="docutils literal notranslate"><span class="pre">(map_dict,</span> <span class="pre">domain,</span> <span class="pre">image)</span></code>.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.structures.VariableMap.get_inverse_map">
+<code class="sig-name descname">get_inverse_map</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#VariableMap.get_inverse_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.VariableMap.get_inverse_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the inverse map’s mapping dictionary, the inverse map’s domain (original map’s image), and the
+inverse map’s image (should be the same as the original map’s domain)</p>
+<p>Note that because injectivity is guaranteed, computing an inverse map is possible.</p>
+<p>If dynamic, then calls set_map() to re-compute the dict first, otherwise returns the cached one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A 3-tuple containing the data <code class="docutils literal notranslate"><span class="pre">(inv_map_dict,</span> <span class="pre">inv_image,</span> <span class="pre">inv_domain)</span></code>.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="factorfunction">
 <h2>FactorFunction<a class="headerlink" href="#factorfunction" title="Permalink to this headline">¶</a></h2>

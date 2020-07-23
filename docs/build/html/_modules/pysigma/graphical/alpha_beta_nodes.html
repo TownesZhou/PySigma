@@ -371,7 +371,9 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span></div>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">ESFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ESFN.inward_compute"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute">[docs]</a>    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Expands and permutes the incoming message&#39;s relational variable dimensions to match the target outgoing</span>
@@ -484,35 +486,59 @@
 <span class="sd">    specified) by manipulating message batch dimensions. This node can thus implements the semantic of inner-pattern</span>
 <span class="sd">    relational variable matching.</span>
 
+<span class="sd">    Mappings between the source relational arguments and target relational variables as well as that from source</span>
+<span class="sd">    relational arguments to `VariableMap` instances need to be provided.</span>
 
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this node</span>
+<span class="sd">    arg2var : dict</span>
+<span class="sd">        Dictionary mapping predicate relational argument `Variable` instance to pattern relational variable `Variable`</span>
+<span class="sd">        instance.</span>
+<span class="sd">    var2arg : dict</span>
+<span class="sd">        Dictionary mapping pattern relational variable `Variable` instance to LIST of predicate relational argument</span>
+<span class="sd">        `Variable` instances. The list length would be longer than 1 if the relational variable is being referenced</span>
+<span class="sd">        by multiple arguments.</span>
+<span class="sd">    arg2var_map : dict</span>
+<span class="sd">        Dictionary mapping predicate relational argument `Variable` instance to a `VariableMap` instance if one is</span>
+<span class="sd">        specified for this argument. If an argument is not associated with a `VariableMap`, it should not appear in this</span>
+<span class="sd">        dictionary.</span>
 
-<span class="sd">        For inward direction, inner-pattern relational variable matching is handled by selecting entries on the</span>
-<span class="sd">            diagonals from the incoming message. For outward direction, this is handled by placing incoming message onto</span>
-<span class="sd">            the diagonals of a larger message tensor.</span>
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    arg2var</span>
+<span class="sd">    var2arg</span>
+<span class="sd">    arg2var_map</span>
+<span class="sd">    arg2var_map_tuple : dict</span>
+<span class="sd">        Obtained from `arg2var_map`. Mapping from predicate argument to the mapping dictionary (if a `VariableMap` is</span>
+<span class="sd">        specified).</span>
+<span class="sd">    arg2var_map_inv_tuple : dict</span>
+<span class="sd">        Obtained from `arg2var_map`. Mapping from predicate argument to the INVERSE mapping dictionary (if a</span>
+<span class="sd">        `VariableMap` is specified).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arg2var</span><span class="p">,</span> <span class="n">var2arg</span><span class="p">,</span> <span class="n">arg2var_map</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Necessary data structure:</span>
-
-<span class="sd">            :param  arg2var:    dictionary mapping predicate argument Variable instance to pattern variable Variable</span>
-<span class="sd">                                    instance</span>
-<span class="sd">            :param  var2arg:    dictionary mapping pattern variable Variable instance to LIST of predicate argument</span>
-<span class="sd">                                    Variable instance(s)</span>
-<span class="sd">            :param  arg2var_map:    dictionary mapping predicate argument Variable instance to VariableMap instance</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">RMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Relation Variable Mapping Node&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg2var</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
-               <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">arg2var</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">arg2var</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var2arg</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
-               <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">var2arg</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">var2arg</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg2var_map</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg2var_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
-               <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">VariableMap</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">arg2var_map</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">VariableMap</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">arg2var_map</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span> <span class="o">=</span> <span class="n">arg2var</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span> <span class="o">=</span> <span class="n">var2arg</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span> <span class="o">=</span> <span class="n">arg2var_map</span>
+
+        <span class="c1"># Sanity check</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">arg_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">arg_list</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">arg_set</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">arg_list</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="n">arg_set</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">arg_set</span><span class="p">)</span>
 
         <span class="c1"># Obtain mapping dictionary and inverse mapping dictionary</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span> <span class="o">=</span> <span class="p">{</span><span class="n">arg</span><span class="p">:</span> <span class="n">var_map</span><span class="o">.</span><span class="n">get_map</span><span class="p">()</span> <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>

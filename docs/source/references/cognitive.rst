@@ -17,6 +17,10 @@ Conditional
 VariableMap
 -----------
 
+.. autoclass:: pysigma.structures.VariableMap
+   :members:
+   :undoc-members:
+
 
 FactorFunction
 --------------
