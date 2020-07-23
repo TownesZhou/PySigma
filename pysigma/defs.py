@@ -471,6 +471,8 @@ class Message:
         in the expression, i.e., `other`, whose attribute entries persist, but this behavior should not be counted on.
         """
         assert isinstance(other, Message), "Message can only be added with another Message"
+        assert self.device == other.device, \
+            "Messages not residing on the same device. Found devices {} and {}".format(self.device, other.device)
         assert self.type in other.type or other.type in self.type, \
             "Only compatible types of messages can be added. First operand has type '{}',  while the second one has " \
             "type '{}'".format(self.type, other.type)
@@ -505,7 +507,8 @@ class Message:
             # Tensor addition
             new_parameter = self.parameter + other.parameter
 
-            param_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter)
+            param_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter,
+                                device=self.device)
 
         # Addition for Particles type
         if MessageType.Particles in s_type:
@@ -527,7 +530,8 @@ class Message:
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
             ptcl_msg = Message(s_type,
                                batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                               particles=cloned_particles, weights=new_weights, log_densities=cloned_log_densities)
+                               particles=cloned_particles, weights=new_weights, log_densities=cloned_log_densities,
+                               device=self.device)
 
         # Compose if we are adding two Both type messages, otherwise return the proper one
         if param_msg is not None and ptcl_msg is not None:
@@ -611,7 +615,8 @@ class Message:
         new_msg = None
         if MessageType.Parameter in self.type:
             new_parameter = b_p_other * self.parameter
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter)
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter,
+                              device=self.device)
 
         # Scalar multiplication for Particles messages
         if MessageType.Particles in self.type:
@@ -631,7 +636,7 @@ class Message:
             new_msg = Message(self.type,
                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
                               particles=cloned_particles, weights=new_weight, log_densities=cloned_log_densities,
-                              **self.attr)
+                              device=self.device, **self.attr)
 
         return new_msg
 
@@ -702,6 +707,8 @@ class Message:
         ``msg1.attr``.
         """
         assert isinstance(msg1, Message) and isinstance(msg2, Message)
+        assert msg1.device == msg2.device, \
+            "Messages not residing on the same device. Found devices {} and {}".format(msg1.device, msg2.device)
         assert {msg1.type, msg2.type} == {MessageType.Parameter, MessageType.Particles}
         assert not msg1.isid and not msg2.isid, \
             "`msg1` and `msg2` both cannot be identity messages when composing new messages."
@@ -718,7 +725,7 @@ class Message:
                           sample_shape=ptcl_msg.s_shape, event_shape=ptcl_msg.e_shape,
                           parameter=param_msg.parameter,
                           particles=ptcl_msg.particles, weight=ptcl_msg.weight, log_densities=ptcl_msg.log_densities,
-                          **{**msg1.attr, **msg2.attr})
+                          device=msg1.device, **{**msg1.attr, **msg2.attr})
         return new_msg
 
     @staticmethod
@@ -840,6 +847,8 @@ class Message:
         `torch.norm() <https://pytorch.org/docs/stable/torch.html#torch.norm>`_.
         """
         assert isinstance(other, Message)
+        assert self.device == other.device, \
+            "Messages not residing on the same device. Found devices {} and {}".format(self.device, other.device)
         assert MessageType.Parameter in self.type and MessageType.Parameter in other.type
 
         # Returns 0 if both are identity
@@ -883,6 +892,8 @@ class Message:
         `torch.nn.functional.cosine_similarity() <https://pytorch.org/docs/stable/nn.functional.html?highlight=cosine#torch.nn.functional.cosine_similarity>`_.
         """
         assert isinstance(other, Message)
+        assert self.device == other.device, \
+            "Messages not residing on the same device. Found devices {} and {}".format(self.device, other.device)
         assert MessageType.Particles in self.type and MessageType.Particles in other.type
         assert self.same_particles_as(other)
 
@@ -929,11 +940,12 @@ class Message:
         cloned_msg = self.clone()
         if msg_type == MessageType.Parameter:
             new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, param_shape=cloned_msg.p_shape,
-                              parameters=cloned_msg.parameter, **cloned_msg.attr)
+                              parameters=cloned_msg.parameter, device=self.device, **cloned_msg.attr)
         else:
             new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, sample_shape=cloned_msg.s_shape,
                               event_shape=cloned_msg.e_shape, particles=cloned_msg.particles,
-                              weights=cloned_msg.weight, log_densities=cloned_msg.log_densities, **cloned_msg.attr)
+                              weights=cloned_msg.weight, log_densities=cloned_msg.log_densities,
+                              device=self.device, **cloned_msg.attr)
         return new_msg
 
     def clone(self):
@@ -965,7 +977,7 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, self.b_shape, self.e_shape,
-                          parameters, particles, weight, log_densities, **attr)
+                          parameters, particles, weight, log_densities, device=self.device, **attr)
         return new_msg
 
     def to_device(self, device):
@@ -1059,7 +1071,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_unsqueeze(self, dim):
@@ -1105,7 +1118,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_index_select(self, dim, index):
@@ -1159,7 +1173,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_index_put(self, dim, index):
@@ -1234,7 +1249,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_diagonal(self, dim1=0, dim2=1):
@@ -1300,7 +1316,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_diag_embed(self, diag_dim=-1, target_dim1=-2, target_dim2=-1):
@@ -1391,7 +1408,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_narrow(self, dim, length):
@@ -1446,7 +1464,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_broaden(self, dim, length):
@@ -1510,7 +1529,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_summarize(self, dim):
@@ -1557,7 +1577,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_flatten(self, dims=None):
@@ -1609,7 +1630,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_b_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_reshape(self, new_batch_shape):
@@ -1650,7 +1672,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def batch_expand(self, new_batch_shape):
@@ -1704,7 +1727,8 @@ class Message:
 
         new_msg = Message(self.type,
                           self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
-                          new_parameter, new_particles, new_weight, new_log_densities, **self.attr)
+                          new_parameter, new_particles, new_weight, new_log_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     """
@@ -1762,7 +1786,8 @@ class Message:
                           batch_shape=cloned_msg.b_shape,
                           sample_shape=cloned_msg.s_shape, event_shape=cloned_msg.e_shape,
                           particles=new_particles, weight=cloned_msg.weight,
-                          log_densities=new_log_densities, **cloned_msg.attr)
+                          log_densities=new_log_densities,
+                          device=self.device, **cloned_msg.attr)
         return new_msg
 
     def event_reweight(self, target_log_prob):
@@ -1829,7 +1854,7 @@ class Message:
                           sample_shape=self.s_shape, event_shape=self.e_shape,
                           parameter=self.parameter,
                           particles=self.particles, weight=new_weight, log_densities=self.log_densities,
-                          **self.attr)
+                          device=self.device, **self.attr)
         return new_msg
 
     def event_marginalize(self, event_dim):
@@ -1915,7 +1940,8 @@ class Message:
 
         new_msg = Message(MessageType.Particles,
                           batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
-                          particles=new_particles, weight=new_weight, log_densities=new_densities, **self.attr)
+                          particles=new_particles, weight=new_weight, log_densities=new_densities,
+                          device=self.device, **self.attr)
         return new_msg
 
     def event_concatenate(self, cat_event_dims, target_event_dim=-1):
@@ -2015,7 +2041,8 @@ class Message:
 
         new_msg = Message(MessageType.Particles,
                           batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
-                          particles=new_particles, weight=new_weight, log_densities=new_densities, **self.attr)
+                          particles=new_particles, weight=new_weight, log_densities=new_densities,
+                          device=self.device, **self.attr)
 
         return new_msg
 
