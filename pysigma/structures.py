@@ -187,7 +187,7 @@ class Summarization:
 
     Provides the decorator ``@Summarization``.
 
-    The custom callback function should have the following signature:
+    .. note:: The custom callback function should have the following signature:
 
     Parameters
     ----------
@@ -236,6 +236,24 @@ class Summarization:
         self.sum_func = sum_func
 
     def __call__(self, msg, ran_vars):
+        """Implements so that the Summarization instance is a callable functor.
+
+        The summarization instance should be called by ESFN internally only.
+
+        Parameters
+        ----------
+        msg : Message
+            The incoming message. Batch shape should be of length 2, with the first batch dimension being the one to be
+            summarized over, and the second dimension being the one to be left untouched.
+        ran_vars : tuple of Variable
+            The tuple of random variables of the target Variable node
+
+        Returns
+        -------
+        Message
+            The reduced message. Will have only one batch dimension which is the one to be left untouched from the
+            original message.
+        """
         # Sort out input data
         assert isinstance(msg, Message) and len(msg.b_shape) == 2
         assert MessageType.Parameter in msg.type or MessageType.Particles in msg.type
@@ -243,21 +261,35 @@ class Summarization:
         assert isinstance(ran_vars, tuple) and \
             all(isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_vars)
 
-        if msg.type is MessageType.Parameter:
+        # Return directly if message is an identity
+        if msg.isid:
+            return msg
+        # Decide content_type based on BOTH the message type as well as message components type. Only feed components
+        # that are necessary for processing to the wrapped callback.
+        if msg.type is MessageType.Both:
+            if isinstance(msg.parameter, torch.Tensor) and isinstance(msg.weight, torch.Tensor):
+                content_type = 'both'
+            elif isinstance(msg.parameter, torch.Tensor):
+                content_type = 'parameter'
+            else:
+                content_type = 'particles'
+        elif msg.type is MessageType.Parameter:
             content_type = 'parameter'
-        elif msg.type is MessageType.Particles:
-            content_type = 'particles'
         else:
-            content_type = 'both'
+            content_type = 'particles'
+
         rv_info = {v.name: (v.size, v.constraints) for v in ran_vars}
 
         # Clone tensor contents
         dist = DistributionServer.param2dist(msg.attr['dist_info']['dist_class'], msg.parameter,
                                              b_shape=msg.b_shape, e_shape=msg.e_shape, dist_info=msg.attr) \
-            if MessageType.Parameter in msg.type else None
-        events = tuple(p.clone() for p in msg.particles) if MessageType.Particles in msg.type else None
-        log_densities = tuple(d.clone() for d in msg.log_densities) if MessageType.Particles in msg.type else None
-        weight = msg.weight.clone() if MessageType.Particles in msg.type else None
+            if content_type in ['parameter', 'both'] else None
+        events = tuple(p.clone() for p in msg.particles) \
+            if content_type in ['particles', 'both'] else None
+        log_densities = tuple(d.clone() for d in msg.log_densities) \
+            if content_type in ['particles', 'both'] else None
+        weight = msg.weight.clone() \
+            if content_type in ['particles', 'both'] else None
 
         # Obtain and check result
         result = self.sum_func(content_type=content_type, rv_info=rv_info, batch_shape=msg.b_shape,
@@ -266,7 +298,7 @@ class Summarization:
             raise ValueError("The result returned by a Summarization callback should be a 2-tuple. Found result type "
                              "{}".format(type(result)))
         reduced_dist, reduced_weight = result
-        if MessageType.Parameter in msg.type:
+        if content_type in ['parameter', 'both']:
             if not isinstance(reduced_dist, Distribution):
                 raise ValueError("When `content_type` is 'parameter' or 'both', the first result returned by a "
                                  "Summarization callback should be a torch.distributions.Distribution instance. "
@@ -286,7 +318,7 @@ class Summarization:
                                  "by the Summarization callback should have the same event shape as does the original "
                                  "message. Expect event shape {}, encountered event shape {}"
                                  .format(msg.e_shape, reduced_dist.event_shape))
-        if MessageType.Particles in msg.type:
+        if content_type in ['particles', 'both']:
             if not isinstance(reduced_weight, torch.Tensor):
                 raise ValueError("When 'content_type' is 'particles' or 'both', the second result returned by a "
                                  "Summarization callback should be a torch.Tensor.. Encountered result type: {}."
@@ -299,9 +331,9 @@ class Summarization:
         # Instantiate return message
         param = 0
         weight = 1
-        if MessageType.Parameter in msg.type:
+        if content_type in ['parameter', 'both']:
             param = DistributionServer.dist2param(reduced_dist, msg.attr['dist_info'])
-        if MessageType.Particles in msg.type:
+        if content_type in ['particles', 'both']:
             weight = reduced_weight
 
         return_msg = Message(msg.type,
@@ -310,86 +342,6 @@ class Summarization:
                              parameter=param, particles=msg.particles, weight=weight, log_densities=msg.log_densities,
                              device=msg.device, **msg.attr)
         return return_msg
-
-    def process(self, msg, ran_var_list, translator):
-        """
-            Should be called by nodes to perform the summarization. Shape checks will be carried out.
-
-            :param msg:     A flattened Message instance. The last batch dimension is the one assumed to be summarized
-                                over.
-            :param ran_var_list:    List of random variables.
-            :param translator:      A KnowledgeTranslator instance. To translate the particles tensor.
-            :return:        A new message
-        """
-        assert isinstance(msg, Message) and len(msg.b_shape) == 2
-        assert isinstance(ran_var_list, list) and all(isinstance(v, Variable) for v in ran_var_list)
-        assert isinstance(translator, KnowledgeTranslator)
-
-        # First clone the message, and preprocess if necessary
-        msg_clone = msg.clone()
-        parameters = msg_clone.param
-        particles = msg_clone.particles
-        weights = msg_clone.weights
-        log_density = msg_clone.log_density
-
-        # Permute weight tensor sample_dim to the last dimension
-        weights = weights.permute(1, 2, 0).contiguous()
-        # Translate particle tensor to the format consistent with cognitive level knowledge
-        particles = translator.event2pred_event(particles)
-
-        # Generate input dict
-        if msg.parameters is not None and msg.weights is not None:
-            content_type = 'both'
-            input_dict = dict(parameter=parameters, particles=particles, weights=weights, log_density=log_density)
-        elif msg.type is MessageType.Parameter:
-            content_type = 'parameter'
-            input_dict = dict(parameter=parameters)
-        else:
-            content_type = 'particles'
-            input_dict = dict(particles=particles, weights=weights, log_density=log_density)
-
-        # Process and get result
-        output = self.sum_func(content_type, input_dict)
-
-        # Shape check
-        new_param = None
-        new_weights = None
-        if content_type == 'both':
-            if not isinstance(output, tuple):
-                raise ValueError("The Message type is 'both'. In this case, expect output from the summarization "
-                                 "functor to be a 2-tuple of torch.Tensor. Instead found: {}".format(type(output)))
-            if not (len(output) == 2 and all(isinstance(t, torch.Tensor) for t in output)):
-                raise ValueError("The Message type is 'both'. In this case, expect output from the summarization "
-                                 "functor to be a 2-tuple of torch.Tensor. Instead found: {}"
-                                 .format((type(output[0]), type(output[1]))))
-            new_param, new_weights = output
-        elif content_type == 'parameter':
-            if not isinstance(output, torch.Tensor):
-                raise ValueError("The Message type is 'parameter'. In this case, expect output from the summarization "
-                                 "functor to be a torch.Tensor. Instead found: {}".format(type(output)))
-            new_param = output
-        else:
-            if not isinstance(output, torch.Tensor):
-                raise ValueError("The Message type is 'particles'. In this case, expect output from the summarization "
-                                 "functor to be a torch.Tensor. Instead found: {}".format(type(output)))
-            new_weights = output
-
-        if new_param is not None:
-            if not new_param.shape == msg.b_shape[0] + msg.p_shape:
-                raise ValueError("Expect the output parameter to have shape [batch_shape, param_shape] = [{}, {}]. "
-                                 "Instead found shape {}".format(msg.b_shape[0], msg.p_shape, new_param.shape))
-        if new_weights is not None:
-            if not new_weights.shape == msg.b_shape[0] + msg.s_shape:
-                raise ValueError("Expect the output parameter to have shape [batch_shape, sample_shape] = [{}, {}]. "
-                                 "Instead found shape {}".format(msg.b_shape[0], msg.s_shape, new_param.shape))
-
-        # permute shape if necessary
-        new_weights = new_weights.transpose(0, 1).contiguous()
-
-        # Generate new message
-        new_msg = Message(msg.type, msg.p_shape, msg.s_shape, msg.b_shape, msg.e_shape,
-                          new_param, msg.particles, new_weights, msg.log_density)
-        return new_msg
 
 
 class Type:

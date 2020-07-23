@@ -240,7 +240,10 @@
 <dd><p>The decorator class for the custom summarization callback procedures which will be called during the outward
 summarization step in the Expansion / Summarization Factor Node (ESFN).</p>
 <p>Provides the decorator <code class="docutils literal notranslate"><span class="pre">&#64;Summarization</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>The custom callback function should have the following signature:</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -280,20 +283,24 @@ length 1.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="pysigma.structures.Summarization.process">
-<code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">ran_var_list</span></em>, <em class="sig-param"><span class="n">translator</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#Summarization.process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.Summarization.process" title="Permalink to this definition">¶</a></dt>
-<dd><p>Should be called by nodes to perform the summarization. Shape checks will be carried out.</p>
+<dt id="pysigma.structures.Summarization.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">ran_vars</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#Summarization.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.Summarization.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements so that the Summarization instance is a callable functor.</p>
+<p>The summarization instance should be called by ESFN internally only.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>msg</strong> – A flattened Message instance. The last batch dimension is the one assumed to be summarized
-over.</p></li>
-<li><p><strong>ran_var_list</strong> – List of random variables.</p></li>
-<li><p><strong>translator</strong> – A KnowledgeTranslator instance. To translate the particles tensor.</p></li>
+<li><p><strong>msg</strong> (<a class="reference internal" href="graphical/data-structures.html#pysigma.defs.Message" title="pysigma.defs.Message"><em>Message</em></a>) – The incoming message. Batch shape should be of length 2, with the first batch dimension being the one to be
+summarized over, and the second dimension being the one to be left untouched.</p></li>
+<li><p><strong>ran_vars</strong> (<em>tuple of Variable</em>) – The tuple of random variables of the target Variable node</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new message</p>
+<dd class="field-even"><p>The reduced message. Will have only one batch dimension which is the one to be left untouched from the
+original message.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="graphical/data-structures.html#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
 </dd>
 </dl>
 </dd></dl>

@@ -399,7 +399,7 @@
 
 <span class="sd">    Provides the decorator ``@Summarization``.</span>
 
-<span class="sd">    The custom callback function should have the following signature:</span>
+<span class="sd">    .. note:: The custom callback function should have the following signature:</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -447,7 +447,25 @@
         <span class="n">functools</span><span class="o">.</span><span class="n">update_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sum_func</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sum_func</span> <span class="o">=</span> <span class="n">sum_func</span>
 
-    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">ran_vars</span><span class="p">):</span>
+<div class="viewcode-block" id="Summarization.__call__"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.Summarization.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">ran_vars</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements so that the Summarization instance is a callable functor.</span>
+
+<span class="sd">        The summarization instance should be called by ESFN internally only.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        msg : Message</span>
+<span class="sd">            The incoming message. Batch shape should be of length 2, with the first batch dimension being the one to be</span>
+<span class="sd">            summarized over, and the second dimension being the one to be left untouched.</span>
+<span class="sd">        ran_vars : tuple of Variable</span>
+<span class="sd">            The tuple of random variables of the target Variable node</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Message</span>
+<span class="sd">            The reduced message. Will have only one batch dimension which is the one to be left untouched from the</span>
+<span class="sd">            original message.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Sort out input data</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
         <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span>
@@ -455,21 +473,35 @@
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ran_vars</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> \
             <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Random</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ran_vars</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">:</span>
+        <span class="c1"># Return directly if message is an identity</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">msg</span>
+        <span class="c1"># Decide content_type based on BOTH the message type as well as message components type. Only feed components</span>
+        <span class="c1"># that are necessary for processing to the wrapped callback.</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+                <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;both&#39;</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+                <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;parameter&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;particles&#39;</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">:</span>
             <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;parameter&#39;</span>
-        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">:</span>
-            <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;particles&#39;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;both&#39;</span>
+            <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;particles&#39;</span>
+
         <span class="n">rv_info</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">constraints</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ran_vars</span><span class="p">}</span>
 
         <span class="c1"># Clone tensor contents</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;dist_info&#39;</span><span class="p">][</span><span class="s1">&#39;dist_class&#39;</span><span class="p">],</span> <span class="n">msg</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span>
                                              <span class="n">b_shape</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span> \
-            <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">events</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span> <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span> <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">weight</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;parameter&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span> \
+            <span class="k">if</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span> \
+            <span class="k">if</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> \
+            <span class="k">if</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="c1"># Obtain and check result</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_func</span><span class="p">(</span><span class="n">content_type</span><span class="o">=</span><span class="n">content_type</span><span class="p">,</span> <span class="n">rv_info</span><span class="o">=</span><span class="n">rv_info</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span>
@@ -478,7 +510,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The result returned by a Summarization callback should be a 2-tuple. Found result type &quot;</span>
                              <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)))</span>
         <span class="n">reduced_dist</span><span class="p">,</span> <span class="n">reduced_weight</span> <span class="o">=</span> <span class="n">result</span>
-        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;parameter&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reduced_dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;When `content_type` is &#39;parameter&#39; or &#39;both&#39;, the first result returned by a &quot;</span>
                                  <span class="s2">&quot;Summarization callback should be a torch.distributions.Distribution instance. &quot;</span>
@@ -498,7 +530,7 @@
                                  <span class="s2">&quot;by the Summarization callback should have the same event shape as does the original &quot;</span>
                                  <span class="s2">&quot;message. Expect event shape </span><span class="si">{}</span><span class="s2">, encountered event shape </span><span class="si">{}</span><span class="s2">&quot;</span>
                                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">reduced_dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reduced_weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;When &#39;content_type&#39; is &#39;particles&#39; or &#39;both&#39;, the second result returned by a &quot;</span>
                                  <span class="s2">&quot;Summarization callback should be a torch.Tensor.. Encountered result type: </span><span class="si">{}</span><span class="s2">.&quot;</span>
@@ -511,9 +543,9 @@
         <span class="c1"># Instantiate return message</span>
         <span class="n">param</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;parameter&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]:</span>
             <span class="n">param</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">dist2param</span><span class="p">(</span><span class="n">reduced_dist</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;dist_info&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]:</span>
             <span class="n">weight</span> <span class="o">=</span> <span class="n">reduced_weight</span>
 
         <span class="n">return_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
@@ -521,87 +553,7 @@
                              <span class="n">param_shape</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                              <span class="n">parameter</span><span class="o">=</span><span class="n">param</span><span class="p">,</span> <span class="n">particles</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">,</span>
                              <span class="n">device</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="n">msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">return_msg</span>
-
-<div class="viewcode-block" id="Summarization.process"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.Summarization.process">[docs]</a>    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">,</span> <span class="n">translator</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Should be called by nodes to perform the summarization. Shape checks will be carried out.</span>
-
-<span class="sd">            :param msg:     A flattened Message instance. The last batch dimension is the one assumed to be summarized</span>
-<span class="sd">                                over.</span>
-<span class="sd">            :param ran_var_list:    List of random variables.</span>
-<span class="sd">            :param translator:      A KnowledgeTranslator instance. To translate the particles tensor.</span>
-<span class="sd">            :return:        A new message</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ran_var_list</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">translator</span><span class="p">,</span> <span class="n">KnowledgeTranslator</span><span class="p">)</span>
-
-        <span class="c1"># First clone the message, and preprocess if necessary</span>
-        <span class="n">msg_clone</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-        <span class="n">parameters</span> <span class="o">=</span> <span class="n">msg_clone</span><span class="o">.</span><span class="n">param</span>
-        <span class="n">particles</span> <span class="o">=</span> <span class="n">msg_clone</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="n">msg_clone</span><span class="o">.</span><span class="n">weights</span>
-        <span class="n">log_density</span> <span class="o">=</span> <span class="n">msg_clone</span><span class="o">.</span><span class="n">log_density</span>
-
-        <span class="c1"># Permute weight tensor sample_dim to the last dimension</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
-        <span class="c1"># Translate particle tensor to the format consistent with cognitive level knowledge</span>
-        <span class="n">particles</span> <span class="o">=</span> <span class="n">translator</span><span class="o">.</span><span class="n">event2pred_event</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span>
-
-        <span class="c1"># Generate input dict</span>
-        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;both&#39;</span>
-            <span class="n">input_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">parameter</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span> <span class="n">particles</span><span class="o">=</span><span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">log_density</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">:</span>
-            <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;parameter&#39;</span>
-            <span class="n">input_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">parameter</span><span class="o">=</span><span class="n">parameters</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;particles&#39;</span>
-            <span class="n">input_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">particles</span><span class="o">=</span><span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span> <span class="n">log_density</span><span class="o">=</span><span class="n">log_density</span><span class="p">)</span>
-
-        <span class="c1"># Process and get result</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_func</span><span class="p">(</span><span class="n">content_type</span><span class="p">,</span> <span class="n">input_dict</span><span class="p">)</span>
-
-        <span class="c1"># Shape check</span>
-        <span class="n">new_param</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">new_weights</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">content_type</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The Message type is &#39;both&#39;. In this case, expect output from the summarization &quot;</span>
-                                 <span class="s2">&quot;functor to be a 2-tuple of torch.Tensor. Instead found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">output</span><span class="p">)))</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">output</span><span class="p">)):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The Message type is &#39;both&#39;. In this case, expect output from the summarization &quot;</span>
-                                 <span class="s2">&quot;functor to be a 2-tuple of torch.Tensor. Instead found: </span><span class="si">{}</span><span class="s2">&quot;</span>
-                                 <span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="nb">type</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">type</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">1</span><span class="p">]))))</span>
-            <span class="n">new_param</span><span class="p">,</span> <span class="n">new_weights</span> <span class="o">=</span> <span class="n">output</span>
-        <span class="k">elif</span> <span class="n">content_type</span> <span class="o">==</span> <span class="s1">&#39;parameter&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The Message type is &#39;parameter&#39;. In this case, expect output from the summarization &quot;</span>
-                                 <span class="s2">&quot;functor to be a torch.Tensor. Instead found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">output</span><span class="p">)))</span>
-            <span class="n">new_param</span> <span class="o">=</span> <span class="n">output</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The Message type is &#39;particles&#39;. In this case, expect output from the summarization &quot;</span>
-                                 <span class="s2">&quot;functor to be a torch.Tensor. Instead found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">output</span><span class="p">)))</span>
-            <span class="n">new_weights</span> <span class="o">=</span> <span class="n">output</span>
-
-        <span class="k">if</span> <span class="n">new_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">new_param</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expect the output parameter to have shape [batch_shape, param_shape] = [</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">]. &quot;</span>
-                                 <span class="s2">&quot;Instead found shape </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">new_param</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">new_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">new_weights</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expect the output parameter to have shape [batch_shape, sample_shape] = [</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">]. &quot;</span>
-                                 <span class="s2">&quot;Instead found shape </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_param</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
-
-        <span class="c1"># permute shape if necessary</span>
-        <span class="n">new_weights</span> <span class="o">=</span> <span class="n">new_weights</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
-
-        <span class="c1"># Generate new message</span>
-        <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                          <span class="n">new_param</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">new_weights</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">log_density</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">new_msg</span></div></div>
+        <span class="k">return</span> <span class="n">return_msg</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">Type</span><span class="p">:</span>

@@ -361,6 +361,17 @@
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Summarization operation using Summarization instance is not yet implemented.&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span> <span class="o">=</span> <span class="n">sum_op</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ESFN.add_link"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The variable nodes on the other side of all linkdata must have the same list of random variables.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span></div>
 
 <div class="viewcode-block" id="ESFN.inward_compute"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute">[docs]</a>    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Expands and permutes the incoming message&#39;s relational variable dimensions to match the target outgoing</span>
@@ -433,15 +444,15 @@
         <span class="c1"># Summarize using custom sum_op</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the</span>
-            <span class="c1">#   former as the last dimension and the latter as the first batch dimension</span>
+            <span class="c1">#   former as the first dimension and the latter as the last batch dimension</span>
             <span class="n">sum_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">)</span>
             <span class="n">other_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sum_dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="c1"># First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
+                <span class="c1"># First flatten sum_dims, then other_dims, so that flattened sum_dims will be the first dim</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">sum_dims</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
                 <span class="c1"># Process using the sum_op</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_op</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span><span class="p">)</span>
                 <span class="c1"># Reshape</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_reshape</span><span class="p">(</span><span class="n">other_dims</span><span class="p">)</span>
 

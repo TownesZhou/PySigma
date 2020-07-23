@@ -149,6 +149,19 @@ class ESFN(AlphaFactorNode):
             raise NotImplementedError("Summarization operation using Summarization instance is not yet implemented.")
 
         self.sum_op = sum_op
+        self.ran_vars = None
+
+    def add_link(self, linkdata):
+        """The variable nodes on the other side of all linkdata must have the same list of random variables.
+
+        """
+        assert isinstance(linkdata, LinkData)
+        if self.ran_vars is None:
+            self.ran_vars = linkdata.vn.ran_vars
+        else:
+            assert self.ran_vars == linkdata.vn.ran_vars
+
+        super(ESFN, self).add_link(linkdata)
 
     def inward_compute(self, in_ld, out_ld):
         """Expands and permutes the incoming message's relational variable dimensions to match the target outgoing
@@ -221,15 +234,15 @@ class ESFN(AlphaFactorNode):
         # Summarize using custom sum_op
         if self.sum_op is not None:
             # Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the
-            #   former as the last dimension and the latter as the first batch dimension
+            #   former as the first dimension and the latter as the last batch dimension
             sum_dims = list(dim for dim, v in enumerate(in_rel_vars) if v not in out_rel_vars)
             other_dims = list(dim for dim, v in enumerate(in_rel_vars) if v in out_rel_vars)
             if len(sum_dims) > 0:
-                # First flatten other_dims, then sum_dims, so that flattened sum_dims will be the last dim
-                msg = msg.batch_flatten(other_dims)
+                # First flatten sum_dims, then other_dims, so that flattened sum_dims will be the first dim
                 msg = msg.batch_flatten(sum_dims)
+                msg = msg.batch_flatten(other_dims)
                 # Process using the sum_op
-                msg = self.sum_op(msg)
+                msg = self.sum_op(msg, self.ran_vars)
                 # Reshape
                 msg = msg.batch_reshape(other_dims)
 

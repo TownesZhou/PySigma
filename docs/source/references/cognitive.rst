@@ -28,4 +28,4 @@ Summarization
 .. autoclass:: pysigma.structures.Summarization
    :members:
    :undoc-members:
-
+   :special-members: __call__
