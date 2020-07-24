@@ -58,9 +58,9 @@ class WMVN(VariableNode):
 
 
     """
-    def __init__(self, name, ks, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None):
+    def __init__(self, name, ks, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
         assert isinstance(ks, KnowledgeServer)
-        super(WMVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list)
+        super(WMVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list, **kwargs)
         self.pretty_log["node type"] = "Working Memory Variable Node"
 
         # Distribution class the Predicate self belongs to is assuming
@@ -303,8 +303,8 @@ class LTMFN(FactorNode):
     msg_cache : Message
         The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.
     """
-    def __init__(self, name, ks, rel_var_list, param_var, index_var_list, ran_var_list, to_draw=True):
-        super(LTMFN, self).__init__(name)
+    def __init__(self, name, ks, rel_var_list, param_var, index_var_list, ran_var_list, to_draw=True, **kwargs):
+        super(LTMFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Long-Term Memory Factor Node"
 
         assert isinstance(ks, KnowledgeServer)
@@ -490,12 +490,12 @@ class PSFN(FactorNode):
         The parameter buffer. Should be a tensor of shape ``(batch_shape + param_shape)``. Value defaults to a zero
         tensor, when `init_param` is None during initialization.
     """
-    def __init__(self, name, batch_shape, param_shape, init_param=None):
+    def __init__(self, name, batch_shape, param_shape, init_param=None, **kwargs):
         assert isinstance(batch_shape, torch.Size)
         assert isinstance(param_shape, torch.Size)
         assert init_param is None or \
             (isinstance(init_param, torch.Tensor) and init_param.shape == batch_shape + param_shape)
-        super(PSFN, self).__init__(name)
+        super(PSFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Parameter Store Factor Node"
 
         self.b_shape = batch_shape
@@ -578,10 +578,10 @@ class PBFN(FactorNode):
     e_shape : torch.Size
         Set by `event_shape`.
     """
-    def __init__(self, name, batch_shape, event_shape):
+    def __init__(self, name, batch_shape, event_shape, **kwargs):
         assert isinstance(batch_shape, torch.Size)
         assert isinstance(event_shape, torch.Size)
-        super(PBFN, self).__init__(name)
+        super(PBFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
         self.b_shape = batch_shape
@@ -805,9 +805,9 @@ class WMFN(FactorNode):
     decay_rate
     memory
     """
-    def __init__(self, name, decay_rate=1):
+    def __init__(self, name, decay_rate=1, **kwargs):
         assert isinstance(decay_rate, (float, int)) and 0 <= decay_rate <= 1
-        super(WMFN, self).__init__(name)
+        super(WMFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Working Memory Function Node"
 
         self.decay_rate = decay_rate

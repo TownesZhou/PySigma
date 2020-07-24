@@ -239,11 +239,13 @@ class Node(ABC):
     ----------
     name : str
         Name of the node.
+    device : str
+        The device on which the node should be processing the messages. Defaults to 'cpu'
 
     Attributes
     ----------
-    name : str
-        Name of the node.
+    name
+    device
     visited : bool
         Indicates whether this node has been visited at all, i.e., `compute()` method being called at the current cycle.
         Default to ``False`` at the start of the cycle.
@@ -257,8 +259,9 @@ class Node(ABC):
         Pretty log for beautiful front-end visualization.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, device='cpu'):
         self.name = name
+        self.device = device
         # Flag indicating whether this node has been visited (compute() method called) during a decision cycle
         self.visited = False
 
@@ -392,8 +395,8 @@ class VariableNode(Node, ABC):
     e_shape : torch.Size
         Event dimension sizes. Inferred from `ran_vars`. Defaults to ``torch.Size([])``.
     """
-    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None):
-        super(VariableNode, self).__init__(name)
+    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
+        super(VariableNode, self).__init__(name, **kwargs)
         assert isinstance(rel_var_list, Iterable) and \
             all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
         assert param_var is None or \
@@ -480,8 +483,8 @@ class DFN(FactorNode):
     ran_vars : tuple of Variable
         Tuple of random variables.
     """
-    def __init__(self, name):
-        super(DFN, self).__init__(name)
+    def __init__(self, name, **kwargs):
+        super(DFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Default Factor Node"
 
         # Since all incident nodes should have the same variable list, we can therefore log it here as an attribute
@@ -561,8 +564,8 @@ class DVN(VariableNode):
         Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of
         incoming messages. Must specify if `index_var_list` is specified.
     """
-    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None):
-        super(DVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list)
+    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
+        super(DVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list, **kwargs)
         self.pretty_log["node type"] = "Default Variable Node"
 
     def add_link(self, linkdata):

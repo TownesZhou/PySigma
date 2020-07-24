@@ -31,8 +31,8 @@ class AlphaFactorNode(FactorNode, ABC):
       contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of
       them should only be carried out if its incoming linkdata of interest contains new message.
     """
-    def __init__(self, name):
-        super(AlphaFactorNode, self).__init__(name)
+    def __init__(self, name, **kwargs):
+        super(AlphaFactorNode, self).__init__(name, **kwargs)
 
         # Pairs of incoming and outgoing linkdata labeled with their directionality w.r.t. the alpha structure
         self.labeled_ld_pair = {}
@@ -146,13 +146,13 @@ class ESFN(AlphaFactorNode):
     ----------
     sum_op
     """
-    def __init__(self, name, sum_op=None):
+    def __init__(self, name, sum_op=None, **kwargs):
         """
             Necessary data structure:
 
             :param sum_op:      None or a Summarization instance. Default is None.
         """
-        super(ESFN, self).__init__(name)
+        super(ESFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Expansion / Summarization Factor Node"
 
         assert sum_op is None or isinstance(sum_op, Summarization)
@@ -307,8 +307,8 @@ class RMFN(AlphaFactorNode):
         Obtained from `arg2var_map`. Mapping from predicate argument to the INVERSE mapping dictionary (if a
         `VariableMap` is specified).
     """
-    def __init__(self, name, arg2var, var2arg, arg2var_map):
-        super(RMFN, self).__init__(name)
+    def __init__(self, name, arg2var, var2arg, arg2var_map, **kwargs):
+        super(RMFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Relation Variable Mapping Node"
         assert isinstance(name, str)
         assert isinstance(arg2var, dict) and all(isinstance(k, Variable) for k in arg2var.keys()) and \
