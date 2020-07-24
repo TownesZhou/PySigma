@@ -503,7 +503,8 @@ class PSFN(FactorNode):
 
         # Parameter buffer
         self.param = Parameter(init_param, requires_grad=True) if init_param is not None else \
-            Parameter(torch.zeros(self.b_shape + self.p_shape, dtype=torch.float), requires_grad=True)
+            Parameter(torch.zeros(self.b_shape + self.p_shape, dtype=torch.float, device=self.device),
+                      requires_grad=True)
 
     def reset_param(self, param):
         """Resets the parameter tensor.

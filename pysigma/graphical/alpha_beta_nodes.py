@@ -395,7 +395,8 @@ class RMFN(AlphaFactorNode):
             # Apply map if VariableMap is specified
             if pred_arg in self.arg2var_map_tuple.keys():
                 map_dict, _, _ = self.arg2var_map_tuple[pred_arg]
-                indices = torch.tensor(list(map_dict[i] for i in range(pat_var.size)), dtype=torch.long)
+                indices = torch.tensor(list(map_dict[i] for i in range(pat_var.size)), dtype=torch.long,
+                                       device=self.device)
                 msg = msg.batch_index_select(dim, indices)
             # Broaden the variable dimension size if currently it is smaller than the pattern variable's size
             if msg.b_shape[dim] < pat_var.size:
@@ -518,7 +519,8 @@ class RMFN(AlphaFactorNode):
             # Apply map if VariableMap is specified
             if pred_arg in self.arg2var_map_tuple.keys():
                 map_dict, _, _ = self.arg2var_map_tuple[pred_arg]
-                indices = torch.tensor(list(map_dict[i] for i in range(pat_var.size)), dtype=torch.long)
+                indices = torch.tensor(list(map_dict[i] for i in range(pat_var.size)), dtype=torch.long,
+                                       device=self.device)
                 msg = msg.batch_index_put(dim, indices)
             # Broaden the variable dimension size if currently it is smaller than the pattern variable's size
             if msg.b_shape[dim] > pred_arg.size:
