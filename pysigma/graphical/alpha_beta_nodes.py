@@ -296,6 +296,10 @@ class RMFN(AlphaFactorNode):
     arg2var
     var2arg
     arg2var_map
+    arg_set : set
+        The set of predicate argument `Variable` instances. Obtained from the keys of `arg2var`.
+    var_set : set
+        The set of pattern variable `Variable` instances. Obtained from the keys of `var2arg`.
     arg2var_map_tuple : dict
         Obtained from `arg2var_map`. Mapping from predicate argument to the mapping dictionary (if a `VariableMap` is
         specified).
@@ -318,59 +322,74 @@ class RMFN(AlphaFactorNode):
         self.var2arg = var2arg
         self.arg2var_map = arg2var_map
 
-        # Sanity check
-        assert set(self.arg2var.values()) == set(self.var2arg.keys())
+        self.arg_set = set(self.arg2var.keys())
+        self.var_set = set(self.var2arg.keys())
+
+        # Sanity check whether the variables given in the three dicts are compatible.
+        assert set(self.arg2var.values()) == self.var_set
         arg_set = set()
         for arg_list in self.var2arg.values():
             arg_set.union(set(arg_list))
-        assert arg_set == set(self.arg2var.keys())
-        assert set(self.arg2var_map.keys()).issubset(arg_set)
+        assert arg_set == self.arg_set
+        assert set(self.arg2var_map.keys()).issubset(self.arg_set)
 
         # Obtain mapping dictionary and inverse mapping dictionary
         self.arg2var_map_tuple = {arg: var_map.get_map() for arg, var_map in self.arg2var_map.items()}
         self.arg2var_map_inv_tuple = {arg: var_map.get_inverse_map() for arg, var_map in self.arg2var_map.items()}
 
     def inward_compute(self, in_ld, out_ld):
-        """
-            Inward computation. Convert predicate relational arguments to pattern relational variables. Apply mappings
-                to relational variable's values, if specified.
+        """Inward computation. Converts predicate relational arguments to pattern relational variables. Applies mappings
+        to relational variable's values, if specified.
 
-            For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the
-                inverse mapping should be used to map predicate arguments to pattern variables.
+        For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the inverse
+        mapping should be used to map predicate arguments to pattern variables.
 
-            Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument
-                and pattern variable respectively. However to be user friendly this should be checked beforehand by
-                compiler.
+        Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument
+        and pattern variable respectively. However to be user friendly this should be checked beforehand by compiler.
 
-            Note that domain should be a subset of predicate argument size range, but image should be exactly equal to
-                the pattern variable size range
+        Note that domain should be a subset of predicate argument size range, but image should be exactly equal to
+        the pattern variable size range
 
-            The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, & permute
+        The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, & permute
         """
         assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         msg = in_ld.read()
         assert isinstance(msg, Message)
-        in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
+        in_rel_vars, out_rel_vars = in_ld.vn.rel_vars, out_ld.vn.rel_vars
 
         # Check that given data structures agree with variable lists of the incident variable node
-        assert set(self.arg2var.keys()) == set(in_rel_var_list)
-        assert set(self.var2arg.keys()) == set(out_rel_var_list)
+        assert set(in_rel_vars) == self.arg_set
+        assert set(out_rel_vars) == self.var_set
         # Check that mapping's domain and image agree with variables' sizes
         #   Note that for inward computation we are using the inverse map
         for arg, var_map_tuple in self.arg2var_map_inv_tuple.items():
             pat_var = self.arg2var[arg]
             _, domain, image = var_map_tuple
-            assert domain.issubset(set(range(arg.size)))
-            assert image == set(range(pat_var.size))
+            assert domain.issubset(set(range(arg.size))), \
+                "At {}: The VariableMap declared on the predicate argument {} would induce an image that exceeds the " \
+                "argument's value range. The argument's value range is {}, but found image {}."\
+                .format(self.name, arg.name, set(range(arg.size)), domain)
+            assert image == set(range(pat_var.size)), \
+                "At {}: The VariableMap declared on the predicate argument {} should have a domain equal to the value "\
+                "range of the associated pattern variable {}. The pattern variable's value range is {}, but found " \
+                "VariableMap domain {}"\
+                .format(self.name, arg.name, pat_var.name, set(range(pat_var.size)), image)
 
         # 1. First, translate predicate arguments to pattern variables. This step involves broadening the variable
-        #       dimension if predicate argument size is smaller than pattern variable size, or map predicate argument
-        #       values to pattern variable values if a VariableMap is specified for the given predicate argument.
-        #    For the mapping we should use original forward mapping, because we are selecting "image" to place in
-        #       "domain", in the order mandated by domain.
+        #    dimension if predicate argument size is smaller than pattern variable size, or map predicate argument
+        #    values to pattern variable values if a VariableMap is specified for the given predicate argument.
+        #
+        #    For the mapping we should use original forward mapping in combination with batch_index_select(), because we
+        #    are selecting "image" to place in "domain", in the order mandated by domain.
+        #
+        #    For example, if the VariableMap is defined as  2 * var + 3 |-> arg , and `var` range is [0, 2], we will be
+        #    selecting from the incoming message, the slices with indices 3, 5, 8, to place onto indices 0, 1, 2 of the
+        #    outgoing message. To use batch_index_select(), we gather the indices [3, 5, 8] as the argument, which are
+        #    obtained from the forward mapping dictionary.
+        #
         #    Note that we have guaranteed that forward mapping's domain is equal to pattern variable's size range
         #    A running list of variables is maintained to keep track of variable dimensions
-        mapped_var_list = copy.deepcopy(in_rel_var_list)
+        mapped_var_list = list(in_rel_vars)
         for dim, pred_arg in enumerate(mapped_var_list):
             pat_var = self.arg2var[pred_arg]
             # Apply map if VariableMap is specified
@@ -404,58 +423,65 @@ class RMFN(AlphaFactorNode):
                 # Selecting diagonal entries in message
                 msg = msg.batch_diagonal(dim1, dim2)
 
-        assert set(mapped_var_list) == set(out_rel_var_list)
+        # Check that we have produced all the target relational variables, albeit with a different order perhaps
+        assert set(mapped_var_list) == set(out_rel_vars)
 
         # 3. With all predicate argument dimension converted to pattern variable dimensions and all repetitions
         #       diagonalized, we guarantee that all predicate variable appears in mapped_var_list.
         #    The last thing to do is to permute the batch dimensions so that the processed message's dimension match
         #       exactly with out_rel_var_list
-        perm_order = list(mapped_var_list.index(pt_var) for pt_var in out_rel_var_list)
+        perm_order = list(mapped_var_list.index(pt_var) for pt_var in out_rel_vars)
         msg = msg.batch_permute(perm_order)
-        assert msg.b_shape == torch.Size([v.size for v in out_rel_var_list])
+        assert msg.b_shape == torch.Size([v.size for v in out_rel_vars])
 
         # Send message
         out_ld.write(msg)
 
     def outward_compute(self, in_ld, out_ld):
-        """
-            Outward computation. Convert pattern relational variables to predicate relational arguments. Apply mappings
-                to relational variable's values, if specified.
+        """Outward computation. Converts pattern relational variables to predicate relational arguments. Applies
+        mappings to relational variable's values, if specified.
 
-            For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the
-                original forward mapping should be used to map pattern variables to predicate arguments.
+        For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the
+        original forward mapping should be used to map pattern variables to predicate arguments.
 
-            Will check anyway if domain and image of the forward map agree with the size range of the predicate argument
-                and pattern variable respectively. However to be user friendly this should be checked beforehand by
-                compiler.
+        Will check anyway if domain and image of the forward map agree with the size range of the predicate argument
+        and pattern variable respectively. However to be user friendly this should be checked beforehand by
+        compiler.
 
-            Note that image of the map should be a subset of predicate argument size range, but its domain should be
-                exactly equal to the pattern variable size range.
+        Note that image of the map should be a subset of predicate argument size range, but its domain should be
+        exactly equal to the pattern variable size range.
 
-            The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, & permute
+        The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, & permute
         """
         assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         msg = in_ld.read()
         assert isinstance(msg, Message)
-        in_rel_var_list, out_rel_var_list = in_ld.vn.rel_var_list, out_ld.vn.rel_var_list
+        in_rel_vars, out_rel_vars = in_ld.vn.rel_vars, out_ld.vn.rel_vars
 
         # Check that given data structures agree with variable lists of the incident variable node
-        assert set(self.var2arg.keys()) == set(in_rel_var_list)
-        assert set(self.arg2var.keys()) == set(out_rel_var_list)
+        assert set(in_rel_vars) == self.var_set
+        assert set(out_rel_vars) == self.arg_set
         # Check that mapping's domain and image agree with variables' sizes
         #   For outward computation we are using the forward map
         for arg, var_map_tuple in self.arg2var_map_tuple.items():
-            pt_var = self.arg2var[arg]
+            pat_var = self.arg2var[arg]
             _, domain, image = var_map_tuple
-            assert image.issubset(set(range(arg.size)))
-            assert domain == set(range(pt_var.size))
+            assert image.issubset(set(range(arg.size))), \
+                "At {}: The VariableMap declared on the predicate argument {} would induce an image that exceeds the " \
+                "argument's value range. The argument's value range is {}, but found image {}."\
+                .format(self.name, arg.name, set(range(arg.size)), image)
+            assert domain == set(range(pat_var.size)), \
+                "At {}: The VariableMap declared on the predicate argument {} should have a domain equal to the value "\
+                "range of the associated pattern variable {}. The pattern variable's value range is {}, but found " \
+                "VariableMap domain {}" \
+                .format(self.name, arg.name, pat_var.name, set(range(pat_var.size)), domain)
 
         # 1. First, translate pattern variables to predicate arguments. This step involves unbinding the predicate
         #       variables that are referenced by multiple predicate arguments.
         #    Computationally, this is achieved by un-diagonalize, or embed entries along that predicate variables'
         #       dimension into a 2D plane (higher dimensional space if there are more than 2 such predicate arguments).
         #    A running list of variables is maintained to keep track of variable dimensions
-        mapped_var_list = copy.deepcopy(in_rel_var_list)
+        mapped_var_list = copy.deepcopy(in_rel_vars)
         for pt_var in mapped_var_list:
             # Look up how many predicate arguments reference this single pattern variable. If only 1, simply change
             #   variable. Otherwise, need to do more
@@ -481,7 +507,7 @@ class RMFN(AlphaFactorNode):
                     #   predicate argument Variable instance to the running variable list
                     mapped_var_list.append(arg)
 
-        assert set(mapped_var_list) == set(out_rel_var_list)
+        assert set(mapped_var_list) == set(out_rel_vars)
 
         # 2. The step above guarantees a symbolic one-to-one mapping between message dimensions and predicate arguments'
         #       variable dimensions. We now need to narrow the variable dimension if the predicate argument's size is
@@ -501,9 +527,9 @@ class RMFN(AlphaFactorNode):
         # 3. Finally, with all pattern variables converted to predicate arguments and the values are now with respect to
         #       the predicate arguments, the last thing to do is to permute the batch dimensions so that the processed
         #       message's dimensions match exactly with out-_rel_var_list
-        perm_order = list(mapped_var_list.index(pred_arg) for pred_arg in out_rel_var_list)
+        perm_order = list(mapped_var_list.index(pred_arg) for pred_arg in out_rel_vars)
         msg = msg.batch_permute(perm_order)
-        assert msg.b_shape == torch.Size([v.size for v in out_rel_var_list])
+        assert msg.b_shape == torch.Size([v.size for v in out_rel_vars])
 
         # Send message
         out_ld.write(msg)

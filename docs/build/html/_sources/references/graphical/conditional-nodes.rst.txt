@@ -12,6 +12,10 @@ Expansion / Summarization Factor Node
 Relational Mapping Factor Node
 ------------------------------
 
+.. autoclass:: pysigma.graphical.alpha_beta_nodes.RMFN
+   :members:
+   :undoc-members:
+
 
 
 Concatenation, Marginalization, & Transformation Factor Node

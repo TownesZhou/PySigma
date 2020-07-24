@@ -223,7 +223,7 @@
 <h2>Node<a class="headerlink" href="#node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.basic_nodes.Node">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">Node</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">Node</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">'cpu'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node" title="Permalink to this definition">¶</a></dt>
 <dd><p>The base class for all nodes in PySigma graphical architecture.</p>
 <p>Declares common attributes between <cite>FactorNode</cite> and <cite>VariableNode</cite>, for example a flag indicating whether this node
 has reach quiescence, i.e., whether no new message shall be sent via adjacent links in current cycle. During
@@ -350,7 +350,7 @@ phase computation.</p>
 <h2>Factor Node<a class="headerlink" href="#factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.basic_nodes.FactorNode">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">FactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#FactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.FactorNode" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">FactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">'cpu'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#FactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.FactorNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Factor node abstract base class.</p>
 <p>Guarantees that all incident nodes are variable nodes.</p>
 <dl class="py method">

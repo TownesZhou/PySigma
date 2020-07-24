@@ -477,7 +477,7 @@
         <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">RMFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
+<div class="viewcode-block" id="RMFN"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN">[docs]</a><span class="k">class</span> <span class="nc">RMFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Relation Variable Mapping Node</span>
 
 <span class="sd">    Converts predicate arguments from and to pattern variables. Applies relational variable&#39;s `VariableMap` (if</span>
@@ -508,6 +508,10 @@
 <span class="sd">    arg2var</span>
 <span class="sd">    var2arg</span>
 <span class="sd">    arg2var_map</span>
+<span class="sd">    arg_set : set</span>
+<span class="sd">        The set of predicate argument `Variable` instances. Obtained from the keys of `arg2var`.</span>
+<span class="sd">    var_set : set</span>
+<span class="sd">        The set of pattern variable `Variable` instances. Obtained from the keys of `var2arg`.</span>
 <span class="sd">    arg2var_map_tuple : dict</span>
 <span class="sd">        Obtained from `arg2var_map`. Mapping from predicate argument to the mapping dictionary (if a `VariableMap` is</span>
 <span class="sd">        specified).</span>
@@ -530,59 +534,74 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span> <span class="o">=</span> <span class="n">var2arg</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span> <span class="o">=</span> <span class="n">arg2var_map</span>
 
-        <span class="c1"># Sanity check</span>
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arg_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="c1"># Sanity check whether the variables given in the three dicts are compatible.</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_set</span>
         <span class="n">arg_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">arg_list</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">arg_set</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">arg_list</span><span class="p">))</span>
-        <span class="k">assert</span> <span class="n">arg_set</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">arg_set</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">arg_set</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg_set</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg_set</span><span class="p">)</span>
 
         <span class="c1"># Obtain mapping dictionary and inverse mapping dictionary</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span> <span class="o">=</span> <span class="p">{</span><span class="n">arg</span><span class="p">:</span> <span class="n">var_map</span><span class="o">.</span><span class="n">get_map</span><span class="p">()</span> <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_inv_tuple</span> <span class="o">=</span> <span class="p">{</span><span class="n">arg</span><span class="p">:</span> <span class="n">var_map</span><span class="o">.</span><span class="n">get_inverse_map</span><span class="p">()</span> <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
-    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Inward computation. Convert predicate relational arguments to pattern relational variables. Apply mappings</span>
-<span class="sd">                to relational variable&#39;s values, if specified.</span>
+<div class="viewcode-block" id="RMFN.inward_compute"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute">[docs]</a>    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Inward computation. Converts predicate relational arguments to pattern relational variables. Applies mappings</span>
+<span class="sd">        to relational variable&#39;s values, if specified.</span>
 
-<span class="sd">            For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the</span>
-<span class="sd">                inverse mapping should be used to map predicate arguments to pattern variables.</span>
+<span class="sd">        For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the inverse</span>
+<span class="sd">        mapping should be used to map predicate arguments to pattern variables.</span>
 
-<span class="sd">            Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument</span>
-<span class="sd">                and pattern variable respectively. However to be user friendly this should be checked beforehand by</span>
-<span class="sd">                compiler.</span>
+<span class="sd">        Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument</span>
+<span class="sd">        and pattern variable respectively. However to be user friendly this should be checked beforehand by compiler.</span>
 
-<span class="sd">            Note that domain should be a subset of predicate argument size range, but image should be exactly equal to</span>
-<span class="sd">                the pattern variable size range</span>
+<span class="sd">        Note that domain should be a subset of predicate argument size range, but image should be exactly equal to</span>
+<span class="sd">        the pattern variable size range</span>
 
-<span class="sd">            The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, &amp; permute</span>
+<span class="sd">        The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, &amp; permute</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
-        <span class="n">in_rel_var_list</span><span class="p">,</span> <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
+        <span class="n">in_rel_vars</span><span class="p">,</span> <span class="n">out_rel_vars</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span>
 
         <span class="c1"># Check that given data structures agree with variable lists of the incident variable node</span>
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg_set</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_vars</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_set</span>
         <span class="c1"># Check that mapping&#39;s domain and image agree with variables&#39; sizes</span>
         <span class="c1">#   Note that for inward computation we are using the inverse map</span>
         <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map_tuple</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_inv_tuple</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">pat_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
             <span class="n">_</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">image</span> <span class="o">=</span> <span class="n">var_map_tuple</span>
-            <span class="k">assert</span> <span class="n">domain</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">size</span><span class="p">)))</span>
-            <span class="k">assert</span> <span class="n">image</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="n">domain</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">size</span><span class="p">))),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: The VariableMap declared on the predicate argument </span><span class="si">{}</span><span class="s2"> would induce an image that exceeds the &quot;</span> \
+                <span class="s2">&quot;argument&#39;s value range. The argument&#39;s value range is </span><span class="si">{}</span><span class="s2">, but found image </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">arg</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">domain</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">image</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: The VariableMap declared on the predicate argument </span><span class="si">{}</span><span class="s2"> should have a domain equal to the value &quot;</span>\
+                <span class="s2">&quot;range of the associated pattern variable </span><span class="si">{}</span><span class="s2">. The pattern variable&#39;s value range is </span><span class="si">{}</span><span class="s2">, but found &quot;</span> \
+                <span class="s2">&quot;VariableMap domain </span><span class="si">{}</span><span class="s2">&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">arg</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">pat_var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">image</span><span class="p">)</span>
 
         <span class="c1"># 1. First, translate predicate arguments to pattern variables. This step involves broadening the variable</span>
-        <span class="c1">#       dimension if predicate argument size is smaller than pattern variable size, or map predicate argument</span>
-        <span class="c1">#       values to pattern variable values if a VariableMap is specified for the given predicate argument.</span>
-        <span class="c1">#    For the mapping we should use original forward mapping, because we are selecting &quot;image&quot; to place in</span>
-        <span class="c1">#       &quot;domain&quot;, in the order mandated by domain.</span>
+        <span class="c1">#    dimension if predicate argument size is smaller than pattern variable size, or map predicate argument</span>
+        <span class="c1">#    values to pattern variable values if a VariableMap is specified for the given predicate argument.</span>
+        <span class="c1">#</span>
+        <span class="c1">#    For the mapping we should use original forward mapping in combination with batch_index_select(), because we</span>
+        <span class="c1">#    are selecting &quot;image&quot; to place in &quot;domain&quot;, in the order mandated by domain.</span>
+        <span class="c1">#</span>
+        <span class="c1">#    For example, if the VariableMap is defined as  2 * var + 3 |-&gt; arg , and `var` range is [0, 2], we will be</span>
+        <span class="c1">#    selecting from the incoming message, the slices with indices 3, 5, 8, to place onto indices 0, 1, 2 of the</span>
+        <span class="c1">#    outgoing message. To use batch_index_select(), we gather the indices [3, 5, 8] as the argument, which are</span>
+        <span class="c1">#    obtained from the forward mapping dictionary.</span>
+        <span class="c1">#</span>
         <span class="c1">#    Note that we have guaranteed that forward mapping&#39;s domain is equal to pattern variable&#39;s size range</span>
         <span class="c1">#    A running list of variables is maintained to keep track of variable dimensions</span>
-        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
+        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">):</span>
             <span class="n">pat_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="p">[</span><span class="n">pred_arg</span><span class="p">]</span>
             <span class="c1"># Apply map if VariableMap is specified</span>
@@ -616,58 +635,65 @@
                 <span class="c1"># Selecting diagonal entries in message</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_diagonal</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="p">)</span>
 
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="c1"># Check that we have produced all the target relational variables, albeit with a different order perhaps</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_vars</span><span class="p">)</span>
 
         <span class="c1"># 3. With all predicate argument dimension converted to pattern variable dimensions and all repetitions</span>
         <span class="c1">#       diagonalized, we guarantee that all predicate variable appears in mapped_var_list.</span>
         <span class="c1">#    The last thing to do is to permute the batch dimensions so that the processed message&#39;s dimension match</span>
         <span class="c1">#       exactly with out_rel_var_list</span>
-        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span> <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)</span> <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">)</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">])</span>
 
         <span class="c1"># Send message</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Outward computation. Convert pattern relational variables to predicate relational arguments. Apply mappings</span>
-<span class="sd">                to relational variable&#39;s values, if specified.</span>
+<div class="viewcode-block" id="RMFN.outward_compute"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute">[docs]</a>    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Outward computation. Converts pattern relational variables to predicate relational arguments. Applies</span>
+<span class="sd">        mappings to relational variable&#39;s values, if specified.</span>
 
-<span class="sd">            For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the</span>
-<span class="sd">                original forward mapping should be used to map pattern variables to predicate arguments.</span>
+<span class="sd">        For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the</span>
+<span class="sd">        original forward mapping should be used to map pattern variables to predicate arguments.</span>
 
-<span class="sd">            Will check anyway if domain and image of the forward map agree with the size range of the predicate argument</span>
-<span class="sd">                and pattern variable respectively. However to be user friendly this should be checked beforehand by</span>
-<span class="sd">                compiler.</span>
+<span class="sd">        Will check anyway if domain and image of the forward map agree with the size range of the predicate argument</span>
+<span class="sd">        and pattern variable respectively. However to be user friendly this should be checked beforehand by</span>
+<span class="sd">        compiler.</span>
 
-<span class="sd">            Note that image of the map should be a subset of predicate argument size range, but its domain should be</span>
-<span class="sd">                exactly equal to the pattern variable size range.</span>
+<span class="sd">        Note that image of the map should be a subset of predicate argument size range, but its domain should be</span>
+<span class="sd">        exactly equal to the pattern variable size range.</span>
 
-<span class="sd">            The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, &amp; permute</span>
+<span class="sd">        The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, &amp; permute</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
-        <span class="n">in_rel_var_list</span><span class="p">,</span> <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
+        <span class="n">in_rel_vars</span><span class="p">,</span> <span class="n">out_rel_vars</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_vars</span>
 
         <span class="c1"># Check that given data structures agree with variable lists of the incident variable node</span>
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var2arg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_set</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_vars</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg_set</span>
         <span class="c1"># Check that mapping&#39;s domain and image agree with variables&#39; sizes</span>
         <span class="c1">#   For outward computation we are using the forward map</span>
         <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">var_map_tuple</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">pt_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+            <span class="n">pat_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
             <span class="n">_</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">image</span> <span class="o">=</span> <span class="n">var_map_tuple</span>
-            <span class="k">assert</span> <span class="n">image</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">size</span><span class="p">)))</span>
-            <span class="k">assert</span> <span class="n">domain</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pt_var</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="n">image</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">size</span><span class="p">))),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: The VariableMap declared on the predicate argument </span><span class="si">{}</span><span class="s2"> would induce an image that exceeds the &quot;</span> \
+                <span class="s2">&quot;argument&#39;s value range. The argument&#39;s value range is </span><span class="si">{}</span><span class="s2">, but found image </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">arg</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">image</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">domain</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: The VariableMap declared on the predicate argument </span><span class="si">{}</span><span class="s2"> should have a domain equal to the value &quot;</span>\
+                <span class="s2">&quot;range of the associated pattern variable </span><span class="si">{}</span><span class="s2">. The pattern variable&#39;s value range is </span><span class="si">{}</span><span class="s2">, but found &quot;</span> \
+                <span class="s2">&quot;VariableMap domain </span><span class="si">{}</span><span class="s2">&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">arg</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">pat_var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">domain</span><span class="p">)</span>
 
         <span class="c1"># 1. First, translate pattern variables to predicate arguments. This step involves unbinding the predicate</span>
         <span class="c1">#       variables that are referenced by multiple predicate arguments.</span>
         <span class="c1">#    Computationally, this is achieved by un-diagonalize, or embed entries along that predicate variables&#39;</span>
         <span class="c1">#       dimension into a 2D plane (higher dimensional space if there are more than 2 such predicate arguments).</span>
         <span class="c1">#    A running list of variables is maintained to keep track of variable dimensions</span>
-        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_var_list</span><span class="p">)</span>
+        <span class="n">mapped_var_list</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">in_rel_vars</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="n">mapped_var_list</span><span class="p">:</span>
             <span class="c1"># Look up how many predicate arguments reference this single pattern variable. If only 1, simply change</span>
             <span class="c1">#   variable. Otherwise, need to do more</span>
@@ -693,7 +719,7 @@
                     <span class="c1">#   predicate argument Variable instance to the running variable list</span>
                     <span class="n">mapped_var_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
 
-        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">out_rel_vars</span><span class="p">)</span>
 
         <span class="c1"># 2. The step above guarantees a symbolic one-to-one mapping between message dimensions and predicate arguments&#39;</span>
         <span class="c1">#       variable dimensions. We now need to narrow the variable dimension if the predicate argument&#39;s size is</span>
@@ -713,12 +739,12 @@
         <span class="c1"># 3. Finally, with all pattern variables converted to predicate arguments and the values are now with respect to</span>
         <span class="c1">#       the predicate arguments, the last thing to do is to permute the batch dimensions so that the processed</span>
         <span class="c1">#       message&#39;s dimensions match exactly with out-_rel_var_list</span>
-        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pred_arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapped_var_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pred_arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">)</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_vars</span><span class="p">])</span>
 
         <span class="c1"># Send message</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">BetaFactorNode</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>

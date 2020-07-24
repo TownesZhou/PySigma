@@ -295,6 +295,122 @@ uses default summarization semantic defined at the Message level.</p>
 </div>
 <div class="section" id="relational-mapping-factor-node">
 <h2>Relational Mapping Factor Node<a class="headerlink" href="#relational-mapping-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">RMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">arg2var</span></em>, <em class="sig-param"><span class="n">var2arg</span></em>, <em class="sig-param"><span class="n">arg2var_map</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#RMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Relation Variable Mapping Node</p>
+<p>Converts predicate arguments from and to pattern variables. Applies relational variable’s <cite>VariableMap</cite> (if
+specified) by manipulating message batch dimensions. This node can thus implements the semantic of inner-pattern
+relational variable matching.</p>
+<p>Mappings between the source relational arguments and target relational variables as well as that from source
+relational arguments to <cite>VariableMap</cite> instances need to be provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
+<li><p><strong>arg2var</strong> (<em>dict</em>) – Dictionary mapping predicate relational argument <cite>Variable</cite> instance to pattern relational variable <cite>Variable</cite>
+instance.</p></li>
+<li><p><strong>var2arg</strong> (<em>dict</em>) – Dictionary mapping pattern relational variable <cite>Variable</cite> instance to LIST of predicate relational argument
+<cite>Variable</cite> instances. The list length would be longer than 1 if the relational variable is being referenced
+by multiple arguments.</p></li>
+<li><p><strong>arg2var_map</strong> (<em>dict</em>) – Dictionary mapping predicate relational argument <cite>Variable</cite> instance to a <cite>VariableMap</cite> instance if one is
+specified for this argument. If an argument is not associated with a <cite>VariableMap</cite>, it should not appear in this
+dictionary.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg2var">
+<code class="sig-name descname">arg2var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.var2arg">
+<code class="sig-name descname">var2arg</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.var2arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map">
+<code class="sig-name descname">arg2var_map</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg_set">
+<code class="sig-name descname">arg_set</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>The set of predicate argument <cite>Variable</cite> instances. Obtained from the keys of <cite>arg2var</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.var_set">
+<code class="sig-name descname">var_set</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.var_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>The set of pattern variable <cite>Variable</cite> instances. Obtained from the keys of <cite>var2arg</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_tuple">
+<code class="sig-name descname">arg2var_map_tuple</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtained from <cite>arg2var_map</cite>. Mapping from predicate argument to the mapping dictionary (if a <cite>VariableMap</cite> is
+specified).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_inv_tuple">
+<code class="sig-name descname">arg2var_map_inv_tuple</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_inv_tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtained from <cite>arg2var_map</cite>. Mapping from predicate argument to the INVERSE mapping dictionary (if a
+<cite>VariableMap</cite> is specified).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#RMFN.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inward computation. Converts predicate relational arguments to pattern relational variables. Applies mappings
+to relational variable’s values, if specified.</p>
+<p>For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the inverse
+mapping should be used to map predicate arguments to pattern variables.</p>
+<p>Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument
+and pattern variable respectively. However to be user friendly this should be checked beforehand by compiler.</p>
+<p>Note that domain should be a subset of predicate argument size range, but image should be exactly equal to
+the pattern variable size range</p>
+<p>The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, &amp; permute</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#RMFN.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outward computation. Converts pattern relational variables to predicate relational arguments. Applies
+mappings to relational variable’s values, if specified.</p>
+<p>For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the
+original forward mapping should be used to map pattern variables to predicate arguments.</p>
+<p>Will check anyway if domain and image of the forward map agree with the size range of the predicate argument
+and pattern variable respectively. However to be user friendly this should be checked beforehand by
+compiler.</p>
+<p>Note that image of the map should be a subset of predicate argument size range, but its domain should be
+exactly equal to the pattern variable size range.</p>
+<p>The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, &amp; permute</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="concatenation-marginalization-transformation-factor-node">
 <h2>Concatenation, Marginalization, &amp; Transformation Factor Node<a class="headerlink" href="#concatenation-marginalization-transformation-factor-node" title="Permalink to this headline">¶</a></h2>
