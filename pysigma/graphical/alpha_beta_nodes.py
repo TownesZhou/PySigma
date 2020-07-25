@@ -17,17 +17,17 @@ class AlphaFactorNode(FactorNode, ABC):
 
     Captures the commonalities of all alpha subgraph nodes:
 
-    * Topology: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating
+    * **Topology**: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating
       messages inward toward the Gamma Factor Node, and the other pair propagating messages outward toward the predicate
       Working Memory Variable Node.
-    * Admissible variable nodes: an alpha node treats the relational variables and manipulates messages' batch
+    * **Admissible variable nodes**: an alpha node treats the relational variables and manipulates messages' batch
       dimensions only, and leaves untouched the random variables and corresponding event dimensions. Therefore,
       incident variable nodes should have the same tuple of random variables.
-    * Compute pattern: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,
-      for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the
-      inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an
+    * **Compute pattern**: an alpha node computes outgoing messages for each pair of linkdata individually. In other
+      words, for instance, the outgoing message to an inward outgoing link is solely dependent on the message received
+      from the inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an
       `outward_compute()` method.
-    * Quiescence state: an alpha node as a whole reaches quiescence if and only if **all** incoming linkdata do not
+    * **Quiescence state**: an alpha node as a whole reaches quiescence if and only if **all** incoming linkdata do not
       contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of
       them should only be carried out if its incoming linkdata of interest contains new message.
     """
@@ -538,32 +538,54 @@ class RMFN(AlphaFactorNode):
 
 
 class BetaFactorNode(FactorNode, ABC):
+    """Abstract base class for nodes belonging to the beta subgraph of a conditional.
+
+    Captures the commonalities of beta subgraph nodes:
+
+    * **Topology**: a beta node is typically connected to up to two pairs of *lists* of incoming and outgoing links,
+      with each pair designated a unique message propagation direction. In other words, contrast to an alpha node, a
+      beta node for example may be connected to multiple inward incoming links. However, the message propagation
+      directions of the links are well grouped in that, if there is inward incoming link, then there must be a inward
+      outgoing link.
+    * **Admissible variable nodes**: a beta factor node treats the random variables only, and leave untouched the
+      relational variables that should have been processed by alpha factor nodes. Thus, incident variable nodes should
+      have the same tuple of relational variables.
+    * **Compute pattern**: similar to an alpha factor node. However, since there may be multiple incoming links with
+      same message propagation direction, each subdivided compute method, i.e., `inward_compute()` and
+      `outward_compute()`, would be executed if **all** of its incoming linkdata contain new messages.
+    * **Quiescence state**: similar to an alpha factor node
     """
-            Abstract base class for nodes belonging to the beta subgraph of a conditional.
-
-            Captures the commonality of Beta factor nodes, including link connectivity and inward & outward message
-                propagation pattern:
-                - Groups links in terms of whether the messages moves inward to the Gamma Factor node or not.
-                - During compute, perform inward and outward computation separately in turn by calling inward_compute()
-                    and outward_compute()
-
-            Different from Alpha nodes, there's no restriction on the number of incoming or outgoing linkdata, as long as
-                they can be identified in terms of their messaging directionality.
-
-            Need to specify "direction" attribute in linkdata
-        """
 
     def __init__(self, name):
         super(BetaFactorNode, self).__init__(name)
 
         # Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure
         self.labeled_ld_list_pair = {
-            'inward': ([], []),
+            'inward': ([], []),     # First list contains incoming links, and second outgoing links
             'outward': ([], [])
         }
+        self.ran_vars = None
 
     def add_link(self, linkdata):
+        """A Beta Factor Node admits at least one but no more than two pairs of lists of incoming and outgoing linkdata.
+        The incident variable nodes should have the same tuple of random variables. Furthermore, a ``"direction"``
+        key-ed attribute should be included in the linkdata's optional attribute map with value ``"inward"`` or
+        ``"outward"`` to indicate the message propagation direction of the linkdata. The two pairs of linkdata should
+        have different message propagation directions.
+
+        Parameters
+        ----------
+        linkdata : LinkData
+            The linkdata to be registered. Must specify a ``"direction"`` attribute in its optional attribute map
+            ``linkdata.attr``.
+        """
         assert isinstance(linkdata, LinkData)
+        # Check random variables
+        if self.ran_vars is None:
+            self.ran_vars = linkdata.vn.ran_vars
+        else:
+            assert self.ran_vars == linkdata.vn.ran_vars
+
         assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
 
         if linkdata.to_fn:
@@ -574,13 +596,16 @@ class BetaFactorNode(FactorNode, ABC):
         super(BetaFactorNode, self).add_link(linkdata)
 
     def compute(self):
+        """Carries out `inward_compute()` and `outward_compute()` separately only if all their corresponding incoming
+        linkdata contains new message.
+        """
         super(BetaFactorNode, self).compute()
 
         for direction, (in_ld_list, out_ld_list) in self.labeled_ld_list_pair.items():
             if len(in_ld_list) > 0 and len(out_ld_list) > 0:
-                if direction == 'inward':
+                if direction == 'inward' and all(in_ld.new for in_ld in in_ld_list):
                     self.inward_compute(in_ld_list, out_ld_list)
-                else:
+                if direction == 'outward' and all(in_ld.new for in_ld in in_ld_list):
                     self.outward_compute(in_ld_list, out_ld_list)
 
     @abstractmethod

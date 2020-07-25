@@ -33,3 +33,7 @@ Alpha Factor Node
 
 Beta Factor Node
 ----------------
+
+.. autoclass:: pysigma.graphical.alpha_beta_nodes.BetaFactorNode
+   :members:
+   :undoc-members:

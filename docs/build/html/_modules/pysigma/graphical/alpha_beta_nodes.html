@@ -214,14 +214,14 @@
 <span class="sd">    All nodes related to a conditional subgraph</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Transform</span>
-<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
-<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
-<span class="kn">from</span> <span class="nn">graphical.basic_nodes</span> <span class="k">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">KnowledgeServer</span>
-<span class="kn">from</span> <span class="nn">structures</span> <span class="k">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="kn">import</span> <span class="n">Constraint</span>
+<span class="kn">from</span> <span class="nn">defs</span> <span class="kn">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
+<span class="kn">from</span> <span class="nn">graphical.basic_nodes</span> <span class="kn">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">KnowledgeServer</span>
+<span class="kn">from</span> <span class="nn">structures</span> <span class="kn">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
 
 
 <div class="viewcode-block" id="AlphaFactorNode"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode">[docs]</a><span class="k">class</span> <span class="nc">AlphaFactorNode</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
@@ -229,22 +229,22 @@
 
 <span class="sd">    Captures the commonalities of all alpha subgraph nodes:</span>
 
-<span class="sd">    * Topology: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating</span>
+<span class="sd">    * **Topology**: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating</span>
 <span class="sd">      messages inward toward the Gamma Factor Node, and the other pair propagating messages outward toward the predicate</span>
 <span class="sd">      Working Memory Variable Node.</span>
-<span class="sd">    * Admissible variable nodes: an alpha node treats the relational variables and manipulates messages&#39; batch</span>
+<span class="sd">    * **Admissible variable nodes**: an alpha node treats the relational variables and manipulates messages&#39; batch</span>
 <span class="sd">      dimensions only, and leaves untouched the random variables and corresponding event dimensions. Therefore,</span>
 <span class="sd">      incident variable nodes should have the same tuple of random variables.</span>
-<span class="sd">    * Compute pattern: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,</span>
+<span class="sd">    * **Compute pattern**: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,</span>
 <span class="sd">      for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the</span>
 <span class="sd">      inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an</span>
 <span class="sd">      `outward_compute()` method.</span>
-<span class="sd">    * Quiescence state: an alpha node as a whole reaches quiescence if and only if **all** incoming linkdata do not</span>
+<span class="sd">    * **Quiescence state**: an alpha node as a whole reaches quiescence if and only if **all** incoming linkdata do not</span>
 <span class="sd">      contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of</span>
 <span class="sd">      them should only be carried out if its incoming linkdata of interest contains new message.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># Pairs of incoming and outgoing linkdata labeled with their directionality w.r.t. the alpha structure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_pair</span> <span class="o">=</span> <span class="p">{}</span>
@@ -358,13 +358,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    sum_op</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sum_op</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sum_op</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Necessary data structure:</span>
 
 <span class="sd">            :param sum_op:      None or a Summarization instance. Default is None.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ESFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ESFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Expansion / Summarization Factor Node&quot;</span>
 
         <span class="k">assert</span> <span class="n">sum_op</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sum_op</span><span class="p">,</span> <span class="n">Summarization</span><span class="p">)</span>
@@ -519,8 +519,8 @@
 <span class="sd">        Obtained from `arg2var_map`. Mapping from predicate argument to the INVERSE mapping dictionary (if a</span>
 <span class="sd">        `VariableMap` is specified).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arg2var</span><span class="p">,</span> <span class="n">var2arg</span><span class="p">,</span> <span class="n">arg2var_map</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">RMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arg2var</span><span class="p">,</span> <span class="n">var2arg</span><span class="p">,</span> <span class="n">arg2var_map</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Relation Variable Mapping Node&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg2var</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">arg2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
@@ -607,7 +607,8 @@
             <span class="c1"># Apply map if VariableMap is specified</span>
             <span class="k">if</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="n">map_dict</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="p">[</span><span class="n">pred_arg</span><span class="p">]</span>
-                <span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_dict</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+                <span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_dict</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span>
+                                       <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_index_select</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
             <span class="c1"># Broaden the variable dimension size if currently it is smaller than the pattern variable&#39;s size</span>
             <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
@@ -730,7 +731,8 @@
             <span class="c1"># Apply map if VariableMap is specified</span>
             <span class="k">if</span> <span class="n">pred_arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="n">map_dict</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arg2var_map_tuple</span><span class="p">[</span><span class="n">pred_arg</span><span class="p">]</span>
-                <span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_dict</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+                <span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_dict</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span>
+                                       <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_index_put</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
             <span class="c1"># Broaden the variable dimension size if currently it is smaller than the pattern variable&#39;s size</span>
             <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">pred_arg</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
@@ -747,33 +749,53 @@
         <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">BetaFactorNode</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Abstract base class for nodes belonging to the beta subgraph of a conditional.</span>
+<div class="viewcode-block" id="BetaFactorNode"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode">[docs]</a><span class="k">class</span> <span class="nc">BetaFactorNode</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Abstract base class for nodes belonging to the beta subgraph of a conditional.</span>
 
-<span class="sd">            Captures the commonality of Beta factor nodes, including link connectivity and inward &amp; outward message</span>
-<span class="sd">                propagation pattern:</span>
-<span class="sd">                - Groups links in terms of whether the messages moves inward to the Gamma Factor node or not.</span>
-<span class="sd">                - During compute, perform inward and outward computation separately in turn by calling inward_compute()</span>
-<span class="sd">                    and outward_compute()</span>
+<span class="sd">    Captures the commonalities of beta subgraph nodes:</span>
 
-<span class="sd">            Different from Alpha nodes, there&#39;s no restriction on the number of incoming or outgoing linkdata, as long as</span>
-<span class="sd">                they can be identified in terms of their messaging directionality.</span>
+<span class="sd">    * **Topology**: a beta node is typically connected to up to two pairs of *lists* of incoming and outgoing links, with</span>
+<span class="sd">      each pair designated a unique message propagation direction. In other words, contrast to an alpha node, a beta</span>
+<span class="sd">      node for example may be connected to multiple inward incoming links. However, the message propagation directions</span>
+<span class="sd">      of the links are well grouped in that, if there is inward incoming link, then there must be a inward outgoing</span>
+<span class="sd">      link.</span>
+<span class="sd">    * **Admissible variable nodes**: a beta factor node treats the random variables only, and leave untouched the relational</span>
+<span class="sd">      variables that should have been processed by alpha factor nodes. Thus, incident variable nodes should have the</span>
+<span class="sd">      same tuple of relational variables.</span>
+<span class="sd">    * **Compute pattern**: similar to an alpha factor node</span>
+<span class="sd">    * **Quiescence state**: similar to an alpha factor node</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
-<span class="sd">            Need to specify &quot;direction&quot; attribute in linkdata</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
         <span class="c1"># Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;inward&#39;</span><span class="p">:</span> <span class="p">([],</span> <span class="p">[]),</span>
+            <span class="s1">&#39;inward&#39;</span><span class="p">:</span> <span class="p">([],</span> <span class="p">[]),</span>     <span class="c1"># First list contains incoming links, and second outgoing links</span>
             <span class="s1">&#39;outward&#39;</span><span class="p">:</span> <span class="p">([],</span> <span class="p">[])</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+<div class="viewcode-block" id="BetaFactorNode.add_link"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A Beta Factor Node admits at least one but no more than two pairs of lists of incoming and outgoing linkdata.</span>
+<span class="sd">        The incident variable nodes should have the same tuple of random variables. Furthermore, a ``&quot;direction&quot;``</span>
+<span class="sd">        key-ed attribute should be included in the linkdata&#39;s optional attribute map with value ``&quot;inward&quot;`` or</span>
+<span class="sd">        ``&quot;outward&quot;`` to indicate the message propagation direction of the linkdata. The two pairs of linkdata should</span>
+<span class="sd">        have different message propagation directions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        linkdata : LinkData</span>
+<span class="sd">            The linkdata to be registered. Must specify a ``&quot;direction&quot;`` attribute in its optional attribute map</span>
+<span class="sd">            ``linkdata.attr``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="c1"># Check random variables</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">=</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_vars</span> <span class="o">==</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span>
+
         <span class="k">assert</span> <span class="s1">&#39;direction&#39;</span> <span class="ow">in</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;inward&#39;</span><span class="p">,</span> <span class="s1">&#39;outward&#39;</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
@@ -781,9 +803,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="p">[</span><span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="BetaFactorNode.compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">direction</span><span class="p">,</span> <span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -791,21 +813,21 @@
                 <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">inward_compute</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">outward_compute</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">outward_compute</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span></div>
 
-    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="BetaFactorNode.inward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.inward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Inward message computation. To be implemented by child class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div>
 
-    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="BetaFactorNode.outward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.outward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Outward message computation. To be implemented by child class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">ESCFN</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">):</span>
@@ -836,7 +858,7 @@
 <span class="sd">                without alignment.</span>
 <span class="sd">            3. Reshape the single batch dimensions into full conditional batch dimensions.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ESCFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
@@ -899,7 +921,7 @@
 <span class="sd">                - Otherwise, raise an alert.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">trans</span><span class="p">,</span> <span class="n">constraints</span><span class="p">,</span> <span class="n">replaceable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">trans</span><span class="p">,</span> <span class="n">constraints</span><span class="p">,</span> <span class="n">replaceable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            :param trans:       torch.distributions.transforms.Transform. The transformation functor</span>
 <span class="sd">            :param constraints  a set of torch.distributions.constraints.Constraint. The value constraints of the target</span>
