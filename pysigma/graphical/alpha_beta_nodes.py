@@ -97,14 +97,14 @@ class AlphaFactorNode(FactorNode, ABC):
         """Inward message computation. To be implemented by child class.
 
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def outward_compute(self, in_ld, out_ld):
         """Outward message computation. To be implemented by child class.
 
         """
-        pass
+        raise NotImplementedError
 
 
 class ESFN(AlphaFactorNode):
@@ -556,8 +556,8 @@ class BetaFactorNode(FactorNode, ABC):
     * **Quiescence state**: similar to an alpha factor node
     """
 
-    def __init__(self, name):
-        super(BetaFactorNode, self).__init__(name)
+    def __init__(self, name, **kwargs):
+        super(BetaFactorNode, self).__init__(name, **kwargs)
 
         # Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure
         self.labeled_ld_list_pair = {
@@ -613,21 +613,162 @@ class BetaFactorNode(FactorNode, ABC):
         """
             Inward message computation. To be implemented by child class.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def outward_compute(self, in_ld_list, out_ld_list):
         """
             Outward message computation. To be implemented by child class.
         """
-        pass
+        raise NotImplementedError
 
 
 class CMTN(BetaFactorNode):
     """Concatenation, Marginalization, & Transformation Node
 
+    Transforms the joint predicate pattern messages from and to a list of univariate pattern element messages
+    representative of the events of each of the referenced pattern random variables.
+
+    Parameters
+    ----------
+    name : str
+        Name of this node
+    args2var : dict
+        The dictionary mapping either a single predicate random argument `Variable` instance, or a `tuple` of predicate
+        random argument `Variable` instances, to a single pattern random variable `Variable` instance.
+    var2trans : dict
+        The dictionary mapping a pattern random variable `Variable` instance to a `Transform` instance, if a
+        transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the
+        predicate pattern, there must be a corresponding FVN connected to this CMTN.
+
+    Attributes
+    ----------
+    args2var
+    var2trans
     """
-    pass
+    def __init__(self, name, args2var, var2trans, **kwargs):
+        super(CMTN, self).__init__(name, **kwargs)
+
+        assert isinstance(args2var, dict) and \
+            all((isinstance(k, Variable) and k.metatype is VariableMetatype.Random) or
+                (isinstance(k, tuple) and all((isinstance(arg, Variable) and arg.metatype is VariableMetatype.Random
+                                              for arg in k)))
+                for k in args2var.keys()) and \
+            all((isinstance(v, Variable) and v.metatype is VariableMetatype.Random) for v in args2var.values())
+        assert isinstance(var2trans, dict) and \
+            all(isinstance(k, Variable) and k.metatype is VariableMetatype.Random for k in var2trans.keys()) and \
+            all(isinstance(v, Transform) for v in var2trans.values())
+
+        self.args2var = args2var
+        self.var2trans = var2trans
+
+    def add_link(self, linkdata):
+        """Some additional checks for CMTN
+
+        """
+        super(CMTN, self).add_link()
+
+        # If inward and outgoing, or outward and incoming, check that connects to a FVN and with valid ran var list size
+        if (linkdata.to_fn and linkdata.attr['direction'] == 'outward') or \
+                (not linkdata.to_fn and linkdata.attr['direction'] == 'inward'):
+            assert isinstance(linkdata.vn, FVN) and len(linkdata.vn.ran_vars) == 1
+
+    def inward_compute(self, in_ld_list, out_ld_list):
+        """For each pattern element in the predicate pattern, generate a univariate message that is representative of
+        the marginal events of the associated pattern variable. Sends this message to the FVN that corresponds to this
+        pattern element.
+
+        The above message generation step is done by the following procedure:
+
+        1. Marginalize over any un-referenced predicate arguments 
+        2. For each random pattern element:
+
+           1. Compute the outgoing message's particles component:
+
+              1. marginalize the message over all other predicate random arguments that are not referenced by this
+                 pattern element.
+              2. If this pattern element references multiple predicate random arguments in a list, then concatenate
+                 these dimensions. The resulting message should consist of a single event dimension.
+              3. If a transformation is declared on the associated pattern random variable, then apply the INVERSE of
+                 the transformation on the message.
+
+           2. Annotate the outgoing message's parameter component (if included in incoming message):
+
+              1. Annotate the message with "COMPLETE" label to indicate the particles above approximates the same
+                 distribution the parameters are encoding, only if there is only one pattern element, and it references
+                 all predicate random arguments in the correct order (the original order when these arguments were
+                 declared)
+              2. In any other case, annotate the message with "PARTIAL" label.
+
+           3. Send this message to the corresponding outgoing linkdata
+        """
+        assert len(in_ld_list) == 1
+        in_msg = in_ld_list[0].read()
+        assert isinstance(in_msg, Message)
+        ran_args = list(in_ld_list[0].vn.ran_vars)    # Obtain full random variable list
+        ran_vars = list(out_ld.vn.ran_vars[0] for out_ld in out_ld_list)
+        running_args = copy.deepcopy(ran_args)
+
+        # Pre-compute check: same set of random arguments
+        assert all((isinstance(k, Variable) and k in ran_args) or
+                   (isinstance(k, tuple) and set(k).issubset(set(ran_args))) for k in self.args2var.keys())
+        # Pre-compute check: same set of random variables
+        assert set(self.args2var.values()) == set(ran_vars)
+
+        # 1. Marginalize over any un-referenced predicate arguments 
+        ref_args = []
+        for k in self.args2var.keys():
+            if isinstance(k, tuple):
+                ref_args += list(k)
+            else:
+                ref_args.append(k)
+        for arg in ran_args:
+            if arg not in ref_args:
+                in_msg = in_msg.event_marginalize(running_args.index(arg))
+                running_args.remove(arg)
+
+        # 2. For each random pattern element
+        for args, pt_var in self.args2var:
+            args = tuple(args) if not isinstance(args, tuple) else args
+            out_ld = out_ld_list[ran_vars.index(pt_var)]
+            out_msg = in_msg
+            ele_running_args = copy.deepcopy(running_args)
+
+            # 2.1.1 Marginalize message over all other arguments
+            for arg in running_args:
+                if arg not in args:
+                    out_msg = out_msg.event_marginalize(ele_running_args.index(arg))
+                    ele_running_args.remove(arg)
+
+            # 2.1.2 If multiple arguments, then concatenate all
+            if len(args) > 1:
+                out_msg = out_msg.event_concatenate(tuple(range(len(args))))
+
+            # 2.1.3 Apply INVERSE transformation on events if declared
+            if pt_var in self.var2trans.keys():
+                trans = self.var2trans[pt_var]
+                trans_msg = out_msg.event_transform(trans.inv)
+                # Re-compose the message transformed events and parameters
+                out_msg = Message.compose(out_msg.reduce_type(MessageType.Parameter), trans_msg)
+
+            # 2.2 Annotate message parameter if included
+            if MessageType.Parameter in out_msg.type:
+                # Annotate COMPLETE if args referenced by this pattern element is/are all the predicate arguments, and
+                # in correct order
+                if args == ran_args:
+                    out_msg.attr['event_space'] = 'COMPLETE'
+                else:
+                    out_msg.attr['event_space'] = 'PARTIAL'
+
+            # 3. send message to corresponding linkdata
+            out_ld.write(out_msg)
+
+
+    def outward_compute(self, in_ld_list, out_ld_list):
+        """
+
+        """
+        pass
 
 
 class FVN(VariableNode):

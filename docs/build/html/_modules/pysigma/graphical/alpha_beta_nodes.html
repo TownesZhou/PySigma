@@ -214,14 +214,14 @@
 <span class="sd">    All nodes related to a conditional subgraph</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Transform</span>
-<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="kn">import</span> <span class="n">Constraint</span>
-<span class="kn">from</span> <span class="nn">defs</span> <span class="kn">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
-<span class="kn">from</span> <span class="nn">graphical.basic_nodes</span> <span class="kn">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">KnowledgeServer</span>
-<span class="kn">from</span> <span class="nn">structures</span> <span class="kn">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
+<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
+<span class="kn">from</span> <span class="nn">graphical.basic_nodes</span> <span class="k">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">KnowledgeServer</span>
+<span class="kn">from</span> <span class="nn">structures</span> <span class="k">import</span> <span class="n">VariableMap</span><span class="p">,</span> <span class="n">Summarization</span>
 
 
 <div class="viewcode-block" id="AlphaFactorNode"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode">[docs]</a><span class="k">class</span> <span class="nc">AlphaFactorNode</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
@@ -243,7 +243,7 @@
 <span class="sd">      contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of</span>
 <span class="sd">      them should only be carried out if its incoming linkdata of interest contains new message.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># Pairs of incoming and outgoing linkdata labeled with their directionality w.r.t. the alpha structure</span>
@@ -309,14 +309,14 @@
         <span class="sd">&quot;&quot;&quot;Inward message computation. To be implemented by child class.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 <div class="viewcode-block" id="AlphaFactorNode.outward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Outward message computation. To be implemented by child class.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
 
 
 <div class="viewcode-block" id="ESFN"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN">[docs]</a><span class="k">class</span> <span class="nc">ESFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
@@ -358,7 +358,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    sum_op</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sum_op</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sum_op</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Necessary data structure:</span>
 
@@ -519,7 +519,7 @@
 <span class="sd">        Obtained from `arg2var_map`. Mapping from predicate argument to the INVERSE mapping dictionary (if a</span>
 <span class="sd">        `VariableMap` is specified).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arg2var</span><span class="p">,</span> <span class="n">var2arg</span><span class="p">,</span> <span class="n">arg2var_map</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arg2var</span><span class="p">,</span> <span class="n">var2arg</span><span class="p">,</span> <span class="n">arg2var_map</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">RMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Relation Variable Mapping Node&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
@@ -768,8 +768,8 @@
 <span class="sd">    * **Quiescence state**: similar to an alpha factor node</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span> <span class="o">=</span> <span class="p">{</span>
@@ -825,21 +825,164 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Inward message computation. To be implemented by child class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 <div class="viewcode-block" id="BetaFactorNode.outward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.outward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Outward message computation. To be implemented by child class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">CMTN</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">):</span>
+<div class="viewcode-block" id="CMTN"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN">[docs]</a><span class="k">class</span> <span class="nc">CMTN</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Concatenation, Marginalization, &amp; Transformation Node</span>
 
+<span class="sd">    Transforms the joint predicate pattern messages from and to a list of univariate pattern element messages</span>
+<span class="sd">    representative of the events of each of the referenced pattern random variables.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this node</span>
+<span class="sd">    args2var : dict</span>
+<span class="sd">        The dictionary mapping either a single predicate random argument `Variable` instance, or a `tuple` of predicate</span>
+<span class="sd">        random argument `Variable` instances, to a single pattern random variable `Variable` instance.</span>
+<span class="sd">    var2trans : dict</span>
+<span class="sd">        The dictionary mapping a pattern random variable `Variable` instance to a `Transform` instance, if a</span>
+<span class="sd">        transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the</span>
+<span class="sd">        predicate pattern, there must be a corresponding FVN connected to this CMTN.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    args2var</span>
+<span class="sd">    var2trans</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">pass</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">args2var</span><span class="p">,</span> <span class="n">var2trans</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CMTN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args2var</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">k</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Random</span><span class="p">)</span> <span class="ow">or</span>
+                <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">arg</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Random</span>
+                                              <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">k</span><span class="p">)))</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">args2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Random</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">args2var</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var2trans</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">k</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Random</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">var2trans</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Transform</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">var2trans</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">args2var</span> <span class="o">=</span> <span class="n">args2var</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var2trans</span> <span class="o">=</span> <span class="n">var2trans</span>
+
+<div class="viewcode-block" id="CMTN.add_link"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Some additional checks for CMTN</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CMTN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">()</span>
+
+        <span class="c1"># If inward and outgoing, or outward and incoming, check that connects to a FVN and with valid ran var list size</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;outward&#39;</span><span class="p">)</span> <span class="ow">or</span> \
+                <span class="p">(</span><span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="p">,</span> <span class="n">FVN</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="CMTN.inward_compute"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute">[docs]</a>    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For each pattern element in the predicate pattern, generate a univariate message that is representative of</span>
+<span class="sd">        the marginal events of the associated pattern variable. Sends this message to the FVN that corresponds to this</span>
+<span class="sd">        pattern element.</span>
+
+<span class="sd">        The above message generation step is done by the following procedure:</span>
+
+<span class="sd">        1. Marginalize over any un-referenced predicate arguments
+</span>
+<span class="sd">        2. For each random pattern element:</span>
+
+<span class="sd">           1. Compute the outgoing message&#39;s particles component:</span>
+
+<span class="sd">              1. marginalize the message over all other predicate random arguments that are not referenced by this</span>
+<span class="sd">                 pattern element.</span>
+<span class="sd">              2. If this pattern element references multiple predicate random arguments in a list, then concatenate</span>
+<span class="sd">                 these dimensions. The resulting message should consist of a single event dimension.</span>
+<span class="sd">              3. If a transformation is declared on the associated pattern random variable, then apply the INVERSE of</span>
+<span class="sd">                 the transformation on the message.</span>
+
+<span class="sd">           2. Annotate the outgoing message&#39;s parameter component (if included in incoming message):</span>
+
+<span class="sd">              1. Annotate the message with &quot;COMPLETE&quot; label to indicate the particles above approximates the same</span>
+<span class="sd">                 distribution the parameters are encoding, only if there is only one pattern element, and it references</span>
+<span class="sd">                 all predicate random arguments in the correct order (the original order when these arguments were</span>
+<span class="sd">                 declared)</span>
+<span class="sd">              2. In any other case, annotate the message with &quot;PARTIAL&quot; label.</span>
+
+<span class="sd">           3. Send this message to the corresponding outgoing linkdata</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">in_msg</span> <span class="o">=</span> <span class="n">in_ld_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+        <span class="n">ran_args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span><span class="p">)</span>    <span class="c1"># Obtain full random variable list</span>
+        <span class="n">ran_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_vars</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="n">out_ld_list</span><span class="p">)</span>
+        <span class="n">running_args</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">ran_args</span><span class="p">)</span>
+
+        <span class="c1"># Pre-compute check: same set of random arguments</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ran_args</span><span class="p">)</span> <span class="ow">or</span>
+                   <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ran_args</span><span class="p">)))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args2var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="c1"># Pre-compute check: same set of random variables</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args2var</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">ran_vars</span><span class="p">)</span>
+
+        <span class="c1"># 1. Marginalize over any un-referenced predicate arguments
+</span>
+        <span class="n">ref_args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args2var</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">ref_args</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ref_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">ran_args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">arg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ref_args</span><span class="p">:</span>
+                <span class="n">in_msg</span> <span class="o">=</span> <span class="n">in_msg</span><span class="o">.</span><span class="n">event_marginalize</span><span class="p">(</span><span class="n">running_args</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
+                <span class="n">running_args</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+
+        <span class="c1"># 2. For each random pattern element</span>
+        <span class="k">for</span> <span class="n">args</span><span class="p">,</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args2var</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="n">args</span>
+            <span class="n">out_ld</span> <span class="o">=</span> <span class="n">out_ld_list</span><span class="p">[</span><span class="n">ran_vars</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pt_var</span><span class="p">)]</span>
+            <span class="n">out_msg</span> <span class="o">=</span> <span class="n">in_msg</span>
+            <span class="n">ele_running_args</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">running_args</span><span class="p">)</span>
+
+            <span class="c1"># 2.1.1 Marginalize message over all other arguments</span>
+            <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">running_args</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">arg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                    <span class="n">out_msg</span> <span class="o">=</span> <span class="n">out_msg</span><span class="o">.</span><span class="n">event_marginalize</span><span class="p">(</span><span class="n">ele_running_args</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
+                    <span class="n">ele_running_args</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+
+            <span class="c1"># 2.1.2 If multiple arguments, then concatenate all</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">out_msg</span> <span class="o">=</span> <span class="n">out_msg</span><span class="o">.</span><span class="n">event_concatenate</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">))))</span>
+
+            <span class="c1"># 2.1.3 Apply INVERSE transformation on events if declared</span>
+            <span class="k">if</span> <span class="n">pt_var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">var2trans</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">trans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var2trans</span><span class="p">[</span><span class="n">pt_var</span><span class="p">]</span>
+                <span class="n">trans_msg</span> <span class="o">=</span> <span class="n">out_msg</span><span class="o">.</span><span class="n">event_transform</span><span class="p">(</span><span class="n">trans</span><span class="o">.</span><span class="n">inv</span><span class="p">)</span>
+                <span class="c1"># Re-compose the message transformed events and parameters</span>
+                <span class="n">out_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">out_msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">),</span> <span class="n">trans_msg</span><span class="p">)</span>
+
+            <span class="c1"># 2.2 Annotate message parameter if included</span>
+            <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">out_msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+                <span class="c1"># Annotate COMPLETE if args referenced by this pattern element is/are all the predicate arguments, and</span>
+                <span class="c1"># in correct order</span>
+                <span class="k">if</span> <span class="n">args</span> <span class="o">==</span> <span class="n">ran_args</span><span class="p">:</span>
+                    <span class="n">out_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;event_space&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;COMPLETE&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">out_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;event_space&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;PARTIAL&#39;</span>
+
+            <span class="c1"># 3. send message to corresponding linkdata</span>
+            <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CMTN.outward_compute"><a class="viewcode-back" href="../../../references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute">[docs]</a>    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">FVN</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">):</span>

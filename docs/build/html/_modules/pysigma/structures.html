@@ -215,17 +215,17 @@
 
 <span class="sd">    Author of this file: Jincheng Zhou, University of Southern California</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">chain</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">functools</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">Size</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Distribution</span>
-<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="kn">import</span> <span class="n">Constraint</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">intern_name</span><span class="p">,</span> <span class="n">extern_name</span><span class="p">,</span> <span class="n">DistributionServer</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
-<span class="kn">from</span> <span class="nn">defs</span> <span class="kn">import</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">MessageType</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="k">import</span> <span class="n">Size</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">intern_name</span><span class="p">,</span> <span class="n">extern_name</span><span class="p">,</span> <span class="n">DistributionServer</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
+<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">MessageType</span>
 
 
 <div class="viewcode-block" id="VariableMap"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.VariableMap">[docs]</a><span class="k">class</span> <span class="nc">VariableMap</span><span class="p">:</span>
@@ -270,7 +270,7 @@
 <span class="sd">    image : set</span>
 <span class="sd">        Image of the map. Should be a subset of ``self.codomain``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping_func</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">codomain</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping_func</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">codomain</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="c1"># Argument validation</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">mapping_func</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The 1st argument &#39;mapping_func&#39; should be a python callable, accepting a list of &quot;</span>
@@ -469,12 +469,12 @@
 <span class="sd">        will be ignored if `content_type` is ``parameter``. Both of the entries should have the reduced batch shape of</span>
 <span class="sd">        length 1.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sum_func</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sum_func</span><span class="p">):</span>
         <span class="c1"># Update wrapped function&#39;s information to enable introspection</span>
         <span class="n">functools</span><span class="o">.</span><span class="n">update_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sum_func</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sum_func</span> <span class="o">=</span> <span class="n">sum_func</span>
 
-<div class="viewcode-block" id="Summarization.__call__"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.Summarization.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">ran_vars</span><span class="p">):</span>
+<div class="viewcode-block" id="Summarization.__call__"><a class="viewcode-back" href="../../references/cognitive.html#pysigma.structures.Summarization.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">ran_vars</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Implements so that the Summarization instance is a callable functor.</span>
 
 <span class="sd">        The summarization instance should be called by ESFN internally only.</span>
@@ -584,7 +584,7 @@
 
 
 <span class="k">class</span> <span class="nc">Type</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_name</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">symbol_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">value_constraint</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_name</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">symbol_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">value_constraint</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Specify a Type for a predicate&#39;s relational/random argument.</span>
 
@@ -636,7 +636,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">value2axis</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value_list</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">axis2value</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_list</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="c1"># Two types are equal if ALL of their fields are equal</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Type</span><span class="p">)</span>
         <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> \
@@ -645,21 +645,21 @@
               <span class="bp">self</span><span class="o">.</span><span class="n">value_list</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">value_list</span>
         <span class="k">return</span> <span class="n">val</span>
 
-    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># String representation for display</span>
         <span class="k">return</span> <span class="n">extern_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Hash by structure&#39;s own name. This assumes its name is unique in the model and therefore can be treated as</span>
         <span class="c1">#   the identity</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">Predicate</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicate_name</span><span class="p">,</span> <span class="n">relational_args</span><span class="p">,</span> <span class="n">random_args</span><span class="p">,</span> <span class="n">inference_mode</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicate_name</span><span class="p">,</span> <span class="n">relational_args</span><span class="p">,</span> <span class="n">random_args</span><span class="p">,</span> <span class="n">inference_mode</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
                  <span class="n">distribution_class</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">memorial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">perceptual</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Specify a Sigma predicate.</span>
@@ -792,18 +792,18 @@
                          <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">relational_args</span><span class="p">]</span> <span class="o">+</span>
                          <span class="p">[</span><span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_args</span><span class="p">])])</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># String representation for display</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
-    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Hash by structure&#39;s own name. This assumes its name is unique in the model and therefore can be treated as</span>
         <span class="c1">#   the identity</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">Conditional</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conditional_name</span><span class="p">,</span> <span class="n">conditions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">condacts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">actions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conditional_name</span><span class="p">,</span> <span class="n">conditions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">condacts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">actions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">function</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">function_var_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Specify a Sigma conditional</span>
@@ -1170,11 +1170,11 @@
         <span class="c1"># 2.d Determine the global relational pattern variable order and corresponding joint relational dimensions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rel_dims</span> <span class="o">=</span> <span class="n">Size</span><span class="p">(</span><span class="n">pat_var</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">pat_var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># String representation for display</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
-    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Hash by structure&#39;s own name. This assumes its name is unique in the model and therefore can be treated as</span>
         <span class="c1">#   the identity</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>

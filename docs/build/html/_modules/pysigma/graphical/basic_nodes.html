@@ -213,11 +213,11 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    All kinds of nodes in the graphical architecture</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">defs</span> <span class="kn">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">compatible_shape</span>
+<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">compatible_shape</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Basic data structures and abstract node classes</span>
@@ -274,7 +274,7 @@
 <span class="sd">    pretty_log : dict</span>
 <span class="sd">        Pretty logging for front-end visualization.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vn</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">to_fn</span><span class="p">,</span> <span class="n">msg_shape</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">10e-5</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vn</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">to_fn</span><span class="p">,</span> <span class="n">msg_shape</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">10e-5</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param vn:      VariableNode instance that this link is incident to</span>
 <span class="sd">        :param fn:      FactorNode instance that this link is incident to</span>
@@ -308,7 +308,7 @@
         <span class="c1"># Pretty log</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span> <span class="o">=</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Override for pretty debugging and printing</span>
         <span class="n">fn_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="o">.</span><span class="n">name</span>
         <span class="n">vn_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">name</span>
@@ -471,7 +471,7 @@
 <span class="sd">        Pretty log for beautiful front-end visualization.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
         <span class="c1"># Flag indicating whether this node has been visited (compute() method called) during a decision cycle</span>
@@ -486,7 +486,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Log info to display at the GUI</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># override to provide the node&#39;s name as its string representation</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
@@ -607,7 +607,7 @@
 <span class="sd">    e_shape : torch.Size</span>
 <span class="sd">        Event dimension sizes. Inferred from `ran_vars`. Defaults to ``torch.Size([])``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> \
             <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Relational</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rel_var_list</span><span class="p">)</span>
@@ -695,7 +695,7 @@
 <span class="sd">    ran_vars : tuple of Variable</span>
 <span class="sd">        Tuple of random variables.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Default Factor Node&quot;</span>
 
@@ -776,7 +776,7 @@
 <span class="sd">        Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of</span>
 <span class="sd">        incoming messages. Must specify if `index_var_list` is specified.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">index_var_list</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Default Variable Node&quot;</span>
 

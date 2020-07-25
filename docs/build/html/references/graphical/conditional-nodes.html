@@ -414,6 +414,83 @@ exactly equal to the pattern variable size range.</p>
 </div>
 <div class="section" id="concatenation-marginalization-transformation-factor-node">
 <h2>Concatenation, Marginalization, &amp; Transformation Factor Node<a class="headerlink" href="#concatenation-marginalization-transformation-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">CMTN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">args2var</span></em>, <em class="sig-param"><span class="n">var2trans</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#CMTN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenation, Marginalization, &amp; Transformation Node</p>
+<p>Transforms the joint predicate pattern messages from and to a list of univariate pattern element messages
+representative of the events of each of the referenced pattern random variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
+<li><p><strong>args2var</strong> (<em>dict</em>) – The dictionary mapping either a single predicate random argument <cite>Variable</cite> instance, or a <cite>tuple</cite> of predicate
+random argument <cite>Variable</cite> instances, to a single pattern random variable <cite>Variable</cite> instance.</p></li>
+<li><p><strong>var2trans</strong> (<em>dict</em>) – The dictionary mapping a pattern random variable <cite>Variable</cite> instance to a <cite>Transform</cite> instance, if a
+transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the
+predicate pattern, there must be a corresponding FVN connected to this CMTN.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.args2var">
+<code class="sig-name descname">args2var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.args2var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.var2trans">
+<code class="sig-name descname">var2trans</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.var2trans" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#CMTN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Some additional checks for CMTN</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#CMTN.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>For each pattern element in the predicate pattern, generate a univariate message that is representative of
+the marginal events of the associated pattern variable. Sends this message to the FVN that corresponds to this
+pattern element.</p>
+<p>The above message generation step is done by the following procedure:</p>
+<ol class="arabic simple">
+<li><p>Marginalize over any un-referenced predicate arguments</p></li>
+<li><p>For each random pattern element:</p>
+<ol class="arabic simple">
+<li><p>Compute the outgoing message’s particles component:</p>
+<ol class="arabic simple">
+<li><p>marginalize the message over all other predicate random arguments that are not referenced by this
+pattern element.</p></li>
+<li><p>If this pattern element references multiple predicate random arguments in a list, then concatenate
+these dimensions. The resulting message should consist of a single event dimension.</p></li>
+<li><p>If a transformation is declared on the associated pattern random variable, then apply the INVERSE of
+the transformation on the message.</p></li>
+</ol>
+</li>
+<li><p>Annotate the outgoing message’s parameter component (if included in incoming message):</p>
+<ol class="arabic simple">
+<li><p>Annotate the message with “COMPLETE” label to indicate the particles above approximates the same
+distribution the parameters are encoding, only if there is only one pattern element, and it references
+all predicate random arguments in the correct order (the original order when these arguments were
+declared)</p></li>
+<li><p>In any other case, annotate the message with “PARTIAL” label.</p></li>
+</ol>
+</li>
+<li><p>Send this message to the corresponding outgoing linkdata</p></li>
+</ol>
+</li>
+</ol>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#CMTN.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="event-resolution-factor-node">
 <h2>Event Resolution Factor Node<a class="headerlink" href="#event-resolution-factor-node" title="Permalink to this headline">¶</a></h2>

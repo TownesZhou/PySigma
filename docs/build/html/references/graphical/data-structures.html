@@ -1295,8 +1295,11 @@ will be called so that the returning content tensors are contiguous.</p>
 <code class="sig-name descname">event_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trans</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Applies a transformation on the <cite>self</cite>’s event values. Returns the transformed message.</p>
 <p><cite>self</cite> contents will be cloned before being passed to the transformed message.</p>
-<p>For now, only Particles message support transformations. <cite>reduce_type()</cite> will first be called to eliminate the
-parameter components before performing the transformation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For now, only Particles message support transformations. <cite>reduce_type()</cite> will first be called to eliminate
+the parameter components before performing the transformation.</p>
+</div>
 <p>The adjustment made to the particle values and log sampling densities:</p>
 <ul>
 <li><p>Apply the transformation directly on the particle tensors in <code class="docutils literal notranslate"><span class="pre">self.particles</span></code>.</p></li>

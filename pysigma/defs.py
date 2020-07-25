@@ -1739,8 +1739,10 @@ class Message:
 
         `self` contents will be cloned before being passed to the transformed message.
 
-        For now, only Particles message support transformations. `reduce_type()` will first be called to eliminate the
-        parameter components before performing the transformation.
+        .. note::
+
+            For now, only Particles message support transformations. `reduce_type()` will first be called to eliminate
+            the parameter components before performing the transformation.
 
         The adjustment made to the particle values and log sampling densities:
 
@@ -2028,7 +2030,7 @@ class Message:
         new_weight = self.weight
         if isinstance(new_weight, torch.Tensor):
             # of shape (b_shape + sample_shape)
-            b_cat_event_dims = list(len(self.b_shape) + d for d in cat_event_dims)      # Account for batch dims at front
+            b_cat_event_dims = list(len(self.b_shape) + d for d in cat_event_dims)     # Account for batch dims at front
             b_target_event_dim = len(self.b_shape) + target_event_dim
             for dim in b_cat_event_dims:
                 perm_order = list(d for d in range(new_weight.dim()) if d != dim) + [dim]
@@ -2045,6 +2047,7 @@ class Message:
                           device=self.device, **self.attr)
 
         return new_msg
+
 
 
 # TODO: Enum class of all the inference method

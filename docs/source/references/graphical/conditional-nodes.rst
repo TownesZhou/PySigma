@@ -21,6 +21,11 @@ Relational Mapping Factor Node
 Concatenation, Marginalization, & Transformation Factor Node
 ------------------------------------------------------------
 
+.. autoclass:: pysigma.graphical.alpha_beta_nodes.CMTN
+   :members:
+   :undoc-members:
+
+
 
 Event Resolution Factor Node
 ----------------------------
