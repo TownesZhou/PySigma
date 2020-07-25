@@ -57,7 +57,7 @@ class Variable:
         The meta-type of this variable.
     size : int
         The size of the message dimension this variable corresponds to.
-    constraints : iterable of torch.distributions.constraints.Constraint
+    constraints : set of torch.distributions.constraints.Constraint
         The set of value constraints that determine the value range (support) of this variable.
     """
 

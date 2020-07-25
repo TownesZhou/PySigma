@@ -31,6 +31,7 @@ class AlphaFactorNode(FactorNode, ABC):
       contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of
       them should only be carried out if its incoming linkdata of interest contains new message.
     """
+
     def __init__(self, name, **kwargs):
         super(AlphaFactorNode, self).__init__(name, **kwargs)
 
@@ -146,6 +147,7 @@ class ESFN(AlphaFactorNode):
     ----------
     sum_op
     """
+
     def __init__(self, name, sum_op=None, **kwargs):
         """
             Necessary data structure:
@@ -160,6 +162,8 @@ class ESFN(AlphaFactorNode):
             raise NotImplementedError("Summarization operation using Summarization instance is not yet implemented.")
 
         self.sum_op = sum_op
+
+        self.pretty_log["node type"] = "Expansion / Summarization Factor Node"
 
     def inward_compute(self, in_ld, out_ld):
         """Expands and permutes the incoming message's relational variable dimensions to match the target outgoing
@@ -307,16 +311,17 @@ class RMFN(AlphaFactorNode):
         Obtained from `arg2var_map`. Mapping from predicate argument to the INVERSE mapping dictionary (if a
         `VariableMap` is specified).
     """
+
     def __init__(self, name, arg2var, var2arg, arg2var_map, **kwargs):
         super(RMFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Relation Variable Mapping Node"
         assert isinstance(name, str)
         assert isinstance(arg2var, dict) and all(isinstance(k, Variable) for k in arg2var.keys()) and \
-            all(isinstance(v, Variable) for v in arg2var.values())
+               all(isinstance(v, Variable) for v in arg2var.values())
         assert isinstance(var2arg, dict) and all(isinstance(k, Variable) for k in var2arg.keys()) and \
-            all(isinstance(v, list) and all(isinstance(arg, Variable) for arg in v) for v in var2arg.values())
+               all(isinstance(v, list) and all(isinstance(arg, Variable) for arg in v) for v in var2arg.values())
         assert isinstance(arg2var_map, dict) and all(isinstance(k, Variable) for k in arg2var_map.keys()) and \
-            all(isinstance(v, VariableMap) for v in arg2var_map.values())
+               all(isinstance(v, VariableMap) for v in arg2var_map.values())
 
         self.arg2var = arg2var
         self.var2arg = var2arg
@@ -336,6 +341,8 @@ class RMFN(AlphaFactorNode):
         # Obtain mapping dictionary and inverse mapping dictionary
         self.arg2var_map_tuple = {arg: var_map.get_map() for arg, var_map in self.arg2var_map.items()}
         self.arg2var_map_inv_tuple = {arg: var_map.get_inverse_map() for arg, var_map in self.arg2var_map.items()}
+
+        self.pretty_log["node type"] = "Relation Variable Mapping Node"
 
     def inward_compute(self, in_ld, out_ld):
         """Inward computation. Converts predicate relational arguments to pattern relational variables. Applies mappings
@@ -367,13 +374,13 @@ class RMFN(AlphaFactorNode):
             _, domain, image = var_map_tuple
             assert domain.issubset(set(range(arg.size))), \
                 "At {}: The VariableMap declared on the predicate argument {} would induce an image that exceeds the " \
-                "argument's value range. The argument's value range is {}, but found image {}."\
-                .format(self.name, arg.name, set(range(arg.size)), domain)
+                "argument's value range. The argument's value range is {}, but found image {}." \
+                    .format(self.name, arg.name, set(range(arg.size)), domain)
             assert image == set(range(pat_var.size)), \
-                "At {}: The VariableMap declared on the predicate argument {} should have a domain equal to the value "\
+                "At {}: The VariableMap declared on the predicate argument {} should have a domain equal to the value " \
                 "range of the associated pattern variable {}. The pattern variable's value range is {}, but found " \
-                "VariableMap domain {}"\
-                .format(self.name, arg.name, pat_var.name, set(range(pat_var.size)), image)
+                "VariableMap domain {}" \
+                    .format(self.name, arg.name, pat_var.name, set(range(pat_var.size)), image)
 
         # 1. First, translate predicate arguments to pattern variables. This step involves broadening the variable
         #    dimension if predicate argument size is smaller than pattern variable size, or map predicate argument
@@ -469,13 +476,13 @@ class RMFN(AlphaFactorNode):
             _, domain, image = var_map_tuple
             assert image.issubset(set(range(arg.size))), \
                 "At {}: The VariableMap declared on the predicate argument {} would induce an image that exceeds the " \
-                "argument's value range. The argument's value range is {}, but found image {}."\
-                .format(self.name, arg.name, set(range(arg.size)), image)
+                "argument's value range. The argument's value range is {}, but found image {}." \
+                    .format(self.name, arg.name, set(range(arg.size)), image)
             assert domain == set(range(pat_var.size)), \
-                "At {}: The VariableMap declared on the predicate argument {} should have a domain equal to the value "\
+                "At {}: The VariableMap declared on the predicate argument {} should have a domain equal to the value " \
                 "range of the associated pattern variable {}. The pattern variable's value range is {}, but found " \
                 "VariableMap domain {}" \
-                .format(self.name, arg.name, pat_var.name, set(range(pat_var.size)), domain)
+                    .format(self.name, arg.name, pat_var.name, set(range(pat_var.size)), domain)
 
         # 1. First, translate pattern variables to predicate arguments. This step involves unbinding the predicate
         #       variables that are referenced by multiple predicate arguments.
@@ -561,7 +568,7 @@ class BetaFactorNode(FactorNode, ABC):
 
         # Pairs of incoming and outgoing linkdata list with their messaging direction w.r.t. the beta structure
         self.labeled_ld_list_pair = {
-            'inward': ([], []),     # First list contains incoming links, and second outgoing links
+            'inward': ([], []),  # First list contains incoming links, and second outgoing links
             'outward': ([], [])
         }
         self.ran_vars = None
@@ -646,27 +653,30 @@ class CMTN(BetaFactorNode):
     args2var
     var2trans
     """
+
     def __init__(self, name, args2var, var2trans, **kwargs):
         super(CMTN, self).__init__(name, **kwargs)
 
         assert isinstance(args2var, dict) and \
-            all((isinstance(k, Variable) and k.metatype is VariableMetatype.Random) or
-                (isinstance(k, tuple) and all((isinstance(arg, Variable) and arg.metatype is VariableMetatype.Random
-                                              for arg in k)))
-                for k in args2var.keys()) and \
-            all((isinstance(v, Variable) and v.metatype is VariableMetatype.Random) for v in args2var.values())
+               all((isinstance(k, Variable) and k.metatype is VariableMetatype.Random) or
+                   (isinstance(k, tuple) and all((isinstance(arg, Variable) and arg.metatype is VariableMetatype.Random
+                                                  for arg in k)))
+                   for k in args2var.keys()) and \
+               all((isinstance(v, Variable) and v.metatype is VariableMetatype.Random) for v in args2var.values())
         assert isinstance(var2trans, dict) and \
-            all(isinstance(k, Variable) and k.metatype is VariableMetatype.Random for k in var2trans.keys()) and \
-            all(isinstance(v, Transform) for v in var2trans.values())
+               all(isinstance(k, Variable) and k.metatype is VariableMetatype.Random for k in var2trans.keys()) and \
+               all(isinstance(v, Transform) for v in var2trans.values())
 
         self.args2var = args2var
         self.var2trans = var2trans
+
+        self.pretty_log["node type"] = "Concatenation, Marginalization, & Transformation Node"
 
     def add_link(self, linkdata):
         """Some additional checks for CMTN
 
         """
-        super(CMTN, self).add_link()
+        super(CMTN, self).add_link(linkdata)
 
         # If inward and outgoing, or outward and incoming, check that connects to a FVN and with valid ran var list size
         if (linkdata.to_fn and linkdata.attr['direction'] == 'outward') or \
@@ -705,7 +715,7 @@ class CMTN(BetaFactorNode):
         assert len(in_ld_list) == 1
         in_msg = in_ld_list[0].read()
         assert isinstance(in_msg, Message)
-        ran_args = list(in_ld_list[0].vn.ran_vars)    # Obtain full random variable list
+        ran_args = list(in_ld_list[0].vn.ran_vars)  # Obtain full random variable list
         ran_vars = list(out_ld.vn.ran_vars[0] for out_ld in out_ld_list)
         running_args = copy.deepcopy(ran_args)
 
@@ -763,7 +773,6 @@ class CMTN(BetaFactorNode):
             # 3. send message to corresponding linkdata
             out_ld.write(out_msg)
 
-
     def outward_compute(self, in_ld_list, out_ld_list):
         """
 
@@ -774,8 +783,66 @@ class CMTN(BetaFactorNode):
 class FVN(VariableNode):
     """Filter Variable Node
 
+    Compares incoming message's particle values against the constraints declared for the random variable. Filters out
+    the particles if they do not meet the constraints, and raise an exception in this case if the message does not
+    contain parameters.
     """
-    pass
+
+    def __init__(self, **kwargs):
+        super(FVN, self).__init__(**kwargs)
+        assert 'ran_var_list' in kwargs.keys() and len(list(kwargs['ran_var_list'])) == 1
+
+        # Extract the random variable and value constraints
+        self.ran_var = self.ran_vars[0]
+        self.val_constraints = self.ran_var.constraints
+
+        self.pretty_log["node type"] = "Filter Variable Node"
+
+    def add_link(self, linkdata):
+        """FVN only admits one incoming link, but can admit multiple outgoing links
+
+        """
+        super(FVN, self).add_link(linkdata)
+        assert linkdata.to_fn or len(self.in_linkdata) <= 1
+
+    def compute(self):
+        """Filters particles if the particle values do not meet the pre-specified value constraints of the random
+        random variables.
+
+        Raises
+        ------
+        ValueError
+            If the message being filtered does not contain parameters; this means the outgoing message would be None
+            had we sent out the filtered message.
+        """
+        super(FVN, self).compute()
+
+        assert len(self.in_linkdata) > 0
+        in_ld = self.in_linkdata[0]
+        in_msg = in_ld.read()
+        assert isinstance(in_msg, Message)
+
+        # Check event values
+        passed = True
+        for cstr in self.val_constraints:
+            if not torch.all(cstr.check(in_msg.particles[0])):
+                passed = False
+
+        # Raise an exception if not passed and message does not contain any parameters
+        if not passed and MessageType.Parameter not in in_msg.type:
+            raise ValueError("At {}: Filtered a message with incompatible particle values that does not contain "
+                             "parameters. The pre-specified value constraints are {}"
+                             .format(self.name, self.val_constraints))
+
+        # Otherwise, reduce message to pur particles type
+        if not passed:
+            out_msg = in_msg.reduce_type(MessageType.Particles)
+        else:
+            out_msg = in_msg
+
+        # Send messages to each outgoing link
+        for out_ld in self.out_linkdata:
+            out_ld.send(out_msg)
 
 
 class ERFN(BetaFactorNode):

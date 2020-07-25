@@ -26,6 +26,14 @@ Concatenation, Marginalization, & Transformation Factor Node
    :undoc-members:
 
 
+Filter Variable Node
+--------------------
+
+.. autoclass:: pysigma.graphical.alpha_beta_nodes.FVN
+   :members:
+   :undoc-members:
+
+
 
 Event Resolution Factor Node
 ----------------------------

@@ -127,6 +127,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#filter-variable-node">Filter Variable Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#event-resolution-factor-node">Event Resolution Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#beta-join-factor-node">Beta Join Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#gamma-factor-node">Gamma Factor Node</a></li>
@@ -223,7 +224,7 @@
 <h2>Expansion / Summarization Factor Node<a class="headerlink" href="#expansion-summarization-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.ESFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ESFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">sum_op</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#ESFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ESFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">sum_op</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Expansion / Summarization Factor Node</p>
 <p>This node should be connected to two DVNs that share the same set of random variables but perhaps different
 relational variables, with the DVN on the outward propagation side having a set of relational variables that is a
@@ -264,7 +265,7 @@ the “combination” semantic is implemented.</p></li>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute">
-<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#ESFN.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Expands and permutes the incoming message’s relational variable dimensions to match the target outgoing
 relational variable dimensions.</p>
 <dl class="field-list simple">
@@ -277,7 +278,7 @@ relational variable dimensions.</p>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute">
-<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#ESFN.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Summarizes over incoming message’s un-referenced relational variable dimensions and permute to match the
 target outgoing relational variable dimensions.</p>
 <p>The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
@@ -297,7 +298,7 @@ uses default summarization semantic defined at the Message level.</p>
 <h2>Relational Mapping Factor Node<a class="headerlink" href="#relational-mapping-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.RMFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">RMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">arg2var</span></em>, <em class="sig-param"><span class="n">var2arg</span></em>, <em class="sig-param"><span class="n">arg2var_map</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#RMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">RMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">arg2var</span></em>, <em class="sig-param"><span class="n">var2arg</span></em>, <em class="sig-param"><span class="n">arg2var_map</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Relation Variable Mapping Node</p>
 <p>Converts predicate arguments from and to pattern variables. Applies relational variable’s <cite>VariableMap</cite> (if
 specified) by manipulating message batch dimensions. This node can thus implements the semantic of inner-pattern
@@ -382,7 +383,7 @@ specified).</p>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute">
-<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#RMFN.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inward computation. Converts predicate relational arguments to pattern relational variables. Applies mappings
 to relational variable’s values, if specified.</p>
 <p>For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the inverse
@@ -396,7 +397,7 @@ the pattern variable size range</p>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute">
-<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#RMFN.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Outward computation. Converts pattern relational variables to predicate relational arguments. Applies
 mappings to relational variable’s values, if specified.</p>
 <p>For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the
@@ -416,7 +417,7 @@ exactly equal to the pattern variable size range.</p>
 <h2>Concatenation, Marginalization, &amp; Transformation Factor Node<a class="headerlink" href="#concatenation-marginalization-transformation-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.CMTN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">CMTN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">args2var</span></em>, <em class="sig-param"><span class="n">var2trans</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#CMTN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">CMTN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">args2var</span></em>, <em class="sig-param"><span class="n">var2trans</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Concatenation, Marginalization, &amp; Transformation Node</p>
 <p>Transforms the joint predicate pattern messages from and to a list of univariate pattern element messages
 representative of the events of each of the referenced pattern random variables.</p>
@@ -444,13 +445,13 @@ predicate pattern, there must be a corresponding FVN connected to this CMTN.</p>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.CMTN.add_link">
-<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#CMTN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.add_link" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.add_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>Some additional checks for CMTN</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute">
-<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#CMTN.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>For each pattern element in the predicate pattern, generate a univariate message that is representative of
 the marginal events of the associated pattern variable. Sends this message to the FVN that corresponds to this
 pattern element.</p>
@@ -486,8 +487,39 @@ declared)</p></li>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute">
-<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#CMTN.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="filter-variable-node">
+<h2>Filter Variable Node<a class="headerlink" href="#filter-variable-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">FVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter Variable Node</p>
+<p>Compares incoming message’s particle values against the constraints declared for the random variable. Filters out
+the particles if they do not meet the constraints, and raise an exception in this case if the message does not
+contain parameters.</p>
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>FVN only admits one incoming link, but can admit multiple outgoing links</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filters particles if the particle values do not meet the pre-specified value constraints of the random
+random variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the message being filtered does not contain parameters; this means the outgoing message would be None
+    had we sent out the filtered message.</p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 

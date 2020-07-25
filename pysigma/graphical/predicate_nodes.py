@@ -506,6 +506,8 @@ class PSFN(FactorNode):
             Parameter(torch.zeros(self.b_shape + self.p_shape, dtype=torch.float, device=self.device),
                       requires_grad=True)
 
+        self.pretty_log["node type"] = "Parameter Store Factor Node"
+
     def reset_param(self, param):
         """Resets the parameter tensor.
 
@@ -589,6 +591,8 @@ class PBFN(FactorNode):
         self.e_shape = event_shape
         # Perceptual buffer. Initialize to identity message
         self.buffer = Message(MessageType.Both, batch_shape=self.b_shape, parameter=0, weight=1)
+
+        self.pretty_log["node type"] = "Perceptual Buffer Factor Node"
 
     def perceive(self, obs=None, weight=None, mode='joint'):
         """Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight

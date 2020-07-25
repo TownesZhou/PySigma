@@ -127,6 +127,7 @@
 <li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#filter-variable-node">Filter Variable Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
@@ -503,7 +504,7 @@ variable node.</p>
 <h2>Alpha Factor Node<a class="headerlink" href="#alpha-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">AlphaFactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">AlphaFactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract base class for any factor node belonging to an alpha subgraph.</p>
 <p>Captures the commonalities of all alpha subgraph nodes:</p>
 <ul class="simple">
@@ -523,7 +524,7 @@ them should only be carried out if its incoming linkdata of interest contains ne
 </ul>
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link">
-<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata. The
 incident variable nodes should have the same tuple of random variables. Furthermore, a <code class="docutils literal notranslate"><span class="pre">&quot;direction&quot;</span></code> key-ed
 attribute should be included in the linkdata’s optional attribute map with value <code class="docutils literal notranslate"><span class="pre">&quot;inward&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;outward&quot;</span></code>
@@ -539,20 +540,20 @@ message propagation directions.</p>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Carries out <cite>inward_compute()</cite> and <cite>outward_compute()</cite> individually if their corresponding incoming linkdata
 contains new message.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.inward_compute">
-<em class="property">abstract </em><code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.inward_compute" title="Permalink to this definition">¶</a></dt>
+<em class="property">abstract </em><code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.inward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inward message computation. To be implemented by child class.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute">
-<em class="property">abstract </em><code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#AlphaFactorNode.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute" title="Permalink to this definition">¶</a></dt>
+<em class="property">abstract </em><code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Outward message computation. To be implemented by child class.</p>
 </dd></dl>
 
@@ -563,7 +564,7 @@ contains new message.</p>
 <h2>Beta Factor Node<a class="headerlink" href="#beta-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.BetaFactorNode">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">BetaFactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#BetaFactorNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">BetaFactorNode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract base class for nodes belonging to the beta subgraph of a conditional.</p>
 <p>Captures the commonalities of beta subgraph nodes:</p>
 <ul class="simple">
@@ -582,7 +583,7 @@ same message propagation direction, each subdivided compute method, i.e., <cite>
 </ul>
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.BetaFactorNode.add_link">
-<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#BetaFactorNode.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.add_link" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.add_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>A Beta Factor Node admits at least one but no more than two pairs of lists of incoming and outgoing linkdata.
 The incident variable nodes should have the same tuple of random variables. Furthermore, a <code class="docutils literal notranslate"><span class="pre">&quot;direction&quot;</span></code>
 key-ed attribute should be included in the linkdata’s optional attribute map with value <code class="docutils literal notranslate"><span class="pre">&quot;inward&quot;</span></code> or
@@ -598,20 +599,20 @@ have different message propagation directions.</p>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.BetaFactorNode.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#BetaFactorNode.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Carries out <cite>inward_compute()</cite> and <cite>outward_compute()</cite> separately only if all their corresponding incoming
 linkdata contains new message.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.BetaFactorNode.inward_compute">
-<em class="property">abstract </em><code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#BetaFactorNode.inward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.inward_compute" title="Permalink to this definition">¶</a></dt>
+<em class="property">abstract </em><code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.inward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inward message computation. To be implemented by child class.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.BetaFactorNode.outward_compute">
-<em class="property">abstract </em><code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#BetaFactorNode.outward_compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.outward_compute" title="Permalink to this definition">¶</a></dt>
+<em class="property">abstract </em><code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.outward_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Outward message computation. To be implemented by child class.</p>
 </dd></dl>
 

@@ -125,6 +125,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#filter-variable-node">Filter Variable Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
@@ -718,6 +719,8 @@
             <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
                       <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Parameter Store Factor Node&quot;</span>
+
 <div class="viewcode-block" id="PSFN.reset_param"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.reset_param">[docs]</a>    <span class="k">def</span> <span class="nf">reset_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Resets the parameter tensor.</span>
 
@@ -801,6 +804,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">event_shape</span>
         <span class="c1"># Perceptual buffer. Initialize to identity message</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Perceptual Buffer Factor Node&quot;</span>
 
 <div class="viewcode-block" id="PBFN.perceive"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.perceive">[docs]</a>    <span class="k">def</span> <span class="nf">perceive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;joint&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight</span>
