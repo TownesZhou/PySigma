@@ -1,9 +1,17 @@
 """
     The gamma node, the peak of a conditional subgraph.
 """
+from graphical.basic_nodes import FactorNode, VariableNode
 
 
-class GFN:
+class GTVN(VariableNode):
+    """Gamma Terminal Variable Node
+
+    """
+    pass
+
+
+class GFN(FactorNode):
     """
         Gamma Factor Node
 

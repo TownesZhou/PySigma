@@ -513,9 +513,9 @@ Working Memory Variable Node.</p></li>
 <li><p><strong>Admissible variable nodes</strong>: an alpha node treats the relational variables and manipulates messages’ batch
 dimensions only, and leaves untouched the random variables and corresponding event dimensions. Therefore,
 incident variable nodes should have the same tuple of random variables.</p></li>
-<li><p><strong>Compute pattern</strong>: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,
-for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the
-inward incoming link. Accordingly, the <cite>compute()</cite> method is subdivided into an <cite>inward_compute()</cite> and an
+<li><p><strong>Compute pattern</strong>: an alpha node computes outgoing messages for each pair of linkdata individually. In other
+words, for instance, the outgoing message to an inward outgoing link is solely dependent on the message received
+from the inward incoming link. Accordingly, the <cite>compute()</cite> method is subdivided into an <cite>inward_compute()</cite> and an
 <cite>outward_compute()</cite> method.</p></li>
 <li><p><strong>Quiescence state</strong>: an alpha node as a whole reaches quiescence if and only if <strong>all</strong> incoming linkdata do not
 contain new message. However, for the two subdivided method <cite>inward_compute()</cite> and <cite>outward_compute()</cite>, each of
@@ -567,15 +567,17 @@ contains new message.</p>
 <dd><p>Abstract base class for nodes belonging to the beta subgraph of a conditional.</p>
 <p>Captures the commonalities of beta subgraph nodes:</p>
 <ul class="simple">
-<li><p><strong>Topology</strong>: a beta node is typically connected to up to two pairs of <em>lists</em> of incoming and outgoing links, with
-each pair designated a unique message propagation direction. In other words, contrast to an alpha node, a beta
-node for example may be connected to multiple inward incoming links. However, the message propagation directions
-of the links are well grouped in that, if there is inward incoming link, then there must be a inward outgoing
-link.</p></li>
-<li><p><strong>Admissible variable nodes</strong>: a beta factor node treats the random variables only, and leave untouched the relational
-variables that should have been processed by alpha factor nodes. Thus, incident variable nodes should have the
-same tuple of relational variables.</p></li>
-<li><p><strong>Compute pattern</strong>: similar to an alpha factor node</p></li>
+<li><p><strong>Topology</strong>: a beta node is typically connected to up to two pairs of <em>lists</em> of incoming and outgoing links,
+with each pair designated a unique message propagation direction. In other words, contrast to an alpha node, a
+beta node for example may be connected to multiple inward incoming links. However, the message propagation
+directions of the links are well grouped in that, if there is inward incoming link, then there must be a inward
+outgoing link.</p></li>
+<li><p><strong>Admissible variable nodes</strong>: a beta factor node treats the random variables only, and leave untouched the
+relational variables that should have been processed by alpha factor nodes. Thus, incident variable nodes should
+have the same tuple of relational variables.</p></li>
+<li><p><strong>Compute pattern</strong>: similar to an alpha factor node. However, since there may be multiple incoming links with
+same message propagation direction, each subdivided compute method, i.e., <cite>inward_compute()</cite> and
+<cite>outward_compute()</cite>, would be executed if <strong>all</strong> of its incoming linkdata contain new messages.</p></li>
 <li><p><strong>Quiescence state</strong>: similar to an alpha factor node</p></li>
 </ul>
 <dl class="py method">
@@ -597,12 +599,8 @@ have different message propagation directions.</p>
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.BetaFactorNode.compute">
 <code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/alpha_beta_nodes.html#BetaFactorNode.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute method to be called to propagate messages during decision phases.</p>
-<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
-node-level statistics logging is taken care of herein.</p>
-<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>self.quiescence</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>,
-without logging anything or performing any further computation. Note that such behavior may or may not be
-desired by child node class.</p>
+<dd><p>Carries out <cite>inward_compute()</cite> and <cite>outward_compute()</cite> separately only if all their corresponding incoming
+linkdata contains new message.</p>
 </dd></dl>
 
 <dl class="py method">

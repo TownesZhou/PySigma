@@ -235,9 +235,9 @@
 <span class="sd">    * **Admissible variable nodes**: an alpha node treats the relational variables and manipulates messages&#39; batch</span>
 <span class="sd">      dimensions only, and leaves untouched the random variables and corresponding event dimensions. Therefore,</span>
 <span class="sd">      incident variable nodes should have the same tuple of random variables.</span>
-<span class="sd">    * **Compute pattern**: an alpha node computes outgoing messages for each pair of linkdata individually. In other words,</span>
-<span class="sd">      for instance, the outgoing message to an inward outgoing link is solely dependent on the message received from the</span>
-<span class="sd">      inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an</span>
+<span class="sd">    * **Compute pattern**: an alpha node computes outgoing messages for each pair of linkdata individually. In other</span>
+<span class="sd">      words, for instance, the outgoing message to an inward outgoing link is solely dependent on the message received</span>
+<span class="sd">      from the inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an</span>
 <span class="sd">      `outward_compute()` method.</span>
 <span class="sd">    * **Quiescence state**: an alpha node as a whole reaches quiescence if and only if **all** incoming linkdata do not</span>
 <span class="sd">      contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of</span>
@@ -754,15 +754,17 @@
 
 <span class="sd">    Captures the commonalities of beta subgraph nodes:</span>
 
-<span class="sd">    * **Topology**: a beta node is typically connected to up to two pairs of *lists* of incoming and outgoing links, with</span>
-<span class="sd">      each pair designated a unique message propagation direction. In other words, contrast to an alpha node, a beta</span>
-<span class="sd">      node for example may be connected to multiple inward incoming links. However, the message propagation directions</span>
-<span class="sd">      of the links are well grouped in that, if there is inward incoming link, then there must be a inward outgoing</span>
-<span class="sd">      link.</span>
-<span class="sd">    * **Admissible variable nodes**: a beta factor node treats the random variables only, and leave untouched the relational</span>
-<span class="sd">      variables that should have been processed by alpha factor nodes. Thus, incident variable nodes should have the</span>
-<span class="sd">      same tuple of relational variables.</span>
-<span class="sd">    * **Compute pattern**: similar to an alpha factor node</span>
+<span class="sd">    * **Topology**: a beta node is typically connected to up to two pairs of *lists* of incoming and outgoing links,</span>
+<span class="sd">      with each pair designated a unique message propagation direction. In other words, contrast to an alpha node, a</span>
+<span class="sd">      beta node for example may be connected to multiple inward incoming links. However, the message propagation</span>
+<span class="sd">      directions of the links are well grouped in that, if there is inward incoming link, then there must be a inward</span>
+<span class="sd">      outgoing link.</span>
+<span class="sd">    * **Admissible variable nodes**: a beta factor node treats the random variables only, and leave untouched the</span>
+<span class="sd">      relational variables that should have been processed by alpha factor nodes. Thus, incident variable nodes should</span>
+<span class="sd">      have the same tuple of relational variables.</span>
+<span class="sd">    * **Compute pattern**: similar to an alpha factor node. However, since there may be multiple incoming links with</span>
+<span class="sd">      same message propagation direction, each subdivided compute method, i.e., `inward_compute()` and</span>
+<span class="sd">      `outward_compute()`, would be executed if **all** of its incoming linkdata contain new messages.</span>
 <span class="sd">    * **Quiescence state**: similar to an alpha factor node</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -806,13 +808,16 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="BetaFactorNode.compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Carries out `inward_compute()` and `outward_compute()` separately only if all their corresponding incoming</span>
+<span class="sd">        linkdata contains new message.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">direction</span><span class="p">,</span> <span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_ld_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">in_ld</span><span class="o">.</span><span class="n">new</span> <span class="k">for</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="n">in_ld_list</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">inward_compute</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;outward&#39;</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">in_ld</span><span class="o">.</span><span class="n">new</span> <span class="k">for</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="n">in_ld_list</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">outward_compute</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="BetaFactorNode.inward_compute"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.inward_compute">[docs]</a>    <span class="nd">@abstractmethod</span>
@@ -830,165 +835,31 @@
         <span class="k">pass</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">ESCFN</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Event Split / Combination Node</span>
-
-<span class="sd">        add link:</span>
-<span class="sd">            - check that for inward direction, there&#39;s only one incoming link; for outward direction, only one outgoing</span>
-<span class="sd">                link.</span>
-
-<span class="sd">        Inward direction compute:</span>
-<span class="sd">            1. Flatten batch dimensions into a single dimension</span>
-<span class="sd">            2. If there are multiple referenced random variables, ensure that incoming message contains Particles,</span>
-<span class="sd">                otherwise raise an alert.</span>
-<span class="sd">            3. Translate event particles from PyTorch format to Cognitive format. If multiple pattern random variables</span>
-<span class="sd">                are referenced, the events will/should be split in accordance to the size of each pattern r.v.</span>
-<span class="sd">            4. If &#39;reference&#39; is True, then will cache the incoming message after each inward compute.</span>
-<span class="sd">            5. If there is only one referenced pattern random variable, send translated message as is to the outgoing</span>
-<span class="sd">                link. Otherwise, send split event messages to each outgoing link with corresponding pattern r.v.</span>
-<span class="sd">                respectively.</span>
-
-<span class="sd">        Outward direction compute:</span>
-<span class="sd">            1. If there is inward propagation direction, check that the cache is not None. Check that incoming messages</span>
-<span class="sd">                holds the same particles as the cached message. Otherwise, raise an alert.</span>
-<span class="sd">            2. If there are multiple incoming links, check that messages from all incoming links have Particles. In</span>
-<span class="sd">                this case, if there is cached message, combine incoming messages&#39; event particles with alignment to</span>
-<span class="sd">                the cached message&#39;s event particles. Otherwise, combine incoming messages&#39; event particles randomly /</span>
-<span class="sd">                without alignment.</span>
-<span class="sd">            3. Reshape the single batch dimensions into full conditional batch dimensions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ESCFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
-        <span class="c1"># Whether to cache referenced event particle message</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">reference</span> <span class="o">=</span> <span class="n">reference</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ESCFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;inward&#39;</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="p">[</span><span class="s1">&#39;inward&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">1</span>
-        <span class="k">elif</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;outward&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labeled_ld_list_pair</span><span class="p">[</span><span class="s1">&#39;outward&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">1</span>
-
-    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld_list</span><span class="p">,</span> <span class="n">out_ld_list</span><span class="p">):</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
-        <span class="n">in_ld</span> <span class="o">=</span> <span class="n">in_ld_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">ran_var_list</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_var_list</span>
-        <span class="c1"># Check that the number of outgoing links equal the number of random variables from the incoming link, and that</span>
-        <span class="c1"># there&#39;s one-to-one correspondence</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">)</span> <span class="ow">and</span> \
-            <span class="nb">set</span><span class="p">(</span><span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">ran_var_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="n">out_ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">)</span>
-
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
-
-        <span class="c1"># 1. Flatten batch dimension</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">()</span>
-
-        <span class="c1"># 2. Ensure incoming message contain particles if multiple referenced r.v.</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> \
-                <span class="s2">&quot;In </span><span class="si">{}</span><span class="s2">: Pattern has multiple referenced random variables: </span><span class="si">{}</span><span class="s2">, however the incoming message </span><span class="si">{}</span><span class="s2"> does &quot;</span> \
-                <span class="s2">&quot;not contain particles. &quot;</span>
-
-        <span class="c1"># 3. Translate event format</span>
-        <span class="k">pass</span>
-
-
-<span class="k">class</span> <span class="nc">RTFN</span><span class="p">(</span><span class="n">AlphaFactorNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Random Variable Transformation Node</span>
-
-<span class="sd">        Carry out three core functionality:</span>
-
-<span class="sd">        1. Manipulate batch dimensions:</span>
-<span class="sd">            - For inward direction: flatten batch dimensions into a single dimension</span>
-<span class="sd">            - for outward direction: reshape the flattened batch dimension into full batch dimensions of the conditional</span>
-
-<span class="sd">        2. Apply transformation on events:</span>
-<span class="sd">            - For inward direction: apply pre-specified transformation on event.</span>
-<span class="sd">            - For outward direction: apply the INVERSE of the pre-specified transformation on events.</span>
-
-<span class="sd">        3. Check if event values meets the pre-specified constraints.</span>
-<span class="sd">            - This step will be automatically skipped if it&#39;s outward direction and/or the message does not contain</span>
-<span class="sd">                event particles.</span>
-<span class="sd">            - If constraints not satisfied and replaceable == False, raise an alert.</span>
-<span class="sd">            - If constraints not satisfied and replaceable == True, check if the incoming message type is Both.</span>
-<span class="sd">                - If yes, then reduce the message into Parameter message and send it to outgoing link.</span>
-<span class="sd">                - Otherwise, raise an alert.</span>
+<span class="k">class</span> <span class="nc">CMTN</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Concatenation, Marginalization, &amp; Transformation Node</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">trans</span><span class="p">,</span> <span class="n">constraints</span><span class="p">,</span> <span class="n">replaceable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            :param trans:       torch.distributions.transforms.Transform. The transformation functor</span>
-<span class="sd">            :param constraints  a set of torch.distributions.constraints.Constraint. The value constraints of the target</span>
-<span class="sd">                                    conditional&#39;s pattern random variable.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">RTFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Random Variable Transformation Node&quot;</span>
+    <span class="k">pass</span>
 
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="n">Transform</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">constraints</span><span class="p">,</span> <span class="nb">set</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">constraints</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">replaceable</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">trans</span> <span class="o">=</span> <span class="n">trans</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="n">constraints</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">replaceable</span> <span class="o">=</span> <span class="n">replaceable</span>
+<span class="k">class</span> <span class="nc">FVN</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filter Variable Node</span>
 
-    <span class="k">def</span> <span class="nf">inward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
 
-        <span class="c1"># 1. Flatten batch dimensions into a single dimension</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_flatten</span><span class="p">()</span>
 
-        <span class="c1"># 2. Apply forward transformation.</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">event_transform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trans</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ERFN</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Event Resolution Factor Node</span>
 
-        <span class="c1"># 3. Check value constraints only if message involves particles</span>
-        <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">for</span> <span class="n">constraint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">:</span>
-                <span class="n">valid</span> <span class="o">*=</span> <span class="n">constraint</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
 
-            <span class="c1"># Raise an alert if not valid and particles not replaceable.</span>
-            <span class="k">assert</span> <span class="n">valid</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">replaceable</span><span class="p">,</span> \
-                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: It has been specified that particles in incoming messages are not replaceable, but encountered &quot;</span> \
-                <span class="s2">&quot;a message where the particle values do not meet pre-specified constraints: </span><span class="si">{}</span><span class="s2">&quot;</span>\
-                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">)</span>
 
-            <span class="c1"># Check message type if not valid but replaceable is True</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">replaceable</span><span class="p">:</span>
-                <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> \
-                    <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Message must contain parameter if it&#39;s particles are to be replaced when its own particles &quot;</span> \
-                    <span class="s2">&quot;do not meet the constraints. Instead, found one incoming message of type </span><span class="si">{}</span><span class="s2"> whose particles do &quot;</span> \
-                    <span class="s2">&quot;not meet the constraints.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
-                <span class="c1"># Reduce the message into only parameters</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ECFN</span><span class="p">(</span><span class="n">BetaFactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Event Combination Factor Node</span>
 
-        <span class="c1"># Send message</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">outward_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">out_ld</span><span class="p">):</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_ld</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
-        <span class="n">out_rel_var_list</span> <span class="o">=</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">vn</span><span class="o">.</span><span class="n">rel_var_list</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
-
-        <span class="c1"># 1. Reshape batch dimension into full conditional relational pattern variable dimensions</span>
-        <span class="n">out_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out_rel_var_list</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">batch_reshape</span><span class="p">(</span><span class="n">out_dims</span><span class="p">)</span>
-
-        <span class="c1"># 2. Apply inverse transformation.</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trans</span><span class="o">.</span><span class="n">inv</span><span class="p">)</span>
-
-        <span class="c1"># Send message</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 </pre></div>
 
            </div>

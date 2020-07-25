@@ -623,162 +623,28 @@ class BetaFactorNode(FactorNode, ABC):
         pass
 
 
-class ESCFN(BetaFactorNode):
-    """
-        Event Split / Combination Node
-
-        add link:
-            - check that for inward direction, there's only one incoming link; for outward direction, only one outgoing
-                link.
-
-        Inward direction compute:
-            1. Flatten batch dimensions into a single dimension
-            2. If there are multiple referenced random variables, ensure that incoming message contains Particles,
-                otherwise raise an alert.
-            3. Translate event particles from PyTorch format to Cognitive format. If multiple pattern random variables
-                are referenced, the events will/should be split in accordance to the size of each pattern r.v.
-            4. If 'reference' is True, then will cache the incoming message after each inward compute.
-            5. If there is only one referenced pattern random variable, send translated message as is to the outgoing
-                link. Otherwise, send split event messages to each outgoing link with corresponding pattern r.v.
-                respectively.
-
-        Outward direction compute:
-            1. If there is inward propagation direction, check that the cache is not None. Check that incoming messages
-                holds the same particles as the cached message. Otherwise, raise an alert.
-            2. If there are multiple incoming links, check that messages from all incoming links have Particles. In
-                this case, if there is cached message, combine incoming messages' event particles with alignment to
-                the cached message's event particles. Otherwise, combine incoming messages' event particles randomly /
-                without alignment.
-            3. Reshape the single batch dimensions into full conditional batch dimensions.
-    """
-    def __init__(self, name, reference=True):
-        super(ESCFN, self).__init__(name)
-
-        assert isinstance(reference, bool)
-        # Whether to cache referenced event particle message
-        self.reference = reference
-        self.cache = None
-
-    def add_link(self, linkdata):
-        super(ESCFN, self).add_link(linkdata)
-        if linkdata.attr['direction'] == 'inward' and linkdata.to_fn:
-            assert len(self.labeled_ld_list_pair['inward'][0]) <= 1
-        elif linkdata.attr['direction'] == 'outward' and not linkdata.to_fn:
-            assert len(self.labeled_ld_list_pair['outward'][1]) <= 1
-
-    def inward_compute(self, in_ld_list, out_ld_list):
-        assert len(in_ld_list) == 1
-        in_ld = in_ld_list[0]
-        ran_var_list = in_ld.vn.ran_var_list
-        # Check that the number of outgoing links equal the number of random variables from the incoming link, and that
-        # there's one-to-one correspondence
-        assert len(out_ld_list) == len(ran_var_list) and \
-            set(out_ld.vn.ran_var_list[0] for out_ld in out_ld_list) == set(ran_var_list)
-
-        msg = in_ld_list[0].read()
-        assert isinstance(msg, Message)
-
-        # 1. Flatten batch dimension
-        msg = msg.batch_flatten()
-
-        # 2. Ensure incoming message contain particles if multiple referenced r.v.
-        if len(ran_var_list) > 1:
-            assert MessageType.Particles in msg.type, \
-                "In {}: Pattern has multiple referenced random variables: {}, however the incoming message {} does " \
-                "not contain particles. "
-
-        # 3. Translate event format
-        pass
-
-
-class RTFN(AlphaFactorNode):
-    """
-        Random Variable Transformation Node
-
-        Carry out three core functionality:
-
-        1. Manipulate batch dimensions:
-            - For inward direction: flatten batch dimensions into a single dimension
-            - for outward direction: reshape the flattened batch dimension into full batch dimensions of the conditional
-
-        2. Apply transformation on events:
-            - For inward direction: apply pre-specified transformation on event.
-            - For outward direction: apply the INVERSE of the pre-specified transformation on events.
-
-        3. Check if event values meets the pre-specified constraints.
-            - This step will be automatically skipped if it's outward direction and/or the message does not contain
-                event particles.
-            - If constraints not satisfied and replaceable == False, raise an alert.
-            - If constraints not satisfied and replaceable == True, check if the incoming message type is Both.
-                - If yes, then reduce the message into Parameter message and send it to outgoing link.
-                - Otherwise, raise an alert.
+class CMTN(BetaFactorNode):
+    """Concatenation, Marginalization, & Transformation Node
 
     """
-    def __init__(self, name, trans, constraints, replaceable=True):
-        """
-            :param trans:       torch.distributions.transforms.Transform. The transformation functor
-            :param constraints  a set of torch.distributions.constraints.Constraint. The value constraints of the target
-                                    conditional's pattern random variable.
-        """
-        super(RTFN, self).__init__(name)
-        self.pretty_log["node type"] = "Random Variable Transformation Node"
+    pass
 
-        assert isinstance(trans, Transform)
-        assert isinstance(constraints, set) and all(isinstance(c, Constraint) for c in constraints)
-        assert isinstance(replaceable, bool)
 
-        self.trans = trans
-        self.constraints = constraints
-        self.replaceable = replaceable
+class FVN(VariableNode):
+    """Filter Variable Node
 
-    def inward_compute(self, in_ld, out_ld):
-        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
-        msg = in_ld.read()
-        assert isinstance(msg, Message)
+    """
+    pass
 
-        # 1. Flatten batch dimensions into a single dimension
-        msg = msg.batch_flatten()
 
-        # 2. Apply forward transformation.
-        msg = msg.event_transform(self.trans)
+class ERFN(BetaFactorNode):
+    """Event Resolution Factor Node
 
-        # 3. Check value constraints only if message involves particles
-        if MessageType.Particles in msg.type:
-            valid = True
-            for constraint in self.constraints:
-                valid *= constraint.check(msg.particles).all()
+    """
+    pass
 
-            # Raise an alert if not valid and particles not replaceable.
-            assert valid or self.replaceable, \
-                "At {}: It has been specified that particles in incoming messages are not replaceable, but encountered " \
-                "a message where the particle values do not meet pre-specified constraints: {}"\
-                .format(self.name, self.constraints)
 
-            # Check message type if not valid but replaceable is True
-            if not valid and self.replaceable:
-                assert MessageType.Parameter in msg.type, \
-                    "At {}: Message must contain parameter if it's particles are to be replaced when its own particles " \
-                    "do not meet the constraints. Instead, found one incoming message of type {} whose particles do " \
-                    "not meet the constraints.".format(self.name, msg.type)
-                # Reduce the message into only parameters
-                msg = msg.reduce_type(MessageType.Parameter)
+class ECFN(BetaFactorNode):
+    """Event Combination Factor Node
 
-        # Send message
-        out_ld.write(msg)
-
-    def outward_compute(self, in_ld, out_ld):
-        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
-        out_rel_var_list = out_ld.vn.rel_var_list
-        msg = in_ld.read()
-        assert isinstance(msg, Message)
-
-        # 1. Reshape batch dimension into full conditional relational pattern variable dimensions
-        out_dims = list(v.size for v in out_rel_var_list)
-        assert len(msg.b_shape) == 1
-        msg = msg.batch_reshape(out_dims)
-
-        # 2. Apply inverse transformation.
-        msg = msg.transform(self.trans.inv)
-
-        # Send message
-        out_ld.write(msg)
+    """
