@@ -34,7 +34,7 @@ extensions = [
 	'sphinx_rtd_theme',
 	'sphinx.ext.napoleon',
 	'sphinx.ext.viewcode', 
-	'sphinx.ext.autosummary',
+	'sphinx.ext.autosummary', 
 	'sphinx.ext.todo'
 ]
 

@@ -34,9 +34,20 @@ Filter Variable Node
    :undoc-members:
 
 
+Event Aggregation Factor Node
+-----------------------------
+
+.. autoclass:: pysigma.graphical.alpha_beta_nodes.EAFN
+   :members:
+   :undoc-members:
+
 
 Event Resolution Factor Node
 ----------------------------
+
+.. autoclass:: pysigma.graphical.alpha_beta_nodes.ERFN
+   :members:
+   :undoc-members:
 
 
 Beta Join Factor Node

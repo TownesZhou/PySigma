@@ -128,6 +128,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#filter-variable-node">Filter Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#event-aggregation-factor-node">Event Aggregation Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#event-resolution-factor-node">Event Resolution Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#beta-join-factor-node">Beta Join Factor Node</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#gamma-factor-node">Gamma Factor Node</a></li>
@@ -417,10 +418,19 @@ exactly equal to the pattern variable size range.</p>
 <h2>Concatenation, Marginalization, &amp; Transformation Factor Node<a class="headerlink" href="#concatenation-marginalization-transformation-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.CMTN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">CMTN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">args2var</span></em>, <em class="sig-param"><span class="n">var2trans</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">CMTN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">args2var</span></em>, <em class="sig-param"><span class="n">var2trans</span></em>, <em class="sig-param"><span class="n">preemptive</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Concatenation, Marginalization, &amp; Transformation Node</p>
 <p>Transforms the joint predicate pattern messages from and to a list of univariate pattern element messages
 representative of the events of each of the referenced pattern random variables.</p>
+<p>By default, outgoing messages that consists of only particles contents will be marked with a special attribute
+<code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>. Alternatively, a <cite>preemptive</cite> attribute can be set at the node level during the
+initialization of this node, in which case when set to <code class="docutils literal notranslate"><span class="pre">True</span></code> the outgoing message will always be marked with
+<code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>.</p>
+<p>Marking a message with <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code> indicates that the event particle values of this message should be
+taken as the universal event values for the corresponding pattern variable during this cognitive cycle. Any other
+predicate pattern that references this pattern variable should be forced to adopt this list of event values.
+Therefore, at most one CNTN among all those that reference the same pattern variable can send preemptive messages,
+otherwise an exception will be raised.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -430,6 +440,8 @@ random argument <cite>Variable</cite> instances, to a single pattern random vari
 <li><p><strong>var2trans</strong> (<em>dict</em>) – The dictionary mapping a pattern random variable <cite>Variable</cite> instance to a <cite>Transform</cite> instance, if a
 transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the
 predicate pattern, there must be a corresponding FVN connected to this CMTN.</p></li>
+<li><p><strong>preemptive</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether the outgoing messages to all downstream nodes will always be marked with <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -441,6 +453,11 @@ predicate pattern, there must be a corresponding FVN connected to this CMTN.</p>
 <dl class="py attribute">
 <dt id="pysigma.graphical.alpha_beta_nodes.CMTN.var2trans">
 <code class="sig-name descname">var2trans</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.var2trans" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.preemptive">
+<code class="sig-name descname">preemptive</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.preemptive" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -456,7 +473,7 @@ predicate pattern, there must be a corresponding FVN connected to this CMTN.</p>
 the marginal events of the associated pattern variable. Sends this message to the FVN that corresponds to this
 pattern element.</p>
 <p>The above message generation step is done by the following procedure:</p>
-<ol class="arabic simple">
+<ol class="arabic">
 <li><p>Marginalize over any un-referenced predicate arguments</p></li>
 <li><p>For each random pattern element:</p>
 <ol class="arabic simple">
@@ -472,13 +489,18 @@ the transformation on the message.</p></li>
 </li>
 <li><p>Annotate the outgoing message’s parameter component (if included in incoming message):</p>
 <ol class="arabic simple">
-<li><p>Annotate the message with <code class="docutils literal notranslate"><span class="pre">event_space=COMPLETE</span></code> label to indicate the particles above approximates
-the same distribution the parameters are encoding, only if there is only one pattern element, and it
-references all predicate random arguments in the correct order
-(the original order when these arguments were declared)</p></li>
-<li><p>In any other case, annotate the message with <code class="docutils literal notranslate"><span class="pre">event_space=PARTIAL</span></code> label.</p></li>
+<li><p>Annotate the message with <code class="docutils literal notranslate"><span class="pre">param_event_mismatch</span> <span class="pre">==</span> <span class="pre">False</span></code> label to indicate the particles above
+approximates the same distribution the parameters are encoding, only if there is only one pattern
+element, and it references all predicate random arguments in the correct order (the original order when
+these arguments were declared)</p></li>
+<li><p>In any other case, annotate the message with <code class="docutils literal notranslate"><span class="pre">event_space=True</span></code> label.</p></li>
 </ol>
 </li>
+<li><p>If the message do not contain parameters components, or if <code class="docutils literal notranslate"><span class="pre">self.preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>, annotate the
+outgoing message with special attribute <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>. Otherwise, annotate with
+<code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">False</span></code>.</p></li>
+</ol>
+<ol class="arabic simple" start="3">
 <li><p>Send this message to the corresponding outgoing linkdata</p></li>
 </ol>
 </li>
@@ -497,11 +519,39 @@ references all predicate random arguments in the correct order
 <h2>Filter Variable Node<a class="headerlink" href="#filter-variable-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.FVN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">FVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">FVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Filter Variable Node</p>
 <p>Compares incoming message’s particle values against the constraints declared for the random variable. Filters out
 the particles if they do not meet the constraints, and raise an exception in this case if the message does not
 contain parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>preemptive</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the outgoing message will always be marked with the special attribute <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN.ran_var">
+<code class="sig-name descname">ran_var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.ran_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>The single random variable this FVN is representing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable">Variable</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN.val_constraints">
+<code class="sig-name descname">val_constraints</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.val_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>The value constraints extracted from <cite>ran_var</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set of torch.distributions.constraints.Constraint</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.FVN.add_link">
 <code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.add_link" title="Permalink to this definition">¶</a></dt>
@@ -524,8 +574,52 @@ random variables.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="event-aggregation-factor-node">
+<h2>Event Aggregation Factor Node<a class="headerlink" href="#event-aggregation-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">EAFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Event Aggregation Factor Node</p>
+<p>An EAFN aggregates, for a represented conditional pattern random variable, a universal list of event particle values
+that should be adopted and evaluated by all predicate patterns who reference this pattern variable. In other words,
+the particles message sent by this node can be viewed as an augmented list of particles that both necessarily meets
+the value constraint of this pattern variable and sufficiently covers the important regions in the event space
+of each predicate pattern prior distribution.</p>
+<p>Connected from Filter Variable Nodes, an EAFN expects incoming messages to contain at least either particles or
+parameters, preferably both. In addition, messages should be marked with a boolean attribute <code class="docutils literal notranslate"><span class="pre">preemptive</span></code>. A
+message with <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code> indicates its list of event particle values will be taken directly as the final
+universal list of event particle values, ignoring all other messages. An EAFN therefore expects to receive only
+one preemptive message, otherwise an exception will be raised. If all messages are not preemptive, then the lists of
+event values from all of them (if applicable, i.e., if said message contains particles) will be taken and
+concatenated to form the universal list.</p>
+</dd></dl>
+
+</div>
 <div class="section" id="event-resolution-factor-node">
 <h2>Event Resolution Factor Node<a class="headerlink" href="#event-resolution-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ERFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Event Resolution Factor Node</p>
+<p>An ERFN resolves incompatible event particle values for a pattern random variable and sends messages that represent
+a predicate pattern’s prior beliefs regarding the distributions of the said pattern random variable.</p>
+<p>Why this node exists:</p>
+<p>Messages propagating at this stage of the Beta subgraph still represents a predicate’s own marginal prior belief
+regarding a conditional pattern variable. The next step of processing happened at Event Combination Factor Node
+combines messages from multiple predicate pattern branches, when these predicates match the same conditional pattern
+variable.</p>
+<p>For parameters, combination is carried out by vector addition. However, for particles, due to each predicate drawing
+their own list of event values at the start of the cognitive cycle, messages sent by each predicate may contain
+entirely different event values, which hinders direct combination.</p>
+<p>Therefore, an ERFN should step in and resolve the conflicts, hence the name “Event Resolution Factor Node”. This is
+done by aggregating messages from all other pattern branches that matches the specified pattern variable and
+inspecting these messages for any conflicts. When conflicts exist, it <strong>“borrows”</strong> the event values from other
+messages and queries the probability densities of these borrowed event values w.r.t. the predicate’s prior belief
+distribution encoded by parameters, thus forming the so-called “surrogate particle list”.</p>
+<p>These augmented list of particles is then sent to ECFN, at which point it is guaranteed that all incoming messages
+would share the same list of event values.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="beta-join-factor-node">
 <h2>Beta Join Factor Node<a class="headerlink" href="#beta-join-factor-node" title="Permalink to this headline">¶</a></h2>

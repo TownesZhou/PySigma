@@ -636,6 +636,17 @@ class CMTN(BetaFactorNode):
     Transforms the joint predicate pattern messages from and to a list of univariate pattern element messages
     representative of the events of each of the referenced pattern random variables.
 
+    By default, outgoing messages that consists of only particles contents will be marked with a special attribute
+    ``preemptive == True``. Alternatively, a `preemptive` attribute can be set at the node level during the
+    initialization of this node, in which case when set to ``True`` the outgoing message will always be marked with
+    ``preemptive == True``.
+
+    Marking a message with ``preemptive == True`` indicates that the event particle values of this message should be
+    taken as the universal event values for the corresponding pattern variable during this cognitive cycle. Any other
+    predicate pattern that references this pattern variable should be forced to adopt this list of event values.
+    Therefore, at most one CNTN among all those that reference the same pattern variable can send preemptive messages,
+    otherwise an exception will be raised.
+
     Parameters
     ----------
     name : str
@@ -647,16 +658,19 @@ class CMTN(BetaFactorNode):
         The dictionary mapping a pattern random variable `Variable` instance to a `Transform` instance, if a
         transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the
         predicate pattern, there must be a corresponding FVN connected to this CMTN.
+    preemptive : bool, optional
+        Whether the outgoing messages to all downstream nodes will always be marked with ``preemptive == True``.
+        Defaults to ``False``.
 
     Attributes
     ----------
     args2var
     var2trans
+    preemptive
     """
 
-    def __init__(self, name, args2var, var2trans, **kwargs):
+    def __init__(self, name, args2var, var2trans, preemptive=False, **kwargs):
         super(CMTN, self).__init__(name, **kwargs)
-
         assert isinstance(args2var, dict) and \
                all((isinstance(k, Variable) and k.metatype is VariableMetatype.Random) or
                    (isinstance(k, tuple) and all((isinstance(arg, Variable) and arg.metatype is VariableMetatype.Random
@@ -669,6 +683,7 @@ class CMTN(BetaFactorNode):
 
         self.args2var = args2var
         self.var2trans = var2trans
+        self.preemptive = preemptive
 
         self.pretty_log["node type"] = "Concatenation, Marginalization, & Transformation Node"
 
@@ -704,11 +719,15 @@ class CMTN(BetaFactorNode):
 
            2. Annotate the outgoing message's parameter component (if included in incoming message):
 
-              1. Annotate the message with ``event_space=COMPLETE`` label to indicate the particles above approximates
-                 the same distribution the parameters are encoding, only if there is only one pattern element, and it
-                 references all predicate random arguments in the correct order
-                 (the original order when these arguments were declared)
-              2. In any other case, annotate the message with ``event_space=PARTIAL`` label.
+              1. Annotate the message with ``param_event_mismatch == False`` label to indicate the particles above
+                 approximates the same distribution the parameters are encoding, only if there is only one pattern
+                 element, and it references all predicate random arguments in the correct order (the original order when
+                 these arguments were declared)
+              2. In any other case, annotate the message with ``event_space=True`` label.
+
+           3. If the message do not contain parameters components, or if ``self.preemptive == True``, annotate the
+              outgoing message with special attribute ``preemptive == True``. Otherwise, annotate with
+              ``preemptive == False``.
 
            3. Send this message to the corresponding outgoing linkdata
         """
@@ -766,9 +785,15 @@ class CMTN(BetaFactorNode):
                 # Annotate COMPLETE if args referenced by this pattern element is/are all the predicate arguments, and
                 # in correct order
                 if args == ran_args:
-                    out_msg.attr['event_space'] = 'COMPLETE'
+                    out_msg.attr['param_event_mismatch'] = 'False'
                 else:
-                    out_msg.attr['event_space'] = 'PARTIAL'
+                    out_msg.attr['param_event_mismatch'] = 'True'
+
+            # 2.3 Annotate preemptive
+            if MessageType.Parameter not in out_msg.type or self.preemptive:
+                out_msg.attr['preemptive'] = True
+            else:
+                out_msg.attr['preemptive'] = False
 
             # 3. send message to corresponding linkdata
             out_ld.write(out_msg)
@@ -786,10 +811,23 @@ class FVN(VariableNode):
     Compares incoming message's particle values against the constraints declared for the random variable. Filters out
     the particles if they do not meet the constraints, and raise an exception in this case if the message does not
     contain parameters.
+
+    Parameters
+    ----------
+    preemptive : bool, optional
+        If ``True``, the outgoing message will always be marked with the special attribute ``preemptive == True``.
+        Defaults to ``False``.
+
+    Attributes
+    ----------
+    ran_var : Variable
+        The single random variable this FVN is representing.
+    val_constraints : set of torch.distributions.constraints.Constraint
+        The value constraints extracted from `ran_var`.
     """
 
-    def __init__(self, **kwargs):
-        super(FVN, self).__init__(**kwargs)
+    def __init__(self, name, **kwargs):
+        super(FVN, self).__init__(name, **kwargs)
         assert 'ran_var_list' in kwargs.keys() and len(list(kwargs['ran_var_list'])) == 1
 
         # Extract the random variable and value constraints
@@ -845,6 +883,32 @@ class FVN(VariableNode):
             out_ld.send(out_msg)
 
 
+class EAFN(BetaFactorNode):
+    """Event Aggregation Factor Node
+
+    An EAFN aggregates, for a represented conditional pattern random variable, a universal list of event particle values
+    that should be adopted and evaluated by all predicate patterns who reference this pattern variable. In other words,
+    the particles message sent by this node can be viewed as an augmented list of particles that both necessarily meets
+    the value constraint of this pattern variable and sufficiently covers the important regions in the event space
+    of each predicate pattern prior distribution.
+
+    Connected from Filter Variable Nodes, an EAFN expects incoming messages to contain at least either particles or
+    parameters, preferably both. In addition, messages should be marked with a boolean attribute ``preemptive``. A
+    message with ``preemptive == True`` indicates its list of event particle values will be taken directly as the final
+    universal list of event particle values, ignoring all other messages. An EAFN therefore expects to receive only
+    one preemptive message, otherwise an exception will be raised. If all messages are not preemptive, then the lists of
+    event values from all of them (if applicable, i.e., if said message contains particles) will be taken and
+    concatenated to form the universal list.
+
+    Parameters
+    ----------
+
+    Attributes
+    ----------
+    """
+    pass
+
+
 class ERFN(BetaFactorNode):
     """Event Resolution Factor Node
 
@@ -869,13 +933,6 @@ class ERFN(BetaFactorNode):
     distribution encoded by parameters, thus forming the so-called "surrogate particle list".
 
     These augmented list of particles is then sent to ECFN, at which point it is guaranteed that all incoming messages
-    would share the same list of event values. 
-
-    """
-    pass
-
-
-class ECFN(BetaFactorNode):
-    """Event Combination Factor Node
+    would share the same list of event values.
 
     """
