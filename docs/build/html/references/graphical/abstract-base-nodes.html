@@ -580,7 +580,8 @@ have the same tuple of relational variables.</p></li>
 <li><p><strong>Compute pattern</strong>: similar to an alpha factor node. However, since there may be multiple incoming links with
 same message propagation direction, each subdivided compute method, i.e., <cite>inward_compute()</cite> and
 <cite>outward_compute()</cite>, would be executed if <strong>all</strong> of its incoming linkdata contain new messages.</p></li>
-<li><p><strong>Quiescence state</strong>: similar to an alpha factor node</p></li>
+<li><p><strong>Quiescence state</strong>: similar to an alpha factor node. <cite>inward_compute()</cite> and <cite>outward_compute()</cite> will only be
+carried out if all of their corresponding incoming linkdata contain new messages.</p></li>
 </ul>
 <dl class="py method">
 <dt id="pysigma.graphical.alpha_beta_nodes.BetaFactorNode.add_link">

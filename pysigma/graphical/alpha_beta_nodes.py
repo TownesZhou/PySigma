@@ -560,7 +560,8 @@ class BetaFactorNode(FactorNode, ABC):
     * **Compute pattern**: similar to an alpha factor node. However, since there may be multiple incoming links with
       same message propagation direction, each subdivided compute method, i.e., `inward_compute()` and
       `outward_compute()`, would be executed if **all** of its incoming linkdata contain new messages.
-    * **Quiescence state**: similar to an alpha factor node
+    * **Quiescence state**: similar to an alpha factor node. `inward_compute()` and `outward_compute()` will only be
+      carried out if all of their corresponding incoming linkdata contain new messages.
     """
 
     def __init__(self, name, **kwargs):
@@ -802,7 +803,7 @@ class CMTN(BetaFactorNode):
         """
 
         """
-        pass
+        raise NotImplementedError
 
 
 class FVN(VariableNode):
@@ -902,11 +903,86 @@ class EAFN(BetaFactorNode):
 
     Parameters
     ----------
+    name : str
+        Name of this node.
+    ran_var : Variable
+        The pattern random variable this EAFN is representing.
 
     Attributes
     ----------
+    name
+    ran_var
+    e_shape : torch.Size
+        The event shape. Inffered from `ran_var`.
     """
-    pass
+    def __init__(self, name, ran_var, **kwargs):
+        assert isinstance(ran_var, Variable) and ran_var.metatype is VariableMetatype.Random
+        super(EAFN, self).__init__(name, **kwargs)
+
+        self.ran_var = ran_var
+        self.e_shape = torch.Size([self.ran_var.size])
+
+        self.pretty_log["node type"] = "Event Aggregation Factor Node"
+
+    def add_link(self, linkdata):
+        """All connected variable node should only represent one single random variable, and it must be `self.ran_var`.
+
+        """
+        super(EAFN, self).add_link(linkdata)
+        assert len(linkdata.vn.ran_vars) == 1 and linkdata.vn.ran_vars[0] == self.ran_var
+
+    def inward_compute(self, in_ld_list, out_ld_list):
+        """In no incoming message is preemptive, then aggregate particle event values and log sampling densities.
+        Otherwise, take the particle event values and log sampling densities form the preemptive message. If there are
+        more than one preemptive message, raise an exception.
+
+        Outgoing message will be an identity Particles message.
+
+        Raises
+        ------
+        ValueError
+            If found multiple preemptive messages.
+        """
+        # For inward direction, there should be only one outgoing node
+        assert len(out_ld_list) == 1
+
+        in_msgs = [in_ld.read() for in_ld in in_ld_list]
+        assert all(isinstance(msg, Message) and 'preemptive' in msg.attr.keys() for msg in in_msgs)
+
+        # Check preemptiveness
+        preempt_msgs = [msg for msg in in_msgs if msg.attr['preemptive']]
+        preempt_lds = [in_ld for in_ld in in_ld_list if in_ld.read()['preemptive']]
+        if len(preempt_msgs) > 1:
+            raise ValueError("At {}: Found multiple preemptive messages sent from these linkdata: {}. "
+                             "Please check if the associated predicate patterns are sending particles-only messages, "
+                             "or if more than one of them have been set to send preemptive messages."
+                             .format(self.name, preempt_lds, self.ran_var.name))
+        elif len(preempt_msgs) == 1:
+            # Found one preemptive message. Take it
+            preempt_msg = preempt_msgs[0]
+            particles, log_densities = preempt_msg.particles, preempt_msg.log_densities
+            out_msg = Message(MessageType.Particles,
+                              sample_shape=preempt_msg.sample_shape, event_shape=self.e_shape,
+                              particles=particles, log_densities=log_densities, weight=1,
+                              device=self.device)
+        else:
+            # Otherwise concatenate the particles from all messages that contain particles
+            ptcl_msgs = [msg for msg in in_msgs if MessageType.particles in msg.type]
+            particles_list = [msg.particles for msg in ptcl_msgs]
+            densities_list = [msg.log_densities for msg in ptcl_msgs]
+            cat_particles = torch.cat(particles_list, dim=0)
+            cat_densities = torch.cat(densities_list, dim=0)
+            cat_s_shape = torch.Size(sum(msg.s_shape[0] for msg in ptcl_msgs))
+            out_msg = Message(MessageType.Particles,
+                              sample_shape=cat_s_shape, event_shape=self.e_shape,
+                              particles=cat_particles, log_densities=cat_densities, weight=1,
+                              device=self.device)
+
+        # Send message
+        out_ld_list[0].write(out_msg)
+
+    def outward_compute(self, in_ld_list, out_ld_list):
+        raise NotImplementedError
 
 
 class ERFN(BetaFactorNode):

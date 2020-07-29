@@ -578,7 +578,7 @@ random variables.</p>
 <h2>Event Aggregation Factor Node<a class="headerlink" href="#event-aggregation-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.EAFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">EAFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">EAFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ran_var</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Event Aggregation Factor Node</p>
 <p>An EAFN aggregates, for a represented conditional pattern random variable, a universal list of event particle values
 that should be adopted and evaluated by all predicate patterns who reference this pattern variable. In other words,
@@ -592,6 +592,61 @@ universal list of event particle values, ignoring all other messages. An EAFN th
 one preemptive message, otherwise an exception will be raised. If all messages are not preemptive, then the lists of
 event values from all of them (if applicable, i.e., if said message contains particles) will be taken and
 concatenated to form the universal list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node.</p></li>
+<li><p><strong>ran_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a>) – The pattern random variable this EAFN is representing.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.name">
+<code class="sig-name descname">name</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.ran_var">
+<code class="sig-name descname">ran_var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.ran_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.e_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The event shape. Inffered from <cite>ran_var</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>All connected variable node should only represent one single random variable, and it must be <cite>self.ran_var</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>In no incoming message is preemptive, then aggregate particle event values and log sampling densities.
+Otherwise, take the particle event values and log sampling densities form the preemptive message. If there are
+more than one preemptive message, raise an exception.</p>
+<p>Outgoing message will be an identity Particles message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If found multiple preemptive messages.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outward message computation. To be implemented by child class.</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
