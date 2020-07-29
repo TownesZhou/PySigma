@@ -864,17 +864,29 @@
 
         <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span></div>
 
-<div class="viewcode-block" id="KnowledgeServer.surrogate_log_prob"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.surrogate_log_prob">[docs]</a>    <span class="k">def</span> <span class="nf">surrogate_log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">alt_particles</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="KnowledgeServer.surrogate_log_prob"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.surrogate_log_prob">[docs]</a>    <span class="k">def</span> <span class="nf">surrogate_log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">alt_particles</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_map</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution</span>
 <span class="sd">        instance.</span>
 
-<span class="sd">        Each particle tensor in `alt_particles` must correspond to a Predicate&#39;s random variable in the given</span>
-<span class="sd">        order. Alternatively, ``None`` can be specified as an entry in `alt_particles` so that the cached particle</span>
-<span class="sd">        tensor of the corresponding RV remembered by this KnowledgeServer instance will be used instead.</span>
+<span class="sd">        A batched distribution instance will be instantiated from `param`, along with registered metadata in</span>
+<span class="sd">        `self.dist_info`.</span>
 
-<span class="sd">        By default, the cached distribution ``self.cached_dist`` will be queried. Alternatively, the `alt_param` and</span>
-<span class="sd">        `alg_dist_info` arguments can be specified so that a surrogate distribution instance will be instantiated and</span>
-<span class="sd">        queried.</span>
+<span class="sd">        If `index_map` is not specified, each entries in the iterable `alt_particles` must represent events of the</span>
+<span class="sd">        Predicate&#39;s random argument at the same index in the predicate argument list. If the entry is &#39;None&#39;, the</span>
+<span class="sd">        cached particle tensor of that predicate argument will be used instead.</span>
+
+<span class="sd">        Alternatively, one can specify a dictionary `index_map` mapping integer index to an integer index or a list of</span>
+<span class="sd">        indices. In this case, entries in `alt_particles` must all be tensors. The entry ``alt_particles[i]`` will be</span>
+<span class="sd">        taken as the particle tensor for the ``index_map[i]`` th predicate argument. If ``index_map[i]`` is a list of</span>
+<span class="sd">        integers, then the particle tensor at this position will be interpreted as the concatenated/joint events of</span>
+<span class="sd">        those predicate arguments whose indices are in ``index_map[i]``. Note that for the sake of completeness, all</span>
+<span class="sd">        predicate arguments should be referenced by the values of `index_map`, otherwise some predicate arguments&#39;</span>
+<span class="sd">        events would not have correspondence in the returning log prob tensor. Nevertheless, as usual, it is allowed to</span>
+<span class="sd">        specify a ``None`` entry in `alt_particles`, only in the slots that will be mapped to a single predicate</span>
+<span class="sd">        argument but not multiple ones by `index_map`, to indicate cached particles to be used for the corresponding</span>
+<span class="sd">        predicate argument.</span>
+
+<span class="sd">        Correspondingly, if ``index_map`` is specified, then all indices in ``alt_particles`` must appear as keys.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -884,14 +896,21 @@
 <span class="sd">        alt_particles : list of (torch.Tensor or None), or None</span>
 <span class="sd">            The surrogate particles to be queried. If not None, each entry must either be None, so that the</span>
 <span class="sd">            corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last</span>
-<span class="sd">            dimension size equal to the corresponding value in ``self.rv_sizes``.</span>
+<span class="sd">            dimension size equal to the corresponding value in ``self.rv_sizes``. Defaults to None</span>
+<span class="sd">        index_map: dict, or None</span>
+<span class="sd">            The optional index mapping. If specified, all applicable indices into `alt_particles` must appear as keys</span>
+<span class="sd">            in this dict. The ``i`` th entry in `alt_particles` will be taken as the surrogate particles for the</span>
+<span class="sd">            predicate argument whose index is ``index_map[i]`` if ``index_map[i]`` is an integer, or the joint surrogate</span>
+<span class="sd">            particles for those arguments whose indices appear in ``index_map[i]`` if ``index_map[i]`` is a list.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        torch.Tensor</span>
 <span class="sd">            The log probability tensor, of shape ``(batch_shape + sample_shape)``, where ``batch_shape`` is the batch</span>
-<span class="sd">            shape of the Predicate&#39;s knowledge, and ``sample_shape`` is the list of sample sizes of the queried</span>
-<span class="sd">            particles in order (either those provided by `alt_particles` or those in ``self.particles``).</span>
+<span class="sd">            shape of the Predicate&#39;s knowledge, inferred from the shape of `param`, and ``sample_shape`` is the list of</span>
+<span class="sd">            sample sizes of the queried particles in the order given by `alt_particles`. In other words,</span>
+<span class="sd">            ``sample_shape[i] == alt_particles[i].shape[0]``. If ``alt_particles[i]``, it is the sample size of the</span>
+<span class="sd">            cached particle tensor of the corresponding predicate argument.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
@@ -902,27 +921,86 @@
 <span class="sd">        AssertionError</span>
 <span class="sd">            If `alt_param` is specified but it has different shape than ``self.batched_param``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">alt_particles</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">index_map</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_map</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">alt_particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="ow">and</span> \
-                <span class="nb">all</span><span class="p">(</span><span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">index_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Check keys value set</span>
+                <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">index_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">)))</span>
+                <span class="c1"># Check values format</span>
+                <span class="k">assert</span> <span class="nb">all</span><span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">))</span> <span class="ow">or</span>
+                           <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">))</span>
+                           <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_map</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                <span class="c1"># Check values set</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_map</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">values</span> <span class="o">+=</span> <span class="n">v</span>
+                <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">))</span>
+                <span class="c1"># Check None entry correspondence</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
+                <span class="c1"># Check tensor shape</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">alt_particles</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                        <span class="k">assert</span> <span class="n">alt_particles</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">assert</span> <span class="n">alt_particles</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Check number of tensors and tensor format</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span>
+                <span class="nb">all</span><span class="p">(</span><span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">index_map</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="n">alt_particles</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span>
 
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">alt_particles</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
             <span class="s2">&quot;Found `None` in `alt_particles`, but no particles have been cached yet to be used instead.&quot;</span>
 
-        <span class="n">query_particles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))</span>
+        <span class="c1"># Combinatorially concatenate particles to obtain full joint particle list.</span>
+        <span class="c1"># This excludes the concatenated joint particles, if index_map is specified.</span>
+        <span class="k">if</span> <span class="n">index_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">precat_ptcl</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))</span>
+            <span class="n">cog_ptcl</span> <span class="o">=</span> <span class="n">KnowledgeServer</span><span class="o">.</span><span class="n">combinatorial_cat</span><span class="p">(</span><span class="n">precat_ptcl</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Directly perform combinatorial concatenation on provided list of particles. Resulting tensor have correct</span>
+            <span class="c1"># sample shape for the output but wrong event shape.</span>
+            <span class="n">precat_ptcl</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))</span>
+            <span class="n">cat_ptcl</span> <span class="o">=</span> <span class="n">KnowledgeServer</span><span class="o">.</span><span class="n">combinatorial_cat</span><span class="p">(</span><span class="n">precat_ptcl</span><span class="p">)</span>
+            <span class="c1"># So we split into chunks, permute and re-concatenate chunks so that the event dimension aligns with</span>
+            <span class="c1"># predicate arguments in the correct order</span>
+            <span class="n">split_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
+                           <span class="k">else</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                           <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))]</span>
+            <span class="n">split_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cat_ptcl</span><span class="p">,</span> <span class="n">split_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># Fill list</span>
+            <span class="n">cog_ptcl_list</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="n">cog_ptcl_list</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">split_ptcl</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Split joint particles again, and put particles in slot in the order given by the list</span>
+                    <span class="n">split_joint_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">v</span><span class="p">]</span>
+                    <span class="n">split_joint_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">split_ptcl</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">split_joint_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+                        <span class="n">cog_ptcl_list</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">=</span> <span class="n">split_joint_ptcl</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="c1"># Concatenate into original cognitive format</span>
+            <span class="n">cog_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">cog_ptcl_list</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">cog_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span>
 
-        <span class="c1"># Combinatorially concatenate particles to obtain full joint particle list</span>
-        <span class="n">cat_particles</span> <span class="o">=</span> <span class="n">KnowledgeServer</span><span class="o">.</span><span class="n">combinatorial_cat</span><span class="p">(</span><span class="n">query_particles</span><span class="p">)</span>
         <span class="c1"># Transform joint event values from Cognitive format to PyTorch format</span>
-        <span class="n">torch_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2torch_event</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">)</span>
-
+        <span class="n">torch_ptcl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2torch_event</span><span class="p">(</span><span class="n">cog_ptcl</span><span class="p">)</span>
         <span class="c1"># Instantiate the distribution instance</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
         <span class="c1"># Query DistributionServer</span>
-        <span class="n">log_prob</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch_particles</span><span class="p">)</span>
+        <span class="n">log_prob</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch_ptcl</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">log_prob</span></div>
 

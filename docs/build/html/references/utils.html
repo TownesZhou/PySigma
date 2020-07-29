@@ -655,15 +655,25 @@ finite discrete random variables where a regular lattice should be drawn uniform
 
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer.surrogate_log_prob">
-<code class="sig-name descname">surrogate_log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param</span></em>, <em class="sig-param"><span class="n">alt_particles</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.surrogate_log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.surrogate_log_prob" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">surrogate_log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param</span></em>, <em class="sig-param"><span class="n">alt_particles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_map</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer.surrogate_log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer.surrogate_log_prob" title="Permalink to this definition">¶</a></dt>
 <dd><p>Query the log pdf of the surrogate particles specified by <cite>alt_particles</cite> w.r.t. the cached distribution
 instance.</p>
-<p>Each particle tensor in <cite>alt_particles</cite> must correspond to a Predicate’s random variable in the given
-order. Alternatively, <code class="docutils literal notranslate"><span class="pre">None</span></code> can be specified as an entry in <cite>alt_particles</cite> so that the cached particle
-tensor of the corresponding RV remembered by this KnowledgeServer instance will be used instead.</p>
-<p>By default, the cached distribution <code class="docutils literal notranslate"><span class="pre">self.cached_dist</span></code> will be queried. Alternatively, the <cite>alt_param</cite> and
-<cite>alg_dist_info</cite> arguments can be specified so that a surrogate distribution instance will be instantiated and
-queried.</p>
+<p>A batched distribution instance will be instantiated from <cite>param</cite>, along with registered metadata in
+<cite>self.dist_info</cite>.</p>
+<p>If <cite>index_map</cite> is not specified, each entries in the iterable <cite>alt_particles</cite> must represent events of the
+Predicate’s random argument at the same index in the predicate argument list. If the entry is ‘None’, the
+cached particle tensor of that predicate argument will be used instead.</p>
+<p>Alternatively, one can specify a dictionary <cite>index_map</cite> mapping integer index to an integer index or a list of
+indices. In this case, entries in <cite>alt_particles</cite> must all be tensors. The entry <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> will be
+taken as the particle tensor for the <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> th predicate argument. If <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> is a list of
+integers, then the particle tensor at this position will be interpreted as the concatenated/joint events of
+those predicate arguments whose indices are in <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code>. Note that for the sake of completeness, all
+predicate arguments should be referenced by the values of <cite>index_map</cite>, otherwise some predicate arguments’
+events would not have correspondence in the returning log prob tensor. Nevertheless, as usual, it is allowed to
+specify a <code class="docutils literal notranslate"><span class="pre">None</span></code> entry in <cite>alt_particles</cite>, only in the slots that will be mapped to a single predicate
+argument but not multiple ones by <cite>index_map</cite>, to indicate cached particles to be used for the corresponding
+predicate argument.</p>
+<p>Correspondingly, if <code class="docutils literal notranslate"><span class="pre">index_map</span></code> is specified, then all indices in <code class="docutils literal notranslate"><span class="pre">alt_particles</span></code> must appear as keys.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -671,13 +681,19 @@ queried.</p>
 being queried. Should have the same shape as the cached <code class="docutils literal notranslate"><span class="pre">self.batched_param</span></code>.</p></li>
 <li><p><strong>alt_particles</strong> (<em>list of</em><em> (</em><em>torch.Tensor</em><em> or </em><em>None</em><em>)</em><em>, or </em><em>None</em>) – The surrogate particles to be queried. If not None, each entry must either be None, so that the
 corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last
-dimension size equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>.</p></li>
+dimension size equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>. Defaults to None</p></li>
+<li><p><strong>index_map</strong> (<em>dict</em><em>, or </em><em>None</em>) – The optional index mapping. If specified, all applicable indices into <cite>alt_particles</cite> must appear as keys
+in this dict. The <code class="docutils literal notranslate"><span class="pre">i</span></code> th entry in <cite>alt_particles</cite> will be taken as the surrogate particles for the
+predicate argument whose index is <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> if <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> is an integer, or the joint surrogate
+particles for those arguments whose indices appear in <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> if <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> is a list.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The log probability tensor, of shape <code class="docutils literal notranslate"><span class="pre">(batch_shape</span> <span class="pre">+</span> <span class="pre">sample_shape)</span></code>, where <code class="docutils literal notranslate"><span class="pre">batch_shape</span></code> is the batch
-shape of the Predicate’s knowledge, and <code class="docutils literal notranslate"><span class="pre">sample_shape</span></code> is the list of sample sizes of the queried
-particles in order (either those provided by <cite>alt_particles</cite> or those in <code class="docutils literal notranslate"><span class="pre">self.particles</span></code>).</p>
+shape of the Predicate’s knowledge, inferred from the shape of <cite>param</cite>, and <code class="docutils literal notranslate"><span class="pre">sample_shape</span></code> is the list of
+sample sizes of the queried particles in the order given by <cite>alt_particles</cite>. In other words,
+<code class="docutils literal notranslate"><span class="pre">sample_shape[i]</span> <span class="pre">==</span> <span class="pre">alt_particles[i].shape[0]</span></code>. If <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code>, it is the sample size of the
+cached particle tensor of the corresponding predicate argument.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>torch.Tensor</p>

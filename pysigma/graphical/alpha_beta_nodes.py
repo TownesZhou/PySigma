@@ -704,11 +704,11 @@ class CMTN(BetaFactorNode):
 
            2. Annotate the outgoing message's parameter component (if included in incoming message):
 
-              1. Annotate the message with "COMPLETE" label to indicate the particles above approximates the same
-                 distribution the parameters are encoding, only if there is only one pattern element, and it references
-                 all predicate random arguments in the correct order (the original order when these arguments were
-                 declared)
-              2. In any other case, annotate the message with "PARTIAL" label.
+              1. Annotate the message with ``event_space=COMPLETE`` label to indicate the particles above approximates
+                 the same distribution the parameters are encoding, only if there is only one pattern element, and it
+                 references all predicate random arguments in the correct order
+                 (the original order when these arguments were declared)
+              2. In any other case, annotate the message with ``event_space=PARTIAL`` label.
 
            3. Send this message to the corresponding outgoing linkdata
         """
@@ -847,6 +847,29 @@ class FVN(VariableNode):
 
 class ERFN(BetaFactorNode):
     """Event Resolution Factor Node
+
+    An ERFN resolves incompatible event particle values for a pattern random variable and sends messages that represent
+    a predicate pattern's prior beliefs regarding the distributions of the said pattern random variable.
+
+    Why this node exists:
+
+    Messages propagating at this stage of the Beta subgraph still represents a predicate's own marginal prior belief
+    regarding a conditional pattern variable. The next step of processing happened at Event Combination Factor Node
+    combines messages from multiple predicate pattern branches, when these predicates match the same conditional pattern
+    variable.
+
+    For parameters, combination is carried out by vector addition. However, for particles, due to each predicate drawing
+    their own list of event values at the start of the cognitive cycle, messages sent by each predicate may contain
+    entirely different event values, which hinders direct combination.
+
+    Therefore, an ERFN should step in and resolve the conflicts, hence the name "Event Resolution Factor Node". This is
+    done by aggregating messages from all other pattern branches that matches the specified pattern variable and
+    inspecting these messages for any conflicts. When conflicts exist, it **"borrows"** the event values from other
+    messages and queries the probability densities of these borrowed event values w.r.t. the predicate's prior belief
+    distribution encoded by parameters, thus forming the so-called "surrogate particle list".
+
+    These augmented list of particles is then sent to ECFN, at which point it is guaranteed that all incoming messages
+    would share the same list of event values. 
 
     """
     pass

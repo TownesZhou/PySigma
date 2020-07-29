@@ -472,11 +472,11 @@ the transformation on the message.</p></li>
 </li>
 <li><p>Annotate the outgoing message’s parameter component (if included in incoming message):</p>
 <ol class="arabic simple">
-<li><p>Annotate the message with “COMPLETE” label to indicate the particles above approximates the same
-distribution the parameters are encoding, only if there is only one pattern element, and it references
-all predicate random arguments in the correct order (the original order when these arguments were
-declared)</p></li>
-<li><p>In any other case, annotate the message with “PARTIAL” label.</p></li>
+<li><p>Annotate the message with <code class="docutils literal notranslate"><span class="pre">event_space=COMPLETE</span></code> label to indicate the particles above approximates
+the same distribution the parameters are encoding, only if there is only one pattern element, and it
+references all predicate random arguments in the correct order
+(the original order when these arguments were declared)</p></li>
+<li><p>In any other case, annotate the message with <code class="docutils literal notranslate"><span class="pre">event_space=PARTIAL</span></code> label.</p></li>
 </ol>
 </li>
 <li><p>Send this message to the corresponding outgoing linkdata</p></li>

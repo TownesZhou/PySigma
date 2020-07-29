@@ -651,17 +651,29 @@ class KnowledgeServer:
 
         return particles, log_densities
 
-    def surrogate_log_prob(self, param, alt_particles=None):
+    def surrogate_log_prob(self, param, alt_particles=None, index_map=None):
         """Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution
         instance.
 
-        Each particle tensor in `alt_particles` must correspond to a Predicate's random variable in the given
-        order. Alternatively, ``None`` can be specified as an entry in `alt_particles` so that the cached particle
-        tensor of the corresponding RV remembered by this KnowledgeServer instance will be used instead.
+        A batched distribution instance will be instantiated from `param`, along with registered metadata in
+        `self.dist_info`.
 
-        By default, the cached distribution ``self.cached_dist`` will be queried. Alternatively, the `alt_param` and
-        `alg_dist_info` arguments can be specified so that a surrogate distribution instance will be instantiated and
-        queried.
+        If `index_map` is not specified, each entries in the iterable `alt_particles` must represent events of the
+        Predicate's random argument at the same index in the predicate argument list. If the entry is 'None', the
+        cached particle tensor of that predicate argument will be used instead.
+
+        Alternatively, one can specify a dictionary `index_map` mapping integer index to an integer index or a list of
+        indices. In this case, entries in `alt_particles` must all be tensors. The entry ``alt_particles[i]`` will be
+        taken as the particle tensor for the ``index_map[i]`` th predicate argument. If ``index_map[i]`` is a list of
+        integers, then the particle tensor at this position will be interpreted as the concatenated/joint events of
+        those predicate arguments whose indices are in ``index_map[i]``. Note that for the sake of completeness, all
+        predicate arguments should be referenced by the values of `index_map`, otherwise some predicate arguments'
+        events would not have correspondence in the returning log prob tensor. Nevertheless, as usual, it is allowed to
+        specify a ``None`` entry in `alt_particles`, only in the slots that will be mapped to a single predicate
+        argument but not multiple ones by `index_map`, to indicate cached particles to be used for the corresponding
+        predicate argument.
+
+        Correspondingly, if ``index_map`` is specified, then all indices in ``alt_particles`` must appear as keys.
 
         Parameters
         ----------
@@ -671,14 +683,21 @@ class KnowledgeServer:
         alt_particles : list of (torch.Tensor or None), or None
             The surrogate particles to be queried. If not None, each entry must either be None, so that the
             corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last
-            dimension size equal to the corresponding value in ``self.rv_sizes``.
+            dimension size equal to the corresponding value in ``self.rv_sizes``. Defaults to None
+        index_map: dict, or None
+            The optional index mapping. If specified, all applicable indices into `alt_particles` must appear as keys
+            in this dict. The ``i`` th entry in `alt_particles` will be taken as the surrogate particles for the
+            predicate argument whose index is ``index_map[i]`` if ``index_map[i]`` is an integer, or the joint surrogate
+            particles for those arguments whose indices appear in ``index_map[i]`` if ``index_map[i]`` is a list.
 
         Returns
         -------
         torch.Tensor
             The log probability tensor, of shape ``(batch_shape + sample_shape)``, where ``batch_shape`` is the batch
-            shape of the Predicate's knowledge, and ``sample_shape`` is the list of sample sizes of the queried
-            particles in order (either those provided by `alt_particles` or those in ``self.particles``).
+            shape of the Predicate's knowledge, inferred from the shape of `param`, and ``sample_shape`` is the list of
+            sample sizes of the queried particles in the order given by `alt_particles`. In other words,
+            ``sample_shape[i] == alt_particles[i].shape[0]``. If ``alt_particles[i]``, it is the sample size of the
+            cached particle tensor of the corresponding predicate argument.
 
         Raises
         ------
@@ -689,27 +708,86 @@ class KnowledgeServer:
         AssertionError
             If `alt_param` is specified but it has different shape than ``self.batched_param``.
         """
+        assert isinstance(param, torch.Tensor)
+        assert alt_particles is None or isinstance(alt_particles, list)
+        assert index_map is None or isinstance(index_map, dict)
         if alt_particles is not None:
-            assert isinstance(alt_particles, list) and len(alt_particles) == self.num_rvs and \
-                all(p is None or (isinstance(p, torch.Tensor) and p.dim() == 2 and p.shape[1] == self.rv_sizes[i])
+            if index_map is not None:
+                # Check keys value set
+                assert set(index_map.keys()) == set(range(len(alt_particles)))
+                # Check values format
+                assert all((isinstance(v, int) and v in range(self.num_rvs)) or
+                           (isinstance(v, list) and all(isinstance(i, int) and i in range(self.num_rvs) for i in v))
+                           for v in index_map.values())
+                # Check values set
+                values = []
+                for v in index_map.values():
+                    if isinstance(v, int):
+                        values.append(v)
+                    else:
+                        values += v
+                assert set(values) == set(range(self.num_rvs))
+                # Check None entry correspondence
+                for i, p in enumerate(alt_particles):
+                    if p is None:
+                        assert isinstance(index_map[i], int)
+                # Check tensor shape
+                for k, v in index_map.items():
+                    assert isinstance(alt_particles[k], torch.Tensor) and alt_particles[k].dim() == 2
+                    if isinstance(v, int):
+                        assert alt_particles[k].shape[-1] == self.rv_sizes[v]
+                    else:
+                        assert alt_particles[k].shape[-1] == sum(self.rv_sizes[i] for i in v)
+            else:
+                # Check number of tensors and tensor format
+                assert len(alt_particles) == self.num_rvs
+                all(p is None or (isinstance(p, torch.Tensor) and p.dim() == 2 and p.shape[-1] == self.rv_sizes[i])
                     for i, p in enumerate(alt_particles))
         else:
+            assert index_map is None
             alt_particles = (None,) * self.num_rvs
 
         assert all(isinstance(p, torch.Tensor) for p in alt_particles) or self.particles is not None, \
             "Found `None` in `alt_particles`, but no particles have been cached yet to be used instead."
 
-        query_particles = list(p if p is not None else self.particles[i] for i, p in enumerate(alt_particles))
+        # Combinatorially concatenate particles to obtain full joint particle list.
+        # This excludes the concatenated joint particles, if index_map is specified.
+        if index_map is None:
+            precat_ptcl = list(p if p is not None else self.particles[i] for i, p in enumerate(alt_particles))
+            cog_ptcl = KnowledgeServer.combinatorial_cat(precat_ptcl)
+        else:
+            # Directly perform combinatorial concatenation on provided list of particles. Resulting tensor have correct
+            # sample shape for the output but wrong event shape.
+            precat_ptcl = list(p if p is not None else self.particles[index_map[i]]
+                                    for i, p in enumerate(alt_particles))
+            cat_ptcl = KnowledgeServer.combinatorial_cat(precat_ptcl)
+            # So we split into chunks, permute and re-concatenate chunks so that the event dimension aligns with
+            # predicate arguments in the correct order
+            split_sizes = [self.rv_sizes[index_map[i]] if isinstance(index_map[i], int)
+                           else sum(self.rv_sizes[u] for u in index_map[i])
+                           for i in range(len(alt_particles))]
+            split_ptcl = torch.split(cat_ptcl, split_sizes, dim=-1)
+            # Fill list
+            cog_ptcl_list = [None] * self.num_rvs
+            for i, v in index_map.items():
+                if isinstance(v, int):
+                    cog_ptcl_list[v] = split_ptcl[i]
+                else:
+                    # Split joint particles again, and put particles in slot in the order given by the list
+                    split_joint_sizes = [self.rv_sizes[u] for u in v]
+                    split_joint_ptcl = torch.split(split_ptcl[i], split_joint_sizes, dim=-1)
+                    for j, u in enumerate(v):
+                        cog_ptcl_list[u] = split_joint_ptcl[j]
+            # Concatenate into original cognitive format
+            cog_ptcl = torch.cat(cog_ptcl_list, dim=-1)
+        assert cog_ptcl.shape[-1] == self.e_shape
 
-        # Combinatorially concatenate particles to obtain full joint particle list
-        cat_particles = KnowledgeServer.combinatorial_cat(query_particles)
         # Transform joint event values from Cognitive format to PyTorch format
-        torch_particles = self.event2torch_event(cat_particles)
-
+        torch_ptcl = self.event2torch_event(cog_ptcl)
         # Instantiate the distribution instance
         dist = DistributionServer.param2dist(self.dist_class, param, self.dist_info)
         # Query DistributionServer
-        log_prob = DistributionServer.log_prob(dist, torch_particles)
+        log_prob = DistributionServer.log_prob(dist, torch_ptcl)
 
         return log_prob
 
