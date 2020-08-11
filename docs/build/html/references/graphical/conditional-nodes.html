@@ -656,6 +656,11 @@ more than one preemptive message, raise an exception.</p>
 <dt id="pysigma.graphical.alpha_beta_nodes.ERFN">
 <em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ERFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Event Resolution Factor Node</p>
+<p>An ERFN receives messages containing the universal event values determined by EAFN for each of the pattern variable
+referenced by the represented predicate pattern, as well as another one message that is the original preprocessed
+message sent by the alpha subgraph terminal node (ESFN), whose event values are unprocessed. This node then proceeds to check whether
+the universal event values coincide with the event values from the original message, and consequently whether to
+perform importance re-weighting.</p>
 <p>An ERFN resolves incompatible event particle values for a pattern random variable and sends messages that represent
 a predicate pattern’s prior beliefs regarding the distributions of the said pattern random variable.</p>
 <p>Why this node exists:</p>

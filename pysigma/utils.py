@@ -921,6 +921,65 @@ class KnowledgeServer:
 
         return comb_cat
 
+    @staticmethod
+    def combinatorial_decat(cat_particles, split_sizes):
+        """Helper static method that combinatorially de-concatenate the joint particles specified by `cat_particles`,
+        with the event size of the particle tensors in each de-concatenated list given by `split_sizes`. This method
+        implements the exact opposite operation of `combinatorial_cat`.
+
+        An exception will be raised if `cat_particles` cannot be properly de-concatenated, for instance if it is not
+        previously a result produced by `combinatorial_cat`.
+
+        Parameters
+        ----------
+        cat_particles : torch.Tensor
+            The concatenated particle tensor, of shape::
+
+                [sample_size[0], ..., sample_size[m], sum(split_sizes)]
+
+            where `m` is the number of variables to split/de-concatenate, to which the length of `split_sizes` should
+            equal.
+        split_sizes : list of int
+            A list of integers denoting the event size of each split variable in order.
+
+        Returns
+        -------
+        tuple of torch.Tensor
+            The tuple of de-concatenated particles. The `i` th entry has shape ``[sample_size[i], split_sizes[i]]``.
+
+        Raises
+        ------
+        ValueError
+            If `cat_particles` was not a result from `combinatorial_cat` and cannot be properly de-concatenated.
+        """
+        assert isinstance(cat_particles, torch.Tensor) and cat_particles.dim() >= 2
+        assert isinstance(split_sizes, list) and all(isinstance(s, int) and s > 0 for s in split_sizes)
+        m = len(split_sizes)
+        if m != cat_particles.dim() - 1:
+            raise ValueError("Found {} numbers in `split_sizes`, therefore expect `cat_particles` have {} dimensions. "
+                             "Instead found {} dimensions."
+                             .format(m, m + 1, cat_particles.dim()))
+        if sum(split_sizes) != cat_particles.shape[-1]:
+            raise ValueError("The sum of `split_sizes` is {}, therefore expect the last dimension of `cat_particles`, "
+                             "corresponding to the event dimension of joint particles, have an equal size. Instead "
+                             "found a dimension size of {}"
+                             .format(sum(split_sizes), cat_particles.shape[-1]))
+
+        split_exp_ptcl = torch.split(cat_particles, split_sizes, dim=-1)
+        split_ptcl = []
+        # Check for uniqueness to determine if original tensor could be properly de-concatenated
+        for i, exp_ptcl in enumerate(split_exp_ptcl):
+            for j in range(m):
+                if j != i:
+                    exp_ptcl = exp_ptcl.unique(dim=j)
+                    if exp_ptcl.shape[j] != 1:
+                        raise ValueError("The provided `cat_particles` cannot be properly de-concatenated. The {}th "
+                                         "split particle tensor with shape {}, cannot be reduced to unique elements "
+                                         "along dimension {}.".format(i, split_exp_ptcl[i], j))
+            split_ptcl.append(exp_ptcl.view(exp_ptcl.shape[i], exp_ptcl.shape[-1]))
+
+        return tuple(split_ptcl)
+
     """
         Default methods that are distribution class independent
             - _default_draw:
