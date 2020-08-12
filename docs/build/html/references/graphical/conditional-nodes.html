@@ -654,30 +654,83 @@ more than one preemptive message, raise an exception.</p>
 <h2>Event Resolution Factor Node<a class="headerlink" href="#event-resolution-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.alpha_beta_nodes.ERFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ERFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ERFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">args2var</span></em>, <em class="sig-param"><span class="n">var2trans</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Event Resolution Factor Node</p>
 <p>An ERFN receives messages containing the universal event values determined by EAFN for each of the pattern variable
-referenced by the represented predicate pattern, as well as another one message that is the original preprocessed
-message sent by the alpha subgraph terminal node (ESFN), whose event values are unprocessed. This node then proceeds to check whether
-the universal event values coincide with the event values from the original message, and consequently whether to
-perform importance re-weighting.</p>
-<p>An ERFN resolves incompatible event particle values for a pattern random variable and sends messages that represent
-a predicate pattern’s prior beliefs regarding the distributions of the said pattern random variable.</p>
-<p>Why this node exists:</p>
-<p>Messages propagating at this stage of the Beta subgraph still represents a predicate’s own marginal prior belief
-regarding a conditional pattern variable. The next step of processing happened at Event Combination Factor Node
-combines messages from multiple predicate pattern branches, when these predicates match the same conditional pattern
-variable.</p>
-<p>For parameters, combination is carried out by vector addition. However, for particles, due to each predicate drawing
-their own list of event values at the start of the cognitive cycle, messages sent by each predicate may contain
-entirely different event values, which hinders direct combination.</p>
-<p>Therefore, an ERFN should step in and resolve the conflicts, hence the name “Event Resolution Factor Node”. This is
-done by aggregating messages from all other pattern branches that matches the specified pattern variable and
-inspecting these messages for any conflicts. When conflicts exist, it <strong>“borrows”</strong> the event values from other
-messages and queries the probability densities of these borrowed event values w.r.t. the predicate’s prior belief
-distribution encoded by parameters, thus forming the so-called “surrogate particle list”.</p>
-<p>These augmented list of particles is then sent to ECFN, at which point it is guaranteed that all incoming messages
-would share the same list of event values.</p>
+referenced by the represented predicate pattern, as well as another one message that is the original unprocessed
+message sent by the alpha subgraph terminal node (ESFN), whose event values are unprocessed. This node then proceeds
+to compare the universal event values of each pattern variable against the original event values of the associated
+predicate arguments from the unprocessed message. If all such comparisons are equal, then the original message would
+be sent, otherwise the universal event values will be taken as the surrogate particle values in place of the
+original ones, followed by a step of importance re-weighting to yield an augmented message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ks</strong> (<a class="reference internal" href="../utils.html#pysigma.utils.KnowledgeServer" title="pysigma.utils.KnowledgeServer"><em>KnowledgeServer</em></a>) – The KnowledgeServer instance for the represented predicate pattern.</p></li>
+<li><p><strong>args2var</strong> (<em>dict</em>) – The dictionary mapping either a single predicate random argument <cite>Variable</cite> instance, or a <cite>tuple</cite> of predicate
+random argument <cite>Variable</cite> instances, to a single pattern random variable <cite>Variable</cite> instance.</p></li>
+<li><p><strong>var2trans</strong> (<em>dict</em>) – The dictionary mapping a pattern random variable <cite>Variable</cite> instance to a <cite>Transform</cite> instance, if a
+transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the
+predicate pattern, there must be a corresponding FVN connected to this CMTN.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.ks">
+<code class="sig-name descname">ks</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.ks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.args2var">
+<code class="sig-name descname">args2var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.args2var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.var2trans">
+<code class="sig-name descname">var2trans</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.var2trans" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>ERFN admits only one outgoing linkdata connecting to a DVN with full predicate arguments as random variables.</p>
+<p>ERFN can admit multiple incoming linkdata, but each must be labeled with a boolean special attribute
+<code class="docutils literal notranslate"><span class="pre">&quot;original&quot;</span></code>. Each of the <code class="docutils literal notranslate"><span class="pre">original==False</span></code> linkdata must connect to a DVN that is one-to-one corresponding
+to one of the pattern variable referenced by the represented predicate pattern. On the other hand, only one
+<code class="docutils literal notranslate"><span class="pre">original==True</span></code> linkdata can be admitted, and it must be a DVN with full predicate arguments as random
+variables, similar to the outgoing DVN node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>The following procedure is carried out:</p>
+<ol class="arabic">
+<li><p>For each pattern element (args &amp; var pair in <code class="docutils literal notranslate"><span class="pre">self.args2var</span></code>):</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Gather the universal event values of the pattern variable from corresponding incoming linkdata</p></li>
+<li><p>If a transformation is declared on this pattern element, then apply the FORWARD (inverse of inverse)
+transformation on the universal event values</p></li>
+<li><p>Gather the original event values of the predicate argument(s) from the “original” incoming linkdata</p></li>
+<li><p>If this pattern element contains multiple predicate arguments, then concatenate the original event values</p></li>
+<li><p>Compare the (concatenated) original event values with the universal event values. If they are the same,
+continue to next pattern element; otherwise carry out following steps</p></li>
+<li><p>Save the (transformed) event values as part of the surrogate particles.</p></li>
+</ol>
+</div></blockquote>
+</li>
+<li><p>If each comparision in step 4 yields equal result, then sent the “original” message directly. Otherwise,
+use the surrogate particles to create an augmented Particles message, combine with original parameters,
+and perform importance re-weighting. Send the resulting message</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 </div>

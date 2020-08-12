@@ -665,15 +665,12 @@ instance.</p>
 Predicate’s random argument at the same index in the predicate argument list. If the entry is ‘None’, the
 cached particle tensor of that predicate argument will be used instead.</p>
 <p>Alternatively, one can specify a dictionary <cite>index_map</cite> mapping integer index to an integer index or a list of
-indices. In this case, entries in <cite>alt_particles</cite> must all be tensors. The entry <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> will be
-taken as the particle tensor for the <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> th predicate argument. If <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> is a list of
-integers, then the particle tensor at this position will be interpreted as the concatenated/joint events of
-those predicate arguments whose indices are in <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code>. Note that for the sake of completeness, all
-predicate arguments should be referenced by the values of <cite>index_map</cite>, otherwise some predicate arguments’
-events would not have correspondence in the returning log prob tensor. Nevertheless, as usual, it is allowed to
-specify a <code class="docutils literal notranslate"><span class="pre">None</span></code> entry in <cite>alt_particles</cite>, only in the slots that will be mapped to a single predicate
-argument but not multiple ones by <cite>index_map</cite>, to indicate cached particles to be used for the corresponding
-predicate argument.</p>
+indices. The entry <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> will be taken as the particle tensor for the <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> th
+predicate argument. If <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> is a list of integers, then the particle tensor at this position will be
+interpreted as the concatenated/joint events of those predicate arguments whose indices are in <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code>.
+Note that the entry <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> can be <code class="docutils literal notranslate"><span class="pre">None</span></code>, however in this case <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> must refer to
+one predicate argument only. <strong>If there is any predicate argument that is not referenced by values of</strong>
+<cite>index_map</cite> <strong>, then the returning</strong> <cite>surrogate_log_prob</cite> <strong>will be marginalized over this predicate argument.</strong></p>
 <p>Correspondingly, if <code class="docutils literal notranslate"><span class="pre">index_map</span></code> is specified, then all indices in <code class="docutils literal notranslate"><span class="pre">alt_particles</span></code> must appear as keys.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

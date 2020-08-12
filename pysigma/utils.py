@@ -663,15 +663,12 @@ class KnowledgeServer:
         cached particle tensor of that predicate argument will be used instead.
 
         Alternatively, one can specify a dictionary `index_map` mapping integer index to an integer index or a list of
-        indices. In this case, entries in `alt_particles` must all be tensors. The entry ``alt_particles[i]`` will be
-        taken as the particle tensor for the ``index_map[i]`` th predicate argument. If ``index_map[i]`` is a list of
-        integers, then the particle tensor at this position will be interpreted as the concatenated/joint events of
-        those predicate arguments whose indices are in ``index_map[i]``. Note that for the sake of completeness, all
-        predicate arguments should be referenced by the values of `index_map`, otherwise some predicate arguments'
-        events would not have correspondence in the returning log prob tensor. Nevertheless, as usual, it is allowed to
-        specify a ``None`` entry in `alt_particles`, only in the slots that will be mapped to a single predicate
-        argument but not multiple ones by `index_map`, to indicate cached particles to be used for the corresponding
-        predicate argument.
+        indices. The entry ``alt_particles[i]`` will be taken as the particle tensor for the ``index_map[i]`` th
+        predicate argument. If ``index_map[i]`` is a list of integers, then the particle tensor at this position will be
+        interpreted as the concatenated/joint events of those predicate arguments whose indices are in ``index_map[i]``.
+        Note that the entry ``alt_particles[i]`` can be ``None``, however in this case ``index_map[i]`` must refer to
+        one predicate argument only. **If there is any predicate argument that is not referenced by values of**
+        `index_map` **, then the returning** `surrogate_log_prob` **will be marginalized over this predicate argument.**
 
         Correspondingly, if ``index_map`` is specified, then all indices in ``alt_particles`` must appear as keys.
 
@@ -711,6 +708,7 @@ class KnowledgeServer:
         assert isinstance(param, torch.Tensor)
         assert alt_particles is None or isinstance(alt_particles, list)
         assert index_map is None or isinstance(index_map, dict)
+        index_map_values = []
         if alt_particles is not None:
             if index_map is not None:
                 # Check keys value set
@@ -720,24 +718,24 @@ class KnowledgeServer:
                            (isinstance(v, list) and all(isinstance(i, int) and i in range(self.num_rvs) for i in v))
                            for v in index_map.values())
                 # Check values set
-                values = []
                 for v in index_map.values():
                     if isinstance(v, int):
-                        values.append(v)
+                        index_map_values.append(v)
                     else:
-                        values += v
-                assert set(values) == set(range(self.num_rvs))
+                        index_map_values += v
+                assert set(index_map_values).issubset(set(range(self.num_rvs)))
                 # Check None entry correspondence
                 for i, p in enumerate(alt_particles):
                     if p is None:
                         assert isinstance(index_map[i], int)
                 # Check tensor shape
                 for k, v in index_map.items():
-                    assert isinstance(alt_particles[k], torch.Tensor) and alt_particles[k].dim() == 2
-                    if isinstance(v, int):
-                        assert alt_particles[k].shape[-1] == self.rv_sizes[v]
-                    else:
-                        assert alt_particles[k].shape[-1] == sum(self.rv_sizes[i] for i in v)
+                    if isinstance(alt_particles[k], torch.Tensor):
+                        assert alt_particles[k].dim() == 2
+                        if isinstance(v, int):
+                            assert alt_particles[k].shape[-1] == self.rv_sizes[v]
+                        else:
+                            assert alt_particles[k].shape[-1] == sum(self.rv_sizes[i] for i in v)
             else:
                 # Check number of tensors and tensor format
                 assert len(alt_particles) == self.num_rvs
@@ -752,32 +750,46 @@ class KnowledgeServer:
 
         # Combinatorially concatenate particles to obtain full joint particle list.
         # This excludes the concatenated joint particles, if index_map is specified.
+        num_unref = 0
         if index_map is None:
             precat_ptcl = list(p if p is not None else self.particles[i] for i, p in enumerate(alt_particles))
             cog_ptcl = KnowledgeServer.combinatorial_cat(precat_ptcl)
         else:
-            # Directly perform combinatorial concatenation on provided list of particles. Resulting tensor have correct
-            # sample shape for the output but wrong event shape.
-            precat_ptcl = list(p if p is not None else self.particles[index_map[i]]
-                                    for i, p in enumerate(alt_particles))
+            unref_arg_ids = [v for v in range(self.num_rvs) if v not in index_map_values]
+            num_unref = len(unref_arg_ids)
+            # Directly perform combinatorial concatenation on provided list of particles, with unreferenced arguments'
+            # particles appended to the front, if there's any. Resulting tensor have correct sample shape for the output
+            # (except those corresponding to unreferenced arguments at the front) but wrong event shape
+            # (and values if there's any unreferenced argument).
+            ref_ptcl = list(p if p is not None else self.particles[index_map[i]] for i, p in enumerate(alt_particles))
+            unref_ptcl = list(self.particles[i] for i in unref_arg_ids)
+            precat_ptcl = unref_ptcl + ref_ptcl
             cat_ptcl = KnowledgeServer.combinatorial_cat(precat_ptcl)
             # So we split into chunks, permute and re-concatenate chunks so that the event dimension aligns with
             # predicate arguments in the correct order
-            split_sizes = [self.rv_sizes[index_map[i]] if isinstance(index_map[i], int)
+            split_sizes = [self.rv_sizes[i] for i in unref_arg_ids] + \
+                          [self.rv_sizes[index_map[i]] if isinstance(index_map[i], int)
                            else sum(self.rv_sizes[u] for u in index_map[i])
                            for i in range(len(alt_particles))]
             split_ptcl = torch.split(cat_ptcl, split_sizes, dim=-1)
+
             # Fill list
             cog_ptcl_list = [None] * self.num_rvs
-            for i, v in index_map.items():
+            # Fill referenced particles
+            for i in range(len(alt_particles)):
+                v = index_map[i]
                 if isinstance(v, int):
-                    cog_ptcl_list[v] = split_ptcl[i]
+                    cog_ptcl_list[v] = split_ptcl[num_unref + i]
                 else:
                     # Split joint particles again, and put particles in slot in the order given by the list
                     split_joint_sizes = [self.rv_sizes[u] for u in v]
-                    split_joint_ptcl = torch.split(split_ptcl[i], split_joint_sizes, dim=-1)
+                    split_joint_ptcl = torch.split(split_ptcl[num_unref + i], split_joint_sizes, dim=-1)
                     for j, u in enumerate(v):
                         cog_ptcl_list[u] = split_joint_ptcl[j]
+            # Fill unreferenced particles
+            for i, v in enumerate(unref_arg_ids):
+                cog_ptcl_list[v] = split_ptcl[i]
+
             # Concatenate into original cognitive format
             cog_ptcl = torch.cat(cog_ptcl_list, dim=-1)
         assert cog_ptcl.shape[-1] == self.e_shape
@@ -788,6 +800,12 @@ class KnowledgeServer:
         dist = DistributionServer.param2dist(self.dist_class, param, self.dist_info)
         # Query DistributionServer
         log_prob = DistributionServer.log_prob(dist, torch_ptcl)
+        # Marginalize over unreferenced dimensions if needed
+        if num_unref > 0:
+            # Marginalize first few dimensions, since we've put them at front
+            prob = torch.exp(log_prob)
+            marg_prob = torch.sum(prob, dim=tuple(range(num_unref)))
+            log_prob = torch.log(marg_prob)
 
         return log_prob
 
