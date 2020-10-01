@@ -322,7 +322,7 @@ class Message:
         self.p_shape = param_shape
         self.s_shape = sample_shape
         self.e_shape = event_shape
-        # Number of random variabels
+        # Number of random variables
         self.num_rvs = len(self.particles)
 
         # Check whether necessary arguments are provided

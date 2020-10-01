@@ -988,27 +988,159 @@ class EAFN(BetaFactorNode):
 class ERFN(BetaFactorNode):
     """Event Resolution Factor Node
 
-    An ERFN resolves incompatible event particle values for a pattern random variable and sends messages that represent
-    a predicate pattern's prior beliefs regarding the distributions of the said pattern random variable.
+    An ERFN receives messages containing the universal event values determined by EAFN for each of the pattern variable
+    referenced by the represented predicate pattern, as well as another one message that is the original unprocessed
+    message sent by the alpha subgraph terminal node (ESFN), whose event values are unprocessed. This node then proceeds
+    to compare the universal event values of each pattern variable against the original event values of the associated
+    predicate arguments from the unprocessed message. If all such comparisons are equal, then the original message would
+    be sent, otherwise the universal event values will be taken as the surrogate particle values in place of the
+    original ones, followed by a step of importance re-weighting to yield an augmented message.
 
-    Why this node exists:
+    Parameters
+    ----------
+    ks : KnowledgeServer
+        The KnowledgeServer instance for the represented predicate pattern.
+    args2var : dict
+        The dictionary mapping either a single predicate random argument `Variable` instance, or a `tuple` of predicate
+        random argument `Variable` instances, to a single pattern random variable `Variable` instance.
+    var2trans : dict
+        The dictionary mapping a pattern random variable `Variable` instance to a `Transform` instance, if a
+        transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the
+        predicate pattern, there must be a corresponding FVN connected to this CMTN.
 
-    Messages propagating at this stage of the Beta subgraph still represents a predicate's own marginal prior belief
-    regarding a conditional pattern variable. The next step of processing happened at Event Combination Factor Node
-    combines messages from multiple predicate pattern branches, when these predicates match the same conditional pattern
-    variable.
+    Attributes
+    ----------
+    ks
+    args2var
+    var2trans
 
-    For parameters, combination is carried out by vector addition. However, for particles, due to each predicate drawing
-    their own list of event values at the start of the cognitive cycle, messages sent by each predicate may contain
-    entirely different event values, which hinders direct combination.
-
-    Therefore, an ERFN should step in and resolve the conflicts, hence the name "Event Resolution Factor Node". This is
-    done by aggregating messages from all other pattern branches that matches the specified pattern variable and
-    inspecting these messages for any conflicts. When conflicts exist, it **"borrows"** the event values from other
-    messages and queries the probability densities of these borrowed event values w.r.t. the predicate's prior belief
-    distribution encoded by parameters, thus forming the so-called "surrogate particle list".
-
-    These augmented list of particles is then sent to ECFN, at which point it is guaranteed that all incoming messages
-    would share the same list of event values.
 
     """
+    def __init__(self, name, ks, args2var, var2trans, **kwargs):
+        super(ERFN, self).__init__(name, **kwargs)
+        assert isinstance(ks, KnowledgeServer)
+        assert isinstance(args2var, dict) and \
+               all((isinstance(k, Variable) and k.metatype is VariableMetatype.Random) or
+                   (isinstance(k, tuple) and all((isinstance(arg, Variable) and arg.metatype is VariableMetatype.Random
+                                                  for arg in k)))
+                   for k in args2var.keys()) and \
+               all((isinstance(v, Variable) and v.metatype is VariableMetatype.Random) for v in args2var.values())
+        assert isinstance(var2trans, dict) and \
+               all(isinstance(k, Variable) and k.metatype is VariableMetatype.Random for k in var2trans.keys()) and \
+               all(isinstance(v, Transform) for v in var2trans.values())
+
+        self.ks = ks
+        self.args2var = args2var
+        self.var2trans = var2trans
+
+        self._orig_in_ld = None
+        self._ran_args = None
+        self._ran_vars = ()
+        self._var2in_ld = {}
+
+        self.pretty_log["node type"] = "Event Resolution Factor Node"
+
+    def add_link(self, linkdata):
+        """ERFN admits only one outgoing linkdata connecting to a DVN with full predicate arguments as random variables.
+
+        ERFN can admit multiple incoming linkdata, but each must be labeled with a boolean special attribute
+        ``"original"``. Each of the ``original==False`` linkdata must connect to a DVN that is one-to-one corresponding
+        to one of the pattern variable referenced by the represented predicate pattern. On the other hand, only one
+        ``original==True`` linkdata can be admitted, and it must be a DVN with full predicate arguments as random
+        variables, similar to the outgoing DVN node.
+        """
+        super(ERFN, self).add_link(linkdata)
+        if linkdata.to_fn:
+            assert "original" in linkdata.attr.keys() and type(linkdata.attr["original"]) is bool, \
+                "At {}: incoming linkdata must have boolean special attribute `original`.".format(self.name)
+            if linkdata.attr["original"]:
+                assert self._orig_in_ld is None, "At {}: Multiple incoming `original` linkdata.".format(self.name)
+                self._orig_in_ld = linkdata
+                assert self._ran_args is None or linkdata.vn.ran_vars == self._ran_args, \
+                    "At {}: The tuple of random arguments inferred from incoming `original` linkdata and that inferred " \
+                    "from the outgoing linkdata do not coincide. The registered tuple of random predicate arguments are " \
+                    "{}, and found {} in the new linkdata {}."\
+                    .format(self.name, self._ran_args, linkdata.vn.ran_vars, linkdata)
+                self._ran_args = linkdata.vn.ran_vars if self._ran_args is None else self._ran_args
+            else:
+                assert len(linkdata.vn.ran_vars) == 1, \
+                    "At {}: Incoming non-`original` linkdata must connect to a DVN with only one random variable that " \
+                    "represents one of the predicate pattern's pattern variable. Found linkdata {} connecting to a DVN " \
+                    "with {} random variables.".format(self.name, linkdata, len(linkdata.vn.ran_vars))
+                assert linkdata.vn.ran_vars[0] in self.args2var.values(), \
+                    "At {}: Incoming non-`original` linkdata must connect to a DVN with only one random variable that " \
+                    "represents one of the predicate pattern's pattern variable. Found linkdata {} connecting to a DVN " \
+                    "with a random variable {}, which cannot be recognized from the value set {} in `args2var` " \
+                    "specified during initialization."\
+                    .format(self.name, linkdata, linkdata.vn.ran_vars[0], set(self.args2var.values()))
+                assert linkdata.vn.ran_vars[0] not in self._ran_vars, \
+                    "At {}: Incoming non-`original` linkdata cannot connect to DVNs with the same random variable. " \
+                    "Found linkdata {} with duplicate random variable {}."\
+                    .format(self.name, linkdata, linkdata.vn.ran_vars[0])
+                self._ran_vars += (linkdata.vn.ran_vars[0],)
+                self._var2in_ld[linkdata.vn.ran_vars[0]] = linkdata
+        else:
+            assert len(self.in_linkdata) <= 1, "At {}: At most one outgoing linkdata.".format(self.name)
+            assert self._ran_args is None or linkdata.vn.ran_vars == self._ran_args, \
+                "At {}: The tuple of random arguments inferred from incoming `original` linkdata and that inferred " \
+                "from the outgoing linkdata do not coincide. The registered tuple of random predicate arguments are " \
+                "{}, and found {} in the new linkdata {}."\
+                .format(self.name, self._ran_args, linkdata.vn.ran_vars, linkdata)
+            self._ran_args = linkdata.vn.ran_vars if self._ran_args is None else self._ran_args
+
+    def inward_compute(self, in_ld_list, out_ld_list):
+        """The following procedure is carried out:
+
+        1. For each pattern element (args & var pair in ``self.args2var``):
+
+            1. Gather the universal event values of the pattern variable from corresponding incoming linkdata
+            2. If a transformation is declared on this pattern element, then apply the FORWARD (inverse of inverse)
+               transformation on the universal event values
+            3. Save the (transformed) event values as part of the surrogate particles.
+
+        2. Retrieve the message parameter from the "original" message
+        3. Use the surrogate particles to create an augmented Particles message, combine with original parameters,
+           and perform importance re-weighting. Send the resulting message
+        """
+        out_ld = out_ld_list[0]
+        assert self._orig_in_ld is not None
+        assert set(self._var2in_ld.keys()) == set(self.args2var.values())
+
+        same = True
+        orig_msg = self._orig_in_ld.read()
+        assert isinstance(orig_msg, Message)
+        alt_ptcl, alt_dens, index_map = [], [], {}
+        # 1. For each pattern element
+        for i, (args, pat_var) in enumerate(self.args2var.items()):
+            # 1.1
+            universal_msg = self._var2in_ld[pat_var].read()
+            assert isinstance(universal_msg, Message)
+            # 1.2
+            if pat_var in self.var2trans.keys():
+                universal_msg = universal_msg.event_transform(self.var2trans[pat_var])
+            universal_ptcl, universal_dens = universal_msg.particles[0], universal_msg.log_densities[0]
+            # 1.3,
+            alt_ptcl.append(universal_ptcl)
+            alt_dens.append(universal_dens)
+            index_map[i] = self._ran_args.index[args] if isinstance(args, Variable) else \
+                [self._ran_args.index(arg) for arg in args]
+        # 2
+        if same:
+            out_msg = orig_msg
+        else:
+            # Get surrogate log prob
+            log_prob = self.ks.surrogate_log_prob(orig_msg.parameter, alt_particles=alt_ptcl, index_map=index_map)
+            # Generate a identity message with the surrogate particles
+
+        raise NotImplementedError
+
+
+
+
+
+
+    def outward_compute(self, in_ld_list, out_ld_list):
+        """
+
+        """
+        raise NotImplementedError
