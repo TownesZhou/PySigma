@@ -1,0 +1,1125 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pysigma.graphical.predicate_nodes &mdash; PySigma  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../references/index.html">API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../references/cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/cognitive.html#summarization">Summarization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../references/graphical/index.html">Graphical Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/abstract-base-nodes.html#beta-factor-node">Beta Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#parameter-store-factor-node">Parameter Store Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#filter-variable-node">Filter Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#event-aggregation-factor-node">Event Aggregation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../references/graphical/other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../references/utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#utility-functions">Utility Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../references/utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>pysigma.graphical.predicate_nodes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pysigma.graphical.predicate_nodes</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    All nodes related to a predicate subgraph</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch.nn</span> <span class="k">import</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
+<span class="kn">from</span> <span class="nn">graphical.basic_nodes</span> <span class="k">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">compatible_shape</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
+
+
+<div class="viewcode-block" id="WMVN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMVN">[docs]</a><span class="k">class</span> <span class="nc">WMVN</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Working Memory Variable Node.</span>
+
+<span class="sd">    Gate node connecting predicate structure to conditionals.</span>
+
+<span class="sd">    WMVN will attempt to combine incoming messages, regardless of whether they come from alpha terminals in Conditional</span>
+<span class="sd">    subgraphs, or from other nodes in the Predicate subgraph. The combined message generally yields the semantics of</span>
+<span class="sd">    marginal belief coming from a certain part of the graphical model, and is sent to downstream nodes for further</span>
+<span class="sd">    processing.</span>
+
+<span class="sd">    A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of</span>
+<span class="sd">    particles needs to be queried.</span>
+
+<span class="sd">    WMVN quiescence state:</span>
+<span class="sd">        A WMVN reaches quiescence state if and only if **all** incoming linkdata do not contain new message.</span>
+
+<span class="sd">    It is defined as such so that, although inefficiency may be induced due to WMVN having to fire multiple times while</span>
+<span class="sd">    sending partially complete messages, it is guaranteed that no new arriving message would be blocked herein simply</span>
+<span class="sd">    because other messages were blocked elsewhere and did not arrive at this node, consequently blocking all downstream</span>
+<span class="sd">    processing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this variable node.</span>
+<span class="sd">    ks : KnowledgeServer</span>
+<span class="sd">        The KnowledgeServer instance associated with the belonging Predicate.</span>
+<span class="sd">    rel_var_list : iterable of Variable</span>
+<span class="sd">        Iterable of relational variables. Corresponds to the batch dimensions. Used to check ``b_shape`` attribute of</span>
+<span class="sd">        incoming messages.</span>
+<span class="sd">    param_var : Variable, optional</span>
+<span class="sd">        The parameter variable. Corresponds to the parameter dimension. Used to check ``p_shape`` attribute of incoming</span>
+<span class="sd">        messages.</span>
+<span class="sd">    index_var_list : iterable of Variable, optional</span>
+<span class="sd">        Iterable of indexing variables. Corresponds to the sample dimensions. Used to check ``s_shape`` attribute of</span>
+<span class="sd">        incoming messages. Must specify if `ran_var_list` is specified.</span>
+<span class="sd">    ran_var_list : iterable of Variable, optional</span>
+<span class="sd">        Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of</span>
+<span class="sd">        incoming messages. Must specify if `index_var_list` is specified.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ks : KnowledgeServer</span>
+<span class="sd">        The KnowledgeServer instance associated with the belonging Predicate.</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ks</span><span class="p">,</span> <span class="n">KnowledgeServer</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WMVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">index_var_list</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Working Memory Variable Node&quot;</span>
+
+        <span class="c1"># Distribution class the Predicate self belongs to is assuming</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ks</span> <span class="o">=</span> <span class="n">ks</span>
+        <span class="c1"># Cache for temporarily saving computation result for combination</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="WMVN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMVN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine incoming message to this Predicate subgraph.</span>
+
+<span class="sd">        Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of</span>
+<span class="sd">        FAN node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist</span>
+<span class="sd">        Particles type messages but all of them are homogeneous (sharing the same particle values as well as sampling</span>
+<span class="sd">        log densities).</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If found that not all incoming messages contain either parameter or particles, or both.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the ``MessageType.Particles`` type messages in the incoming links do not share the same particles</span>
+<span class="sd">            (including particle value tensors and/or particle log sampling density tensors)</span>
+
+<span class="sd">        Warns</span>
+<span class="sd">        -----</span>
+<span class="sd">        UserWarning</span>
+<span class="sd">            If there is only one incoming link, but this link is connected to a factor node that is also connected from</span>
+<span class="sd">            this WMVN via an outgoing link. This means, per Sum-Product exclusion principle, that this outgoing link</span>
+<span class="sd">            will also be neglected during compute() and no new message will ever be propagated via this link.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Following combination procedure is carried out to conform to the standard of all inference methods</span>
+
+<span class="sd">        1. If incoming messages all contains parameter, then these parameters will be combined. The outgoing message</span>
+<span class="sd">           will contain the combined parameter. Otherwise if any incoming message does not contain parameter, this</span>
+<span class="sd">           procedure will not be performed and the outgoing message will not contain parameter, but rather a combined</span>
+<span class="sd">           particle list will be computed. See the followings.</span>
+
+<span class="sd">           For the parameter message combination procedure and accompanying assumptions, see</span>
+<span class="sd">           :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;` for more details.</span>
+
+<span class="sd">        2. If any incoming message also contains particles, then it is imperative that all such messages contain the</span>
+<span class="sd">           same particle values as well as particle log sampling densities. The particle weights will be gathered from</span>
+<span class="sd">           these messages and combined. For all other parameter messages that only contain parameters, the particles</span>
+<span class="sd">           from these particles messages will be used as the surrogate particles to generate a particle message as</span>
+<span class="sd">           approximation, which will take part in the particles combination procedure.</span>
+
+<span class="sd">        In short, here is a summary listing the correspondence between incoming message types and outgoing message</span>
+<span class="sd">        types:</span>
+
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Incoming Message Types         |    Outgoing Message Type |</span>
+<span class="sd">        +==================================+==========================+</span>
+<span class="sd">        |   Parameter                      |    Parameter             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Particles                      |    Particles             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Both                           |    Both                  |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Parameter + Particles          |    Particles             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Parameter + Both               |    Both                  |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Particles + Both               |    Particles             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+<span class="sd">        |   Parameter + Particles + Both   |    Particles             |</span>
+<span class="sd">        +----------------------------------+--------------------------+</span>
+
+<span class="sd">        Or, logically speaking, the outgoing message will contain particles if **any** incoming message also contains</span>
+<span class="sd">        particles, but it will contain parameter only if **all** incoming messages contain parameters.</span>
+
+<span class="sd">        Note that in any case, incoming message can not be ``MessageType.Undefined`` type, in which case an exception</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">        When combining messages, will exclude message from the link to which the combined message is to send to (if</span>
+<span class="sd">        such a bidirected link exists). This implements the Sum-Product algorithm&#39;s variable node semantics, if</span>
+<span class="sd">        this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.</span>
+
+<span class="sd">        Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links</span>
+<span class="sd">        share the same set of incoming links that provide the messages, previously computed result will be reused</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WMVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+        <span class="c1"># Relay message if only one incoming link</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">in_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">:</span>
+                <span class="c1"># Throw a warning if the outgoing link is connected to the same factor node that the only incoming</span>
+                <span class="c1">#   link is connected to, since in such case no message would be sent to that factor node</span>
+                <span class="k">if</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">fn</span> <span class="ow">is</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">fn</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;WMVN &#39;</span><span class="si">{}</span><span class="s2">&#39; is connected to factor node &#39;</span><span class="si">{}</span><span class="s2">&#39;, while its only incoming link is also &quot;</span>
+                                  <span class="s2">&quot;connected from the same factor node. In this case no message would be sent out to &quot;</span>
+                                  <span class="s2">&quot;the factor node. Please check if the model is properly defined&quot;</span>
+                                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">fn</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="c1"># Otherwise, combine messages</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">:</span>
+                <span class="c1"># The tuple of all incoming linkdata that are not connected to the factor node the selected outgoing</span>
+                <span class="c1">#   linkdata is connected to.</span>
+                <span class="c1"># Use tuple here because tuple is hashable and we will use it as keys to cache dictionary</span>
+                <span class="n">in_lds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">in_ld</span> <span class="k">for</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span> <span class="k">if</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">out_ld</span><span class="o">.</span><span class="n">fn</span><span class="p">)</span>
+
+                <span class="c1"># Check if there&#39;s cached data. If yes, use cached result</span>
+                <span class="k">if</span> <span class="n">in_lds</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">out_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">in_lds</span><span class="p">]</span>
+                <span class="c1"># Otherwise, compute combined message</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">param_msg</span><span class="p">,</span> <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+                    <span class="n">in_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="n">in_lds</span><span class="p">)</span>
+
+                    <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span>
+                               <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">),</span> \
+                        <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Expect all incoming messages to contain either parameter or particles, or both, but &quot;</span> \
+                        <span class="s2">&quot;the types of the incoming messages are: </span><span class="si">{}</span><span class="s2">&quot;</span>\
+                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">))</span>
+
+                    <span class="c1"># Only if all incoming messages contain parameters should we combine the parameters</span>
+                    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
+                        <span class="n">param_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">)</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">)</span>
+                        <span class="n">param_msg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">param_msgs</span><span class="p">)</span>
+
+                    <span class="c1"># If any incoming message contains particles, we should proceed to combine them</span>
+                    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
+                        <span class="c1"># 1.a. Ensure all particle lists are homogeneous</span>
+                        <span class="n">particle_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">)</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span>
+                                              <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+                        <span class="n">particle_lds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ld</span> <span class="k">for</span> <span class="n">ld</span> <span class="ow">in</span> <span class="n">in_lds</span> <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+                        <span class="n">tmp_msg</span><span class="p">,</span> <span class="n">tmp_ld</span> <span class="o">=</span> <span class="n">particle_msgs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">particle_lds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tmp_msg</span><span class="p">,</span> <span class="n">Message</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">particle_msgs</span><span class="p">,</span> <span class="n">particle_lds</span><span class="p">):</span>
+                            <span class="k">assert</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">same_particles_as</span><span class="p">(</span><span class="n">msg</span><span class="p">),</span> \
+                                <span class="s2">&quot;At WMVN &#39;</span><span class="si">{}</span><span class="s2">&#39;: When attempting to combine incoming messages, found that incoming &quot;</span> \
+                                <span class="s2">&quot;Particle message&#39;s particles (particle value tensors and/or particle log sampling &quot;</span> \
+                                <span class="s2">&quot;density tensors) from  linkdata &#39;</span><span class="si">{}</span><span class="s2">&#39; does not agree with that of incoming Particle &quot;</span> \
+                                <span class="s2">&quot;message from linkdata &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span> \
+                                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">in_ld</span><span class="p">,</span> <span class="n">tmp_ld</span><span class="p">)</span>
+
+                        <span class="c1"># 1.b Find message that only contains parameter. If they exist, use the particles from the above</span>
+                        <span class="c1"># messages as surrogate particle list and query its log prob w.r.t. the parameter.</span>
+                        <span class="n">param_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span> <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+                        <span class="n">particles</span> <span class="o">=</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">particles</span>
+
+                        <span class="c1"># 2.b Compute particle weights w.r.t. distributions induced by the Parameter type messages</span>
+                        <span class="n">candidate_msgs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">particle_msgs</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">param_msg</span> <span class="ow">in</span> <span class="n">param_msgs</span><span class="p">:</span>
+                            <span class="n">target_log_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ks</span><span class="o">.</span><span class="n">surrogate_log_prob</span><span class="p">(</span><span class="n">param_msg</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span> <span class="n">particles</span><span class="p">)</span>
+                            <span class="n">surrogate_msg</span> <span class="o">=</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">event_reweight</span><span class="p">(</span><span class="n">target_log_prob</span><span class="p">)</span>
+                            <span class="n">candidate_msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">surrogate_msg</span><span class="p">)</span>
+
+                        <span class="c1"># Combine messages</span>
+                        <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">candidate_msgs</span><span class="p">)</span>
+
+                    <span class="c1"># Compose components</span>
+                    <span class="k">if</span> <span class="n">param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ptcl_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">param_msg</span><span class="p">,</span> <span class="n">ptcl_msg</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">param_msg</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">ptcl_msg</span>
+
+                <span class="c1"># Cache result</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">in_lds</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_msg</span>
+                <span class="c1"># Send message</span>
+                <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_msg</span><span class="p">)</span>
+
+            <span class="c1"># Clear cache</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span></div></div>
+
+
+<div class="viewcode-block" id="LTMFN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN">[docs]</a><span class="k">class</span> <span class="nc">LTMFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Long-Term Memory Factor Node.</span>
+
+<span class="sd">    Memorizes and updates the predicate&#39;s knowledge across decision cycles. Hosts and maintains the associated</span>
+<span class="sd">    KnowledgeServer instance to provide service to downstream nodes.</span>
+
+<span class="sd">    Admits one incoming link from `WMVN_IN` that contains combined action message toward this predicate by the end of</span>
+<span class="sd">    the decision cycle, as well as arbitrary number of incoming links from parameter feeds and/or `WMFN` that contains</span>
+<span class="sd">    parameter messages. Special attribute therefore needs to be declared in the linkdata&#39;s attribute dictionary to</span>
+<span class="sd">    distinguish which one sends &quot;event&quot; message from `WMVN_IN` and which ones send &quot;param&quot; messages from parameter</span>
+<span class="sd">    feeds.</span>
+
+<span class="sd">    If there are multiple incoming &quot;param&quot; labeled links, then combination will be carried out by taking summation over</span>
+<span class="sd">    the parameters. See</span>
+<span class="sd">    :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;`</span>
+<span class="sd">    for more details.</span>
+
+<span class="sd">    `init_msg()` should be called during modification phase of a cognitive cycle so that the message to be sent to</span>
+<span class="sd">    downstream nodes during the next cognitive cycle is prepared herein. This includes gathering new parameters that</span>
+<span class="sd">    are ready to be read from the incoming `param` linkdata at the end of the previous decision phase, as well as</span>
+<span class="sd">    optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated from the</span>
+<span class="sd">    newly gathered parameters. The latter behavior can be set by calling `toggle_draw()` method. In general, it is</span>
+<span class="sd">    expected to include as much information as possible in the outgoing message, and so drawing mode should be turned</span>
+<span class="sd">    on, but there are also circumstances in which this behavior should be avoided, for instance when the Predicate is</span>
+<span class="sd">    perceiving observations / evidence from PBFN, where the particle values should be determined by the observation feed</span>
+<span class="sd">    rather than be drawn here at the LTMFN.</span>
+
+<span class="sd">    Particles can optionally be drawn during modification phase of each cognitive cycle by calling `init_msg()` method,</span>
+<span class="sd">    which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling</span>
+<span class="sd">    procedure.</span>
+
+<span class="sd">    .. todo::  Define LTMFN&#39;s quiescence behavior.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this node.</span>
+<span class="sd">    ks : KnowledgeServer</span>
+<span class="sd">        The KnowledgeServer instance associated with the predicate.</span>
+<span class="sd">    rel_var_list : iterable of Variable</span>
+<span class="sd">        Iterable of relational variables, corresponding to the predicate&#39;s relational arguments.</span>
+<span class="sd">    param_var : Variable</span>
+<span class="sd">        The parameter variable.</span>
+<span class="sd">    index_var_list : iterable of Variable</span>
+<span class="sd">        Iterable of indexing variables.</span>
+<span class="sd">    ran_var_list : iterable of Variable</span>
+<span class="sd">        Iterable of random variables, corresponding to the predicate&#39;s random arguments.</span>
+<span class="sd">    to_draw : bool, optional</span>
+<span class="sd">        Initialize whether this LTMFN should be drawing particles in `init_msg()`. Defaults to ``True``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ks</span>
+<span class="sd">    rel_var_list</span>
+<span class="sd">    param_var</span>
+<span class="sd">    index_var_list</span>
+<span class="sd">    ran_var_list</span>
+<span class="sd">    to_draw</span>
+<span class="sd">    b_shape : torch.Size</span>
+<span class="sd">        The batch shape.</span>
+<span class="sd">    p_shape : torch.Size</span>
+<span class="sd">        The parameter shape (size).</span>
+<span class="sd">    s_shape : torch.Size</span>
+<span class="sd">        The sample shape.</span>
+<span class="sd">    e_shape : torch.Size</span>
+<span class="sd">        The event shape.</span>
+<span class="sd">    msg_cache : Message</span>
+<span class="sd">        The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">index_var_list</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">,</span> <span class="n">to_draw</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LTMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Long-Term Memory Factor Node&quot;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ks</span><span class="p">,</span> <span class="n">KnowledgeServer</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rel_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Relational</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rel_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param_var</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">param_var</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Parameter</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Indexing</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_var_list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">metatype</span> <span class="ow">is</span> <span class="n">VariableMetatype</span><span class="o">.</span><span class="n">Random</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ran_var_list</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ks</span> <span class="o">=</span> <span class="n">ks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rel_var_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rel_var_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_var</span> <span class="o">=</span> <span class="n">param_var</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_var_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">index_var_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ran_var_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ran_var_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_draw</span> <span class="o">=</span> <span class="n">to_draw</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_var_list</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">param_var</span><span class="o">.</span><span class="n">size</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_var_list</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ran_var_list</span><span class="p">])</span>
+
+        <span class="c1"># Message cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="LTMFN.add_link"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Only admits one incoming and one outgoing event message link, the former should be connected from `WMVN_IN`</span>
+<span class="sd">        and the later from `WMVN_OUT` (can be the same WMVN instance). However can admit multiple incoming</span>
+<span class="sd">        parameter message link.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        linkdata : LinkData</span>
+<span class="sd">            The linkdata to be registered. The ``&#39;type&#39;`` key-ed attribute must present in the linkdata&#39;s attribute</span>
+<span class="sd">            dict.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the new linkdata does not have identical batch shape and param shape.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If attempting to register more than one outgoing link.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If ``&#39;type&#39;`` key does not exist in the linkdata&#39;s attribute dict, or if the associated value is neither</span>
+<span class="sd">            ``&#39;event&#39;`` nor ``&#39;param&#39;``.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If attempting to register more than one `event` incoming link.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check that the linkdata has correct batch shape and param shape.</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span> <span class="ow">and</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">msg_shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span>
+
+        <span class="c1"># Only admit one outgoing link and that must be WMVN. Check dimensions to be compatible with event message</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="p">,</span> <span class="n">WMVN</span><span class="p">),</span> \
+                <span class="s2">&quot;Attempting to register more than one outgoing linkdata.&quot;</span>
+        <span class="c1"># Can admit multiple incoming links. Check that link has special attribute declared.</span>
+        <span class="c1">#   Check dimension for parameter link and event link respectively</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> \
+                <span class="s2">&quot;At</span><span class="si">{}</span><span class="s2">: Incoming link to a LTMFN must specify &#39;type&#39; special attribute&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;event&#39;</span><span class="p">,</span> <span class="s1">&#39;param&#39;</span><span class="p">],</span> \
+                <span class="s2">&quot;At</span><span class="si">{}</span><span class="s2">: Incoming link to a LTMFN must have &#39;type&#39; special attribute with value &#39;event&#39; or &#39;param&#39;&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;event&#39;</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ld</span> <span class="k">for</span> <span class="n">ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span> <span class="k">if</span> <span class="n">ld</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;event&#39;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>\
+                    <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Attempting to register more than one incoming event type linkdata&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LTMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LTMFN.toggle_draw"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.toggle_draw">[docs]</a>    <span class="k">def</span> <span class="nf">toggle_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_draw</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets whether this LTMFN should draw particles in `init_msg()` and send `MessageType.Both` type message, or</span>
+<span class="sd">        not draw particles and send `MessageType.Parameter` message</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        to_draw : bool</span>
+<span class="sd">            Whether to draw particles or not.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_draw</span> <span class="o">=</span> <span class="n">to_draw</span></div>
+
+<div class="viewcode-block" id="LTMFN.init_msg"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.init_msg">[docs]</a>    <span class="k">def</span> <span class="nf">init_msg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Draws particles and instantiate new message for next cognitive cycle.</span>
+
+<span class="sd">        This method should be called during the modification phase. Parameter will be gathered from incoming `param`</span>
+<span class="sd">        linkdata, and in the case of multiple incoming `param` linkdata the parameter tensors gathered will be combined.</span>
+<span class="sd">        A new list of particles will then be drawn in the cognitive format by querying the given KnowledgeServer.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If no `param` type incoming linkdata is found.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If messages read from incoming linkdata do not all contain parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Obtain parameters from incoming &#39;param&#39; link.</span>
+        <span class="n">param_lds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ld</span> <span class="k">for</span> <span class="n">ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span> <span class="k">if</span> <span class="n">ld</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;param&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_lds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Attempting to gather parameters, but no incoming param type linkdata found.&quot;</span>
+
+        <span class="n">param_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">ld</span> <span class="ow">in</span> <span class="n">param_lds</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">param_msgs</span><span class="p">),</span> \
+            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Expect all messages from incoming param type linkdata to contain parameters, but instead found &quot;</span> \
+            <span class="s2">&quot;message types: </span><span class="si">{}</span><span class="s2"> from linkdata </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">param_msgs</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ld</span><span class="p">)</span> <span class="k">for</span> <span class="n">ld</span> <span class="ow">in</span> <span class="n">param_lds</span><span class="p">))</span>
+
+        <span class="c1"># Combine parameter messages and extract the parameter tensor</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">param_msgs</span><span class="p">)</span><span class="o">.</span><span class="n">parameter</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_draw</span><span class="p">:</span>
+            <span class="c1"># Query KnowledgeServer to extract components of a particle list.</span>
+            <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ks</span><span class="o">.</span><span class="n">draw_particles</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">update_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">log_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ks</span><span class="o">.</span><span class="n">surrogate_log_prob</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+
+            <span class="c1"># Instantiate a temporary message with uniform weight and use Message method to obtain re-weighted message</span>
+            <span class="n">tmp_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">,</span>
+                              <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span>
+                              <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                              <span class="n">parameter</span><span class="o">=</span><span class="n">param</span><span class="p">,</span> <span class="n">particles</span><span class="o">=</span><span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">log_densities</span><span class="p">,</span>
+                              <span class="n">dist_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ks</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">event_reweight</span><span class="p">(</span><span class="n">log_prob</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If not to draw particles, simply cache a Parameter message</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span>
+                              <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span>
+                              <span class="n">parameter</span><span class="o">=</span><span class="n">param</span><span class="p">,</span>
+                              <span class="n">dist_ino</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ks</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span> <span class="o">=</span> <span class="n">new_msg</span></div>
+
+<div class="viewcode-block" id="LTMFN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send message in ``self.msg_cache`` to the connected `WMVN_OUT` node.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If there are no connected outgoing linkdata.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If ``self.msg_cache`` is None. This means `init_msg()` were not called prior to the current decision phase</span>
+<span class="sd">            which calls this method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LTMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: No cached message at this LTMFN node to be send outward. init_msg() should first be called prior &quot;</span> \
+            <span class="s2">&quot;to calling this method.&quot;</span>
+        <span class="n">out_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="PSFN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN">[docs]</a><span class="k">class</span> <span class="nc">PSFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parameter Store Factor Node</span>
+
+<span class="sd">    Stores the batched distribution parameters of the Predicate&#39;s knowledge and feeds them to LTMFN via DVN. Admits</span>
+<span class="sd">    no incoming links and only one outgoing link to a DVN.</span>
+
+<span class="sd">    This node is typically used in combination with a LTMFN, where a PSFN handles the actual storage and updates of the</span>
+<span class="sd">    distribution parameter, and LTMFN uses this parameter to derive the event messages to be sent to WMVN gate node.</span>
+
+<span class="sd">    By default, the parameter tensor is stored using a torch.nn.Parameter wrapper, so that any downstream processing</span>
+<span class="sd">    and derived tensors automatically turns on gradient tracing.</span>
+
+<span class="sd">    PSFN quiescence state:</span>
+<span class="sd">        A PSFN reaches quiescence state if and only if it has been visited.</span>
+
+<span class="sd">    The `quiescence` property is therefore overridden to conform to this definition.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    batch_shape : torch.Size</span>
+<span class="sd">        The batch shape of the distribution parameter.</span>
+<span class="sd">    param_shape : torch.Size</span>
+<span class="sd">        The parameter shape of the distribution parameter.</span>
+<span class="sd">    init_param : torch.Tensor or None</span>
+<span class="sd">        The initialized parameter tensor. If not None, should be a tensor of shape (batch_shape + param_shape). Defaults</span>
+<span class="sd">        to None.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    b_shape</span>
+<span class="sd">    p_shape</span>
+<span class="sd">    param : torch.nn.Parameter</span>
+<span class="sd">        The parameter buffer. Should be a tensor of shape ``(batch_shape + param_shape)``. Value defaults to a zero</span>
+<span class="sd">        tensor, when `init_param` is None during initialization.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="p">,</span> <span class="n">init_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">init_param</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">init_param</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">init_param</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">batch_shape</span> <span class="o">+</span> <span class="n">param_shape</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PSFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Parameter Store Factor Node&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="n">batch_shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span> <span class="o">=</span> <span class="n">param_shape</span>
+
+        <span class="c1"># Parameter buffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">init_param</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">init_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> \
+            <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+                      <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Parameter Store Factor Node&quot;</span>
+
+<div class="viewcode-block" id="PSFN.reset_param"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.reset_param">[docs]</a>    <span class="k">def</span> <span class="nf">reset_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resets the parameter tensor.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        param : torch.Tensor</span>
+<span class="sd">            The tensor to be set as the parameter value. Should have shape ``(self.b_shape + self.p_shape)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">param</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PSFN.add_link"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For PSFN, only one outgoing link is admitted.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PSFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PSFN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Instantiates and sends a Parameter message.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PSFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span>
+                          <span class="n">parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_msg</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">quiescence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Overrides so that PSFN&#39;s quiescence state is equivalent to its visited state</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">visited</span></div>
+
+
+<div class="viewcode-block" id="PBFN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN">[docs]</a><span class="k">class</span> <span class="nc">PBFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Perception Buffer Factor Node.</span>
+
+<span class="sd">    Receives perception / observation / evidence as particle list from `perceive()` and sends particles message to WMVN.</span>
+
+<span class="sd">    Does not admit any incoming link. Only admits one outgoing link connecting to a WMVN.</span>
+
+<span class="sd">    Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the</span>
+<span class="sd">    previously buffered observation, a ``None`` observation needs to be perceived.</span>
+
+<span class="sd">    PBFN quiescence state:</span>
+<span class="sd">        A PBFN reaches quiescence state if and only if it has been visited.</span>
+
+<span class="sd">    The `quiescence` property is therefore overridden to conform to this definition.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of this node</span>
+<span class="sd">    batch_shape : torch.Size</span>
+<span class="sd">        The batch shape of the Predicate&#39;s knowledge. In a PBFN this is solely used to align the particle weight tensor</span>
+<span class="sd">        in the outgoing message to the correct shape.</span>
+<span class="sd">    event_shape : torch.Size</span>
+<span class="sd">        The event shape of any observation / evidence event particles, except for ``None`` observation. Its length</span>
+<span class="sd">        should match the number of predicate random arguments. See more details in following `perceive()` method.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    buffer : torch.Tensor</span>
+<span class="sd">        The perceptual buffer. It is a 2D tensor whose last dimension is the event dimension with size equal to</span>
+<span class="sd">        ``self.e_shape``.</span>
+<span class="sd">    b_shape : torch.Size</span>
+<span class="sd">        Set by `batch_shape`.</span>
+<span class="sd">    e_shape : torch.Size</span>
+<span class="sd">        Set by `event_shape`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Perceptual Buffer Function Node&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">=</span> <span class="n">batch_shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">event_shape</span>
+        <span class="c1"># Perceptual buffer. Initialize to identity message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Perceptual Buffer Factor Node&quot;</span>
+
+<div class="viewcode-block" id="PBFN.perceive"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.perceive">[docs]</a>    <span class="k">def</span> <span class="nf">perceive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;joint&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight</span>
+<span class="sd">        specified by `weight`. instantiate the perception message to be sent by `compute()` and store it in the</span>
+<span class="sd">        perceptual buffer.</span>
+
+<span class="sd">        If `obs` is ``None``, a ``MessageType.Both`` type identity message will be instantiated. Otherwise, it is a</span>
+<span class="sd">        ``MessageType.Particles`` message with particle values from `obs`, particles weight reflecting `weight` (uniform</span>
+<span class="sd">        if `weight` is ``None``), and uniform log sampling densities.</span>
+
+<span class="sd">        The particle weight tensor will be copied and expanded to include full batch dimension shape ``self.b_shape``.</span>
+
+<span class="sd">        There are two perception mode: `joint` or `marginal`, specified by `mode`. This distinction makes a difference</span>
+<span class="sd">        mostly for predicates with multiple random arguments:</span>
+
+<span class="sd">        * When in `joint` mode, the observations should be list of joint particle events. Accordingly, `obs` must be a</span>
+<span class="sd">          2D tensor with the last dimension being the joint event dimension having a size equal to the sum of all random</span>
+<span class="sd">          variables&#39; sizes (sum of ``self.e_shape``), and the first dimension being the sample (indexing) dimension.</span>
+<span class="sd">          &#39;weight&#39; must a 1D tensor with its length equal to the size of `obs` &#39;s first dimension.</span>
+
+<span class="sd">          Internally, in order to conform to standard message format, this joint event tensor `obs` will be broken up</span>
+<span class="sd">          into chunks along the event dimension according to the sizes of the random variables. Each chunk thus</span>
+<span class="sd">          represents a list of marginal event values, corresponding to one of the random variables, on an axis of a</span>
+<span class="sd">          high-dimensional event lattice in the joint event space. A weight tensor of the same dimensional shape will be</span>
+<span class="sd">          created to annotate this event lattice, with entries equal to values found in `weight` for the slots that</span>
+<span class="sd">          corresponds to those joint events in `obs`, and other entries set to NP_EPSILON (representing numerically</span>
+<span class="sd">          stable 0 weight).</span>
+
+<span class="sd">        * When in `marginal` mode, the observations are tuple of marginal events for each random variable, and the</span>
+<span class="sd">          assumption is taken that these marginal events for each random variable are mutually independent. Accordingly,</span>
+<span class="sd">          `obs` must be an ITERABLE of 2D tensors, with the last dimension size of each entry equal to the size of the</span>
+<span class="sd">          corresponding random variable, in the order specified by ``self.e_shape``. Similarly, `weight` must also be</span>
+<span class="sd">          an ITERABLE with the same length as `obs`, containing 1D tensors.</span>
+
+<span class="sd">        The weights for duplicate events would be added together. However, this behavior should not be counted on and it</span>
+<span class="sd">        is recommended to avoid duplicate entries in `obs` and instead use `weight` to signal the relative importance</span>
+<span class="sd">        of each observation.</span>
+
+<span class="sd">        Note that it is not necessary that `weight` is normalized and sums to 1; they will be automatically normalized</span>
+<span class="sd">        when the outgoing message is instantiated. However `weight` must contain only positive values.</span>
+
+<span class="sd">        This method should be called prior to the decision phase of a cognitive cycle for the perceived observation</span>
+<span class="sd">        be sent to downstream nodes during the decision phase.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        obs : iterable of torch.Tensor, torch.Tensor, or None. optional</span>
+<span class="sd">            If not ``None``, must be a 2D tensor if `mode` is ``joint``, or an iterable of 2D tensors if `mode` is</span>
+<span class="sd">            ``marginal``. Defaults to ``None``.</span>
+<span class="sd">        weight : iterable of torch.Tensor, torch.Tensor, or None. optional</span>
+<span class="sd">            If not ``None``, must be a 1D tensor if `mode` is ``joint``, or an iterable of 1D tensors if `mode` is</span>
+<span class="sd">            ``marginal``. If `obs` is ``None``, this value will be ignored. Defaults to ``None``.</span>
+<span class="sd">        mode : {&quot;joint&quot;, &quot;marginal&quot;}</span>
+<span class="sd">            The perception mode. Defaults to ``&quot;joint&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;joint&#39;</span><span class="p">,</span> <span class="s1">&#39;marginal&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">obs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;joint&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obs</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;marginal&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span>
+             <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">o</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;joint&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">weight</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">weight</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;marginal&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span>
+             <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">w</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">w</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weight</span><span class="p">))</span>
+
+        <span class="c1"># Set buffer to identity message and return directly if obs is None</span>
+        <span class="k">if</span> <span class="n">obs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Both</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">obs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="k">else</span> <span class="n">obs</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="k">else</span> <span class="n">weight</span>
+        <span class="c1"># Check event size</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;joint&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;joint&#39; perception mode, the size of the observation&#39;s event dimension must match the &quot;</span> \
+                <span class="s2">&quot;sum of random variable sizes. Expect </span><span class="si">{}</span><span class="s2">, but encountered </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">assert</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;joint&#39; perception mode, when specified, the weight tensor must have same length as the &quot;</span> \
+                <span class="s2">&quot;observation tensor&#39;s first dimension. Found weight length </span><span class="si">{}</span><span class="s2">, and observation tensor&#39;s first &quot;</span> \
+                <span class="s2">&quot;dimension size </span><span class="si">{}</span><span class="s2">&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;marginal&#39; perception mode, the number of observations must match the number of random &quot;</span> \
+                <span class="s2">&quot;variables. Found </span><span class="si">{}</span><span class="s2"> entries in `obs` but </span><span class="si">{}</span><span class="s2"> entries in `self.e_shape`.&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">weight</span><span class="p">),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;marginal&#39; perception mode, the number of observations must match the number of weights. &quot;</span> \
+                <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> entries in `obs` but </span><span class="si">{}</span><span class="s2"> entries in `weight`.&quot;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">weight</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obs</span><span class="p">)),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: in &#39;marginal&#39; perception mode, the size of each marginal observation&#39;s event dimension must &quot;</span> \
+                <span class="s2">&quot;match the size of the corresponding random variable. Expect event sizes </span><span class="si">{}</span><span class="s2">, but encountered </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">weight</span><span class="p">)),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: the first dimension size of each observation tensor in `obs` should match the length of the &quot;</span> \
+                <span class="s2">&quot;corresponding weight tensor in `weight`. Found observation first dimension sizes </span><span class="si">{}</span><span class="s2">, and weight &quot;</span> \
+                <span class="s2">&quot;lengths </span><span class="si">{}</span><span class="s2">.&quot;</span>\
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weight</span><span class="p">))</span>
+
+        <span class="c1"># If mode is &#39;joint&#39;, split joint events and create sparse weight lattice</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;joint&#39;</span><span class="p">:</span>
+            <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">))</span>
+            <span class="c1"># split and find unique marginal event values</span>
+            <span class="n">split_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">unique_ptcl</span><span class="p">,</span> <span class="n">inverse_ids</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">split_ptcl</span><span class="p">))</span>
+
+            <span class="c1"># Create lattice weight, sample shape only.</span>
+            <span class="c1"># If weight is None, create a uniform weight list</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">weight</span>
+            <span class="n">stacked_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">inverse_ids</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">ptcl_ids</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">stacked_ids</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+            <span class="n">ptcl_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">NP_EPSILON</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ptcl_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ptcl_ids</span><span class="p">):</span>
+                <span class="n">ptcl_weight</span><span class="p">[</span><span class="n">ptcl_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="c1"># Expand weight to include full batch dims</span>
+            <span class="n">ptcl_weight</span> <span class="o">=</span> <span class="n">ptcl_weight</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">))</span> <span class="o">+</span> <span class="n">s_shape</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="n">s_shape</span><span class="p">)</span>
+
+            <span class="c1"># Uniform log densities</span>
+            <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">),)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span>
+
+            <span class="n">perceptual_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
+                                     <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                                     <span class="n">particles</span><span class="o">=</span><span class="n">unique_ptcl</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">ptcl_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">log_densities</span><span class="p">)</span>
+
+        <span class="c1"># If mode is &#39;marginal&#39;, take cross product of weights if not None and init msg directly</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ptcl_weight</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">expanded_log_weight</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)):</span>
+                    <span class="n">view_dim</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">view_dim</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">expanded_log_weight</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">weight</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">view_dim</span><span class="p">)))</span>
+                <span class="n">sum_log_weight</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">expanded_log_weight</span><span class="p">)</span>
+                <span class="n">ptcl_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">sum_log_weight</span><span class="p">)</span>
+
+            <span class="c1"># Uniform log densities</span>
+            <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">),</span> <span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span>
+
+            <span class="n">perceptual_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
+                                     <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                                     <span class="n">particles</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">ptcl_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">log_densities</span><span class="p">)</span>
+
+        <span class="c1"># set buffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">perceptual_msg</span></div>
+
+<div class="viewcode-block" id="PBFN.add_link"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Ensure that no incoming link and only one outgoing link connecting to a WMVN</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="p">,</span> <span class="n">LinkData</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="p">,</span> <span class="n">WMVN</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PBFN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sends the contents in perceptual buffer to the connected WMVN.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">out_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">quiescence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Overrides default behavior so now PBFN&#39;s quiescence is determined by whether `compute()` has been called.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">visited</span></div>
+
+
+<div class="viewcode-block" id="WMFN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN">[docs]</a><span class="k">class</span> <span class="nc">WMFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Working Memory Factor Node.</span>
+
+<span class="sd">    Effectively a buffer node that contains a memory buffer, WMFN mixes the incoming message with its stored memory by</span>
+<span class="sd">    taking a weight sum during the modification phase, updates its memory with the result, and sends this updated memory</span>
+<span class="sd">    during the decision phase at the next cognitive cycle. The first two steps are performed by `update_memory()`,</span>
+<span class="sd">    whereas sending the message is, as always, performed by `compute()`.</span>
+
+<span class="sd">    The weighted sum mixture behavior can be described as follows::</span>
+
+<span class="sd">        new_memory = new_msg + (1 - decay_rate) * old_memory</span>
+
+<span class="sd">    where ``decay_rate`` is a real number in range [0, 1]. The vector addition and scalar multiplication for messages</span>
+<span class="sd">    of different types are mathematically defined by the Message class. See</span>
+<span class="sd">    :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;` for more details.</span>
+
+<span class="sd">    The incoming message will always be cloned before weighted sum update is performed. This is to prevent</span>
+<span class="sd">    any components of the memory message from in-place change by some parts elsewhere in the graph.</span>
+
+<span class="sd">    Admits only one incoming and one outgoing links. Note that WMFN does not check the message shape of messages and</span>
+<span class="sd">    memory contents. These should be guaranteed compatible by linkdata and neighboring nodes.</span>
+
+<span class="sd">    The `check_quiesce()` method is overridden so that PSFN&#39;s quiescence state is determined by whether this node is</span>
+<span class="sd">    visited during the decision phase, i.e., whether `compute()` is called.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        The name of this node</span>
+<span class="sd">    decay_rate : float</span>
+<span class="sd">        The decay rate of the memory contents.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    decay_rate</span>
+<span class="sd">    memory</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">decay_rate</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">decay_rate</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">decay_rate</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Working Memory Function Node&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">decay_rate</span> <span class="o">=</span> <span class="n">decay_rate</span>
+        <span class="c1"># memory buffer. Initialized to a universal identity message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">identity</span><span class="p">()</span>
+
+<div class="viewcode-block" id="WMFN.add_link"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;WMFN only admits one incoming link and one outgoing link.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">WMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WMFN.update_memory"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.update_memory">[docs]</a>    <span class="k">def</span> <span class="nf">update_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the content in memory using message from incoming link.</span>
+
+<span class="sd">        This step should be called during the modification phase.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">in_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Clone incoming message</span>
+        <span class="n">new_msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">compatible_shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="p">,</span> <span class="n">new_msg</span><span class="p">),</span> \
+            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: found incompatible message shapes. The new message has shape </span><span class="si">{}</span><span class="s2">, whereas the current working &quot;</span> \
+            <span class="s2">&quot;memory content has shape </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">new_msg</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># perform weighted sum update</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory</span> <span class="o">=</span> <span class="n">new_msg</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">decay_rate</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WMFN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sends memory content toward outgoing link</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WMFN.check_quiesce"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.check_quiesce">[docs]</a>    <span class="k">def</span> <span class="nf">check_quiesce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Overrides so that quiescence for WMFN is equivalent to visited</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">visited</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
