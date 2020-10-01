@@ -1,0 +1,491 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Cognitive Language Interface &mdash; PySigma  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Graphical Architecture" href="graphical/index.html" />
+    <link rel="prev" title="API References" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API References</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#summarization">Summarization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="graphical/index.html">Graphical Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="graphical/data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="graphical/abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="graphical/abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/abstract-base-nodes.html#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/abstract-base-nodes.html#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/abstract-base-nodes.html#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/abstract-base-nodes.html#beta-factor-node">Beta Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="graphical/predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/predicate-nodes.html#parameter-store-factor-node">Parameter Store Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="graphical/conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="graphical/conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/conditional-nodes.html#filter-variable-node">Filter Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/conditional-nodes.html#event-aggregation-factor-node">Event Aggregation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="graphical/other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="graphical/other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graphical/other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="utils.html#utility-functions">Utility Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">API References</a> &raquo;</li>
+        
+      <li>Cognitive Language Interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/references/cognitive.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="cognitive-language-interface">
+<h1>Cognitive Language Interface<a class="headerlink" href="#cognitive-language-interface" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="type">
+<h2>Type<a class="headerlink" href="#type" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="predicate">
+<h2>Predicate<a class="headerlink" href="#predicate" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="conditional">
+<h2>Conditional<a class="headerlink" href="#conditional" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="variablemap">
+<h2>VariableMap<a class="headerlink" href="#variablemap" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.structures.VariableMap">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.structures.</code><code class="sig-name descname">VariableMap</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mapping_func</span></em>, <em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">codomain</span></em>, <em class="sig-param"><span class="n">dynamic</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#VariableMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.VariableMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class type for declaring mappings on relational variables in pattern elements. Wraps around a user-defined
+mapping function and records the one-to-one correspondence between inputs and outputs.</p>
+<p>Since relational variables can be viewed as non-negative finite integer-valued variables, a VariableMap instance
+therefore declares an integer-valued mapping with finite domain.</p>
+<p>The domain and codomain are assumed fixed, so they should be provided during initialization. The mapping can
+be computed either lazily at runtime or pre-computed at initialization. This flexibility is to allow dynamic
+mappings such as neural attention modules.</p>
+<p>Only injective mapping can be accepted. This is because the semantic of mapping two relational variable’s values
+to a single value is ill-defined. The injectivity is checked during <cite>set_map()</cite> by comparing the cardinality of the
+image and the cardinality of the domain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mapping_func</strong> (<em>callable</em>) – a user-specified function. Takes a numpy array of integers as input, and returns a numpy array of integers of
+the same size. Each entry in the output array corresponds to the value of <cite>f(x)</cite> of input <cite>x</cite> at the same index
+in the input array.</p></li>
+<li><p><strong>domain</strong> (<em>set of int</em>) – The domain of the mapping.</p></li>
+<li><p><strong>codomain</strong> (<em>set of int</em>) – The codomain of the mapping.</p></li>
+<li><p><strong>dynamic</strong> (<em>bool</em><em>, </em><em>optional</em>) – Indicates whether the mapping is dynamic. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, then <cite>mapping_func</cite> will be called each time a mapping
+dictionary is desired, i.e., when <cite>get_map()</cite> or <cite>get_inverse_map()</cite> is called. Otherwise, <cite>mapping_func</cite> will
+only be called once during initialization of this VariableMap instance, and the result will cached. Defaults
+to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.mapping_func">
+<code class="sig-name descname">mapping_func</code><a class="headerlink" href="#pysigma.structures.VariableMap.mapping_func" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.domain">
+<code class="sig-name descname">domain</code><a class="headerlink" href="#pysigma.structures.VariableMap.domain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.codomain">
+<code class="sig-name descname">codomain</code><a class="headerlink" href="#pysigma.structures.VariableMap.codomain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.dynamic">
+<code class="sig-name descname">dynamic</code><a class="headerlink" href="#pysigma.structures.VariableMap.dynamic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.map">
+<code class="sig-name descname">map</code><a class="headerlink" href="#pysigma.structures.VariableMap.map" title="Permalink to this definition">¶</a></dt>
+<dd><p>The mapping cache.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.structures.VariableMap.image">
+<code class="sig-name descname">image</code><a class="headerlink" href="#pysigma.structures.VariableMap.image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Image of the map. Should be a subset of <code class="docutils literal notranslate"><span class="pre">self.codomain</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.structures.VariableMap.set_map">
+<code class="sig-name descname">set_map</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#VariableMap.set_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.VariableMap.set_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set <code class="docutils literal notranslate"><span class="pre">self.map</span></code> by obtaining the mapping dictionary from <code class="docutils literal notranslate"><span class="pre">self.mapping_func</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ValueError</strong> – If <cite>self.mapping_func</cite> does not return a numpy array or returns one with wrong data type.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.mapping_func</span></code> does not return a numpy array with the same size as the input array.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.mapping_func</span></code> contains values not in the codomain.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.mapping_func</span></code> is found to be not injective.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.structures.VariableMap.get_map">
+<code class="sig-name descname">get_map</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#VariableMap.get_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.VariableMap.get_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the mapping dictionary, the map’s domain, and the map’s image.</p>
+<p>If dynamic, then calls <cite>set_map()</cite> to re-compute the dict first, otherwise returns the cached one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A 3-tuple containing the data <code class="docutils literal notranslate"><span class="pre">(map_dict,</span> <span class="pre">domain,</span> <span class="pre">image)</span></code>.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.structures.VariableMap.get_inverse_map">
+<code class="sig-name descname">get_inverse_map</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#VariableMap.get_inverse_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.VariableMap.get_inverse_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the inverse map’s mapping dictionary, the inverse map’s domain (original map’s image), and the
+inverse map’s image (should be the same as the original map’s domain)</p>
+<p>Note that because injectivity is guaranteed, computing an inverse map is possible.</p>
+<p>If dynamic, then calls set_map() to re-compute the dict first, otherwise returns the cached one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A 3-tuple containing the data <code class="docutils literal notranslate"><span class="pre">(inv_map_dict,</span> <span class="pre">inv_image,</span> <span class="pre">inv_domain)</span></code>.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="factorfunction">
+<h2>FactorFunction<a class="headerlink" href="#factorfunction" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="summarization">
+<h2>Summarization<a class="headerlink" href="#summarization" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.structures.Summarization">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.structures.</code><code class="sig-name descname">Summarization</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sum_func</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#Summarization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.Summarization" title="Permalink to this definition">¶</a></dt>
+<dd><p>The decorator class for the custom summarization callback procedures which will be called during the outward
+summarization step in the Expansion / Summarization Factor Node (ESFN).</p>
+<p>Provides the decorator <code class="docutils literal notranslate"><span class="pre">&#64;Summarization</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The custom callback function should have the following signature:</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>content_type</strong> (<em>{'distribution'</em><em>, </em><em>'particles'</em><em>, </em><em>'both'}</em>) – The type of the content to process for the current execution.</p></li>
+<li><p><strong>rv_info</strong> (<em>OrderedDict</em>) – Information / metadata regarding the random variables of the message. Each key-value pair in the dictionary is
+key-ed by the random variable’s name <code class="docutils literal notranslate"><span class="pre">var_name</span> <span class="pre">:</span> <span class="pre">str</span></code> and contains a 2-tuple
+<code class="docutils literal notranslate"><span class="pre">(var_size</span> <span class="pre">:</span> <span class="pre">int,</span> <span class="pre">constraints</span> <span class="pre">:</span> <span class="pre">set</span> <span class="pre">of</span> <span class="pre">torch.distributions.Constraint)</span></code> as the value. Note that
+<cite>rv_info</cite> is ordered, and this order of the random variables will be respected by entries in <cite>events</cite> and
+<cite>log_densities</cite>.</p></li>
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – A size-2 torch.Size list representing the batch dimension shapes. <strong>The first dimension is the batch dimension
+to be summarized over and reduced, and the second dimension should be left untouched.</strong></p></li>
+<li><p><strong>dist</strong> (<em>torch.distributions.Distribution</em><em>, </em><em>optional</em>) – The batched distribution instance representing the message. <cite>dist</cite> ‘s batch shape is <cite>batch_shape</cite>, and its
+event shape is the sum of the sizes of all random variables. This field will be provided when <cite>content_type</cite> is
+<code class="docutils literal notranslate"><span class="pre">distribution</span></code> or <code class="docutils literal notranslate"><span class="pre">both</span></code>, or will be left <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>content_type</cite> is <cite>particles</cite>.</p></li>
+<li><p><strong>events</strong> (<em>tuple of torch.Tensor</em><em>, </em><em>optional</em>) – The tuple of event value tensors. Each entry is a 2D tensor corresponding to one of the random variables
+declared in <cite>rv_info</cite> associated with the message. The first dimension is the sample dimension with a size
+equal to the number of event particles. The last dimension is the event dimension with a size equal to the
+size of the corresponding random variable. This field will be provided when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">particles</span></code> or
+<code class="docutils literal notranslate"><span class="pre">both</span></code>, or will be left <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">parameter</span></code>.</p></li>
+<li><p><strong>log_densities</strong> (<em>tuple of torch.Tensor</em><em>, </em><em>optional</em>) – The tuple of <strong>marginal</strong> log sampling densities of each of the event values in <cite>events</cite>. Each entry is a 1D
+tensor annotating the event value tensor in <cite>events</cite> with the same tuple index. The dimension size equals to
+the number of event particles. This field will be provided when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">particles</span></code> or <code class="docutils literal notranslate"><span class="pre">both</span></code>, or
+will be left <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">parameter</span></code>.</p></li>
+<li><p><strong>weight</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – The event particles weight tensor. Have shape <cite>(batch_shape + sample_shape)</cite>, where <cite>sample_shape</cite> is the
+concatenated list of the sample sizes of all event tensors in <cite>events</cite>. This field will be provided when
+<cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">particles</span></code> or <code class="docutils literal notranslate"><span class="pre">both</span></code>, or will be left <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">parameter</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A 2-tuple consisting of <cite>(reduced_dist : torch.distributions.Distribution or None, reduced_weight :
+torch.Tensor or None)</cite>. <cite>reduced_dist</cite> will be ignored if <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">particles</span></code>, and <cite>reduced_weight</cite>
+will be ignored if <cite>content_type</cite> is <code class="docutils literal notranslate"><span class="pre">parameter</span></code>. Both of the entries should have the reduced batch shape of
+length 1.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="pysigma.structures.Summarization.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">ran_vars</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/structures.html#Summarization.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.structures.Summarization.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements so that the Summarization instance is a callable functor.</p>
+<p>The summarization instance should be called by ESFN internally only.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> (<a class="reference internal" href="graphical/data-structures.html#pysigma.defs.Message" title="pysigma.defs.Message"><em>Message</em></a>) – The incoming message. Batch shape should be of length 2, with the first batch dimension being the one to be
+summarized over, and the second dimension being the one to be left untouched.</p></li>
+<li><p><strong>ran_vars</strong> (<em>tuple of Variable</em>) – The tuple of random variables of the target Variable node</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The reduced message. Will have only one batch dimension which is the one to be left untouched from the
+original message.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="graphical/data-structures.html#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="graphical/index.html" class="btn btn-neutral float-right" title="Graphical Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="API References" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

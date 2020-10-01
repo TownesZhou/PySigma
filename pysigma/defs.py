@@ -49,6 +49,13 @@ class Variable:
         The set of value constraints that determine the value range (support) of this variable. Specify if and only if
         variable's metatype is ``VariableMetatype.Random``.
 
+    Warning
+    -------
+    Since ``torch.distributions.constraints.Constraint`` and its concrete classes do not overwrite the default equality
+    check method ``__eq__()``, two constraint object are equal if and only if they are the same object instance. This
+    means two `Variable` instances will be regarded different if their `value_constraints` fields contains different
+    constraint instances, even if these constraint instances semantically refer to the same constraint.
+
     Attributes
     ----------
     name : str

@@ -1,0 +1,901 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Predicate Subgraph Nodes &mdash; PySigma  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Conditional Subgraph Nodes" href="conditional-nodes.html" />
+    <link rel="prev" title="Abstract Base Nodes" href="abstract-base-nodes.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API References</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#summarization">Summarization</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical Architecture</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#beta-factor-node">Beta Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#parameter-store-factor-node">Parameter Store Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#working-memory-factor-node">Working Memory Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#filter-variable-node">Filter Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#event-aggregation-factor-node">Event Aggregation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#utility-functions">Utility Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">API References</a> &raquo;</li>
+        
+          <li><a href="index.html">Graphical Architecture</a> &raquo;</li>
+        
+      <li>Predicate Subgraph Nodes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/references/graphical/predicate-nodes.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="predicate-subgraph-nodes">
+<h1>Predicate Subgraph Nodes<a class="headerlink" href="#predicate-subgraph-nodes" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="working-memory-variable-node">
+<h2>Working Memory Variable Node<a class="headerlink" href="#working-memory-variable-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.predicate_nodes.WMVN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.predicate_nodes.</code><code class="sig-name descname">WMVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ran_var_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMVN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMVN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Working Memory Variable Node.</p>
+<p>Gate node connecting predicate structure to conditionals.</p>
+<p>WMVN will attempt to combine incoming messages, regardless of whether they come from alpha terminals in Conditional
+subgraphs, or from other nodes in the Predicate subgraph. The combined message generally yields the semantics of
+marginal belief coming from a certain part of the graphical model, and is sent to downstream nodes for further
+processing.</p>
+<p>A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
+particles needs to be queried.</p>
+<dl class="simple">
+<dt>WMVN quiescence state:</dt><dd><p>A WMVN reaches quiescence state if and only if <strong>all</strong> incoming linkdata do not contain new message.</p>
+</dd>
+</dl>
+<p>It is defined as such so that, although inefficiency may be induced due to WMVN having to fire multiple times while
+sending partially complete messages, it is guaranteed that no new arriving message would be blocked herein simply
+because other messages were blocked elsewhere and did not arrive at this node, consequently blocking all downstream
+processing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this variable node.</p></li>
+<li><p><strong>ks</strong> (<a class="reference internal" href="../utils.html#pysigma.utils.KnowledgeServer" title="pysigma.utils.KnowledgeServer"><em>KnowledgeServer</em></a>) – The KnowledgeServer instance associated with the belonging Predicate.</p></li>
+<li><p><strong>rel_var_list</strong> (<em>iterable of Variable</em>) – Iterable of relational variables. Corresponds to the batch dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">b_shape</span></code> attribute of
+incoming messages.</p></li>
+<li><p><strong>param_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a><em>, </em><em>optional</em>) – The parameter variable. Corresponds to the parameter dimension. Used to check <code class="docutils literal notranslate"><span class="pre">p_shape</span></code> attribute of incoming
+messages.</p></li>
+<li><p><strong>index_var_list</strong> (<em>iterable of Variable</em><em>, </em><em>optional</em>) – Iterable of indexing variables. Corresponds to the sample dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">s_shape</span></code> attribute of
+incoming messages. Must specify if <cite>ran_var_list</cite> is specified.</p></li>
+<li><p><strong>ran_var_list</strong> (<em>iterable of Variable</em><em>, </em><em>optional</em>) – Iterable of random variables. Corresponds to the event dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">e_shape</span></code> attribute of
+incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.WMVN.ks">
+<code class="sig-name descname">ks</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMVN.ks" title="Permalink to this definition">¶</a></dt>
+<dd><p>The KnowledgeServer instance associated with the belonging Predicate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../utils.html#pysigma.utils.KnowledgeServer" title="pysigma.utils.KnowledgeServer">KnowledgeServer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.WMVN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMVN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combine incoming message to this Predicate subgraph.</p>
+<p>Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
+FAN node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist
+Particles type messages but all of them are homogeneous (sharing the same particle values as well as sampling
+log densities).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If found that not all incoming messages contain either parameter or particles, or both.</p></li>
+<li><p><strong>AssertionError</strong> – If the <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type messages in the incoming links do not share the same particles
+    (including particle value tensors and/or particle log sampling density tensors)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Warns</dt>
+<dd class="field-even"><p><strong>UserWarning</strong> – If there is only one incoming link, but this link is connected to a factor node that is also connected from
+this WMVN via an outgoing link. This means, per Sum-Product exclusion principle, that this outgoing link
+will also be neglected during compute() and no new message will ever be propagated via this link.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Following combination procedure is carried out to conform to the standard of all inference methods</p>
+<ol class="arabic">
+<li><p>If incoming messages all contains parameter, then these parameters will be combined. The outgoing message
+will contain the combined parameter. Otherwise if any incoming message does not contain parameter, this
+procedure will not be performed and the outgoing message will not contain parameter, but rather a combined
+particle list will be computed. See the followings.</p>
+<p>For the parameter message combination procedure and accompanying assumptions, see
+<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more details.</p>
+</li>
+<li><p>If any incoming message also contains particles, then it is imperative that all such messages contain the
+same particle values as well as particle log sampling densities. The particle weights will be gathered from
+these messages and combined. For all other parameter messages that only contain parameters, the particles
+from these particles messages will be used as the surrogate particles to generate a particle message as
+approximation, which will take part in the particles combination procedure.</p></li>
+</ol>
+<p>In short, here is a summary listing the correspondence between incoming message types and outgoing message
+types:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 57%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Incoming Message Types</p></th>
+<th class="head"><p>Outgoing Message Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Parameter</p></td>
+<td><p>Parameter</p></td>
+</tr>
+<tr class="row-odd"><td><p>Particles</p></td>
+<td><p>Particles</p></td>
+</tr>
+<tr class="row-even"><td><p>Both</p></td>
+<td><p>Both</p></td>
+</tr>
+<tr class="row-odd"><td><p>Parameter + Particles</p></td>
+<td><p>Particles</p></td>
+</tr>
+<tr class="row-even"><td><p>Parameter + Both</p></td>
+<td><p>Both</p></td>
+</tr>
+<tr class="row-odd"><td><p>Particles + Both</p></td>
+<td><p>Particles</p></td>
+</tr>
+<tr class="row-even"><td><p>Parameter + Particles + Both</p></td>
+<td><p>Particles</p></td>
+</tr>
+</tbody>
+</table>
+<p>Or, logically speaking, the outgoing message will contain particles if <strong>any</strong> incoming message also contains
+particles, but it will contain parameter only if <strong>all</strong> incoming messages contain parameters.</p>
+<p>Note that in any case, incoming message can not be <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code> type, in which case an exception
+will be raised.</p>
+<p>When combining messages, will exclude message from the link to which the combined message is to send to (if
+such a bidirected link exists). This implements the Sum-Product algorithm’s variable node semantics, if
+this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.</p>
+<p>Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
+share the same set of incoming links that provide the messages, previously computed result will be reused</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="long-term-memory-factor-node">
+<h2>Long-Term Memory Factor Node<a class="headerlink" href="#long-term-memory-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.predicate_nodes.</code><code class="sig-name descname">LTMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">rel_var_list</span></em>, <em class="sig-param"><span class="n">param_var</span></em>, <em class="sig-param"><span class="n">index_var_list</span></em>, <em class="sig-param"><span class="n">ran_var_list</span></em>, <em class="sig-param"><span class="n">to_draw</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Long-Term Memory Factor Node.</p>
+<p>Memorizes and updates the predicate’s knowledge across decision cycles. Hosts and maintains the associated
+KnowledgeServer instance to provide service to downstream nodes.</p>
+<p>Admits one incoming link from <cite>WMVN_IN</cite> that contains combined action message toward this predicate by the end of
+the decision cycle, as well as arbitrary number of incoming links from parameter feeds and/or <cite>WMFN</cite> that contains
+parameter messages. Special attribute therefore needs to be declared in the linkdata’s attribute dictionary to
+distinguish which one sends “event” message from <cite>WMVN_IN</cite> and which ones send “param” messages from parameter
+feeds.</p>
+<p>If there are multiple incoming “param” labeled links, then combination will be carried out by taking summation over
+the parameters. See
+<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a>
+for more details.</p>
+<p><cite>init_msg()</cite> should be called during modification phase of a cognitive cycle so that the message to be sent to
+downstream nodes during the next cognitive cycle is prepared herein. This includes gathering new parameters that
+are ready to be read from the incoming <cite>param</cite> linkdata at the end of the previous decision phase, as well as
+optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated from the
+newly gathered parameters. The latter behavior can be set by calling <cite>toggle_draw()</cite> method. In general, it is
+expected to include as much information as possible in the outgoing message, and so drawing mode should be turned
+on, but there are also circumstances in which this behavior should be avoided, for instance when the Predicate is
+perceiving observations / evidence from PBFN, where the particle values should be determined by the observation feed
+rather than be drawn here at the LTMFN.</p>
+<p>Particles can optionally be drawn during modification phase of each cognitive cycle by calling <cite>init_msg()</cite> method,
+which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling
+procedure.</p>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<p>Define LTMFN’s quiescence behavior.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node.</p></li>
+<li><p><strong>ks</strong> (<a class="reference internal" href="../utils.html#pysigma.utils.KnowledgeServer" title="pysigma.utils.KnowledgeServer"><em>KnowledgeServer</em></a>) – The KnowledgeServer instance associated with the predicate.</p></li>
+<li><p><strong>rel_var_list</strong> (<em>iterable of Variable</em>) – Iterable of relational variables, corresponding to the predicate’s relational arguments.</p></li>
+<li><p><strong>param_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a>) – The parameter variable.</p></li>
+<li><p><strong>index_var_list</strong> (<em>iterable of Variable</em>) – Iterable of indexing variables.</p></li>
+<li><p><strong>ran_var_list</strong> (<em>iterable of Variable</em>) – Iterable of random variables, corresponding to the predicate’s random arguments.</p></li>
+<li><p><strong>to_draw</strong> (<em>bool</em><em>, </em><em>optional</em>) – Initialize whether this LTMFN should be drawing particles in <cite>init_msg()</cite>. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.ks">
+<code class="sig-name descname">ks</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.ks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.rel_var_list">
+<code class="sig-name descname">rel_var_list</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.rel_var_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.param_var">
+<code class="sig-name descname">param_var</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.param_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.index_var_list">
+<code class="sig-name descname">index_var_list</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.index_var_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.ran_var_list">
+<code class="sig-name descname">ran_var_list</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.ran_var_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.to_draw">
+<code class="sig-name descname">to_draw</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.to_draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.b_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The batch shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.p_shape">
+<code class="sig-name descname">p_shape</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.p_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The parameter shape (size).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.s_shape">
+<code class="sig-name descname">s_shape</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.s_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The sample shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.e_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The event shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.msg_cache">
+<code class="sig-name descname">msg_cache</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.msg_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="data-structures.html#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Only admits one incoming and one outgoing event message link, the former should be connected from <cite>WMVN_IN</cite>
+and the later from <cite>WMVN_OUT</cite> (can be the same WMVN instance). However can admit multiple incoming
+parameter message link.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered. The <code class="docutils literal notranslate"><span class="pre">'type'</span></code> key-ed attribute must present in the linkdata’s attribute
+dict.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If the new linkdata does not have identical batch shape and param shape.</p></li>
+<li><p><strong>AssertionError</strong> – If attempting to register more than one outgoing link.</p></li>
+<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">'type'</span></code> key does not exist in the linkdata’s attribute dict, or if the associated value is neither
+    <code class="docutils literal notranslate"><span class="pre">'event'</span></code> nor <code class="docutils literal notranslate"><span class="pre">'param'</span></code>.</p></li>
+<li><p><strong>AssertionError</strong> – If attempting to register more than one <cite>event</cite> incoming link.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.toggle_draw">
+<code class="sig-name descname">toggle_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">to_draw</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.toggle_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.toggle_draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets whether this LTMFN should draw particles in <cite>init_msg()</cite> and send <cite>MessageType.Both</cite> type message, or
+not draw particles and send <cite>MessageType.Parameter</cite> message</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>to_draw</strong> (<em>bool</em>) – Whether to draw particles or not.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.init_msg">
+<code class="sig-name descname">init_msg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.init_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.init_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws particles and instantiate new message for next cognitive cycle.</p>
+<p>This method should be called during the modification phase. Parameter will be gathered from incoming <cite>param</cite>
+linkdata, and in the case of multiple incoming <cite>param</cite> linkdata the parameter tensors gathered will be combined.
+A new list of particles will then be drawn in the cognitive format by querying the given KnowledgeServer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If no <cite>param</cite> type incoming linkdata is found.</p></li>
+<li><p><strong>AssertionError</strong> – If messages read from incoming linkdata do not all contain parameters.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send message in <code class="docutils literal notranslate"><span class="pre">self.msg_cache</span></code> to the connected <cite>WMVN_OUT</cite> node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If there are no connected outgoing linkdata.</p></li>
+<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.msg_cache</span></code> is None. This means <cite>init_msg()</cite> were not called prior to the current decision phase
+    which calls this method.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="parameter-store-factor-node">
+<h2>Parameter Store Factor Node<a class="headerlink" href="#parameter-store-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.predicate_nodes.PSFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.predicate_nodes.</code><code class="sig-name descname">PSFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">batch_shape</span></em>, <em class="sig-param"><span class="n">param_shape</span></em>, <em class="sig-param"><span class="n">init_param</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#PSFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PSFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameter Store Factor Node</p>
+<p>Stores the batched distribution parameters of the Predicate’s knowledge and feeds them to LTMFN via DVN. Admits
+no incoming links and only one outgoing link to a DVN.</p>
+<p>This node is typically used in combination with a LTMFN, where a PSFN handles the actual storage and updates of the
+distribution parameter, and LTMFN uses this parameter to derive the event messages to be sent to WMVN gate node.</p>
+<p>By default, the parameter tensor is stored using a torch.nn.Parameter wrapper, so that any downstream processing
+and derived tensors automatically turns on gradient tracing.</p>
+<dl class="simple">
+<dt>PSFN quiescence state:</dt><dd><p>A PSFN reaches quiescence state if and only if it has been visited.</p>
+</dd>
+</dl>
+<p>The <cite>quiescence</cite> property is therefore overridden to conform to this definition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – The batch shape of the distribution parameter.</p></li>
+<li><p><strong>param_shape</strong> (<em>torch.Size</em>) – The parameter shape of the distribution parameter.</p></li>
+<li><p><strong>init_param</strong> (<em>torch.Tensor</em><em> or </em><em>None</em>) – The initialized parameter tensor. If not None, should be a tensor of shape (batch_shape + param_shape). Defaults
+to None.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.PSFN.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PSFN.b_shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.PSFN.p_shape">
+<code class="sig-name descname">p_shape</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PSFN.p_shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.PSFN.param">
+<code class="sig-name descname">param</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PSFN.param" title="Permalink to this definition">¶</a></dt>
+<dd><p>The parameter buffer. Should be a tensor of shape <code class="docutils literal notranslate"><span class="pre">(batch_shape</span> <span class="pre">+</span> <span class="pre">param_shape)</span></code>. Value defaults to a zero
+tensor, when <cite>init_param</cite> is None during initialization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.nn.Parameter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.PSFN.reset_param">
+<code class="sig-name descname">reset_param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#PSFN.reset_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PSFN.reset_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the parameter tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>param</strong> (<em>torch.Tensor</em>) – The tensor to be set as the parameter value. Should have shape <code class="docutils literal notranslate"><span class="pre">(self.b_shape</span> <span class="pre">+</span> <span class="pre">self.p_shape)</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.PSFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#PSFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PSFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>For PSFN, only one outgoing link is admitted.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.PSFN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#PSFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PSFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiates and sends a Parameter message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.PSFN.quiescence">
+<em class="property">property </em><code class="sig-name descname">quiescence</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PSFN.quiescence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides so that PSFN’s quiescence state is equivalent to its visited state</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="perceptual-buffer-node">
+<h2>Perceptual Buffer Node<a class="headerlink" href="#perceptual-buffer-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.predicate_nodes.PBFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.predicate_nodes.</code><code class="sig-name descname">PBFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">batch_shape</span></em>, <em class="sig-param"><span class="n">event_shape</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#PBFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PBFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perception Buffer Factor Node.</p>
+<p>Receives perception / observation / evidence as particle list from <cite>perceive()</cite> and sends particles message to WMVN.</p>
+<p>Does not admit any incoming link. Only admits one outgoing link connecting to a WMVN.</p>
+<p>Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the
+previously buffered observation, a <code class="docutils literal notranslate"><span class="pre">None</span></code> observation needs to be perceived.</p>
+<dl class="simple">
+<dt>PBFN quiescence state:</dt><dd><p>A PBFN reaches quiescence state if and only if it has been visited.</p>
+</dd>
+</dl>
+<p>The <cite>quiescence</cite> property is therefore overridden to conform to this definition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
+<li><p><strong>batch_shape</strong> (<em>torch.Size</em>) – The batch shape of the Predicate’s knowledge. In a PBFN this is solely used to align the particle weight tensor
+in the outgoing message to the correct shape.</p></li>
+<li><p><strong>event_shape</strong> (<em>torch.Size</em>) – The event shape of any observation / evidence event particles, except for <code class="docutils literal notranslate"><span class="pre">None</span></code> observation. Its length
+should match the number of predicate random arguments. See more details in following <cite>perceive()</cite> method.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.PBFN.buffer">
+<code class="sig-name descname">buffer</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PBFN.buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>The perceptual buffer. It is a 2D tensor whose last dimension is the event dimension with size equal to
+<code class="docutils literal notranslate"><span class="pre">self.e_shape</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.PBFN.b_shape">
+<code class="sig-name descname">b_shape</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PBFN.b_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set by <cite>batch_shape</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.PBFN.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PBFN.e_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set by <cite>event_shape</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.PBFN.perceive">
+<code class="sig-name descname">perceive</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weight</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'joint'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#PBFN.perceive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PBFN.perceive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perceives a new piece of observation / evidence particle events, specified by <cite>obs</cite>, with optional weight
+specified by <cite>weight</cite>. instantiate the perception message to be sent by <cite>compute()</cite> and store it in the
+perceptual buffer.</p>
+<p>If <cite>obs</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, a <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type identity message will be instantiated. Otherwise, it is a
+<code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> message with particle values from <cite>obs</cite>, particles weight reflecting <cite>weight</cite> (uniform
+if <cite>weight</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>), and uniform log sampling densities.</p>
+<p>The particle weight tensor will be copied and expanded to include full batch dimension shape <code class="docutils literal notranslate"><span class="pre">self.b_shape</span></code>.</p>
+<p>There are two perception mode: <cite>joint</cite> or <cite>marginal</cite>, specified by <cite>mode</cite>. This distinction makes a difference
+mostly for predicates with multiple random arguments:</p>
+<ul>
+<li><p>When in <cite>joint</cite> mode, the observations should be list of joint particle events. Accordingly, <cite>obs</cite> must be a
+2D tensor with the last dimension being the joint event dimension having a size equal to the sum of all random
+variables’ sizes (sum of <code class="docutils literal notranslate"><span class="pre">self.e_shape</span></code>), and the first dimension being the sample (indexing) dimension.
+‘weight’ must a 1D tensor with its length equal to the size of <cite>obs</cite> ‘s first dimension.</p>
+<p>Internally, in order to conform to standard message format, this joint event tensor <cite>obs</cite> will be broken up
+into chunks along the event dimension according to the sizes of the random variables. Each chunk thus
+represents a list of marginal event values, corresponding to one of the random variables, on an axis of a
+high-dimensional event lattice in the joint event space. A weight tensor of the same dimensional shape will be
+created to annotate this event lattice, with entries equal to values found in <cite>weight</cite> for the slots that
+corresponds to those joint events in <cite>obs</cite>, and other entries set to NP_EPSILON (representing numerically
+stable 0 weight).</p>
+</li>
+<li><p>When in <cite>marginal</cite> mode, the observations are tuple of marginal events for each random variable, and the
+assumption is taken that these marginal events for each random variable are mutually independent. Accordingly,
+<cite>obs</cite> must be an ITERABLE of 2D tensors, with the last dimension size of each entry equal to the size of the
+corresponding random variable, in the order specified by <code class="docutils literal notranslate"><span class="pre">self.e_shape</span></code>. Similarly, <cite>weight</cite> must also be
+an ITERABLE with the same length as <cite>obs</cite>, containing 1D tensors.</p></li>
+</ul>
+<p>The weights for duplicate events would be added together. However, this behavior should not be counted on and it
+is recommended to avoid duplicate entries in <cite>obs</cite> and instead use <cite>weight</cite> to signal the relative importance
+of each observation.</p>
+<p>Note that it is not necessary that <cite>weight</cite> is normalized and sums to 1; they will be automatically normalized
+when the outgoing message is instantiated. However <cite>weight</cite> must contain only positive values.</p>
+<p>This method should be called prior to the decision phase of a cognitive cycle for the perceived observation
+be sent to downstream nodes during the decision phase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obs</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>torch.Tensor</em><em>, or </em><em>None. optional</em>) – If not <code class="docutils literal notranslate"><span class="pre">None</span></code>, must be a 2D tensor if <cite>mode</cite> is <code class="docutils literal notranslate"><span class="pre">joint</span></code>, or an iterable of 2D tensors if <cite>mode</cite> is
+<code class="docutils literal notranslate"><span class="pre">marginal</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>weight</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>torch.Tensor</em><em>, or </em><em>None. optional</em>) – If not <code class="docutils literal notranslate"><span class="pre">None</span></code>, must be a 1D tensor if <cite>mode</cite> is <code class="docutils literal notranslate"><span class="pre">joint</span></code>, or an iterable of 1D tensors if <cite>mode</cite> is
+<code class="docutils literal notranslate"><span class="pre">marginal</span></code>. If <cite>obs</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, this value will be ignored. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>mode</strong> (<em>{&quot;joint&quot;</em><em>, </em><em>&quot;marginal&quot;}</em>) – The perception mode. Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;joint&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.PBFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#PBFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PBFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.PBFN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#PBFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PBFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends the contents in perceptual buffer to the connected WMVN.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.PBFN.quiescence">
+<em class="property">property </em><code class="sig-name descname">quiescence</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.PBFN.quiescence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides default behavior so now PBFN’s quiescence is determined by whether <cite>compute()</cite> has been called.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="working-memory-factor-node">
+<h2>Working Memory Factor Node<a class="headerlink" href="#working-memory-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.predicate_nodes.WMFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.predicate_nodes.</code><code class="sig-name descname">WMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">decay_rate</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Working Memory Factor Node.</p>
+<p>Effectively a buffer node that contains a memory buffer, WMFN mixes the incoming message with its stored memory by
+taking a weight sum during the modification phase, updates its memory with the result, and sends this updated memory
+during the decision phase at the next cognitive cycle. The first two steps are performed by <cite>update_memory()</cite>,
+whereas sending the message is, as always, performed by <cite>compute()</cite>.</p>
+<p>The weighted sum mixture behavior can be described as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">new_memory</span> <span class="o">=</span> <span class="n">new_msg</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay_rate</span><span class="p">)</span> <span class="o">*</span> <span class="n">old_memory</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">decay_rate</span></code> is a real number in range [0, 1]. The vector addition and scalar multiplication for messages
+of different types are mathematically defined by the Message class. See
+<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more details.</p>
+<p>The incoming message will always be cloned before weighted sum update is performed. This is to prevent
+any components of the memory message from in-place change by some parts elsewhere in the graph.</p>
+<p>Admits only one incoming and one outgoing links. Note that WMFN does not check the message shape of messages and
+memory contents. These should be guaranteed compatible by linkdata and neighboring nodes.</p>
+<p>The <cite>check_quiesce()</cite> method is overridden so that PSFN’s quiescence state is determined by whether this node is
+visited during the decision phase, i.e., whether <cite>compute()</cite> is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of this node</p></li>
+<li><p><strong>decay_rate</strong> (<em>float</em>) – The decay rate of the memory contents.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.WMFN.decay_rate">
+<code class="sig-name descname">decay_rate</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.decay_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.predicate_nodes.WMFN.memory">
+<code class="sig-name descname">memory</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.memory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.WMFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>WMFN only admits one incoming link and one outgoing link.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.WMFN.update_memory">
+<code class="sig-name descname">update_memory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.update_memory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.update_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the content in memory using message from incoming link.</p>
+<p>This step should be called during the modification phase.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.WMFN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends memory content toward outgoing link</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.WMFN.check_quiesce">
+<code class="sig-name descname">check_quiesce</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.check_quiesce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.check_quiesce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides so that quiescence for WMFN is equivalent to visited</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="conditional-nodes.html" class="btn btn-neutral float-right" title="Conditional Subgraph Nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="abstract-base-nodes.html" class="btn btn-neutral float-left" title="Abstract Base Nodes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

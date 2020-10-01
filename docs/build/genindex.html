@@ -1,0 +1,1002 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Index &mdash; PySigma  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="references/index.html">API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="references/cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="references/cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="references/cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="references/cognitive.html#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="references/cognitive.html#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="references/cognitive.html#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="references/cognitive.html#summarization">Summarization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="references/graphical/index.html">Graphical Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="references/graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="references/graphical/abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/abstract-base-nodes.html#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/abstract-base-nodes.html#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/abstract-base-nodes.html#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/abstract-base-nodes.html#beta-factor-node">Beta Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#parameter-store-factor-node">Parameter Store Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="references/graphical/conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/conditional-nodes.html#filter-variable-node">Filter Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/conditional-nodes.html#event-aggregation-factor-node">Event Aggregation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="references/graphical/other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="references/graphical/other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="references/utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="references/utils.html#utility-functions">Utility Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="references/utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="references/utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Index</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#_"><strong>_</strong></a>
+ | <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#K"><strong>K</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#Q"><strong>Q</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
+ 
+</div>
+<h2 id="_">_</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.__add__">__add__() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.Summarization.__call__">__call__() (pysigma.structures.Summarization method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.__iadd__">__iadd__() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.__imul__">__imul__() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.__mul__">__mul__() (pysigma.defs.Message method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.add_link">add_link() (pysigma.graphical.alpha_beta_nodes.AlphaFactorNode method)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.add_link">(pysigma.graphical.alpha_beta_nodes.BetaFactorNode method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.add_link">(pysigma.graphical.alpha_beta_nodes.CMTN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.EAFN.add_link">(pysigma.graphical.alpha_beta_nodes.EAFN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ERFN.add_link">(pysigma.graphical.alpha_beta_nodes.ERFN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.FVN.add_link">(pysigma.graphical.alpha_beta_nodes.FVN method)</a>
+</li>
+        <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN.add_link">(pysigma.graphical.basic_nodes.DFN method)</a>
+</li>
+        <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DVN.add_link">(pysigma.graphical.basic_nodes.DVN method)</a>
+</li>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.FactorNode.add_link">(pysigma.graphical.basic_nodes.FactorNode method)</a>
+</li>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.add_link">(pysigma.graphical.basic_nodes.Node method)</a>
+</li>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.add_link">(pysigma.graphical.basic_nodes.VariableNode method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.add_link">(pysigma.graphical.predicate_nodes.LTMFN method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.add_link">(pysigma.graphical.predicate_nodes.PBFN method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.add_link">(pysigma.graphical.predicate_nodes.PSFN method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.add_link">(pysigma.graphical.predicate_nodes.WMFN method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode">AlphaFactorNode (class in pysigma.graphical.alpha_beta_nodes)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var">arg2var (pysigma.graphical.alpha_beta_nodes.RMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map">arg2var_map (pysigma.graphical.alpha_beta_nodes.RMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_inv_tuple">arg2var_map_inv_tuple (pysigma.graphical.alpha_beta_nodes.RMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_tuple">arg2var_map_tuple (pysigma.graphical.alpha_beta_nodes.RMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.arg_set">arg_set (pysigma.graphical.alpha_beta_nodes.RMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.args2var">args2var (pysigma.graphical.alpha_beta_nodes.CMTN attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ERFN.args2var">(pysigma.graphical.alpha_beta_nodes.ERFN attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.attr">attr (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.attr">(pysigma.graphical.basic_nodes.LinkData attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.b_shape">b_shape (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.b_shape">(pysigma.graphical.basic_nodes.VariableNode attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.b_shape">(pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.b_shape">(pysigma.graphical.predicate_nodes.PBFN attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.b_shape">(pysigma.graphical.predicate_nodes.PSFN attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_broaden">batch_broaden() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_diag_embed">batch_diag_embed() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_diagonal">batch_diagonal() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_expand">batch_expand() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_flatten">batch_flatten() (pysigma.defs.Message method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_put">batch_index_put() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_index_select">batch_index_select() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_narrow">batch_narrow() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_permute">batch_permute() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_reshape">batch_reshape() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_summarize">batch_summarize() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.batch_unsqueeze">batch_unsqueeze() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode">BetaFactorNode (class in pysigma.graphical.alpha_beta_nodes)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Both">Both (pysigma.defs.MessageType attribute)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.buffer">buffer (pysigma.graphical.predicate_nodes.PBFN attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.check_quiesce">check_quiesce() (pysigma.graphical.predicate_nodes.WMFN method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.clone">clone() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN">CMTN (class in pysigma.graphical.alpha_beta_nodes)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.codomain">codomain (pysigma.structures.VariableMap attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.combinatorial_cat">combinatorial_cat() (pysigma.utils.KnowledgeServer static method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.combinatorial_decat">combinatorial_decat() (pysigma.utils.KnowledgeServer static method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.compatible_shape">compatible_shape() (in module pysigma.utils)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.compose">compose() (pysigma.defs.Message static method)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.compute">compute() (pysigma.graphical.alpha_beta_nodes.AlphaFactorNode method)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.compute">(pysigma.graphical.alpha_beta_nodes.BetaFactorNode method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.FVN.compute">(pysigma.graphical.alpha_beta_nodes.FVN method)</a>
+</li>
+        <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN.compute">(pysigma.graphical.basic_nodes.DFN method)</a>
+</li>
+        <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DVN.compute">(pysigma.graphical.basic_nodes.DVN method)</a>
+</li>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.compute">(pysigma.graphical.basic_nodes.Node method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.compute">(pysigma.graphical.predicate_nodes.LTMFN method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.compute">(pysigma.graphical.predicate_nodes.PBFN method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.compute">(pysigma.graphical.predicate_nodes.PSFN method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.compute">(pysigma.graphical.predicate_nodes.WMFN method)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMVN.compute">(pysigma.graphical.predicate_nodes.WMVN method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.constraints">constraints (pysigma.defs.Variable attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.decay_rate">decay_rate (pysigma.graphical.predicate_nodes.WMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.device">device (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.device">(pysigma.graphical.basic_nodes.Node attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN">DFN (class in pysigma.graphical.basic_nodes)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_dist2param">dict_dist2param (pysigma.utils.DistributionServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_draw_particles">dict_draw_particles (pysigma.utils.DistributionServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_exp_dist2natural">dict_exp_dist2natural (pysigma.utils.DistributionServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_exp_param2natural">dict_exp_param2natural (pysigma.utils.DistributionServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_get_moments">dict_get_moments (pysigma.utils.DistributionServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_log_pdf">dict_log_pdf (pysigma.utils.DistributionServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_natural2exp_dist">dict_natural2exp_dist (pysigma.utils.DistributionServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_natural2exp_param">dict_natural2exp_param (pysigma.utils.DistributionServer attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dict_param2dist">dict_param2dist (pysigma.utils.DistributionServer attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.diff_param">diff_param() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.diff_weight">diff_weight() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.dist2param">dist2param() (pysigma.utils.DistributionServer class method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.dist_class">dist_class (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.dist_info">dist_info (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer">DistributionServer (class in pysigma.utils)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.domain">domain (pysigma.structures.VariableMap attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.draw_particles">draw_particles() (pysigma.utils.DistributionServer class method)</a>
+
+      <ul>
+        <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.draw_particles">(pysigma.utils.KnowledgeServer method)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DVN">DVN (class in pysigma.graphical.basic_nodes)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.dynamic">dynamic (pysigma.structures.VariableMap attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.e_shape">e_shape (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.EAFN.e_shape">(pysigma.graphical.alpha_beta_nodes.EAFN attribute)</a>
+</li>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.e_shape">(pysigma.graphical.basic_nodes.VariableNode attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.e_shape">(pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.e_shape">(pysigma.graphical.predicate_nodes.PBFN attribute)</a>
+</li>
+        <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.e_shape">(pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.EAFN">EAFN (class in pysigma.graphical.alpha_beta_nodes)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.epsilon">epsilon (pysigma.graphical.basic_nodes.LinkData attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ERFN">ERFN (class in pysigma.graphical.alpha_beta_nodes)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN">ESFN (class in pysigma.graphical.alpha_beta_nodes)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.event2cognitive_event">event2cognitive_event() (pysigma.utils.KnowledgeServer method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.event2torch_event">event2torch_event() (pysigma.utils.KnowledgeServer method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.event_concatenate">event_concatenate() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.event_marginalize">event_marginalize() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.event_reweight">event_reweight() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.event_transform">event_transform() (pysigma.defs.Message method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.FactorNode">FactorNode (class in pysigma.graphical.basic_nodes)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.fn">fn (pysigma.graphical.basic_nodes.LinkData attribute)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.FVN">FVN (class in pysigma.graphical.alpha_beta_nodes)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.get_inverse_map">get_inverse_map() (pysigma.structures.VariableMap method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.get_map">get_map() (pysigma.structures.VariableMap method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.get_moments">get_moments() (pysigma.utils.DistributionServer class method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.identity">identity() (pysigma.defs.Message static method)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.image">image (pysigma.structures.VariableMap attribute)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.in_linkdata">in_linkdata (pysigma.graphical.basic_nodes.Node attribute)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.index_var_list">index_var_list (pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN.index_vars">index_vars (pysigma.graphical.basic_nodes.DFN attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.index_vars">(pysigma.graphical.basic_nodes.VariableNode attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Indexing">Indexing (pysigma.defs.VariableMetatype attribute)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.init_msg">init_msg() (pysigma.graphical.predicate_nodes.LTMFN method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.inward_compute">inward_compute() (pysigma.graphical.alpha_beta_nodes.AlphaFactorNode method)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.inward_compute">(pysigma.graphical.alpha_beta_nodes.BetaFactorNode method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute">(pysigma.graphical.alpha_beta_nodes.CMTN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.EAFN.inward_compute">(pysigma.graphical.alpha_beta_nodes.EAFN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ERFN.inward_compute">(pysigma.graphical.alpha_beta_nodes.ERFN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute">(pysigma.graphical.alpha_beta_nodes.ESFN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute">(pysigma.graphical.alpha_beta_nodes.RMFN method)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.isid">isid() (pysigma.defs.Message property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="K">K</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.kl_norm">kl_norm() (pysigma.utils.DistributionServer class method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer">KnowledgeServer (class in pysigma.utils)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ERFN.ks">ks (pysigma.graphical.alpha_beta_nodes.ERFN attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.ks">(pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMVN.ks">(pysigma.graphical.predicate_nodes.WMVN attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData">LinkData (class in pysigma.graphical.basic_nodes)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.log">log (pysigma.graphical.basic_nodes.Node attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.log_densities">log_densities (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.log_densities">(pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.log_prob">log_prob() (pysigma.utils.DistributionServer class method)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN">LTMFN (class in pysigma.graphical.predicate_nodes)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.map">map (pysigma.structures.VariableMap attribute)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.mapping_func">mapping_func (pysigma.structures.VariableMap attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.memory">memory (pysigma.graphical.basic_nodes.LinkData attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.memory">(pysigma.graphical.predicate_nodes.WMFN attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message">Message (class in pysigma.defs)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType">MessageType (class in pysigma.defs)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.metatype">metatype (pysigma.defs.Variable attribute)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.msg_cache">msg_cache (pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.msg_shape">msg_shape (pysigma.graphical.basic_nodes.LinkData attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.name">name (pysigma.defs.Variable attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.EAFN.name">(pysigma.graphical.alpha_beta_nodes.EAFN attribute)</a>
+</li>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.name">(pysigma.graphical.basic_nodes.Node attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.new">new (pysigma.graphical.basic_nodes.LinkData attribute)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node">Node (class in pysigma.graphical.basic_nodes)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.num_rvs">num_rvs (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.num_rvs">(pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.out_linkdata">out_linkdata (pysigma.graphical.basic_nodes.Node attribute)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.AlphaFactorNode.outward_compute">outward_compute() (pysigma.graphical.alpha_beta_nodes.AlphaFactorNode method)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.alpha_beta_nodes.BetaFactorNode.outward_compute">(pysigma.graphical.alpha_beta_nodes.BetaFactorNode method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute">(pysigma.graphical.alpha_beta_nodes.CMTN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.EAFN.outward_compute">(pysigma.graphical.alpha_beta_nodes.EAFN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ERFN.outward_compute">(pysigma.graphical.alpha_beta_nodes.ERFN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute">(pysigma.graphical.alpha_beta_nodes.ESFN method)</a>
+</li>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute">(pysigma.graphical.alpha_beta_nodes.RMFN method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.p_shape">p_shape (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.p_shape">(pysigma.graphical.basic_nodes.VariableNode attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.p_shape">(pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.p_shape">(pysigma.graphical.predicate_nodes.PSFN attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.param">param (pysigma.graphical.predicate_nodes.PSFN attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.param2dist">param2dist() (pysigma.utils.DistributionServer class method)</a>
+</li>
+      <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN.param_var">param_var (pysigma.graphical.basic_nodes.DFN attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.param_var">(pysigma.graphical.basic_nodes.VariableNode attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.param_var">(pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.parameter">parameter (pysigma.defs.Message attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Parameter">Parameter (pysigma.defs.MessageType attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Parameter">(pysigma.defs.VariableMetatype attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.particles">particles (pysigma.defs.Message attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Particles">Particles (pysigma.defs.MessageType attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.particles">particles (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN">PBFN (class in pysigma.graphical.predicate_nodes)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.perceive">perceive() (pysigma.graphical.predicate_nodes.PBFN method)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.preemptive">preemptive (pysigma.graphical.alpha_beta_nodes.CMTN attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.pretty_log">pretty_log (pysigma.graphical.basic_nodes.LinkData attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.pretty_log">(pysigma.graphical.basic_nodes.Node attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN">PSFN (class in pysigma.graphical.predicate_nodes)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Q">Q</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.quiescence">quiescence() (pysigma.graphical.basic_nodes.Node property)</a>
+
+      <ul>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PBFN.quiescence">(pysigma.graphical.predicate_nodes.PBFN property)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.quiescence">(pysigma.graphical.predicate_nodes.PSFN property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.EAFN.ran_var">ran_var (pysigma.graphical.alpha_beta_nodes.EAFN attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.FVN.ran_var">(pysigma.graphical.alpha_beta_nodes.FVN attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.ran_var_list">ran_var_list (pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN.ran_vars">ran_vars (pysigma.graphical.basic_nodes.DFN attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.ran_vars">(pysigma.graphical.basic_nodes.VariableNode attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Random">Random (pysigma.defs.VariableMetatype attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.read">read() (pysigma.graphical.basic_nodes.LinkData method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.reduce_type">reduce_type() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.rel_var_list">rel_var_list (pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN.rel_vars">rel_vars (pysigma.graphical.basic_nodes.DFN attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.rel_vars">(pysigma.graphical.basic_nodes.VariableNode attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype.Relational">Relational (pysigma.defs.VariableMetatype attribute)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN.reset_param">reset_param() (pysigma.graphical.predicate_nodes.PSFN method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.reset_shape">reset_shape() (pysigma.graphical.basic_nodes.LinkData method)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.reset_state">reset_state() (pysigma.graphical.basic_nodes.Node method)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN">RMFN (class in pysigma.graphical.alpha_beta_nodes)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.rv_constraints">rv_constraints (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.rv_num_particles">rv_num_particles (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.rv_sizes">rv_sizes (pysigma.utils.KnowledgeServer attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.s_shape">s_shape (pysigma.defs.Message attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode.s_shape">(pysigma.graphical.basic_nodes.VariableNode attribute)</a>
+</li>
+        <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.s_shape">(pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.same_particles_as">same_particles_as() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap.set_map">set_map() (pysigma.structures.VariableMap method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.shape">shape() (pysigma.defs.Message property)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable.size">size (pysigma.defs.Variable attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.size">size() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ESFN.sum_op">sum_op (pysigma.graphical.alpha_beta_nodes.ESFN attribute)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.Summarization">Summarization (class in pysigma.structures)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.KnowledgeServer.surrogate_log_prob">surrogate_log_prob() (pysigma.utils.KnowledgeServer method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.to_device">to_device() (pysigma.defs.Message method)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.to_draw">to_draw (pysigma.graphical.predicate_nodes.LTMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.to_fn">to_fn (pysigma.graphical.basic_nodes.LinkData attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.toggle_draw">toggle_draw() (pysigma.graphical.predicate_nodes.LTMFN method)</a>
+</li>
+      <li><a href="references/utils.html#pysigma.utils.DistributionServer.transform_param">transform_param() (pysigma.utils.DistributionServer class method)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.type">type (pysigma.defs.Message attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.MessageType.Undefined">Undefined (pysigma.defs.MessageType attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN.update_memory">update_memory() (pysigma.graphical.predicate_nodes.WMFN method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.FVN.val_constraints">val_constraints (pysigma.graphical.alpha_beta_nodes.FVN attribute)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.var2arg">var2arg (pysigma.graphical.alpha_beta_nodes.RMFN attribute)</a>
+</li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.CMTN.var2trans">var2trans (pysigma.graphical.alpha_beta_nodes.CMTN attribute)</a>
+
+      <ul>
+        <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.ERFN.var2trans">(pysigma.graphical.alpha_beta_nodes.ERFN attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="references/graphical/conditional-nodes.html#pysigma.graphical.alpha_beta_nodes.RMFN.var_set">var_set (pysigma.graphical.alpha_beta_nodes.RMFN attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Variable">Variable (class in pysigma.defs)</a>
+</li>
+      <li><a href="references/cognitive.html#pysigma.structures.VariableMap">VariableMap (class in pysigma.structures)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.VariableMetatype">VariableMetatype (class in pysigma.defs)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode">VariableNode (class in pysigma.graphical.basic_nodes)</a>
+</li>
+      <li><a href="references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.visited">visited (pysigma.graphical.basic_nodes.Node attribute)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.vn">vn (pysigma.graphical.basic_nodes.LinkData attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/data-structures.html#pysigma.defs.Message.weight">weight (pysigma.defs.Message attribute)</a>
+</li>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMFN">WMFN (class in pysigma.graphical.predicate_nodes)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMVN">WMVN (class in pysigma.graphical.predicate_nodes)</a>
+</li>
+      <li><a href="references/graphical/data-structures.html#pysigma.graphical.basic_nodes.LinkData.write">write() (pysigma.graphical.basic_nodes.LinkData method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
