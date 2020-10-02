@@ -104,6 +104,9 @@ class Variable:
         # override to provide the name as the string representation
         return self.name
 
+    def __repr__(self):
+        return self.name
+
     def __hash__(self):
         # override so that hash value of the string representation of the variable is used
         return hash(self.name + str(self.metatype) + str(self.size) + str(self.constraints))
@@ -173,7 +176,8 @@ class Message:
         The jth entry in the iterable represents the log pdf of the jth particle in `particles` w.r.t. the (marginal)
         sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
         ``MessageType.Particles``, unless `weight` is 1, in which case the message represents a universal identity in
-        the particles space. The jth entry must have shape ``sample_shape[j]``.
+        the particles space. If specified, all density tensors must be **non-positively valued**, since a particle's
+        sampling probability density cannot be greater than 1. The jth entry must have shape ``sample_shape[j]``.
     device : str, optional
         The device where the tensor components are hosted. ``.to(device)`` will be called on the tensor arguments
         during initialization. Defaults to 'cpu'.
@@ -296,7 +300,11 @@ class Message:
                  param_shape=torch.Size([]), sample_shape=torch.Size([]), event_shape=torch.Size([]),
                  parameter=0, particles=None, weight=1, log_densities=None, device='cpu', **kwargs):
         assert isinstance(msg_type, MessageType)
-        assert isinstance(batch_shape, torch.Size)
+        assert isinstance(batch_shape, torch.Size) and \
+               ((MessageType.Parameter in msg_type and not isinstance(parameter, torch.Tensor)) or
+                (MessageType.Particles in msg_type and not isinstance(weight, torch.Tensor)) or
+                len(batch_shape) >= 1), \
+            "`batch_shape` must be a torch.Size of length at least 1, unless the message is an identity."
         assert isinstance(param_shape, torch.Size) and len(param_shape) <= 1, \
             "`param_shape` must be a torch.Size of length at most 1. Found {}".format(param_shape)
         assert isinstance(sample_shape, torch.Size)
@@ -304,10 +312,10 @@ class Message:
             "`sample_shape` and `event_shape` must both be torch.Size with the same length. Found " \
             "(sample_shape, event_shape) = ({}, {})".format(sample_shape, event_shape)
 
-        assert parameter == 0 or isinstance(parameter, torch.Tensor)
+        assert isinstance(parameter, torch.Tensor) or parameter == 0
         assert particles is None or (isinstance(particles, Iterable) and
                                      all(isinstance(p, torch.Tensor) for p in particles))
-        assert weight == 1 or isinstance(weight, torch.Tensor)
+        assert isinstance(weight, torch.Tensor) or weight == 1
         assert log_densities is None or (isinstance(log_densities, Iterable) and
                                          all(isinstance(d, torch.Tensor) for d in log_densities))
 
@@ -330,7 +338,7 @@ class Message:
         self.s_shape = sample_shape
         self.e_shape = event_shape
         # Number of random variables
-        self.num_rvs = len(self.particles)
+        self.num_rvs = len(self.particles) if particles is not None else 0
 
         # Check whether necessary arguments are provided
         if MessageType.Parameter in self.type:
@@ -378,7 +386,7 @@ class Message:
             assert self.b_shape + self.s_shape == self.weight.shape, \
                 "When specified, the particles weight should have shape (batch_shape + sample_shape). Expect {}, but " \
                 "intead found {}.".format(self.b_shape + self.s_shape, self.weight.shape)
-            # Check that values are non-negative
+            # Check that values are positive
             assert torch.all(self.weight > 0), "Found negative values in particle weights. Minimum value: {}" \
                 .format(torch.min(self.weight))
             # Normalize the values so that weights sum to 1 across sample dimension
@@ -394,6 +402,9 @@ class Message:
                 "When specified, the j-th log density tensor specified in the iterable `log_densities` should have " \
                 "shape (sample_shape[j]). Expect shapes {}, but instead found log density tensor shapes {}." \
                 .format(list(self.s_shape[j] for j in range(self.num_rvs)), list(d.shape for d in self.log_densities))
+            # Check that values are non-positive
+            assert all(torch.all(d <= 0) for d in self.log_densities), \
+                "Found positive values in one of the particle log-densities tensors."
 
     """
         Member properties

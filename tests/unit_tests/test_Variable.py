@@ -59,3 +59,10 @@ class TestVariable:
         test_var2 = Variable("test", VariableMetatype.Random, 10, [c1, c2])
         assert test_var1 != test_var2
 
+    def test_hash(self):
+        # Test that a Variable instance can be hashed and used for example as keys to dictionaries
+        test_var1 = Variable("test", VariableMetatype.Relational, 10)
+        test_var2 = Variable("test", VariableMetatype.Random, 10, [integer_interval(0, 3)])
+        test_dict = {test_var1: 1, test_var2: 2}
+
+        assert test_dict[test_var1] == 1 and test_dict[test_var2] == 2

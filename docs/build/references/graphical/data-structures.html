@@ -401,7 +401,8 @@ necessary to specify <cite>batch_shape</cite>. Default to 1.</p></li>
 <li><p><strong>log_densities</strong> (<em>iterable of torch.Tensor</em><em>, </em><em>optional</em>) – The jth entry in the iterable represents the log pdf of the jth particle in <cite>particles</cite> w.r.t. the (marginal)
 sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
 <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code>, unless <cite>weight</cite> is 1, in which case the message represents a universal identity in
-the particles space. The jth entry must have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span></code>.</p></li>
+the particles space. If specified, all density tensors must be <strong>non-positively valued</strong>, since a particle’s
+sampling probability density cannot be greater than 1. The jth entry must have shape <code class="docutils literal notranslate"><span class="pre">sample_shape[j]</span></code>.</p></li>
 <li><p><strong>device</strong> (<em>str</em><em>, </em><em>optional</em>) – The device where the tensor components are hosted. <code class="docutils literal notranslate"><span class="pre">.to(device)</span></code> will be called on the tensor arguments
 during initialization. Defaults to ‘cpu’.</p></li>
 <li><p><strong>**kwargs</strong> – Other keyword arguments that specify special attributes of the message. Will be deep copied when the message is
