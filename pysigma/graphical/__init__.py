@@ -3,8 +3,10 @@
 """
 
 import networkx
-from .basic_nodes import *
-from .predicate_nodes import WMVN, LTMFN, PBFN, WMFN
+from .basic_nodes import LinkData, Node, FactorNode, VariableNode, DFN, DVN
+from .alpha_beta_nodes import ESFN, RMFN, CMTN, FVN, EAFN, ERFN
+from .gamma_node import GTVN, GFN
+from .predicate_nodes import WMVN, LTMFN, PSFN, PBFN, WMFN
 
 
 class Graph(networkx.DiGraph):
@@ -20,21 +22,21 @@ class Graph(networkx.DiGraph):
         # node type name2type dictionary
         self._name2type = \
             {
-             DFN.__name__: DVN,
-             PBFN.__name__: PBFN,
-             LTMFN.__name__: LTMFN,
-             WMFN.__name__: WMFN,
-             ACFN.__name__: ACFN,
-             FFN.__name__: FFN,
-             NFN.__name__: NFN,
-             NLFN.__name__: NLFN,
-             ADFN.__name__: ADFN,
-             ATFN.__name__: ATFN,
-             BJFN.__name__: BJFN,
-             GFFN.__name__: GFFN,
-             DVN.__name__: DVN,
-             WMVN.__name__: WMVN,
-             }
+                DFN.__name__: DVN,
+                DVN.__name__: DVN,
+                WMVN.__name__: WMVN,
+                LTMFN.__name__: LTMFN,
+                PBFN.__name__: PBFN,
+                WMFN.__name__: WMFN,
+                ESFN.__name__: ESFN,
+                RMFN.__name__: RMFN,
+                CMTN.__name__: CMTN,
+                FVN.__name__: FVN,
+                EAFN.__name__: EAFN,
+                ERFN.__name__: ERFN,
+                GTVN.__name__: GTVN,
+                GFN.__name__: GFN
+            }
 
     def new_node(self, node_type, *args, **kwargs):
         """
