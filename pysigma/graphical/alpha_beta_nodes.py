@@ -6,10 +6,10 @@ from abc import ABC, abstractmethod
 import torch
 from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
-from defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
-from graphical.basic_nodes import LinkData, VariableNode, FactorNode
-from utils import KnowledgeServer
-from structures import VariableMap, Summarization
+from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
+from .basic_nodes import LinkData, VariableNode, FactorNode
+from ..utils import KnowledgeServer
+from ..structures import VariableMap, Summarization
 
 
 class AlphaFactorNode(FactorNode, ABC):

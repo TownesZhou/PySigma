@@ -4,8 +4,8 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import torch
-from defs import VariableMetatype, Variable, MessageType, Message
-from utils import compatible_shape
+from ..defs import VariableMetatype, Variable, MessageType, Message
+from ..utils import compatible_shape
 
 """
     Basic data structures and abstract node classes

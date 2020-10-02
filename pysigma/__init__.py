@@ -2,8 +2,7 @@
     PySigma package init file. Include definition of the Sigma class, the top-level interface to Sigma cognitive
         architecture.
 """
-from .structures import *
-from .graphical import *
+from .graphical import Graph
 from .cognitive import _register, _compiler, _runner, _perception, _adaption, _inspector
 
 
