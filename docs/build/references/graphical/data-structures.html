@@ -639,9 +639,32 @@ words, a <code class="docutils literal notranslate"><span class="pre">MessageTyp
 </dd></dl>
 
 <dl class="py method">
+<dt id="pysigma.defs.Message.__eq__">
+<code class="sig-name descname">__eq__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__eq__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides equality testing operation <code class="docutils literal notranslate"><span class="pre">==</span></code></p>
+<p>Two messages are equal if and only if all of its contents are equal, including contents in the auxiliary
+dictionary <code class="docutils literal notranslate"><span class="pre">self.attr</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Messages with same contents but on different devices are considered equal. Therefore, <code class="docutils literal notranslate"><span class="pre">device</span></code> field is not
+taken into consideration when testing equality.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.defs.Message.__ne__">
+<code class="sig-name descname">__ne__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__ne__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__ne__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides inequality testing operation <code class="docutils literal notranslate"><span class="pre">!=</span></code></p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pysigma.defs.Message.__eq__" title="pysigma.defs.Message.__eq__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__eq__()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pysigma.defs.Message.__add__">
 <code class="sig-name descname">__add__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__add__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__add__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overloads the addition operation <code class="docutils literal notranslate"><span class="pre">+</span></code>.</p>
+<dd><p>Overrides the addition operation <code class="docutils literal notranslate"><span class="pre">+</span></code>.</p>
 <p>Implements the semantics of addition operation as in vector spaces. The computational operations used to
 implement the semantics are different for different message contents. See
 <a class="reference internal" href="#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a>
@@ -697,7 +720,7 @@ in the expression, i.e., <cite>other</cite>, whose attribute entries persist, bu
 <dl class="py method">
 <dt id="pysigma.defs.Message.__iadd__">
 <code class="sig-name descname">__iadd__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__iadd__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__iadd__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overloads self-addition operator <code class="docutils literal notranslate"><span class="pre">+=</span></code>.</p>
+<dd><p>Overrides self-addition operator <code class="docutils literal notranslate"><span class="pre">+=</span></code>.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#pysigma.defs.Message.__add__" title="pysigma.defs.Message.__add__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__add__()</span></code></a></p>
@@ -707,7 +730,7 @@ in the expression, i.e., <cite>other</cite>, whose attribute entries persist, bu
 <dl class="py method">
 <dt id="pysigma.defs.Message.__mul__">
 <code class="sig-name descname">__mul__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__mul__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__mul__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overloads multiplication operator <code class="docutils literal notranslate"><span class="pre">*</span></code>.</p>
+<dd><p>Overrides multiplication operator <code class="docutils literal notranslate"><span class="pre">*</span></code>.</p>
 <p>Implements the semantics of scalar multiplication operation as in vector spaces. The computational operations
 used to implement the semantics are different for different message contents. See
 <a class="reference internal" href="#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes regarding arithmetic structures</span></a>
@@ -735,7 +758,7 @@ each distribution instance in the batch.</p>
 <dl class="py method">
 <dt id="pysigma.defs.Message.__imul__">
 <code class="sig-name descname">__imul__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.__imul__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.__imul__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overloads self-multiplication operator <code class="docutils literal notranslate"><span class="pre">*=</span></code>.</p>
+<dd><p>Overrides self-multiplication operator <code class="docutils literal notranslate"><span class="pre">*=</span></code>.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#pysigma.defs.Message.__mul__" title="pysigma.defs.Message.__mul__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__mul__()</span></code></a></p>

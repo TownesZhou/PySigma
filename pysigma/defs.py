@@ -438,8 +438,75 @@ class Message:
     """
         Overload arithmetic operators
     """
+    def __eq__(self, other):
+        """Overrides equality testing operation ``==``
+
+        Two messages are equal if and only if all of its contents are equal, including contents in the auxiliary
+        dictionary ``self.attr``.
+
+        Note
+        ----
+        Messages with same contents but on different devices are considered equal. Therefore, ``device`` field is not
+        taken into consideration when testing equality.
+        """
+        assert isinstance(other, Message)
+        if self.type != other.type:
+            return False
+        if self.b_shape != other.b_shape or self.p_shape != other.p_shape or self.s_shape != other.s_shape or \
+           self.e_shape != other.e_shape:
+            return False
+
+        # If two messages' devices are different, compare self to a clone of other that is transferred to the device
+        # that self is on
+        if self.device != other.device:
+            other = other.to_device(self.device)
+
+        # Consider numerical precision when comparing tensors
+        if isinstance(self.parameter, torch.Tensor) != isinstance(other.parameter, torch.Tensor):
+            return False
+        elif isinstance(self.parameter, torch.Tensor) and isinstance(other.parameter, torch.Tensor) and \
+                not torch.max(torch.abs(self.parameter - other.parameter)) < NP_EPSILON:
+            return False
+
+        if (self.particles is None) != (other.particles is None):
+            return False
+        elif self.particles is not None and other.particles is not None:
+            if len(self.particles) != len(other.particles):
+                return False
+            elif not all(torch.max(torch.abs(p1 - p2)) < NP_EPSILON for p1, p2 in zip(self.particles, other.particles)):
+                return False
+
+        if isinstance(self.weight, torch.Tensor) != isinstance(other.weight, torch.Tensor):
+            return False
+        elif isinstance(self.weight, torch.Tensor) and isinstance(other.weight, torch.Tensor) and \
+                not torch.max(torch.abs(self.weight - other.weight)) < NP_EPSILON:
+            return False
+
+        if (self.log_densities is None) != (other.log_densities is None):
+            return False
+        elif self.log_densities is not None and other.log_densities is not None:
+            if len(self.log_densities) != len(other.log_densities):
+                return False
+            elif not all(torch.max(torch.abs(d1 - d2)) < NP_EPSILON for d1, d2 in
+                         zip(self.log_densities, other.log_densities)):
+                return False
+
+        if not self.attr == other.attr:
+            return False
+
+        return True
+
+    def __ne__(self, other):
+        """Overrides inequality testing operation ``!=``
+
+        See Also
+        --------
+        __eq__
+        """
+        return not self == other
+
     def __add__(self, other):
-        """Overloads the addition operation ``+``.
+        """Overrides the addition operation ``+``.
 
         Implements the semantics of addition operation as in vector spaces. The computational operations used to
         implement the semantics are different for different message contents. See
@@ -535,7 +602,7 @@ class Message:
             # Tensor addition
             new_parameter = self.parameter + other.parameter
 
-            param_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter,
+            param_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameter=new_parameter,
                                 device=self.device)
 
         # Addition for Particles type
@@ -558,7 +625,7 @@ class Message:
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
             ptcl_msg = Message(s_type,
                                batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                               particles=cloned_particles, weights=new_weights, log_densities=cloned_log_densities,
+                               particles=cloned_particles, weight=new_weights, log_densities=cloned_log_densities,
                                device=self.device)
 
         # Compose if we are adding two Both type messages, otherwise return the proper one
@@ -575,7 +642,7 @@ class Message:
         return new_msg
 
     def __iadd__(self, other):
-        """Overloads self-addition operator ``+=``.
+        """Overrides self-addition operator ``+=``.
 
         See Also
         --------
@@ -584,7 +651,7 @@ class Message:
         return self.__add__(other)
 
     def __mul__(self, other):
-        """Overloads multiplication operator ``*``.
+        """Overrides multiplication operator ``*``.
 
         Implements the semantics of scalar multiplication operation as in vector spaces. The computational operations
         used to implement the semantics are different for different message contents. See
@@ -669,7 +736,7 @@ class Message:
         return new_msg
 
     def __imul__(self, other):
-        """Overloads self-multiplication operator ``*=``.
+        """Overrides self-multiplication operator ``*=``.
 
         See Also
         --------

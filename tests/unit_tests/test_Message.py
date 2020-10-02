@@ -8,6 +8,10 @@ from torch import Size
 from pysigma.defs import Message, MessageType
 
 
+# Numerical accuracy
+EPS = 1e-7
+
+
 class TestMessage:
 
     def test_correct_init(self):
@@ -109,6 +113,11 @@ class TestMessage:
 
         Message(MessageType.Both, batch_shape=Size([5, 6]), param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                 parameter=0, particles=p1, weight=1, log_densities=l1)
+
+        # Test init with auxiliary arguments.
+        msg = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=torch.randn([5, 3]),
+                      k1=1, k2=2, k3=3)
+        assert msg.attr['k1'] == 1 and msg.attr['k2'] == 2 and msg.attr['k3'] == 3
 
     def test_correct_init_with_device(self):
         # Only run this test if GPU is available
@@ -350,3 +359,246 @@ class TestMessage:
         msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                       parameter=0, particles=part, weight=w, log_densities=l)
         assert not msg.isid
+
+    def test_eq(self):
+        # Test the equality testing operator
+        # Test equality
+        # Parameter
+        t1 = torch.randn([5, 3])
+        t2 = t1.clone()
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t2)
+        assert msg1 == msg2
+
+        # Particles
+        b_s, p_s, s_s, e_s = Size([5]), Size([4]), Size([10]), Size([3])
+        param1 = torch.randn([5, 4])
+        part1 = [torch.randn(10, 3)]
+        w1 = torch.rand(5, 10)
+        w2 = w1.clone()
+        l1 = [-torch.rand(10)]
+        msg1 = Message(MessageType.Particles, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                      parameter=param1, particles=part1, weight=w1, log_densities=l1)
+        msg2 = Message(MessageType.Particles, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                       parameter=param1, particles=part1, weight=w2, log_densities=l1)
+        assert msg1 == msg2
+
+        # Test with auxiliary data
+        t1 = torch.randn([5, 3])
+        t2 = t1.clone()
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1,
+                       a=1, b=2, c=3, extra=4)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t2,
+                       a=1, b=2, c=3, extra=4)
+        assert msg1 == msg2
+
+        # Test inequality
+        # Parameter
+        t1 = torch.randn([5, 3])
+        t2 = torch.randn([5, 3])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t2)
+        assert msg1 != msg2
+
+        # Particles
+        b_s, p_s, s_s, e_s = Size([5]), Size([4]), Size([10]), Size([3])
+        param1 = torch.randn([5, 4])
+        part1 = [torch.randn(10, 3)]
+        w1 = torch.rand(5, 10)
+        w2 = torch.rand(5, 10)
+        l1 = [-torch.rand(10)]
+        msg1 = Message(MessageType.Particles, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                       parameter=param1, particles=part1, weight=w1, log_densities=l1)
+        msg2 = Message(MessageType.Particles, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                       parameter=param1, particles=part1, weight=w2, log_densities=l1)
+        assert msg1 != msg2
+
+        # Test with auxiliary data
+        t1 = torch.randn([5, 3])
+        t2 = t1.clone()
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t2,
+                       a=1, b=2, c=3, extra=4)
+        assert msg1 != msg2
+
+        # Test with different devices
+        # Only run this test if GPU is available
+        if not torch.cuda.is_available():
+            return
+        device = torch.cuda.current_device()
+
+        t1 = torch.randn([5, 3])
+        t2 = t1.clone()
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t2,
+                       device=device)
+        assert msg1 == msg2
+
+    def test_add_invalid_addend(self):
+        # Add to Non-message
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        with pytest.raises(AssertionError):
+            msg = msg1 + 1
+
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg = msg2 + "something random"
+
+        # Incompatible message type
+        # Add Parameter to Particle
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg = msg1 + msg2
+
+        # Incompatible message shapes
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([10]), param_shape=Size([3]),
+                       parameter=torch.randn([10, 3]))
+        with pytest.raises(AssertionError):
+            msg = msg1 + msg2
+
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([6]),
+                       parameter=torch.randn([5, 6]))
+        with pytest.raises(AssertionError):
+            msg = msg1 + msg2
+
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([5]), event_shape=Size([3]),
+                       particles=[torch.randn(5, 3)], weight=torch.rand(5, 5), log_densities=[-torch.rand(5)])
+        with pytest.raises(AssertionError):
+            msg = msg1 + msg2
+
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([6]),
+                       particles=[torch.randn(10, 6)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg = msg1 + msg2
+
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10, 20]), event_shape=Size([3, 6]),
+                       particles=[torch.randn(10, 3), torch.randn(20, 6)], weight=torch.rand(5, 10, 20),
+                       log_densities=[-torch.rand(10), -torch.rand(20)])
+        with pytest.raises(AssertionError):
+            msg = msg1 + msg2
+
+        # Incompatible event / log densities tensor for Particle addend
+        part1, part2 = [torch.randn(10, 3)], [torch.randn(10, 3)]
+        dens1, dens2 = [-torch.rand(10)], [-torch.rand(10)]
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=part1, weight=torch.rand(5, 10), log_densities=dens1)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=part2, weight=torch.rand(5, 10), log_densities=dens1)
+        with pytest.raises(AssertionError):
+            msg = msg1 + msg2
+
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=part1, weight=torch.rand(5, 10), log_densities=dens1)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=part1, weight=torch.rand(5, 10), log_densities=dens2)
+        with pytest.raises(AssertionError):
+            msg = msg1 + msg2
+
+    def test_add_correct_values(self):
+        # Test that the resulting message have correct tensor values
+        # Parameter
+        t1, t2 = torch.randn([5, 3]), torch.randn([5, 3])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t2)
+        msg = msg1 + msg2
+        assert torch.equal(msg.parameter, t1 + t2)
+
+        # Particles
+        # one relational and one random variable
+        b_s, s_s, e_s = Size([5]), Size([10]), Size([3])
+        p1 = [torch.randn(10, 3)]
+        w1, w2 = torch.rand(5, 10), torch.rand(5, 10)
+        l1 = [-torch.rand(10)]
+        msg1 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                      particles=p1, weight=w1, log_densities=l1)
+        msg2 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                       particles=p1, weight=w2, log_densities=l1)
+        msg = msg1 + msg2
+        # The sample dimension across ratio should be constant
+        ratio = (w1 * w2) / msg.weight
+        min_const, _ = ratio.min(dim=-1)
+        max_const, _ = ratio.max(dim=-1)
+        assert torch.max(max_const - min_const) < EPS
+
+        # Multiple relational and random variables
+        b_s, s_s, e_s = Size([5, 6, 7]), Size([10, 12, 14]), Size([3, 2, 1])
+        p1 = [torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])]
+        w1, w2 = torch.rand(5, 6, 7, 10, 12, 14), torch.rand(5, 6, 7, 10, 12, 14)
+        l1 = [-torch.rand(10), -torch.rand(12), -torch.rand(14)]
+        msg1 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                      particles=p1, weight=w1, log_densities=l1)
+        msg2 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                       particles=p1, weight=w2, log_densities=l1)
+        msg = msg1 + msg2
+        # The sample dimension across ratio should be constant
+        ratio = (w1 * w2) / msg.weight
+        min_const = ratio.min(dim=-1)[0].min(dim=-1)[0].min(dim=-1)[0]
+        max_const = ratio.max(dim=-1)[0].max(dim=-1)[0].max(dim=-1)[0]
+        assert torch.max(max_const - min_const) < EPS
+
+        # Test addition with identity
+        # with same shape
+        t1 = torch.randn([5, 3])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=0)
+        msg = msg1 + msg2
+        assert torch.equal(msg.parameter, t1)
+        assert msg == msg1
+
+        t1 = torch.randn([5, 3])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=0)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg = msg1 + msg2
+        assert torch.equal(msg.parameter, t1)
+        assert msg == msg2
+
+        b_s, s_s, e_s = Size([5]), Size([10]), Size([3])
+        p1 = [torch.randn(10, 3)]
+        w1 = torch.rand(5, 10)
+        l1 = [-torch.rand(10)]
+        msg1 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                       particles=p1, weight=w1, log_densities=l1)
+        msg2 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                       particles=p1, weight=1, log_densities=l1)
+        msg = msg1 + msg2
+        assert torch.equal(msg.weight, w1)
+        assert msg == msg1
+
+        # with different shape and attributes
+        t1 = torch.randn([5, 3])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([10]), param_shape=Size([9]), parameter=0)
+        msg = msg1 + msg2
+        assert torch.equal(msg.parameter, t1)
+        assert msg == msg1
+
+        b_s, s_s, e_s = Size([5]), Size([10]), Size([3])
+        p1 = [torch.randn(10, 3)]
+        w1 = torch.rand(5, 10)
+        l1 = [-torch.rand(10)]
+        msg1 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                       particles=p1, weight=w1, log_densities=l1)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6]), sample_shape=Size([10, 11]),
+                       event_shape=Size([3, 4]),
+                       particles=[torch.randn(10, 3), torch.randn(11, 4)], weight=1,
+                       log_densities=[-torch.rand(10), -torch.rand(11)])
+        msg = msg1 + msg2
+        assert torch.equal(msg.weight, w1)
+        assert msg == msg1
+
+
