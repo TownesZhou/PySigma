@@ -12,8 +12,8 @@ import torch
 from torch import Size
 from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint
-from utils import intern_name, extern_name, DistributionServer, KnowledgeServer
-from defs import Variable, VariableMetatype, Message, MessageType
+from .utils import intern_name, extern_name, DistributionServer, KnowledgeServer
+from .defs import Variable, VariableMetatype, Message, MessageType
 
 
 class VariableMap:

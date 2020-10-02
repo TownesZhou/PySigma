@@ -4,7 +4,7 @@
 
 import pytest
 from torch.distributions.constraints import integer_interval, interval
-from defs import Variable, VariableMetatype
+from pysigma.defs import Variable, VariableMetatype
 
 
 class TestVariable:

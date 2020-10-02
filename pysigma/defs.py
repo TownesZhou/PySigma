@@ -10,7 +10,7 @@ from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from torch.nn.functional import l1_loss
 import numpy as np
-from utils import KnowledgeServer
+from .utils import KnowledgeServer
 
 """
     All PySigma global variables / constants should be declared below.

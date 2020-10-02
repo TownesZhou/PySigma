@@ -6,9 +6,9 @@ import warnings
 from collections.abc import Iterable
 import torch
 from torch.nn import Parameter
-from defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
-from graphical.basic_nodes import LinkData, VariableNode, FactorNode
-from utils import compatible_shape, KnowledgeServer
+from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
+from .basic_nodes import LinkData, VariableNode, FactorNode
+from ..utils import compatible_shape, KnowledgeServer
 
 
 class WMVN(VariableNode):
