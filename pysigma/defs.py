@@ -291,7 +291,9 @@ class Message:
     * The ``MessageType.Parameter`` type identity message is one whose ``parameter`` field is 0.
     * The ``MessageType.Particles`` type identity message is one whose ``weight`` field is 1, **regardless of its
       particle values ``particles`` or sampling log densities ``log_densities``.
-    * The ``MessageType.Both`` type identity message is the composition of the above two identity messages.
+    * The ``MessageType.Both`` type identity message is the composition of the above two identity messages. In other
+      words, a ``MessageType.Both`` type message is identity if and only if both ``parameter`` field is 0 and
+      ``weight`` field is 1.
 
     Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
     """
@@ -414,9 +416,17 @@ class Message:
         """Whether `self` is an identity message.
 
         """
-        return (MessageType.Parameter in self.type or MessageType.Particles in self.type) and \
-               (MessageType.Particles not in self.type or self.parameter == 0) and \
-               (MessageType.Parameter not in self.type or self.weight == 1)
+        if not MessageType.Parameter in self.type and not MessageType.Particles in self.type:
+            return False
+
+        if self.type is MessageType.Parameter:
+            return not isinstance(self.parameter, torch.Tensor)
+
+        if self.type is MessageType.Particles:
+            return not isinstance(self.weight, torch.Tensor)
+
+        if self.type is MessageType.Both:
+            return not isinstance(self.parameter, torch.Tensor) and not isinstance(self.weight, torch.Tensor)
 
     @property
     def shape(self):

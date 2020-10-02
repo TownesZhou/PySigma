@@ -621,7 +621,9 @@ dimension.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type identity message is one whose <code class="docutils literal notranslate"><span class="pre">parameter</span></code> field is 0.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type identity message is one whose <code class="docutils literal notranslate"><span class="pre">weight</span></code> field is 1, <a href="#id3"><span class="problematic" id="id4">**</span></a>regardless of its
 particle values <code class="docutils literal notranslate"><span class="pre">particles</span></code> or sampling log densities <code class="docutils literal notranslate"><span class="pre">log_densities</span></code>.</p></li>
-<li><p>The <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type identity message is the composition of the above two identity messages.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type identity message is the composition of the above two identity messages. In other
+words, a <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> type message is identity if and only if both <code class="docutils literal notranslate"><span class="pre">parameter</span></code> field is 0 and
+<code class="docutils literal notranslate"><span class="pre">weight</span></code> field is 1.</p></li>
 </ul>
 <p>Accordingly, the ‘+’ and ‘*’ operator are overloaded according the to the specifications above.</p>
 <dl class="py method">

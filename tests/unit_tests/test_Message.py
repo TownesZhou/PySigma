@@ -302,3 +302,51 @@ class TestMessage:
             msg = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1,
                           device=device)
 
+    def test_isid(self):
+        b_s, p_s, s_s, e_s = Size([5]), Size([3]), Size([10]), Size([3])
+        param = torch.randn(5, 3)
+        part = [torch.randn(10, 3)]
+        w = torch.rand(5, 10)
+        l = [-torch.rand(10)]
+
+        # Test against identity messages
+        # Parameter
+        msg = Message(MessageType.Parameter, param_shape=p_s, parameter=0)
+        assert msg.isid
+
+        # Particles
+        msg = Message(MessageType.Particles, sample_shape=s_s, event_shape=e_s,
+                      particles=part, weight=1, log_densities=l)
+        assert msg.isid
+
+        # Both
+        # weight and parameter both uniform
+        msg = Message(MessageType.Both, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                      parameter=0, particles=part, weight=1, log_densities=l)
+        assert msg.isid
+
+        # Test against non-identity messages
+        # Parameter
+        msg = Message(MessageType.Parameter, batch_shape=b_s, param_shape=p_s, parameter=param)
+        assert not msg.isid
+
+        # Particles
+        msg = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                      particles=part, weight=w, log_densities=l)
+        assert not msg.isid
+
+        # Both
+        # weight and parameter both not uniform
+        msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                      parameter=param, particles=part, weight=w, log_densities=l)
+        assert not msg.isid
+
+        # weight is uniform but parameter not uniform
+        msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                      parameter=param, particles=part, weight=1, log_densities=l)
+        assert not msg.isid
+
+        # parameter is uniform but weight not uniform
+        msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                      parameter=0, particles=part, weight=w, log_densities=l)
+        assert not msg.isid
