@@ -9,7 +9,7 @@ from pysigma.defs import Message, MessageType
 
 
 # Numerical accuracy
-EPS = 1e-7
+EPS = 1e-6
 
 
 class TestMessage:
@@ -600,5 +600,153 @@ class TestMessage:
         msg = msg1 + msg2
         assert torch.equal(msg.weight, w1)
         assert msg == msg1
+
+    def test_iadd(self):
+        t1, t2 = torch.randn([5, 3]), torch.randn([5, 3])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t2)
+        msg1 += msg2
+        assert torch.equal(msg1.parameter, t1 + t2)
+
+        b_s, s_s, e_s = Size([5]), Size([10]), Size([3])
+        p1 = [torch.randn(10, 3)]
+        w1, w2 = torch.rand(5, 10), torch.rand(5, 10)
+        l1 = [-torch.rand(10)]
+        msg1 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                       particles=p1, weight=w1, log_densities=l1)
+        msg2 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
+                       particles=p1, weight=w2, log_densities=l1)
+        msg1 += msg2
+        ratio = (w1 * w2) / msg1.weight
+        min_const, _ = ratio.min(dim=-1)
+        max_const, _ = ratio.max(dim=-1)
+        assert torch.max(max_const - min_const) < EPS
+
+    def test_mul_invalid_multiplier(self):
+        # Multiply message with another message
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        with pytest.raises(AssertionError):
+            msg1 * msg2
+
+        # Multiply with other data structure
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        with pytest.raises(AssertionError):
+            msg1 * "some random stuff"
+        with pytest.raises(AssertionError):
+            msg1 * None
+
+        # Multiply with Tensor of wrong shape
+        with pytest.raises(AssertionError):
+            msg1 * torch.randn(5, 3)
+
+    def test_mul_valid_multiplier(self):
+        # With int
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                      event_shape=Size([3, 2, 1]),
+                      particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                      weight=torch.rand(5, 6, 7, 10, 12, 14),
+                      log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        msg1 * 2
+        msg2 * 2
+
+        # With float
+        msg1 * 1.5
+        msg2 * 1.5
+
+        # With singleton tensor
+        msg1 * torch.tensor(1.5)
+        msg2 * torch.tensor(1.5)
+        msg1 * torch.tensor([1.5])
+        msg2 * torch.tensor([1.5])
+
+        # With batch shape tensor
+        msg1 * torch.randn([5])
+        msg2 * torch.randn([5, 6, 7])
+
+    def test_mul_correct_values(self):
+        # Parameter
+        param = torch.randn([5, 3])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=param)
+        # With single scalar
+        result1 = msg1 * 2
+        result2 = msg1 * 2.0
+        result3 = msg1 * torch.tensor(2.0)
+        result4 = msg1 * torch.tensor([2.0])
+        assert torch.equal(result1.parameter, param * 2)
+        assert result1 == result2 == result3 == result4
+
+        # With batch-wise scalar
+        scalar = torch.randn([5])
+        result = msg1 * scalar
+        assert torch.equal(result.parameter, param * scalar.unsqueeze(1))
+
+        # Particles
+        # One relational and random variable
+        # weight = torch.rand(5, 6, 7, 10, 12, 14)
+        # msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+        #                event_shape=Size([3, 2, 1]),
+        #                particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+        #                weight=torch.rand(5, 6, 7, 10, 12, 14),
+        #                log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        weight = torch.rand(5, 10)
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                      particles=[torch.randn(10, 3)], weight=weight, log_densities=[-torch.rand(10)])
+        # With single scalar
+        result1 = msg1 * 2
+        result2 = msg1 * 2.0
+        result3 = msg1 * torch.tensor(2.0)
+        result4 = msg1 * torch.tensor([2.0])
+        # The ratio across sample dimensions should be constant
+        ratio = weight ** 2.0 / result1.weight
+        min_const = ratio.min(dim=-1)[0]
+        max_const = ratio.max(dim=-1)[0]
+        assert torch.max((max_const - min_const) / min_const.norm()) < EPS
+        assert result1 == result2 == result3 == result4
+
+        # With batch-wise scalar
+        scalar = torch.randn([5])
+        scalar_expanded = scalar.unsqueeze(-1)
+        result = msg1 * scalar
+        expected_weight = weight ** scalar_expanded
+        ratio = expected_weight / result.weight
+        min_const = ratio.min(dim=-1)[0]
+        max_const = ratio.max(dim=-1)[0]
+        assert torch.max((max_const - min_const) / min_const.norm()) < EPS
+
+        # Multiple relational and random variables
+        weight = torch.rand(5, 6, 7, 10, 12, 14)
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                       weight=weight,
+                       log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        # With single scalar
+        result1 = msg1 * 2
+        result2 = msg1 * 2.0
+        result3 = msg1 * torch.tensor(2.0)
+        result4 = msg1 * torch.tensor([2.0])
+        # The ratio across sample dimensions should be constant
+        ratio = weight ** 2.0 / result1.weight
+        min_const = ratio.min(dim=-1)[0].min(dim=-1)[0].min(dim=-1)[0]
+        max_const = ratio.max(dim=-1)[0].max(dim=-1)[0].max(dim=-1)[0]
+        assert torch.max((max_const - min_const) / min_const.norm()) < EPS
+        assert result1 == result2 == result3 == result4
+
+        # With batch-wise scalar
+        scalar = torch.randn([5, 6, 7])
+        scalar_expanded = scalar.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
+        result = msg1 * scalar
+        expected_weight = weight ** scalar_expanded
+        ratio = expected_weight / result.weight
+        min_const = ratio.min(dim=-1)[0].min(dim=-1)[0].min(dim=-1)[0]
+        max_const = ratio.max(dim=-1)[0].max(dim=-1)[0].max(dim=-1)[0]
+        assert torch.max((max_const - min_const) / min_const.norm()) < EPS
 
 

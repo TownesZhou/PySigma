@@ -683,9 +683,12 @@ class Message:
             "Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. " \
             "Instead found: '{}'".format(type(other))
         if isinstance(other, torch.Tensor):
-            assert other.shape == torch.Size([]) or other.shape == self.b_shape, \
+            assert other.shape in [torch.Size([]), torch.Size([1]), self.b_shape], \
                 "If the scalar is a torch.Tensor, must be either a singleton tensor or a tensor with the same shape " \
                 "as the Message's batch shape: '{}'. Instead found: '{}'".format(self.b_shape, other.shape)
+            # If other is a tensor with a singleton dimension, squeeze into pure scalar
+            if other.shape == torch.Size([1]):
+                other = other.squeeze(0)
         # Undefined type cannot be scalar multiplied
         assert self.type is not MessageType.Undefined, \
             "Message of undefined type cannot be scalar multiplied. The message has type '{}'" \
@@ -710,7 +713,7 @@ class Message:
         new_msg = None
         if MessageType.Parameter in self.type:
             new_parameter = b_p_other * self.parameter
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter,
+            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameter=new_parameter,
                               device=self.device)
 
         # Scalar multiplication for Particles messages
@@ -730,7 +733,7 @@ class Message:
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
             new_msg = Message(self.type,
                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                              particles=cloned_particles, weights=new_weight, log_densities=cloned_log_densities,
+                              particles=cloned_particles, weight=new_weight, log_densities=cloned_log_densities,
                               device=self.device, **self.attr)
 
         return new_msg
