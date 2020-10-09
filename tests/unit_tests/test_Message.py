@@ -749,4 +749,21 @@ class TestMessage:
         max_const = ratio.max(dim=-1)[0].max(dim=-1)[0].max(dim=-1)[0]
         assert torch.max((max_const - min_const) / min_const.norm()) < EPS
 
+    def test_mul_identity(self):
+        # Test multiplication when the message itself is an identity.
+        # In this case, the returned message should be the original message itself
+        # Parameter
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=0)
+        result1 = msg1 * 2.0
+        assert msg1 == result1
+
+        # Particles
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                       weight=1,
+                       log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        result2 = msg2 * 5.0
+        assert msg2 == result2
 
