@@ -937,3 +937,100 @@ class TestMessage:
         assert id_msg.b_shape == Size([]) and id_msg.p_shape == Size([]) and id_msg.s_shape == Size([]) and \
                id_msg.e_shape == Size([])
         assert id_msg.attr == {}
+
+    def test_size(self):
+        # Test parameter type
+        msg = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                      parameter=torch.randn([5, 3]))
+        assert msg.size() == (Size([5]), Size([3]), Size([]), Size([]))
+
+        # Test particles type
+        msg = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                      event_shape=Size([3, 2, 1]),
+                      particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                      weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                      log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        assert msg.size() == (Size([5, 6, 7]), Size([]), Size([10, 12, 14]), Size([3, 2, 1]))
+
+        # Test Both type
+        msg = Message(MessageType.Both,
+                      batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                      parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
+                      log_densities=[-torch.rand(10)])
+        assert msg.size() == (Size([5]), Size([4]), Size([10]), Size([3]))
+
+    def test_same_particle_as_same_particles(self):
+        part1 = [torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])]
+        part2 = list(p.clone() for p in part1)
+        log1 = [-torch.rand(10), -torch.rand(12), -torch.rand(14)]
+        log2 = list(l.clone() for l in log1)
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=part1,
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=log1)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=part2,
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=log2)
+        assert msg1.same_particles_as(msg2)
+        assert msg2.same_particles_as(msg1)
+
+    def test_same_particle_as_different_particles_same_densities(self):
+        part1 = [torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])]
+        part2 = [torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])]
+        log1 = [-torch.rand(10), -torch.rand(12), -torch.rand(14)]
+        log2 = list(l.clone() for l in log1)
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=part1,
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=log1)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=part2,
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=log2)
+        assert not msg1.same_particles_as(msg2)
+        assert not msg2.same_particles_as(msg1)
+
+    def test_same_particle_as_same_particles_different_densities(self):
+        part1 = [torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])]
+        part2 = list(p.clone() for p in part1)
+        log1 = [-torch.rand(10), -torch.rand(12), -torch.rand(14)]
+        log2 = [-torch.rand(10), -torch.rand(12), -torch.rand(14)]
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=part1,
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=log1)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=part2,
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=log2)
+        assert not msg1.same_particles_as(msg2)
+        assert not msg2.same_particles_as(msg1)
+
+    def test_same_particle_as_not_particles_type(self):
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        assert not msg1.same_particles_as(msg2)
+        assert not msg2.same_particles_as(msg1)
+
+    def test_same_particle_as_identity(self):
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        msg2 = Message.identity(MessageType.Particles)
+        assert msg1.same_particles_as(msg2)
+        assert msg2.same_particles_as(msg1)
+
