@@ -1034,3 +1034,86 @@ class TestMessage:
         assert msg1.same_particles_as(msg2)
         assert msg2.same_particles_as(msg1)
 
+    def test_diff_param_different_devices(self):
+        # Only run this test if GPU is available
+        if not torch.cuda.is_available():
+            return
+
+        device = torch.cuda.current_device()
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]), device=device)
+        with pytest.raises(AssertionError):
+            msg1.diff_param(msg2)
+
+    def test_diff_param_wrong_type(self):
+        # Test with types other than parameter
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg1.diff_param(msg2)
+
+    def test_diff_param_ad_hoc_values(self):
+        # Test 1: ad-hoc parameter values
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([1]), param_shape=Size([2]),
+                       parameter=torch.tensor([[3., 4.]]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([1]), param_shape=Size([2]),
+                       parameter=torch.tensor([[0., 0.]]))
+        assert msg1.diff_param(msg2) == msg2.diff_param(msg1) == 5
+
+        # Test 2: ad-hoc parameter values
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([1]), param_shape=Size([2]),
+                       parameter=torch.tensor([[4., 6.]]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([1]), param_shape=Size([2]),
+                       parameter=torch.tensor([[1., 2.]]))
+        assert msg1.diff_param(msg2) == msg2.diff_param(msg1) == 5
+
+        # Test 3: ad-hoc parameter values
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([2]), param_shape=Size([2]),
+                       parameter=torch.tensor([[4., 6.], [6., 8.]]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([2]), param_shape=Size([2]),
+                       parameter=torch.tensor([[1., 2.], [0., 0.]]))
+        assert msg1.diff_param(msg2) == msg2.diff_param(msg1) == 7.5
+
+    def test_diff_param_random_values(self):
+        # Test 1: random single batch
+        param1, param2 = torch.rand([1, 10]), torch.rand([1, 10])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([1]), param_shape=Size([10]),
+                       parameter=param1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([1]), param_shape=Size([10]),
+                       parameter=param2)
+        diff_param = param1 - param2
+        assert torch.equal(msg1.diff_param(msg2), msg2.diff_param(msg1))
+        assert torch.equal(msg1.diff_param(msg2), diff_param.norm())
+
+        # Test 2: random multiple batch
+        param1, param2 = torch.rand([5, 6, 10]), torch.rand([5, 6, 10])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5, 6]), param_shape=Size([10]),
+                       parameter=param1)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5, 6]), param_shape=Size([10]),
+                       parameter=param2)
+        diff_param = param1 - param2
+        diff_param_norm = diff_param.norm(dim=-1)
+        diff_param_norm_mean = diff_param_norm.mean()
+        assert torch.equal(msg1.diff_param(msg2), msg2.diff_param(msg1))
+        assert torch.equal(msg1.diff_param(msg2), diff_param_norm_mean)
+
+    def test_diff_param_one_identity(self):
+        param1 = torch.rand([5, 6, 10])
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5, 6]), param_shape=Size([10]),
+                       parameter=param1)
+        msg2 = Message.identity(MessageType.Parameter)
+        diff_norm = param1.norm(dim=-1)
+        diff_norm_mean = diff_norm.mean()
+        assert torch.equal(msg1.diff_param(msg2), msg2.diff_param(msg1))
+        assert torch.equal(msg1.diff_param(msg2), diff_norm_mean)
+
+    def test_diff_param_both_identities(self):
+        msg1 = Message.identity(MessageType.Parameter)
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=0)
+        assert msg1.diff_param(msg2) == 0
+        assert msg2.diff_param(msg1) == 0
