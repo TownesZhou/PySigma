@@ -344,24 +344,24 @@ class Message:
 
         # Check whether necessary arguments are provided
         if MessageType.Parameter in self.type:
-            assert len(self.p_shape) == 1, \
+            assert self.isid or len(self.p_shape) == 1, \
                 "For a Parameter message, the length of the parameter shape must be exactly 1. Found param_shape = {}" \
                 .format(self.p_shape)
             assert self.parameter is not None, \
                 "Must specify `parameter` for a Parameter message."
         if MessageType.Particles in self.type:
-            assert len(self.s_shape) >= 1, \
+            assert self.isid or len(self.s_shape) >= 1, \
                 "For a Particles message, the length of the sample / event shape must be at least 1. Found " \
                 "sample_shape = {}".format(self.s_shape)
             # does not care whether particles is specified if it's a particles identity
-            assert self.particles is not None or self.weight == 1, \
+            assert self.isid or self.particles is not None, \
                 "Must specify the particle values tensor via `particles` for a Particles message, unless the message " \
                 "represents the identity."
             assert self.weight is not None, \
                 "Must specify the particle weight tensor via `weight` for a Particles message, unless the message " \
                 "represents the identity."
             # similarly does not care if it's identity
-            assert self.log_densities is not None or self.weight == 1, \
+            assert self.isid or self.log_densities is not None, \
                 "Must specify the particles log density tensor via `log_densities` for a Particles message, unless " \
                 "the message represents the identity."
 

@@ -912,3 +912,28 @@ class TestMessage:
                        **attr2)
         msg = Message.compose(msg1, msg2)
         assert msg.attr["a"] == 4 and msg.attr["b"] == 2 and msg.attr["c"] == 3 and msg.attr["d"] == 5
+
+    def test_identity(self):
+        # Test parameter type
+        id_msg = Message.identity(MessageType.Parameter)
+        assert id_msg.type is MessageType.Parameter
+        assert id_msg.isid
+        assert id_msg.b_shape == Size([]) and id_msg.p_shape == Size([]) and id_msg.s_shape == Size([]) and \
+               id_msg.e_shape == Size([])
+        assert id_msg.attr == {}
+
+        # Test particles type
+        id_msg = Message.identity(MessageType.Particles)
+        assert id_msg.type is MessageType.Particles
+        assert id_msg.isid
+        assert id_msg.b_shape == Size([]) and id_msg.p_shape == Size([]) and id_msg.s_shape == Size([]) and \
+               id_msg.e_shape == Size([])
+        assert id_msg.attr == {}
+
+        # Test particles type
+        id_msg = Message.identity(MessageType.Both)
+        assert id_msg.type is MessageType.Both
+        assert id_msg.isid
+        assert id_msg.b_shape == Size([]) and id_msg.p_shape == Size([]) and id_msg.s_shape == Size([]) and \
+               id_msg.e_shape == Size([])
+        assert id_msg.attr == {}
