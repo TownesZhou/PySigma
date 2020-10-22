@@ -897,6 +897,7 @@ class TestMessage:
         msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
                        particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
         msg = Message.compose(msg1, msg2)
+        assert msg.type is MessageType.Both
         assert torch.equal(msg.parameter, msg1.parameter)
         assert torch.equal(msg.weight, msg2.weight)
 

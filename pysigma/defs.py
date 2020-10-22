@@ -389,7 +389,7 @@ class Message:
                 "When specified, the particles weight should have shape (batch_shape + sample_shape). Expect {}, but " \
                 "intead found {}.".format(self.b_shape + self.s_shape, self.weight.shape)
             # Check that values are positive
-            assert torch.all(self.weight > 0), "Found negative values in particle weights. Minimum value: {}" \
+            assert torch.all(self.weight >= 0), "Found negative values in particle weights. Minimum value: {}" \
                 .format(torch.min(self.weight))
             # Normalize the values so that weights sum to 1 across sample dimension
             sample_dims = list(range(len(self.b_shape), len(self.b_shape) + len(self.s_shape)))
