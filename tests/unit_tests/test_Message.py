@@ -809,3 +809,105 @@ class TestMessage:
                        log_densities=[-torch.rand(10)])
         result3 = msg3 * 10.0
         assert msg3 == result3
+
+    def test_compose_invalid_arguments_wrong_type(self):
+        # Test composing messages with the same type
+        # Test 1: both are parameter message
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        with pytest.raises(AssertionError):
+            msg = Message.compose(msg1, msg2)
+
+        # Test 2: both are particles message
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        with pytest.raises(AssertionError):
+            Message.compose(msg1, msg2)
+
+        # Test 3: both are Both type message
+        msg1 = Message(MessageType.Both,
+                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                       parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
+                       log_densities=[-torch.rand(10)])
+        msg2 = Message(MessageType.Both,
+                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                       parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
+                       log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            Message.compose(msg1, msg2)
+
+        # Test composing messages with the different but incompatible type
+        # Test 4: Parameter with Both
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Both,
+                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                       parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
+                       log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            Message.compose(msg1, msg2)
+
+        # Test 5: Particles with Both
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        msg2 = Message(MessageType.Both,
+                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                       parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
+                       log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            Message.compose(msg1, msg2)
+
+    def test_compose_invalid_arguments_wrong_shape(self):
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Particles, batch_shape=Size([6]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(6, 10), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            Message.compose(msg1, msg2)
+
+    def test_compose_invalid_arguments_identity_message(self):
+        # Test compose with one identity message
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=0)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg = Message.compose(msg1, msg2)
+
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=1, log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg = Message.compose(msg1, msg2)
+
+    def test_compose_successful_operation(self):
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
+        msg = Message.compose(msg1, msg2)
+        assert torch.equal(msg.parameter, msg1.parameter)
+        assert torch.equal(msg.weight, msg2.weight)
+
+    def test_compose_successful_operation_attr_dict_overwrite(self):
+        attr1 = {"a": 1, "b": 2, "c": 3}
+        attr2 = {"a": 4, "d": 5}
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]),
+                       **attr1)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)],
+                       **attr2)
+        msg = Message.compose(msg1, msg2)
+        assert msg.attr["a"] == 4 and msg.attr["b"] == 2 and msg.attr["c"] == 3 and msg.attr["d"] == 5
