@@ -602,8 +602,8 @@ class Message:
             # Tensor addition
             new_parameter = self.parameter + other.parameter
 
-            param_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameter=new_parameter,
-                                device=self.device)
+            param_msg = Message(MessageType.Parameter, batch_shape=self.b_shape, param_shape=self.p_shape,
+                                parameter=new_parameter, device=self.device)
 
         # Addition for Particles type
         if MessageType.Particles in s_type:
@@ -623,7 +623,7 @@ class Message:
             # Clone self tensor contents
             cloned_particles = tuple(p.clone() for p in self.particles)
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
-            ptcl_msg = Message(s_type,
+            ptcl_msg = Message(MessageType.Particles,
                                batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
                                particles=cloned_particles, weight=new_weights, log_densities=cloned_log_densities,
                                device=self.device)
@@ -710,11 +710,13 @@ class Message:
                     b_s_other = torch.unsqueeze(b_s_other, dim=-1)
 
         # Scalar multiplication for Parameter messages
-        new_msg = None
+        param_msg = None
+        ptcl_msg = None
         if MessageType.Parameter in self.type:
             new_parameter = b_p_other * self.parameter
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameter=new_parameter,
-                              device=self.device)
+            param_msg = Message(MessageType.Parameter,
+                                batch_shape=self.b_shape, param_shape=self.p_shape, parameter=new_parameter,
+                                device=self.device)
 
         # Scalar multiplication for Particles messages
         if MessageType.Particles in self.type:
@@ -731,10 +733,18 @@ class Message:
             # Clone tensor contents
             cloned_particles = tuple(p.clone() for p in self.particles)
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
-            new_msg = Message(self.type,
-                              batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                              particles=cloned_particles, weight=new_weight, log_densities=cloned_log_densities,
-                              device=self.device, **self.attr)
+            ptcl_msg = Message(MessageType.Particles,
+                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                               particles=cloned_particles, weight=new_weight, log_densities=cloned_log_densities,
+                               device=self.device, **self.attr)
+
+        # Compose if we are multiplying a Both type messages, otherwise return the proper one
+        if param_msg is not None and ptcl_msg is not None:
+            new_msg = Message.compose(param_msg, ptcl_msg)
+        elif param_msg is not None:
+            new_msg = param_msg
+        else:
+            new_msg = ptcl_msg
 
         return new_msg
 

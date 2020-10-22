@@ -69,7 +69,7 @@ class TestMessage:
         part1 = [torch.randn(10, 3)]
         w1 = torch.rand(5, 10)
         l1 = [-torch.rand(10)]
-        msg = Message(MessageType.Particles, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                       parameter=param1, particles=part1, weight=w1, log_densities=l1)
         assert torch.equal(msg.parameter, param1)
         assert all(torch.equal(t1, t2) for t1, t2 in zip(msg.particles, part1))
@@ -535,6 +535,23 @@ class TestMessage:
         max_const, _ = ratio.max(dim=-1)
         assert torch.max(max_const - min_const) < EPS
 
+        # Both
+        b_s, p_s, s_s, e_s = Size([5]), Size([4]), Size([10]), Size([3])
+        param1, param2 = torch.randn([5, 4]), torch.randn([5, 4])
+        part1 = [torch.randn(10, 3)]
+        w1, w2 = torch.rand(5, 10), torch.rand(5, 10)
+        l1 = [-torch.rand(10)]
+        msg1 = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                       parameter=param1, particles=part1, weight=w1, log_densities=l1)
+        msg2 = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                       parameter=param2, particles=part1, weight=w2, log_densities=l1)
+        msg = msg1 + msg2
+        assert torch.equal(msg.parameter, param1 + param2)
+        ratio = (w1 * w2) / msg.weight
+        min_const, _ = ratio.min(dim=-1)
+        max_const, _ = ratio.max(dim=-1)
+        assert torch.max(max_const - min_const) < EPS
+
         # Multiple relational and random variables
         b_s, s_s, e_s = Size([5, 6, 7]), Size([10, 12, 14]), Size([3, 2, 1])
         p1 = [torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])]
@@ -749,6 +766,24 @@ class TestMessage:
         max_const = ratio.max(dim=-1)[0].max(dim=-1)[0].max(dim=-1)[0]
         assert torch.max((max_const - min_const) / min_const.norm()) < EPS
 
+        # Both
+        b_s, p_s, s_s, e_s = Size([5]), Size([4]), Size([10]), Size([3])
+        param = torch.randn([5, 4])
+        part = [torch.randn(10, 3)]
+        weight = torch.rand(5, 10)
+        l1 = [-torch.rand(10)]
+        msg1 = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                       parameter=param, particles=part, weight=weight, log_densities=l1)
+        # With single scalar
+        result1 = msg1 * 2
+        # Check parameter component
+        assert torch.equal(result1.parameter, param * 2)
+        # Check particles component
+        ratio = weight ** 2.0 / result1.weight
+        min_const = ratio.min(dim=-1)[0]
+        max_const = ratio.max(dim=-1)[0]
+        assert torch.max((max_const - min_const) / min_const.norm()) < EPS
+
     def test_mul_identity(self):
         # Test multiplication when the message itself is an identity.
         # In this case, the returned message should be the original message itself
@@ -767,3 +802,10 @@ class TestMessage:
         result2 = msg2 * 5.0
         assert msg2 == result2
 
+        # Both
+        msg3 = Message(MessageType.Both,
+                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                       parameter=0, particles=[torch.randn(10, 3)], weight=1,
+                       log_densities=[-torch.rand(10)])
+        result3 = msg3 * 10.0
+        assert msg3 == result3
