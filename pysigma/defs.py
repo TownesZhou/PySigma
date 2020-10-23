@@ -947,7 +947,11 @@ class Message:
         Raises
         ------
         AssertionError
-            If `self` and/or `other` do not have parameters.
+            If `self` and `other` are not on the same device.
+        AssertionError
+            If `self` and/or `other` are/is not Parameter type.
+        AssertionError
+            If `self` and `other` have different batch shapes or parameter shapes.
 
         See Also
         --------
@@ -958,6 +962,7 @@ class Message:
         assert self.device == other.device, \
             "Messages not residing on the same device. Found devices {} and {}".format(self.device, other.device)
         assert MessageType.Parameter in self.type and MessageType.Parameter in other.type
+        assert (self.b_shape, self.p_shape) == (other.b_shape, other.p_shape)
 
         # Returns 0 if both are identity
         if self.isid and other.isid:

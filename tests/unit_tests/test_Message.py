@@ -1056,6 +1056,23 @@ class TestMessage:
         with pytest.raises(AssertionError):
             msg1.diff_param(msg2)
 
+    def test_diff_param_diff_shape(self):
+        # Different batch shape
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([6]), param_shape=Size([3]),
+                       parameter=torch.randn([6, 3]))
+        with pytest.raises(AssertionError):
+            msg1.diff_param(msg2)
+
+        # Different param shape
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=torch.randn([5, 3]))
+        msg2 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([4]),
+                       parameter=torch.randn([5, 4]))
+        with pytest.raises(AssertionError):
+            msg1.diff_param(msg2)
+
     def test_diff_param_ad_hoc_values(self):
         # Test 1: ad-hoc parameter values
         msg1 = Message(MessageType.Parameter, batch_shape=Size([1]), param_shape=Size([2]),
@@ -1117,3 +1134,40 @@ class TestMessage:
                        parameter=0)
         assert msg1.diff_param(msg2) == 0
         assert msg2.diff_param(msg1) == 0
+
+    def test_diff_weight_different_device(self):
+        # Only run this test if GPU is available
+        if not torch.cuda.is_available():
+            return
+
+        device = torch.cuda.current_device()
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
+                       event_shape=Size([3, 2, 1]),
+                       particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
+                       weight=torch.rand([5, 6, 7, 10, 12, 14]),
+                       log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)],
+                       device=device)
+        with pytest.raises(AssertionError):
+            msg1.diff_weight(msg2)
+
+    def test_diff_weight_wrong_type(self):
+        msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
+                       parameter=0)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([3, 4]), event_shape=Size([6, 7]),
+                       particles=[torch.randn([3, 6]), torch.randn([4, 7])],
+                       weight=torch.rand([5, 3, 4]),
+                       log_densities=[-torch.rand(3), -torch.rand([4])])
+        with pytest.raises(AssertionError):
+            msg1.diff_weight(msg2)
+
+    def test_diff_weight_diff_particles(self):
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([3, 4]),
+                       event_shape=Size([6, 7]),
+                       particles=[torch.randn([3, 6]), torch.randn([4, 7])],
+                       weight=torch.rand([5, 3, 4]),
+                       log_densities=[-torch.rand(3), -torch.rand([4])])
