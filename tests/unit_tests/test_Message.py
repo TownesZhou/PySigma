@@ -1165,9 +1165,89 @@ class TestMessage:
         with pytest.raises(AssertionError):
             msg1.diff_weight(msg2)
 
+    def test_diff_weight_diff_shape(self):
+        # Different batch shape
+        ptcl = [torch.randn([3, 6]), torch.randn([4, 7])]
+        dsty = [-torch.rand(3), -torch.rand([4])]
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([3, 4]),
+                       event_shape=Size([6, 7]),
+                       particles=ptcl,
+                       weight=torch.rand([5, 3, 4]),
+                       log_densities=dsty)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([3, 4]),
+                       event_shape=Size([6, 7]),
+                       particles=ptcl,
+                       weight=torch.rand([5, 6, 7, 3, 4]),
+                       log_densities=dsty)
+        with pytest.raises(AssertionError):
+            msg1.diff_weight(msg2)
+
+        # Different sample shapes and event shapes would be notified when checking same_particles_as()
+
     def test_diff_weight_diff_particles(self):
         msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([3, 4]),
                        event_shape=Size([6, 7]),
                        particles=[torch.randn([3, 6]), torch.randn([4, 7])],
                        weight=torch.rand([5, 3, 4]),
                        log_densities=[-torch.rand(3), -torch.rand([4])])
+        msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([3, 4]),
+                       event_shape=Size([6, 7]),
+                       particles=[torch.randn([3, 6]), torch.randn([4, 7])],
+                       weight=torch.rand([5, 3, 4]),
+                       log_densities=[-torch.rand(3), -torch.rand([4])])
+        with pytest.raises(AssertionError):
+            msg1.diff_weight(msg2)
+
+    def test_diff_weight_random_weight(self):
+        # Single batch
+        ptcl = [torch.randn([2, 6]), torch.randn([5, 7])]
+        dsty = [-torch.rand(2), -torch.rand([5])]
+        w1, w2 = torch.rand([1, 2, 5]), torch.rand([1, 2, 5])
+        msg1 = Message(MessageType.Particles, batch_shape=Size([1]), sample_shape=Size([2, 5]),
+                       event_shape=Size([6, 7]),
+                       particles=ptcl,
+                       weight=w1,
+                       log_densities=dsty)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([1]), sample_shape=Size([2, 5]),
+                       event_shape=Size([6, 7]),
+                       particles=ptcl,
+                       weight=w2,
+                       log_densities=dsty)
+        assert msg1.diff_weight(msg2) == msg2.diff_weight(msg1)
+        assert msg1.diff_weight(msg2) == torch.nn.functional.l1_loss(msg1.weight, msg2.weight, reduction='mean')
+
+        # Multiple batches
+        ptcl = [torch.randn([2, 6]), torch.randn([5, 7])]
+        dsty = [-torch.rand(2), -torch.rand([5])]
+        w1, w2 = torch.rand([10, 2, 5]), torch.rand([10, 2, 5])
+        msg1 = Message(MessageType.Particles, batch_shape=Size([10]), sample_shape=Size([2, 5]),
+                       event_shape=Size([6, 7]),
+                       particles=ptcl,
+                       weight=w1,
+                       log_densities=dsty)
+        msg2 = Message(MessageType.Particles, batch_shape=Size([10]), sample_shape=Size([2, 5]),
+                       event_shape=Size([6, 7]),
+                       particles=ptcl,
+                       weight=w2,
+                       log_densities=dsty)
+        assert msg1.diff_weight(msg2) == msg2.diff_weight(msg1)
+        assert msg1.diff_weight(msg2) == torch.nn.functional.l1_loss(msg1.weight, msg2.weight, reduction='mean')
+
+    def test_diff_weight_one_identity(self):
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([3, 4]),
+                       event_shape=Size([6, 7]),
+                       particles=[torch.randn([3, 6]), torch.randn([4, 7])],
+                       weight=torch.rand([5, 3, 4]),
+                       log_densities=[-torch.rand(3), -torch.rand([4])])
+        msg2 = Message.identity(MessageType.Particles)
+        uniform_weight = torch.ones([5, 3, 4]) / 60
+        assert msg1.diff_weight(msg2) == torch.nn.functional.l1_loss(msg1.weight, uniform_weight, reduction='mean')
+
+    def test_diff_weight_both_identities(self):
+        msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([3, 4]),
+                       event_shape=Size([6, 7]),
+                       particles=[torch.randn([3, 6]), torch.randn([4, 7])],
+                       weight=1,
+                       log_densities=[-torch.rand(3), -torch.rand([4])])
+        msg2 = Message.identity(MessageType.Particles)
+        assert msg1.diff_weight(msg2) == 0

@@ -951,7 +951,7 @@ class Message:
         AssertionError
             If `self` and/or `other` are/is not Parameter type.
         AssertionError
-            If `self` and `other` have different batch shapes or parameter shapes.
+            If `self` and `other` are not identities and have different batch shapes or parameter shapes.
 
         See Also
         --------
@@ -962,7 +962,7 @@ class Message:
         assert self.device == other.device, \
             "Messages not residing on the same device. Found devices {} and {}".format(self.device, other.device)
         assert MessageType.Parameter in self.type and MessageType.Parameter in other.type
-        assert (self.b_shape, self.p_shape) == (other.b_shape, other.p_shape)
+        assert self.isid or other.isid or (self.b_shape, self.p_shape) == (other.b_shape, other.p_shape)
 
         # Returns 0 if both are identity
         if self.isid and other.isid:
@@ -995,7 +995,11 @@ class Message:
         Raises
         ------
         AssertionError
-            If `self` and/or `other` do not have particles.
+            If `self` and `other` are not on the same device.
+        AssertionError
+            If `self` and/or `other` are/is not Particles type.
+        AssertionError
+            If `self` and `other` do not have the same batch shapes, sample shapes, or event shapes.
         AssertionError
             If `self` does not have the same particle values and log sampling densities as `other`.
 
@@ -1008,6 +1012,8 @@ class Message:
         assert self.device == other.device, \
             "Messages not residing on the same device. Found devices {} and {}".format(self.device, other.device)
         assert MessageType.Particles in self.type and MessageType.Particles in other.type
+        assert self.isid or other.isid or \
+               (self.b_shape, self.s_shape, self.e_shape) == (other.b_shape, other.s_shape, other.e_shape)
         assert self.same_particles_as(other)
 
         # Returns 0 if both are identity
