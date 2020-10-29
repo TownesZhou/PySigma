@@ -1395,6 +1395,8 @@ class TestMessage:
     def test_batch_permute(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
         msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        # Test 1: Positive dim
         perm_order = [2, 0, 1]
         result = msg.batch_permute(perm_order)
 
@@ -1405,6 +1407,19 @@ class TestMessage:
         # Check content
         assert self.equal_within_error(result.parameter, msg.parameter.permute([2, 0, 1, 3]))
         assert self.equal_within_error(result.weight, msg.weight.permute([2, 0, 1, 3, 4, 5]))
+
+        # Test 2 : Negative dim
+        perm_order = [-1, -3, -2]
+        result = msg.batch_permute(perm_order)
+
+        # Check shape
+        assert result.parameter.shape == Size([3, 1, 2, 1])
+        assert result.weight.shape == Size([3, 1, 2, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.permute([2, 0, 1, 3]))
+        assert self.equal_within_error(result.weight, msg.weight.permute([2, 0, 1, 3, 4, 5]))
+
 
     def test_batch_unsqueeze(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
