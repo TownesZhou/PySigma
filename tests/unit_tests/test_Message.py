@@ -1381,17 +1381,23 @@ class TestMessage:
         assert all(d.get_device() == device for d in cuda_msg.log_densities)
         assert back_msg == msg
 
-    def test_batch_permute_shape(self):
-        b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([5]), Size([1])
+    def test_batch_permute(self):
+        b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
         param = torch.randn([1, 2, 3, 1])
-        weight = torch.rand([1, 2, 3, 5])
+        weight = torch.rand([1, 2, 3, 4, 5, 6])
         msg = Message(MessageType.Both,
                       batch_shape=b_shape, param_shape=p_shape, sample_shape=s_shape, event_shape=e_shape,
                       parameter=param,
-                      particles=[torch.randn([5, 1])], weight=weight, log_densities=[-torch.rand([5])])
+                      particles=[torch.randn([4, 1]), torch.randn([5, 1]), torch.randn([6, 1])],
+                      weight=weight, log_densities=[-torch.rand([4]), -torch.rand([5]), -torch.rand([6])])
         perm_order = [2, 0, 1]
         result = msg.batch_permute(perm_order)
 
+        # Check shape
         assert result.parameter.shape == Size([3, 1, 2, 1])
-        assert result.weight.shape == Size([3, 1, 2, 5])
+        assert result.weight.shape == Size([3, 1, 2, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, param.permute([2, 0, 1, 3]))
+        assert self.equal_within_error(result.weight, weight.permute([2, 0, 1, 3, 4, 5]))
 
