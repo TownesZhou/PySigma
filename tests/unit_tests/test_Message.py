@@ -1380,3 +1380,18 @@ class TestMessage:
         assert all(p.get_device() == device for p in cuda_msg.particles)
         assert all(d.get_device() == device for d in cuda_msg.log_densities)
         assert back_msg == msg
+
+    def test_batch_permute_shape(self):
+        b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([5]), Size([1])
+        param = torch.randn([1, 2, 3, 1])
+        weight = torch.rand([1, 2, 3, 5])
+        msg = Message(MessageType.Both,
+                      batch_shape=b_shape, param_shape=p_shape, sample_shape=s_shape, event_shape=e_shape,
+                      parameter=param,
+                      particles=[torch.randn([5, 1])], weight=weight, log_densities=[-torch.rand([5])])
+        perm_order = [2, 0, 1]
+        result = msg.batch_permute(perm_order)
+
+        assert result.parameter.shape == Size([3, 1, 2, 1])
+        assert result.weight.shape == Size([3, 1, 2, 5])
+
