@@ -1338,3 +1338,26 @@ class TestMessage:
         assert reduced_msg.s_shape == Size([]) and reduced_msg.e_shape == Size([])
         assert torch.equal(reduced_msg.parameter, msg.parameter)
         assert reduced_msg.weight == 1
+
+    def test_clone(self):
+        test_attr = {"a": 1, "b": 2, "c": 3}
+        # Test parameter messages
+        msg = Message(MessageType.Parameter,
+                      batch_shape=Size([5]), param_shape=Size([4]), parameter=torch.randn([5, 4]),
+                      **test_attr)
+        cloned_msg = msg.clone()
+        assert msg == cloned_msg
+        assert msg.parameter is not cloned_msg.parameter
+
+        # Test particles message
+        msg = Message(MessageType.Particles,
+                      batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)],
+                      **test_attr)
+        cloned_msg = msg.clone()
+        assert msg == cloned_msg
+        assert all(p is not rp for p, rp in zip(msg.particles, cloned_msg.particles))
+        assert msg.weight is not cloned_msg.weight
+        assert all(d is not rd for d, rd in zip(msg.log_densities, cloned_msg.log_densities))
+
+
