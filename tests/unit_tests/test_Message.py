@@ -1465,3 +1465,16 @@ class TestMessage:
         # Check content
         assert self.equal_within_error(result.parameter, msg.parameter.index_select(dim, index))
         assert self.equal_within_error(result.weight, msg.weight.index_select(dim, index))
+
+        # Test 2: negative dim
+        dim = -1
+        index = torch.tensor([5, 10, 15, 20, 25, 30], dtype=torch.long)
+        result = msg.batch_index_select(dim, index)
+
+        # Check shape
+        assert result.parameter.shape == Size([11, 22, 6, 1])
+        assert result.weight.shape == Size([11, 22, 6, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.index_select(2, index))
+        assert self.equal_within_error(result.weight, msg.weight.index_select(2, index))
