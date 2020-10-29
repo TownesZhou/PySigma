@@ -1301,8 +1301,8 @@ class Message:
         the positions along the axis specified by indices in `index`.
 
         In other words, along `dim` dimension, the ``index[i]`` th slice of the returned message is the ``i`` th slice
-        of `self`. Consequently, the size of the `dim` dimension of the returned message equals the maximum value in the
-        `index` array.
+        of `self`. Consequently, the size of the `dim` dimension of the returned message equals the maximum value plus 1
+        in the `index` array.
 
         For slices in the new message not referenced by `index`, they will be filled with identity values. For parameter
         tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive uniform
@@ -1367,7 +1367,7 @@ class Message:
             new_weight = torch.transpose(to_fill, dim0=0, dim1=dim)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg

@@ -1478,3 +1478,37 @@ class TestMessage:
         # Check content
         assert self.equal_within_error(result.parameter, msg.parameter.index_select(2, index))
         assert self.equal_within_error(result.weight, msg.weight.index_select(2, index))
+
+    def test_batch_index_put(self):
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        # Test 1: positive dim
+        dim = 0
+        index = torch.tensor([5, 4, 3], dtype=torch.long)
+        result = msg.batch_index_put(dim, index)
+
+        # Check shape
+        assert result.parameter.shape == Size([6, 4, 5, 1])
+        assert result.weight.shape == Size([6, 4, 5, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter[:3], torch.zeros(3, 4, 5, 1))
+        assert self.equal_within_error(result.weight[:3], torch.ones(3, 4, 5, 4, 5, 6) / (4 * 5 * 6))
+        assert all(self.equal_within_error(result.parameter[ri], msg.parameter[i]) for i, ri in enumerate(index))
+        assert all(self.equal_within_error(result.weight[ri], msg.weight[i]) for i, ri in enumerate(index))
+
+        # Test 2: negative dim
+        dim = -3
+        index = torch.tensor([5, 4, 3], dtype=torch.long)
+        result = msg.batch_index_put(dim, index)
+
+        # Check shape
+        assert result.parameter.shape == Size([6, 4, 5, 1])
+        assert result.weight.shape == Size([6, 4, 5, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter[:3], torch.zeros(3, 4, 5, 1))
+        assert self.equal_within_error(result.weight[:3], torch.ones(3, 4, 5, 4, 5, 6) / (4 * 5 * 6))
+        assert all(self.equal_within_error(result.parameter[ri], msg.parameter[i]) for i, ri in enumerate(index))
+        assert all(self.equal_within_error(result.weight[ri], msg.weight[i]) for i, ri in enumerate(index))
