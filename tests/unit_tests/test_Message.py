@@ -1360,4 +1360,23 @@ class TestMessage:
         assert msg.weight is not cloned_msg.weight
         assert all(d is not rd for d, rd in zip(msg.log_densities, cloned_msg.log_densities))
 
+    def test_clone(self):
+        # Carry out this test only if system has cuda
+        if not torch.cuda.is_available():
+            return
 
+        device = torch.cuda.current_device()
+
+        # Test both
+        test_attr = {"a": 1, "b": 2, "c": 3}
+        msg = Message(MessageType.Both,
+                      batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                      parameter=torch.randn([5, 4]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)],
+                      **test_attr)
+        cuda_msg = msg.to_device(device)
+        back_msg = cuda_msg.to_device('cpu')
+        assert cuda_msg.parameter.get_device() == device and cuda_msg.weight.get_device() == device
+        assert all(p.get_device() == device for p in cuda_msg.particles)
+        assert all(d.get_device() == device for d in cuda_msg.log_densities)
+        assert back_msg == msg
