@@ -19,6 +19,17 @@ class TestMessage:
     def equal_within_error(tensor_1, tensor_2):
         return torch.max(torch.abs(tensor_1 - tensor_2)) < EPS
 
+    @staticmethod
+    def random_message(msg_type, b_shape, p_shape, s_shape, e_shape):
+        param = torch.randn(b_shape + p_shape) if MessageType.Parameter in msg_type else 0
+        weight = torch.rand(b_shape + s_shape) if MessageType.Particles in msg_type else 1
+        ptcl = [torch.randn([s, e]) for s, e in zip(list(s_shape), list(e_shape))] \
+            if MessageType.Particles in msg_type else None
+        dens = [-torch.rand(s) for s in zip(list(s_shape))] \
+            if MessageType.Particles in msg_type else None
+        return Message(msg_type, b_shape, p_shape, s_shape, e_shape,
+                       param, ptcl, weight, dens)
+
     def test_correct_init(self):
         # Test correct normal init
         # Normal none-identity messages
@@ -1383,13 +1394,7 @@ class TestMessage:
 
     def test_batch_permute(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        param = torch.randn([1, 2, 3, 1])
-        weight = torch.rand([1, 2, 3, 4, 5, 6])
-        msg = Message(MessageType.Both,
-                      batch_shape=b_shape, param_shape=p_shape, sample_shape=s_shape, event_shape=e_shape,
-                      parameter=param,
-                      particles=[torch.randn([4, 1]), torch.randn([5, 1]), torch.randn([6, 1])],
-                      weight=weight, log_densities=[-torch.rand([4]), -torch.rand([5]), -torch.rand([6])])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
         perm_order = [2, 0, 1]
         result = msg.batch_permute(perm_order)
 
@@ -1398,6 +1403,34 @@ class TestMessage:
         assert result.weight.shape == Size([3, 1, 2, 4, 5, 6])
 
         # Check content
-        assert self.equal_within_error(result.parameter, param.permute([2, 0, 1, 3]))
-        assert self.equal_within_error(result.weight, weight.permute([2, 0, 1, 3, 4, 5]))
+        assert self.equal_within_error(result.parameter, msg.parameter.permute([2, 0, 1, 3]))
+        assert self.equal_within_error(result.weight, msg.weight.permute([2, 0, 1, 3, 4, 5]))
+
+    def test_batch_unsqueeze(self):
+        b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        # Test 1: positive dim
+        dim = 2
+        result = msg.batch_unsqueeze(dim)
+
+        # Check shape
+        assert result.parameter.shape == Size([1, 2, 1, 3, 1])
+        assert result.weight.shape == Size([1, 2, 1, 3, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.unsqueeze(2))
+        assert self.equal_within_error(result.weight, msg.weight.unsqueeze(2))
+
+        # Test 2: negative dim
+        dim = -2
+        result = msg.batch_unsqueeze(dim)
+
+        # Check shape
+        assert result.parameter.shape == Size([1, 2, 1, 3, 1])
+        assert result.weight.shape == Size([1, 2, 1, 3, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.unsqueeze(2))
+        assert self.equal_within_error(result.weight, msg.weight.unsqueeze(2))
 
