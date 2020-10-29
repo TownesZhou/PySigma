@@ -14,6 +14,11 @@ EPS = 1e-6
 
 class TestMessage:
 
+    # Utility method - test equality with given numerical precision
+    @staticmethod
+    def equal_within_error(tensor_1, tensor_2):
+        return torch.max(torch.abs(tensor_1 - tensor_2)) < EPS
+
     def test_correct_init(self):
         # Test correct normal init
         # Normal none-identity messages
@@ -1251,3 +1256,85 @@ class TestMessage:
                        log_densities=[-torch.rand(3), -torch.rand([4])])
         msg2 = Message.identity(MessageType.Particles)
         assert msg1.diff_weight(msg2) == 0
+
+    def test_reduce_type_wrong_target_type(self):
+        # Test Both target type
+        target_type = MessageType.Both
+        msg = Message(MessageType.Both,
+                      batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                      parameter=torch.randn([5, 4]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg.reduce_type(target_type)
+
+        # Test Parameter message
+        msg = Message(MessageType.Parameter,
+                      batch_shape=Size([5]), param_shape=Size([4]),
+                      parameter=torch.randn([5, 4]))
+        with pytest.raises(AssertionError):
+            msg.reduce_type(target_type)
+
+        # Test Particles message
+        msg = Message(MessageType.Particles,
+                      batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg.reduce_type(target_type)
+
+        # Test Particles reduce to Parameter
+        msg = Message(MessageType.Particles,
+                      batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)])
+        with pytest.raises(AssertionError):
+            msg.reduce_type(MessageType.Parameter)
+
+        # Test Parameter reduce to Particles
+        msg = Message(MessageType.Parameter,
+                      batch_shape=Size([5]), param_shape=Size([4]),
+                      parameter=torch.randn([5, 4]))
+        with pytest.raises(AssertionError):
+            msg.reduce_type(MessageType.Particles)
+
+    def test_reduce_type_correct_contents(self):
+        test_attr = {"a": 1, "b": 2, "c": 3}
+        # Test particles reduce to particles
+        msg = Message(MessageType.Particles,
+                      batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)],
+                      **test_attr)
+        reduced_msg = msg.reduce_type(MessageType.Particles)
+        assert msg == reduced_msg
+
+        # Test Both reduce to particles
+        msg = Message(MessageType.Both,
+                      batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                      parameter=torch.randn([5, 4]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)],
+                      **test_attr)
+        reduced_msg = msg.reduce_type(MessageType.Particles)
+        assert msg.b_shape == reduced_msg.b_shape and msg.e_shape == reduced_msg.e_shape and \
+               msg.s_shape == reduced_msg.s_shape
+        assert reduced_msg.p_shape == Size([])
+        assert self.equal_within_error(msg.weight, reduced_msg.weight)
+        assert all(torch.equal(p, rp) for p, rp in zip(msg.particles, reduced_msg.particles))
+        assert all(torch.equal(d, rd) for d, rd in zip(msg.log_densities, reduced_msg.log_densities))
+        assert reduced_msg.parameter == 0
+
+        # Test parameter reduce to parameter
+        msg = Message(MessageType.Parameter,
+                      batch_shape=Size([5]), param_shape=Size([4]), parameter=torch.randn([5, 4]),
+                      **test_attr)
+        reduced_msg = msg.reduce_type(MessageType.Parameter)
+        assert msg == reduced_msg
+
+        # Test Both reduce to parameter
+        msg = Message(MessageType.Both,
+                      batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
+                      parameter=torch.randn([5, 4]),
+                      particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)],
+                      **test_attr)
+        reduced_msg = msg.reduce_type(MessageType.Parameter)
+        assert msg.b_shape == reduced_msg.b_shape and msg.p_shape == reduced_msg.p_shape
+        assert reduced_msg.s_shape == Size([]) and reduced_msg.e_shape == Size([])
+        assert torch.equal(reduced_msg.parameter, msg.parameter)
+        assert reduced_msg.weight == 1

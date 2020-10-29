@@ -1058,12 +1058,12 @@ class Message:
         # First clone content
         cloned_msg = self.clone()
         if msg_type == MessageType.Parameter:
-            new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, param_shape=cloned_msg.p_shape,
-                              parameters=cloned_msg.parameter, device=self.device, **cloned_msg.attr)
+            new_msg = Message(msg_type, batch_shape=cloned_msg.b_shape, param_shape=cloned_msg.p_shape,
+                              parameter=cloned_msg.parameter, device=self.device, **cloned_msg.attr)
         else:
-            new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, sample_shape=cloned_msg.s_shape,
+            new_msg = Message(msg_type, batch_shape=cloned_msg.b_shape, sample_shape=cloned_msg.s_shape,
                               event_shape=cloned_msg.e_shape, particles=cloned_msg.particles,
-                              weights=cloned_msg.weight, log_densities=cloned_msg.log_densities,
+                              weight=cloned_msg.weight, log_densities=cloned_msg.log_densities,
                               device=self.device, **cloned_msg.attr)
         return new_msg
 
@@ -1095,7 +1095,7 @@ class Message:
             attr = deepcopy(self.attr)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, self.b_shape, self.e_shape,
+                          self.b_shape, self.p_shape, self.s_shape, self.e_shape,
                           parameters, particles, weight, log_densities, device=self.device, **attr)
         return new_msg
 
