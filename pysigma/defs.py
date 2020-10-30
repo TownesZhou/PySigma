@@ -1443,7 +1443,7 @@ class Message:
 
     def batch_diag_embed(self, diag_dim=-1, target_dim1=-2, target_dim2=-1):
         """Returns a message whose diagonals of certain 2D planes (dimensions specified by `target_dim1` and
-        `target_dim2`) are filled by slices of self along the dimension specified by `diag_dim`).
+        `target_dim2`) are filled by slices of self along the dimension `diag_dim` of the self message).
 
         The last dimension of self is chosen by default as the diagonal entries to be filled, and the last two
         dimensions of the new message are chosen by default as the 2D planes where the diagonal entries will be filled
@@ -1523,12 +1523,12 @@ class Message:
             perm_order.remove(diag_dim)
             perm_order.append(diag_dim)
             log_weight = log_weight.permute(perm_order)
-            log_weight = torch.diag_embed(log_weight, dim1=target_dim1, dim2=target_dim1)
-            new_weight = torch.exp(target_dim1)
+            log_weight = torch.diag_embed(log_weight, dim1=target_dim1, dim2=target_dim2)
+            new_weight = torch.exp(log_weight)
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg

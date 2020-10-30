@@ -1541,3 +1541,18 @@ class TestMessage:
         # Check content
         assert self.equal_within_error(result.parameter, msg.parameter.diagonal(0, 0, 2).transpose(-1, -2))
         assert self.equal_within_error(result.weight, msg.weight.diagonal(0, 0, 2).permute(0, 4, 1, 2, 3))
+
+    def test_batch_diag_embed(self):
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        diag_dim, target_dim1, target_dim2 = 1, 1, 3
+        result = msg.batch_diag_embed(diag_dim, target_dim1, target_dim2)
+
+        # Check shape
+        assert result.parameter.shape == Size([3, 4, 5, 4, 1])
+        assert result.weight.shape == Size([3, 4, 5, 4, 4, 5, 6])
+
+        # Check contents
+        assert self.equal_within_error(result.parameter.diagonal(0, 1, 3).permute([0, 3, 1, 2]), msg.parameter)
+        assert self.equal_within_error(result.weight.diagonal(0, 1, 3).permute([0, 5, 1, 2, 3, 4]), msg.weight)
