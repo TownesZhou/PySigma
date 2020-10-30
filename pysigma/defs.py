@@ -1833,6 +1833,9 @@ class Message:
         new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Size) else \
             new_batch_shape
 
+        # Replace any -1 entry in new_batch_shape with size of the corresponding dimension of self
+        new_batch_shape = torch.Size([s if s != -1 else self.b_shape[i] for i, s in enumerate(new_batch_shape)])
+
         new_parameter = self.parameter
         new_particles = self.particles
         new_weight = self.weight
@@ -1848,7 +1851,7 @@ class Message:
             new_weight = new_weight.expand(new_shape).contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
+                          new_batch_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
