@@ -15,9 +15,22 @@ EPS = 1e-6
 class TestMessage:
 
     # Utility method - test equality with given numerical precision
+
+    # Check if the given two tensors are equal up to a predefined numerical precision
     @staticmethod
     def equal_within_error(tensor_1, tensor_2):
         return torch.max(torch.abs(tensor_1 - tensor_2)) < EPS
+
+    # Check if the given two messages are proportional to each other along the hyperplane spanning the last few
+    # dimensions (i.e. messages are proportional in the quotient space) up to a predefined numerical precision
+    @staticmethod
+    def proportional(tensor_1, tensor_2, num_quotient_dims=1):
+        ratio = tensor_1 / tensor_2
+        min_const, max_const = ratio, ratio
+        for i in range(num_quotient_dims):
+            min_const = min_const.min(dim=-1)[0]
+            max_const = max_const.max(dim=-1)[0]
+        return torch.max(max_const - min_const) < EPS
 
     @staticmethod
     def random_message(msg_type, b_shape, p_shape, s_shape, e_shape):
@@ -1630,5 +1643,38 @@ class TestMessage:
         assert self.equal_within_error(result.weight[:3], msg.weight)
         assert self.equal_within_error(result.weight[3:], torch.ones([3, 4, 5, 4, 5, 6]) / (4 * 5 * 6))
 
+    def test_batch_summarize(self):
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
 
+        # Test 1: positive dim
+        dim = 0
+        result = msg.batch_summarize(dim)
 
+        # Check shape
+        assert result.parameter.shape == Size([4, 5, 1])
+        assert result.weight.shape == Size([4, 5, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.mean(dim, keepdim=False))
+        weight_product = msg.weight[0]
+        for i in range(1, b_shape[dim]):
+            weight_product *= msg.weight[i]
+        weight_product /= weight_product.sum(dim=[-1, -2, -3], keepdim=True)
+        assert self.equal_within_error(result.weight, weight_product)
+
+        # Test 2: negative dim
+        neg_dim = -3
+        result = msg.batch_summarize(neg_dim)
+
+        # Check shape
+        assert result.parameter.shape == Size([4, 5, 1])
+        assert result.weight.shape == Size([4, 5, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.mean(dim, keepdim=False))
+        weight_product = msg.weight[0]
+        for i in range(1, b_shape[dim]):
+            weight_product *= msg.weight[i]
+        weight_product /= weight_product.sum(dim=[-1, -2, -3], keepdim=True)
+        assert self.equal_within_error(result.weight, weight_product)
