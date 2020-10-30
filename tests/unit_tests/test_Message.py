@@ -1678,3 +1678,45 @@ class TestMessage:
             weight_product *= msg.weight[i]
         weight_product /= weight_product.sum(dim=[-1, -2, -3], keepdim=True)
         assert self.equal_within_error(result.weight, weight_product)
+
+    def test_batch_flatten(self):
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        # Test 1: positive dim
+        dims = [0, 1]
+        result = msg.batch_flatten(dims)
+
+        # Check shape
+        assert result.parameter.shape == Size([5, 12, 1])
+        assert result.weight.shape == Size([5, 12, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.view(-1, 5, 1).permute(1, 0, 2))
+        assert self.equal_within_error(result.weight, msg.weight.view(-1, 5, 4, 5, 6).permute(1, 0, 2, 3, 4))
+
+        # Test 2: negative data
+        dims = [-3, -2]
+        result = msg.batch_flatten(dims)
+
+        # Check shape
+        assert result.parameter.shape == Size([5, 12, 1])
+        assert result.weight.shape == Size([5, 12, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.view(-1, 5, 1).permute(1, 0, 2))
+        assert self.equal_within_error(result.weight, msg.weight.view(-1, 5, 4, 5, 6).permute(1, 0, 2, 3, 4))
+
+    def test_batch_flatten_default(self):
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        result = msg.batch_flatten()
+
+        # Check shape
+        assert result.parameter.shape == Size([60, 1])
+        assert result.weight.shape == Size([60, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.view(-1, 1))
+        assert self.equal_within_error(result.weight, msg.weight.view(-1, 4, 5, 6))
