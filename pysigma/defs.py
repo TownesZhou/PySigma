@@ -1650,7 +1650,7 @@ class Message:
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
