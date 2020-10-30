@@ -1574,5 +1574,28 @@ class TestMessage:
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
         msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
 
+        # Test 1: positive dim
+        dim, length = 2, 3
+        result = msg.batch_narrow(dim, length)
+
+        # Check shape
+        assert result.parameter.shape == Size([3, 4, 3, 1])
+        assert result.weight.shape == Size([3, 4, 3, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter[:, :, :3, :])
+        assert self.equal_within_error(result.weight, msg.weight[:, :, :3, :, :, :])
+
+        # Test 2: negative dim
+        dim, length = -1, 3
+        result = msg.batch_narrow(dim, length)
+
+        # Check shape
+        assert result.parameter.shape == Size([3, 4, 3, 1])
+        assert result.weight.shape == Size([3, 4, 3, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter[:, :, :3, :])
+        assert self.equal_within_error(result.weight, msg.weight[:, :, :3, :, :, :])
 
 
