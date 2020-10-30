@@ -1512,3 +1512,32 @@ class TestMessage:
         assert self.equal_within_error(result.weight[:3], torch.ones(3, 4, 5, 4, 5, 6) / (4 * 5 * 6))
         assert all(self.equal_within_error(result.parameter[ri], msg.parameter[i]) for i, ri in enumerate(index))
         assert all(self.equal_within_error(result.weight[ri], msg.weight[i]) for i, ri in enumerate(index))
+
+    def test_batch_diagonal(self):
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        # Test 1: positive dim
+        dim1, dim2 = 0, 2
+        result = msg.batch_diagonal(dim1, dim2)
+
+        # Check shape
+        assert result.parameter.shape == Size([4, 3, 1])
+        assert result.weight.shape == Size([4, 3, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.diagonal(0, 0, 2).transpose(-1, -2))
+        assert self.equal_within_error(result.weight, msg.weight.diagonal(0, 0, 2).permute(0, 4, 1, 2, 3))
+
+        # Test 2: negative dim
+        # Test 1: positive dim
+        dim1, dim2 = -3, -1
+        result = msg.batch_diagonal(dim1, dim2)
+
+        # Check shape
+        assert result.parameter.shape == Size([4, 3, 1])
+        assert result.weight.shape == Size([4, 3, 4, 5, 6])
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.diagonal(0, 0, 2).transpose(-1, -2))
+        assert self.equal_within_error(result.weight, msg.weight.diagonal(0, 0, 2).permute(0, 4, 1, 2, 3))

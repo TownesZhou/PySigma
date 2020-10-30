@@ -1374,7 +1374,8 @@ class Message:
 
     def batch_diagonal(self, dim1=0, dim2=1):
         """Returns a partial view of self with the its diagonal elements with respect to `dim1` and `dim2` appended as
-        a dimension at the end of the shape.
+        a dimension at the end of the shape. Note that the number of dimensions of the returned message is 1 minus
+        that of the original message, because `dim1` and `dim2` are reduced to the new diagonal dimension.
 
         dim values in the range ``[-len(batch_shape), len(batch_shape) - 1]`` can be used. Note that `dim1` and `dim2`
         are relative to the batch dimensions only. The appended dimension will be placed as the last batch dimension,
@@ -1401,7 +1402,7 @@ class Message:
         --------
         This method is a mimic of
         `torch.diagonal() <https://pytorch.org/docs/stable/torch.html?highlight=diagonal#torch.diagonal>`_
-        , with `offset` defaults to 0
+        , with `offset` set to 0
         """
         assert isinstance(dim1, int) and -len(self.b_shape) <= dim1 <= len(self.b_shape) - 1
         assert isinstance(dim2, int) and -len(self.b_shape) <= dim2 <= len(self.b_shape) - 1
@@ -1428,13 +1429,14 @@ class Message:
             # weights has shape (b_shape + s_shape)
             new_weight = torch.diagonal(new_weight, dim1=dim1, dim2=dim2)
             # Permute the appended diagonal batch dimension to the end of the existing batch dimensions
-            perm_order = list(range(len(self.b_shape))) + [new_weight.dim() - 1] + \
-                list(range(len(self.b_shape), len(self.b_shape) + len(self.s_shape)))
+            new_b_dims = len(self.b_shape) - 2
+            perm_order = list(range(new_b_dims)) + [new_weight.dim() - 1] + \
+                list(range(new_b_dims, new_b_dims + len(self.s_shape)))
             new_weight = new_weight.permute(perm_order)
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
