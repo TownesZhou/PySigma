@@ -1793,7 +1793,7 @@ class Message:
             new_weight = torch.reshape(new_weight, new_batch_shape + self.s_shape)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
+                          new_batch_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg

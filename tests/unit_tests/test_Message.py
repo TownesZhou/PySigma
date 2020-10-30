@@ -1720,3 +1720,19 @@ class TestMessage:
         # Check content
         assert self.equal_within_error(result.parameter, msg.parameter.view(-1, 1))
         assert self.equal_within_error(result.weight, msg.weight.view(-1, 4, 5, 6))
+
+    def test_batch_reshape(self):
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        new_batch_shape = Size([2, 3, 10])
+        result = msg.batch_reshape(new_batch_shape)
+
+        # Check shape
+        assert result.parameter.shape == new_batch_shape + p_shape
+        assert result.weight.shape == new_batch_shape + s_shape
+
+        # Check content
+        assert self.equal_within_error(result.parameter, msg.parameter.reshape(new_batch_shape + p_shape))
+        assert self.equal_within_error(result.weight, msg.weight.reshape(new_batch_shape + s_shape))
+
