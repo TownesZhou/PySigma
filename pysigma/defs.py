@@ -1486,9 +1486,10 @@ class Message:
         assert isinstance(target_dim2, int) and -len(self.b_shape) - 1 <= target_dim2 <= len(self.b_shape)
 
         # Translate dim value to positive if it's negative
+        # For target_dim1 and target_dim2, need to compensate for 1 more dimension in the returned message
         diag_dim = len(self.b_shape) + diag_dim if diag_dim < 0 else diag_dim
-        target_dim1 = len(self.b_shape) + 1 + target_dim1 if target_dim1 < 0 else target_dim1
-        target_dim2 = len(self.b_shape) + 1 + target_dim2 if target_dim2 < 0 else target_dim2
+        target_dim1 = len(self.b_shape) + 2 + target_dim1 if target_dim1 < 0 else target_dim1
+        target_dim2 = len(self.b_shape) + 2 + target_dim2 if target_dim2 < 0 else target_dim2
         # Get new batch shape. The size of target_dim1 and target_dim2 is determined by the size of diag_dim
         diag_size = self.b_shape[diag_dim]
         other_shape = list(self.b_shape[:diag_dim] + self.b_shape[diag_dim + 1:])
