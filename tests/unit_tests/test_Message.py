@@ -1833,11 +1833,46 @@ class TestMessage:
             msg.log_densities[2].unsqueeze(0).unsqueeze(1).expand(4, 5, -1),
         ]
         joint_log_dens = sum(dens_expanded)
-        expected_log_ratio = target_log_prob - joint_log_dens
+        expected_log_ratio = target_log_prob - joint_log_dens.unsqueeze(0)
         expected_weight = torch.exp(expected_log_ratio)
         expected_weight /= expected_weight.sum(dim=[-1, -2, -3], keepdims=True)
 
 
+        assert self.equal_within_error(result.weight, expected_weight)
+
+    def test_event_marginalize(self):
+        b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6]), Size([1, 2, 3])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        event_dim = 1
+
+        dens_expanded = [
+            msg.log_densities[0].unsqueeze(1).unsqueeze(2).expand(-1, 5, 6),
+            msg.log_densities[1].unsqueeze(0).unsqueeze(2).expand(4, -1, 6),
+            msg.log_densities[2].unsqueeze(0).unsqueeze(1).expand(4, 5, -1),
+        ]
+        joint_log_dens = sum(dens_expanded)
+        target_prob = msg.weight * torch.exp(joint_log_dens).unsqueeze(0)
+
+        marginalized_target_prob = target_prob.sum(dim=2, keepdim=False)
+
+        marg_dens_expanded = [
+            msg.log_densities[0].unsqueeze(1).expand(-1, 6),
+            msg.log_densities[2].unsqueeze(0).expand(4, -1)
+        ]
+        joint_marg_log_dens = sum(marg_dens_expanded)
+
+        expected_weight = marginalized_target_prob / torch.exp(joint_marg_log_dens).unsqueeze(0)
+        expected_weight /= expected_weight.sum(dim=[-1, -2], keepdim=True)
+
+        result = msg.event_marginalize(event_dim)
+
+        # Check shape
+        assert result.weight.shape == Size([10, 4, 6])
+        assert result.particles[0].shape == Size([4, 1]) and result.particles[1].shape == Size([6, 3])
+        assert result.log_densities[0].shape == Size([4]) and result.log_densities[1].shape == Size([6])
+
+        # Check content
         assert self.equal_within_error(result.weight, expected_weight)
 
 

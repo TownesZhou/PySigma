@@ -1990,7 +1990,7 @@ class Message:
         corresponding to marginalizing the corresponding random variable.
 
         Only messages with particles support this operation. If `self`'s message type is ``MessageType.Both``, a
-        ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.
+        ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
 
         Parameters
         ----------
@@ -2017,8 +2017,8 @@ class Message:
 
         Marginalization of the particles is implemented by simply discarding the target particle value tensor as well as
         its corresponding log sampling density tensor, and summing over the target prob tensor over the event dimension.
-        The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the
-        marginal sampling density tensor.
+        The target prob tensor is recovered by multiplying the weight tensor with the exponential of the cross product
+        of all of the marginal log sampling density tensor.
 
         Note that the target prob tensor recovered in this way is **NOT** the
         actual probability w.r.t. the target distributions, but one that is proportional to that up to a normalization
@@ -2044,16 +2044,21 @@ class Message:
         # First take cross product of all marginal sampling density
         expand_log_den = []
         for j, d in enumerate(self.log_densities):
-            view_dim = [-1] * (len(self.e_shape) - 1)
-            view_dim.insert(j, self.s_shape[j])
-            expand_log_den.append(d.view(view_dim))
+            # view_dim = [-1] * (len(self.e_shape) - 1)
+            # view_dim.insert(j, self.s_shape[j])
+            # expand_log_den.append(d.view(view_dim))
+            expanded_d = d
+            for i in range(j):
+                expanded_d = expanded_d.unsqueeze(0)
+            for i in range(j + 1, self.num_rvs):
+                expanded_d = expanded_d.unsqueeze(-1)
+            expand_log_den.append(expanded_d)
 
         # Take joint sum and exponentialize, which is equivalent to cross product.
         joint_density = torch.exp(sum(expand_log_den))
         # Now expand dimensions even more to full batch dimensions. Resulting shape should be (b_shape + s_shape)
         view_dim = [1] * len(self.b_shape) + list(self.s_shape)
         joint_density = joint_density.view(view_dim)
-        assert joint_density.shape == self.b_shape + self.s_shape
 
         # Recover target_prob, and sum over event_dim.
         target_prob = joint_density * self.weight
