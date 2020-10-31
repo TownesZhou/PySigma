@@ -1920,7 +1920,7 @@ class Message:
 
     def event_reweight(self, target_log_prob):
         """Returns a new message with the same type of `self` with the same particle values and log sampling densities
-        as `self`, but a different weight tensor, derived from importance weighting `target_log_pdf` against stored
+        as `self`, but a different weight tensor, derived from importance weighting `target_log_prob` against stored
         log sampling density tensors in ``self.log_densities``.
 
         `self` 's type must be either ``MessageType.Particles`` or ``MessageType.Both`` to support this method.

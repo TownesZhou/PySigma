@@ -1819,3 +1819,25 @@ class TestMessage:
         expected_dens = [expected_dist.log_prob(tp).squeeze(-1) for tp in result.particles]
         assert all(self.equal_within_error(rd, ed) for rd, ed in zip(result.log_densities, expected_dens))
 
+    def test_event_reweight(self):
+        b_shape, p_shape, s_shape, e_shape = Size([4]), Size([1]), Size([4, 5, 6]), Size([1, 2, 3])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        target_log_prob = torch.randn([4, 4, 5, 6])
+        result = msg.event_reweight(target_log_prob)
+
+        # Check content
+        dens_expanded = [
+            msg.log_densities[0].unsqueeze(1).unsqueeze(2).expand(-1, 5, 6),
+            msg.log_densities[1].unsqueeze(0).unsqueeze(2).expand(4, -1, 6),
+            msg.log_densities[2].unsqueeze(0).unsqueeze(1).expand(4, 5, -1),
+        ]
+        joint_log_dens = sum(dens_expanded)
+        expected_log_ratio = target_log_prob - joint_log_dens
+        expected_weight = torch.exp(expected_log_ratio)
+        expected_weight /= expected_weight.sum(dim=[-1, -2, -3], keepdims=True)
+
+
+        assert self.equal_within_error(result.weight, expected_weight)
+
+
