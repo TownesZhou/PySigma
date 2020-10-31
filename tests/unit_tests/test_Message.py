@@ -1844,6 +1844,7 @@ class TestMessage:
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6]), Size([1, 2, 3])
         msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
 
+        # Test 1: positive dim
         event_dim = 1
 
         dens_expanded = [
@@ -1865,6 +1866,18 @@ class TestMessage:
         expected_weight = marginalized_target_prob / torch.exp(joint_marg_log_dens).unsqueeze(0)
         expected_weight /= expected_weight.sum(dim=[-1, -2], keepdim=True)
 
+        result = msg.event_marginalize(event_dim)
+
+        # Check shape
+        assert result.weight.shape == Size([10, 4, 6])
+        assert result.particles[0].shape == Size([4, 1]) and result.particles[1].shape == Size([6, 3])
+        assert result.log_densities[0].shape == Size([4]) and result.log_densities[1].shape == Size([6])
+
+        # Check content
+        assert self.equal_within_error(result.weight, expected_weight)
+
+        # test 2: negative dim
+        event_dim = -2
         result = msg.event_marginalize(event_dim)
 
         # Check shape
