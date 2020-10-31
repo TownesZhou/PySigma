@@ -5,6 +5,8 @@
 import pytest
 import torch
 from torch import Size
+import torch.distributions as D
+import torch.distributions.transforms as T
 from pysigma.defs import Message, MessageType
 
 
@@ -38,7 +40,7 @@ class TestMessage:
         weight = torch.rand(b_shape + s_shape) if MessageType.Particles in msg_type else 1
         ptcl = [torch.randn([s, e]) for s, e in zip(list(s_shape), list(e_shape))] \
             if MessageType.Particles in msg_type else None
-        dens = [-torch.rand(s) for s in zip(list(s_shape))] \
+        dens = [torch.randn(s) for s in zip(list(s_shape))] \
             if MessageType.Particles in msg_type else None
         return Message(msg_type, b_shape, p_shape, s_shape, e_shape,
                        param, ptcl, weight, dens)
@@ -320,15 +322,6 @@ class TestMessage:
             p1 = [torch.randn(10, 3)]
             w1 = torch.randn(5, 10)
             l1 = [-torch.rand(10)]
-            msg = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
-                          particles=p1, weight=w1, log_densities=l1)
-
-        # Wrong log densities value - not necessarily non-positive
-        with pytest.raises(AssertionError):
-            b_s, s_s, e_s = Size([5]), Size([10]), Size([3])
-            p1 = [torch.rand(10, 3)]
-            w1 = torch.rand(5, 10)
-            l1 = [torch.randn(10)]
             msg = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
                           particles=p1, weight=w1, log_densities=l1)
 
@@ -1752,4 +1745,77 @@ class TestMessage:
         assert all(self.equal_within_error(result.parameter[:1, :, i:i+1, :], msg.parameter) for i in range(5))
         assert all(self.equal_within_error(result.weight[i:i+1, :, :1, :, :, :], msg.weight) for i in range(3))
         assert all(self.equal_within_error(result.weight[:1, :, i:i+1, :, :, :], msg.weight) for i in range(5))
+
+    def test_event_transform_event_dims_0(self):
+        # Test transformation with 0 event dimension
+        b_shape, p_shape, s_shape, e_shape = Size([3]), Size([]), Size([4, 5, 6]), Size([1, 2, 3])
+
+        # Create three distributions of corresponding event shape and sample three list of particles
+        dist = [D.MultivariateNormal(torch.zeros(i), torch.eye(i)) for i in range(1, 4)]
+        ptcl = [d.sample([j]) for d, j in zip(dist, range(4, 7))]
+        dens = [d.log_prob(p) for d, p in zip(dist, ptcl)]
+        msg = Message(MessageType.Particles,
+                      b_shape, p_shape, s_shape, e_shape,
+                      particles=ptcl, log_densities=dens, weight=torch.rand([3, 4, 5, 6]))
+
+        # Forward transform
+        trans = T.ExpTransform()
+        result = msg.event_transform(trans)
+
+        # Check content
+        # Check particle values
+        assert all(self.equal_within_error(rp, trans(p)) for p, rp in zip(msg.particles, result.particles))
+        # Check log densities
+        transformed_dens = [D.TransformedDistribution(d, [trans]).log_prob(trans(p)) for d, p in zip(dist, ptcl)]
+        assert all(self.equal_within_error(rd, td) for rd, td in zip(result.log_densities, transformed_dens))
+
+    def test_event_transform_event_dims_1(self):
+        # Test transformation with 1 event dimension
+        b_shape, p_shape, s_shape, e_shape = Size([3]), Size([]), Size([4, 5, 6]), Size([1, 2, 3])
+
+        # Create three distributions of corresponding event shape and sample three list of particles
+        dist = [D.MultivariateNormal(torch.zeros(i), torch.eye(i)) for i in range(1, 4)]
+        ptcl = [d.sample([j]) for d, j in zip(dist, range(4, 7))]
+        dens = [d.log_prob(p) for d, p in zip(dist, ptcl)]
+        msg = Message(MessageType.Particles,
+                      b_shape, p_shape, s_shape, e_shape,
+                      particles=ptcl, log_densities=dens, weight=torch.rand([3, 4, 5, 6]))
+
+        # Forward transform
+        trans = T.AffineTransform(1, 10, event_dim=1)
+        result = msg.event_transform(trans)
+
+        # Check content
+        # Check particle values
+        assert all(self.equal_within_error(rp, trans(p)) for p, rp in zip(msg.particles, result.particles))
+        # Check log densities
+        transformed_dens = [D.TransformedDistribution(d, [trans]).log_prob(trans(p)) for d, p in zip(dist, ptcl)]
+        assert all(self.equal_within_error(rd, td) for rd, td in zip(result.log_densities, transformed_dens))
+
+    def test_event_transform_log_normal(self):
+        # Test transformation with 0 event dimension
+        b_shape, p_shape, s_shape, e_shape = Size([3]), Size([]), Size([5]), Size([1])
+
+        # Create three distributions of corresponding event shape and sample three list of particles
+        loc, scale = torch.randn(1), torch.rand(1)
+        dist, expected_dist = D.Normal(loc, scale), D.LogNormal(loc, scale)
+        ptcl = [dist.sample(s_shape)]
+        dens = [dist.log_prob(ptcl[0]).squeeze(-1)]
+        msg = Message(MessageType.Particles,
+                      b_shape, p_shape, s_shape, e_shape,
+                      particles=ptcl, log_densities=dens, weight=torch.rand([3, 5]))
+
+        # Forward transform
+        trans = T.ExpTransform()
+        result = msg.event_transform(trans)
+
+        # Check content
+        # Check particle values
+        assert all(self.equal_within_error(rp, trans(p)) for p, rp in zip(msg.particles, result.particles))
+        # Check log densities
+        transformed_dens = [D.TransformedDistribution(dist, [trans]).log_prob(trans(p)).squeeze(-1) for p in ptcl]
+        assert all(self.equal_within_error(rd, td) for rd, td in zip(result.log_densities, transformed_dens))
+
+        expected_dens = [expected_dist.log_prob(tp).squeeze(-1) for tp in result.particles]
+        assert all(self.equal_within_error(rd, ed) for rd, ed in zip(result.log_densities, expected_dens))
 

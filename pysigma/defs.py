@@ -404,9 +404,6 @@ class Message:
                 "When specified, the j-th log density tensor specified in the iterable `log_densities` should have " \
                 "shape (sample_shape[j]). Expect shapes {}, but instead found log density tensor shapes {}." \
                 .format(list(self.s_shape[j] for j in range(self.num_rvs)), list(d.shape for d in self.log_densities))
-            # Check that values are non-positive
-            assert all(torch.all(d <= 0) for d in self.log_densities), \
-                "Found positive values in one of the particle log-densities tensors."
 
     """
         Member properties
@@ -1879,6 +1876,8 @@ class Message:
 
         * Weights are kept the same, but the tensor will be cloned.
 
+        The transformation's event dimensions should be equal to or less than 1, i.e., ``trans.event_dim <= 1``.
+
         Parameters
         ----------
         trans : torch.distributions.transforms.Transform
@@ -1889,25 +1888,27 @@ class Message:
         Message
             The transformed message.
 
-        Raises
-        ------
-        AssertionError
-            If `dist_info` attribute is not present in ``self.attr``
-
         See Also
         --------
         `torch.distributions.Transform <https://pytorch.org/docs/stable/distributions.html#torch.distributions.transforms.Transform>`_
         """
         assert isinstance(trans, Transform)
+        assert trans.event_dim <= 1
         assert MessageType.Particles in self.type
 
         # First clone and reduce
         cloned_msg = self.reduce_type(MessageType.Particles)
-        new_particles = cloned_msg.particles
-        new_log_densities = cloned_msg.log_densities
+        new_particles = tuple(trans(p) for p in cloned_msg.particles)
 
-        new_particles = trans(new_particles)
-        new_log_densities += trans.log_abs_det_jacobian(cloned_msg.particles, new_particles)
+        new_log_densities = []
+        for i, d in enumerate(cloned_msg.log_densities):
+            new_d = d - trans.log_abs_det_jacobian(cloned_msg.particles[i], new_particles[i]).sum(-1) \
+                if trans.event_dim == 0 else d - trans.log_abs_det_jacobian(cloned_msg.particles[i], new_particles[i])
+            new_log_densities.append(new_d)
+        # new_log_densities = tuple(d - trans.log_abs_det_jacobian(cloned_msg.particles[i], new_particles[i]).sum(-1)
+        #                           if trans.event_dim == 0 else d - trans.log_abs_det_jacobian(cloned_msg.particles[i],
+        #                                                                                       new_particles[i])
+        #                           for i, d in enumerate(cloned_msg.log_densities))
 
         new_msg = Message(cloned_msg.type,
                           batch_shape=cloned_msg.b_shape,
