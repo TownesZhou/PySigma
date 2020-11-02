@@ -220,9 +220,9 @@
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">torch.nn</span> <span class="k">import</span> <span class="n">Parameter</span>
-<span class="kn">from</span> <span class="nn">defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
-<span class="kn">from</span> <span class="nn">graphical.basic_nodes</span> <span class="k">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">compatible_shape</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
+<span class="kn">from</span> <span class="nn">..defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
+<span class="kn">from</span> <span class="nn">.basic_nodes</span> <span class="k">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="k">import</span> <span class="n">compatible_shape</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
 
 
 <div class="viewcode-block" id="WMVN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMVN">[docs]</a><span class="k">class</span> <span class="nc">WMVN</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">):</span>
