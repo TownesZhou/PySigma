@@ -1888,4 +1888,149 @@ class TestMessage:
         # Check content
         assert self.equal_within_error(result.weight, expected_weight)
 
+    def test_event_concatenate_shape_1(self):
+        # Test 2: flatten 2 out of 4 RVs into 3 RVs
+        b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6, 7]), Size([1, 2, 3, 4])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
 
+        # scenario 1: positive dims
+        result = msg.event_concatenate([0, 2], 1)
+
+        # Check shape
+        assert result.s_shape == Size([5, 24, 7]) and result.e_shape == Size([2, 4, 4])
+        assert result.weight.shape == Size([10, 5, 24, 7])
+        assert result.particles[0].shape == Size([5, 2]) and \
+               result.particles[1].shape == Size([24, 4]) and \
+               result.particles[2].shape == Size([7, 4])
+        assert result.log_densities[0].shape == Size([5]) and \
+               result.log_densities[1].shape == Size([24]) and \
+               result.log_densities[2].shape == Size([7])
+
+        # Scenario 2: negative dims
+        result = msg.event_concatenate([-4, -2], -2)
+
+        # Check shape
+        assert result.s_shape == Size([5, 24, 7]) and result.e_shape == Size([2, 4, 4])
+        assert result.weight.shape == Size([10, 5, 24, 7])
+        assert result.particles[0].shape == Size([5, 2]) and \
+               result.particles[1].shape == Size([24, 4]) and \
+               result.particles[2].shape == Size([7, 4])
+        assert result.log_densities[0].shape == Size([5]) and \
+               result.log_densities[1].shape == Size([24]) and \
+               result.log_densities[2].shape == Size([7])
+
+    def test_event_concatenate_shape_2(self):
+        # Test 2: flatten 2 out of 5 RVs into 4 RVs
+        b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6, 7, 8]), Size([1, 2, 3, 4, 5])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        # scenario 1: positive dims
+        result = msg.event_concatenate([0, 3], 1)
+
+        # Check shape
+        assert result.s_shape == Size([5, 28, 6, 8]) and result.e_shape == Size([2, 5, 3, 5])
+        assert result.weight.shape == Size([10, 5, 28, 6, 8])
+        assert result.particles[0].shape == Size([5, 2]) and \
+               result.particles[1].shape == Size([28, 5]) and \
+               result.particles[2].shape == Size([6, 3]) and \
+               result.particles[3].shape == Size([8, 5])
+        assert result.log_densities[0].shape == Size([5]) and \
+               result.log_densities[1].shape == Size([28]) and \
+               result.log_densities[2].shape == Size([6]) and \
+               result.log_densities[3].shape == Size([8])
+
+        # Scenario 2: negative dims
+        result = msg.event_concatenate([-5, -2], -3)
+
+        # Check shape
+        assert result.s_shape == Size([5, 28, 6, 8]) and result.e_shape == Size([2, 5, 3, 5])
+        assert result.weight.shape == Size([10, 5, 28, 6, 8])
+        assert result.particles[0].shape == Size([5, 2]) and \
+               result.particles[1].shape == Size([28, 5]) and \
+               result.particles[2].shape == Size([6, 3]) and \
+               result.particles[3].shape == Size([8, 5])
+        assert result.log_densities[0].shape == Size([5]) and \
+               result.log_densities[1].shape == Size([28]) and \
+               result.log_densities[2].shape == Size([6]) and \
+               result.log_densities[3].shape == Size([8])
+
+    def test_event_concatenate_shape_3(self):
+        # Test 2: flatten 3 out of 5 RVs into 3 RVs
+        b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6, 7, 8]), Size([1, 2, 3, 4, 5])
+        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+
+        # scenario 1: positive dims
+        result = msg.event_concatenate([0, 1, 3], 0)
+
+        # Check shape
+        assert result.s_shape == Size([140, 6, 8]) and result.e_shape == Size([7, 3, 5])
+        assert result.weight.shape == Size([10, 140, 6, 8])
+        assert result.particles[0].shape == Size([140, 7]) and \
+               result.particles[1].shape == Size([6, 3]) and \
+               result.particles[2].shape == Size([8, 5])
+        assert result.log_densities[0].shape == Size([140]) and \
+               result.log_densities[1].shape == Size([6]) and \
+               result.log_densities[2].shape == Size([8])
+
+        # Scenario 2: negative dims
+        result = msg.event_concatenate([-5, -4, -2], -3)
+
+        # Check shape
+        assert result.s_shape == Size([140, 6, 8]) and result.e_shape == Size([7, 3, 5])
+        assert result.weight.shape == Size([10, 140, 6, 8])
+        assert result.particles[0].shape == Size([140, 7]) and \
+               result.particles[1].shape == Size([6, 3]) and \
+               result.particles[2].shape == Size([8, 5])
+        assert result.log_densities[0].shape == Size([140]) and \
+               result.log_densities[1].shape == Size([6]) and \
+               result.log_densities[2].shape == Size([8])
+
+    def test_event_concatenate_ad_hoc_1(self):
+        # Test 1: simple 2 RVs flatten into a single RV
+        b_shape, s_shape, e_shape = Size([10]), Size([4, 5]), Size([1, 2])
+        ptcl = [
+            torch.tensor(
+                [[0.],
+                 [1.],
+                 [2.],
+                 [3.]]
+            ),
+            torch.tensor(
+                [[10., 20.],
+                 [11., 21.],
+                 [12., 22.],
+                 [13., 23.],
+                 [14., 24.]]
+            )
+        ]
+        dens = [
+            torch.tensor([0., .1, .2, .3]),
+            torch.tensor([0., .1, .2, .3, .4])
+        ]
+        weight = torch.rand([10, 4, 5])
+        msg = Message(MessageType.Particles,
+                      batch_shape=b_shape, sample_shape=s_shape, event_shape=e_shape,
+                      particles=ptcl, weight=weight, log_densities=dens)
+
+        result = msg.event_concatenate([0, 1])
+
+        # Check shape
+        assert result.s_shape == Size([20]) and result.e_shape == Size([3])
+        assert result.weight.shape == Size([10, 20])
+        assert result.particles[0].shape == Size([20, 3])
+        assert result.log_densities[0].shape == Size([20])
+
+        # Check content
+        expected_ptcl_raw = []
+        expected_dens_raw = []
+        for i in range(4):
+            for j in range(5):
+                expected_ptcl_raw.append([i, 10 + j, 20 + j])
+                expected_dens_raw.append(i / 10 + j / 10)
+        expected_ptcl = torch.tensor(expected_ptcl_raw, dtype=torch.float)
+        expected_dens = torch.tensor(expected_dens_raw, dtype=torch.float)
+        expected_weight = weight.view([10, 20])
+
+        assert self.equal_within_error(result.particles[0], expected_ptcl)
+        assert self.equal_within_error(result.log_densities[0], expected_dens)
+        assert self.equal_within_error(result.weight, expected_weight)

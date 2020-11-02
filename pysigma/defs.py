@@ -2092,14 +2092,18 @@ class Message:
         Only messages with particles support this operation. If `self`'s message type is ``MessageType.Both``, a
         ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.
 
+        ``.contiguous()`` will be called on the tensors to make sure the resulting particle, log density, and weight
+        tensors are contiguous in memory.
+
         Parameters
         ----------
         cat_event_dims : iterable of int
-            The list of event dimensions to be concatenated. Must have length at least 2. Each should be in range
+            The list of event dimensions to be concatenated. Must have length at least 2 and at most the length of
+            self's event shape (number of random variables). Each should be in range
             ``[-len(event_shape), len(event_shape) - 1]``.
         target_event_dim : int
             The target event dimension where the concatenated event will be placed. Should be in range
-            ``[-len(event_shape) + k, len(event_shape) - k - 1]``, where ``k`` equals to ``len(cat_event_dims)``.
+            ``[-len(event_shape) + k - 1, len(event_shape) - k]``, where ``k`` equals to ``len(cat_event_dims)``.
 
         Returns
         -------
@@ -2113,18 +2117,18 @@ class Message:
         """
         assert isinstance(cat_event_dims, Iterable)
         cat_event_dims = list(cat_event_dims)
-        assert len(cat_event_dims) >= 2
-        assert all(isinstance(d, int) and
-                   -len(self.e_shape) + len(cat_event_dims) <= d <= len(self.e_shape) - len(cat_event_dims) - 1
-                   for d in cat_event_dims)
-        assert isinstance(target_event_dim, int) and -len(self.e_shape) <= target_event_dim <= len(self.e_shape) - 1
+        assert 2 <= len(cat_event_dims) <= self.num_rvs
+        assert all(isinstance(d, int) and -self.num_rvs <= d <= self.num_rvs - 1 for d in cat_event_dims)
+        assert isinstance(target_event_dim, int) and \
+               -self.num_rvs + len(cat_event_dims) - 1 <= target_event_dim <= self.num_rvs - len(cat_event_dims)
         assert MessageType.Particles in self.type, \
             "Only message with particles can concatenate event dimensions. Such operation on distribution parameter is " \
             "not well defined."
 
         # Convert dims to positive values if they are negative
         cat_event_dims = [len(self.e_shape) + d if d < 0 else d for d in cat_event_dims]
-        target_event_dim = len(self.e_shape) + target_event_dim if target_event_dim < 0 else target_event_dim
+        target_event_dim = len(self.e_shape) - len(cat_event_dims) + 1 + target_event_dim \
+            if target_event_dim < 0 else target_event_dim
 
         # Collect elements to be concatenated, in the order given by cat_event_dims. Also the pre-flattened shape
         cat_particles = list(self.particles[i] for i in cat_event_dims)
@@ -2136,24 +2140,29 @@ class Message:
         # New shapes
         new_s_shape = [self.s_shape[i] for i in range(len(self.s_shape)) if i not in cat_event_dims]
         new_s_shape.insert(target_event_dim, np.prod([self.s_shape[j] for j in cat_event_dims]))
+        new_s_shape = torch.Size(new_s_shape)
         new_e_shape = [self.e_shape[i] for i in range(len(self.e_shape)) if i not in cat_event_dims]
         new_e_shape.insert(target_event_dim, sum([self.e_shape[j] for j in cat_event_dims]))
+        new_e_shape = torch.Size(new_e_shape)
 
         # Combinatorially concatenate particle values. Flatten result and insert to the rest to form new particle tuple
         comb_particles = KnowledgeServer.combinatorial_cat(cat_particles)
         assert comb_particles.shape[:-1] == cat_s_shape
-        flat_particles = comb_particles.view(-1, comb_particles.shape[-1])        # flatten
+        flat_particles = comb_particles.view(-1, comb_particles.shape[-1]) .contiguous()       # flatten
         new_particles = res_particles[:target_event_dim] + [flat_particles] + res_particles[target_event_dim:]
 
         # Take cross product of marginal sampling densities and flatten.
         expand_log_den = []
         for j, d in enumerate(cat_densities):
-            view_dim = [-1] * (len(cat_s_shape) - 1)
-            view_dim.insert(j, cat_s_shape[j])
-            expand_log_den.append(d.view(view_dim))
+            for i in range(j):
+                d = d.unsqueeze(0)
+            for i in range(j + 1, len(cat_densities)):
+                d = d.unsqueeze(-1)
+            expand_log_den.append(d)
+
         joint_log_den = sum(expand_log_den)
         assert joint_log_den.shape == cat_s_shape
-        flat_log_den = joint_log_den.view(-1)       # flatten
+        flat_log_den = joint_log_den.view(-1).contiguous()       # flatten
         new_densities = res_densities[:target_event_dim] + [flat_log_den] + res_densities[target_event_dim:]
 
         # Reshape weight tensor into correct flattened shape
@@ -2163,14 +2172,21 @@ class Message:
             # of shape (b_shape + sample_shape)
             b_cat_event_dims = list(len(self.b_shape) + d for d in cat_event_dims)     # Account for batch dims at front
             b_target_event_dim = len(self.b_shape) + target_event_dim
-            for dim in b_cat_event_dims:
-                perm_order = list(d for d in range(new_weight.dim()) if d != dim) + [dim]
-                new_weight = new_weight.permute(perm_order)
-            assert new_weight.shape[-len(cat_event_dims):] == cat_s_shape
-            new_weight = new_weight.view(new_weight.shape[:-len(cat_event_dims)] + torch.Size([1]))     # flatten
+
+            perm_order = list(i for i in range(len(self.b_shape + self.s_shape)) if i not in b_cat_event_dims) + \
+                         b_cat_event_dims
+            new_weight = new_weight.permute(perm_order).contiguous()
+
+            # for dim in b_cat_event_dims:
+            #     perm_order = list(d for d in range(new_weight.dim()) if d != dim) + [dim]
+            #     new_weight = new_weight.permute(perm_order)
+            # assert new_weight.shape[-len(cat_event_dims):] == cat_s_shape
+
+            new_weight = new_weight.view(new_weight.shape[:-len(cat_event_dims)] + torch.Size([-1]))     # flatten
+
             perm_order = list(range(new_weight.dim() - 1))
             perm_order.insert(b_target_event_dim, -1)
-            new_weight = new_weight.permute(perm_order)         # Permute flattened dims to target_event_dim
+            new_weight = new_weight.permute(perm_order).contiguous()         # Permute flattened dims to target_event_dim
 
         new_msg = Message(MessageType.Particles,
                           batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
