@@ -10,7 +10,7 @@ from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from torch.nn.functional import l1_loss
 import numpy as np
-from utils import KnowledgeServer
+from .utils import KnowledgeServer
 
 """
     All PySigma global variables / constants should be declared below.
@@ -48,6 +48,13 @@ class Variable:
     value_constraints : iterable of torch.distributions.constraints.Constraint
         The set of value constraints that determine the value range (support) of this variable. Specify if and only if
         variable's metatype is ``VariableMetatype.Random``.
+
+    Warning
+    -------
+    Since ``torch.distributions.constraints.Constraint`` and its concrete classes do not overwrite the default equality
+    check method ``__eq__()``, two constraint object are equal if and only if they are the same object instance. This
+    means two `Variable` instances will be regarded different if their `value_constraints` fields contains different
+    constraint instances, even if these constraint instances semantically refer to the same constraint.
 
     Attributes
     ----------
@@ -95,6 +102,9 @@ class Variable:
 
     def __str__(self):
         # override to provide the name as the string representation
+        return self.name
+
+    def __repr__(self):
         return self.name
 
     def __hash__(self):
@@ -166,7 +176,8 @@ class Message:
         The jth entry in the iterable represents the log pdf of the jth particle in `particles` w.r.t. the (marginal)
         sampling distribution from which the jth particle was originally drawn. Must specify if the message type is
         ``MessageType.Particles``, unless `weight` is 1, in which case the message represents a universal identity in
-        the particles space. The jth entry must have shape ``sample_shape[j]``.
+        the particles space. If specified, all density tensors must be **non-positively valued**, since a particle's
+        sampling probability density cannot be greater than 1. The jth entry must have shape ``sample_shape[j]``.
     device : str, optional
         The device where the tensor components are hosted. ``.to(device)`` will be called on the tensor arguments
         during initialization. Defaults to 'cpu'.
@@ -280,7 +291,9 @@ class Message:
     * The ``MessageType.Parameter`` type identity message is one whose ``parameter`` field is 0.
     * The ``MessageType.Particles`` type identity message is one whose ``weight`` field is 1, **regardless of its
       particle values ``particles`` or sampling log densities ``log_densities``.
-    * The ``MessageType.Both`` type identity message is the composition of the above two identity messages.
+    * The ``MessageType.Both`` type identity message is the composition of the above two identity messages. In other
+      words, a ``MessageType.Both`` type message is identity if and only if both ``parameter`` field is 0 and
+      ``weight`` field is 1.
 
     Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
     """
@@ -289,7 +302,11 @@ class Message:
                  param_shape=torch.Size([]), sample_shape=torch.Size([]), event_shape=torch.Size([]),
                  parameter=0, particles=None, weight=1, log_densities=None, device='cpu', **kwargs):
         assert isinstance(msg_type, MessageType)
-        assert isinstance(batch_shape, torch.Size)
+        assert isinstance(batch_shape, torch.Size) and \
+               ((MessageType.Parameter in msg_type and not isinstance(parameter, torch.Tensor)) or
+                (MessageType.Particles in msg_type and not isinstance(weight, torch.Tensor)) or
+                len(batch_shape) >= 1), \
+            "`batch_shape` must be a torch.Size of length at least 1, unless the message is an identity."
         assert isinstance(param_shape, torch.Size) and len(param_shape) <= 1, \
             "`param_shape` must be a torch.Size of length at most 1. Found {}".format(param_shape)
         assert isinstance(sample_shape, torch.Size)
@@ -297,10 +314,10 @@ class Message:
             "`sample_shape` and `event_shape` must both be torch.Size with the same length. Found " \
             "(sample_shape, event_shape) = ({}, {})".format(sample_shape, event_shape)
 
-        assert parameter == 0 or isinstance(parameter, torch.Tensor)
+        assert isinstance(parameter, torch.Tensor) or parameter == 0
         assert particles is None or (isinstance(particles, Iterable) and
                                      all(isinstance(p, torch.Tensor) for p in particles))
-        assert weight == 1 or isinstance(weight, torch.Tensor)
+        assert isinstance(weight, torch.Tensor) or weight == 1
         assert log_densities is None or (isinstance(log_densities, Iterable) and
                                          all(isinstance(d, torch.Tensor) for d in log_densities))
 
@@ -323,28 +340,28 @@ class Message:
         self.s_shape = sample_shape
         self.e_shape = event_shape
         # Number of random variables
-        self.num_rvs = len(self.particles)
+        self.num_rvs = len(self.particles) if particles is not None else 0
 
         # Check whether necessary arguments are provided
         if MessageType.Parameter in self.type:
-            assert len(self.p_shape) == 1, \
+            assert self.isid or len(self.p_shape) == 1, \
                 "For a Parameter message, the length of the parameter shape must be exactly 1. Found param_shape = {}" \
                 .format(self.p_shape)
             assert self.parameter is not None, \
                 "Must specify `parameter` for a Parameter message."
         if MessageType.Particles in self.type:
-            assert len(self.s_shape) >= 1, \
+            assert self.isid or len(self.s_shape) >= 1, \
                 "For a Particles message, the length of the sample / event shape must be at least 1. Found " \
                 "sample_shape = {}".format(self.s_shape)
             # does not care whether particles is specified if it's a particles identity
-            assert self.particles is not None or self.weight == 1, \
+            assert self.isid or self.particles is not None, \
                 "Must specify the particle values tensor via `particles` for a Particles message, unless the message " \
                 "represents the identity."
             assert self.weight is not None, \
                 "Must specify the particle weight tensor via `weight` for a Particles message, unless the message " \
                 "represents the identity."
             # similarly does not care if it's identity
-            assert self.log_densities is not None or self.weight == 1, \
+            assert self.isid or self.log_densities is not None, \
                 "Must specify the particles log density tensor via `log_densities` for a Particles message, unless " \
                 "the message represents the identity."
 
@@ -371,8 +388,8 @@ class Message:
             assert self.b_shape + self.s_shape == self.weight.shape, \
                 "When specified, the particles weight should have shape (batch_shape + sample_shape). Expect {}, but " \
                 "intead found {}.".format(self.b_shape + self.s_shape, self.weight.shape)
-            # Check that values are non-negative
-            assert torch.all(self.weight > 0), "Found negative values in particle weights. Minimum value: {}" \
+            # Check that values are positive
+            assert torch.all(self.weight >= 0), "Found negative values in particle weights. Minimum value: {}" \
                 .format(torch.min(self.weight))
             # Normalize the values so that weights sum to 1 across sample dimension
             sample_dims = list(range(len(self.b_shape), len(self.b_shape) + len(self.s_shape)))
@@ -396,9 +413,17 @@ class Message:
         """Whether `self` is an identity message.
 
         """
-        return (MessageType.Parameter in self.type or MessageType.Particles in self.type) and \
-               (MessageType.Particles not in self.type or self.parameter == 0) and \
-               (MessageType.Parameter not in self.type or self.weight == 1)
+        if not MessageType.Parameter in self.type and not MessageType.Particles in self.type:
+            return False
+
+        if self.type is MessageType.Parameter:
+            return not isinstance(self.parameter, torch.Tensor)
+
+        if self.type is MessageType.Particles:
+            return not isinstance(self.weight, torch.Tensor)
+
+        if self.type is MessageType.Both:
+            return not isinstance(self.parameter, torch.Tensor) and not isinstance(self.weight, torch.Tensor)
 
     @property
     def shape(self):
@@ -410,8 +435,75 @@ class Message:
     """
         Overload arithmetic operators
     """
+    def __eq__(self, other):
+        """Overrides equality testing operation ``==``
+
+        Two messages are equal if and only if all of its contents are equal, including contents in the auxiliary
+        dictionary ``self.attr``.
+
+        Note
+        ----
+        Messages with same contents but on different devices are considered equal. Therefore, ``device`` field is not
+        taken into consideration when testing equality.
+        """
+        assert isinstance(other, Message)
+        if self.type != other.type:
+            return False
+        if self.b_shape != other.b_shape or self.p_shape != other.p_shape or self.s_shape != other.s_shape or \
+           self.e_shape != other.e_shape:
+            return False
+
+        # If two messages' devices are different, compare self to a clone of other that is transferred to the device
+        # that self is on
+        if self.device != other.device:
+            other = other.to_device(self.device)
+
+        # Consider numerical precision when comparing tensors
+        if isinstance(self.parameter, torch.Tensor) != isinstance(other.parameter, torch.Tensor):
+            return False
+        elif isinstance(self.parameter, torch.Tensor) and isinstance(other.parameter, torch.Tensor) and \
+                not torch.max(torch.abs(self.parameter - other.parameter)) < NP_EPSILON:
+            return False
+
+        if (self.particles is None) != (other.particles is None):
+            return False
+        elif self.particles is not None and other.particles is not None:
+            if len(self.particles) != len(other.particles):
+                return False
+            elif not all(torch.max(torch.abs(p1 - p2)) < NP_EPSILON for p1, p2 in zip(self.particles, other.particles)):
+                return False
+
+        if isinstance(self.weight, torch.Tensor) != isinstance(other.weight, torch.Tensor):
+            return False
+        elif isinstance(self.weight, torch.Tensor) and isinstance(other.weight, torch.Tensor) and \
+                not torch.max(torch.abs(self.weight - other.weight)) < NP_EPSILON:
+            return False
+
+        if (self.log_densities is None) != (other.log_densities is None):
+            return False
+        elif self.log_densities is not None and other.log_densities is not None:
+            if len(self.log_densities) != len(other.log_densities):
+                return False
+            elif not all(torch.max(torch.abs(d1 - d2)) < NP_EPSILON for d1, d2 in
+                         zip(self.log_densities, other.log_densities)):
+                return False
+
+        if not self.attr == other.attr:
+            return False
+
+        return True
+
+    def __ne__(self, other):
+        """Overrides inequality testing operation ``!=``
+
+        See Also
+        --------
+        __eq__
+        """
+        return not self == other
+
     def __add__(self, other):
-        """Overloads the addition operation ``+``.
+        """Overrides the addition operation ``+``.
 
         Implements the semantics of addition operation as in vector spaces. The computational operations used to
         implement the semantics are different for different message contents. See
@@ -507,8 +599,8 @@ class Message:
             # Tensor addition
             new_parameter = self.parameter + other.parameter
 
-            param_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter,
-                                device=self.device)
+            param_msg = Message(MessageType.Parameter, batch_shape=self.b_shape, param_shape=self.p_shape,
+                                parameter=new_parameter, device=self.device)
 
         # Addition for Particles type
         if MessageType.Particles in s_type:
@@ -528,9 +620,9 @@ class Message:
             # Clone self tensor contents
             cloned_particles = tuple(p.clone() for p in self.particles)
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
-            ptcl_msg = Message(s_type,
+            ptcl_msg = Message(MessageType.Particles,
                                batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                               particles=cloned_particles, weights=new_weights, log_densities=cloned_log_densities,
+                               particles=cloned_particles, weight=new_weights, log_densities=cloned_log_densities,
                                device=self.device)
 
         # Compose if we are adding two Both type messages, otherwise return the proper one
@@ -547,7 +639,7 @@ class Message:
         return new_msg
 
     def __iadd__(self, other):
-        """Overloads self-addition operator ``+=``.
+        """Overrides self-addition operator ``+=``.
 
         See Also
         --------
@@ -556,7 +648,7 @@ class Message:
         return self.__add__(other)
 
     def __mul__(self, other):
-        """Overloads multiplication operator ``*``.
+        """Overrides multiplication operator ``*``.
 
         Implements the semantics of scalar multiplication operation as in vector spaces. The computational operations
         used to implement the semantics are different for different message contents. See
@@ -588,9 +680,12 @@ class Message:
             "Message can only be multiplied with a scalar. The scalar can be of int, float or torch.Tensor type. " \
             "Instead found: '{}'".format(type(other))
         if isinstance(other, torch.Tensor):
-            assert other.shape == torch.Size([]) or other.shape == self.b_shape, \
+            assert other.shape in [torch.Size([]), torch.Size([1]), self.b_shape], \
                 "If the scalar is a torch.Tensor, must be either a singleton tensor or a tensor with the same shape " \
                 "as the Message's batch shape: '{}'. Instead found: '{}'".format(self.b_shape, other.shape)
+            # If other is a tensor with a singleton dimension, squeeze into pure scalar
+            if other.shape == torch.Size([1]):
+                other = other.squeeze(0)
         # Undefined type cannot be scalar multiplied
         assert self.type is not MessageType.Undefined, \
             "Message of undefined type cannot be scalar multiplied. The message has type '{}'" \
@@ -612,11 +707,13 @@ class Message:
                     b_s_other = torch.unsqueeze(b_s_other, dim=-1)
 
         # Scalar multiplication for Parameter messages
-        new_msg = None
+        param_msg = None
+        ptcl_msg = None
         if MessageType.Parameter in self.type:
             new_parameter = b_p_other * self.parameter
-            new_msg = Message(self.type, batch_shape=self.b_shape, param_shape=self.p_shape, parameters=new_parameter,
-                              device=self.device)
+            param_msg = Message(MessageType.Parameter,
+                                batch_shape=self.b_shape, param_shape=self.p_shape, parameter=new_parameter,
+                                device=self.device)
 
         # Scalar multiplication for Particles messages
         if MessageType.Particles in self.type:
@@ -633,15 +730,23 @@ class Message:
             # Clone tensor contents
             cloned_particles = tuple(p.clone() for p in self.particles)
             cloned_log_densities = tuple(d.clone() for d in self.log_densities)
-            new_msg = Message(self.type,
-                              batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                              particles=cloned_particles, weights=new_weight, log_densities=cloned_log_densities,
-                              device=self.device, **self.attr)
+            ptcl_msg = Message(MessageType.Particles,
+                               batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                               particles=cloned_particles, weight=new_weight, log_densities=cloned_log_densities,
+                               device=self.device, **self.attr)
+
+        # Compose if we are multiplying a Both type messages, otherwise return the proper one
+        if param_msg is not None and ptcl_msg is not None:
+            new_msg = Message.compose(param_msg, ptcl_msg)
+        elif param_msg is not None:
+            new_msg = param_msg
+        else:
+            new_msg = ptcl_msg
 
         return new_msg
 
     def __imul__(self, other):
-        """Overloads self-multiplication operator ``*=``.
+        """Overrides self-multiplication operator ``*=``.
 
         See Also
         --------
@@ -839,7 +944,11 @@ class Message:
         Raises
         ------
         AssertionError
-            If `self` and/or `other` do not have parameters.
+            If `self` and `other` are not on the same device.
+        AssertionError
+            If `self` and/or `other` are/is not Parameter type.
+        AssertionError
+            If `self` and `other` are not identities and have different batch shapes or parameter shapes.
 
         See Also
         --------
@@ -850,6 +959,7 @@ class Message:
         assert self.device == other.device, \
             "Messages not residing on the same device. Found devices {} and {}".format(self.device, other.device)
         assert MessageType.Parameter in self.type and MessageType.Parameter in other.type
+        assert self.isid or other.isid or (self.b_shape, self.p_shape) == (other.b_shape, other.p_shape)
 
         # Returns 0 if both are identity
         if self.isid and other.isid:
@@ -882,7 +992,11 @@ class Message:
         Raises
         ------
         AssertionError
-            If `self` and/or `other` do not have particles.
+            If `self` and `other` are not on the same device.
+        AssertionError
+            If `self` and/or `other` are/is not Particles type.
+        AssertionError
+            If `self` and `other` do not have the same batch shapes, sample shapes, or event shapes.
         AssertionError
             If `self` does not have the same particle values and log sampling densities as `other`.
 
@@ -895,6 +1009,8 @@ class Message:
         assert self.device == other.device, \
             "Messages not residing on the same device. Found devices {} and {}".format(self.device, other.device)
         assert MessageType.Particles in self.type and MessageType.Particles in other.type
+        assert self.isid or other.isid or \
+               (self.b_shape, self.s_shape, self.e_shape) == (other.b_shape, other.s_shape, other.e_shape)
         assert self.same_particles_as(other)
 
         # Returns 0 if both are identity
@@ -939,12 +1055,12 @@ class Message:
         # First clone content
         cloned_msg = self.clone()
         if msg_type == MessageType.Parameter:
-            new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, param_shape=cloned_msg.p_shape,
-                              parameters=cloned_msg.parameter, device=self.device, **cloned_msg.attr)
+            new_msg = Message(msg_type, batch_shape=cloned_msg.b_shape, param_shape=cloned_msg.p_shape,
+                              parameter=cloned_msg.parameter, device=self.device, **cloned_msg.attr)
         else:
-            new_msg = Message(cloned_msg.type, batch_shape=cloned_msg.b_shape, sample_shape=cloned_msg.s_shape,
+            new_msg = Message(msg_type, batch_shape=cloned_msg.b_shape, sample_shape=cloned_msg.s_shape,
                               event_shape=cloned_msg.e_shape, particles=cloned_msg.particles,
-                              weights=cloned_msg.weight, log_densities=cloned_msg.log_densities,
+                              weight=cloned_msg.weight, log_densities=cloned_msg.log_densities,
                               device=self.device, **cloned_msg.attr)
         return new_msg
 
@@ -976,7 +1092,7 @@ class Message:
             attr = deepcopy(self.attr)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, self.b_shape, self.e_shape,
+                          self.b_shape, self.p_shape, self.s_shape, self.e_shape,
                           parameters, particles, weight, log_densities, device=self.device, **attr)
         return new_msg
 
@@ -1070,7 +1186,7 @@ class Message:
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1117,7 +1233,7 @@ class Message:
             new_weight = torch.unsqueeze(new_weight, dim)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1172,7 +1288,7 @@ class Message:
             new_weight = torch.index_select(new_weight, dim, index)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1182,8 +1298,8 @@ class Message:
         the positions along the axis specified by indices in `index`.
 
         In other words, along `dim` dimension, the ``index[i]`` th slice of the returned message is the ``i`` th slice
-        of `self`. Consequently, the size of the `dim` dimension of the returned message equals the maximum value in the
-        `index` array.
+        of `self`. Consequently, the size of the `dim` dimension of the returned message equals the maximum value plus 1
+        in the `index` array.
 
         For slices in the new message not referenced by `index`, they will be filled with identity values. For parameter
         tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive uniform
@@ -1248,14 +1364,15 @@ class Message:
             new_weight = torch.transpose(to_fill, dim0=0, dim1=dim)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
 
     def batch_diagonal(self, dim1=0, dim2=1):
         """Returns a partial view of self with the its diagonal elements with respect to `dim1` and `dim2` appended as
-        a dimension at the end of the shape.
+        a dimension at the end of the shape. Note that the number of dimensions of the returned message is 1 minus
+        that of the original message, because `dim1` and `dim2` are reduced to the new diagonal dimension.
 
         dim values in the range ``[-len(batch_shape), len(batch_shape) - 1]`` can be used. Note that `dim1` and `dim2`
         are relative to the batch dimensions only. The appended dimension will be placed as the last batch dimension,
@@ -1282,7 +1399,7 @@ class Message:
         --------
         This method is a mimic of
         `torch.diagonal() <https://pytorch.org/docs/stable/torch.html?highlight=diagonal#torch.diagonal>`_
-        , with `offset` defaults to 0
+        , with `offset` set to 0
         """
         assert isinstance(dim1, int) and -len(self.b_shape) <= dim1 <= len(self.b_shape) - 1
         assert isinstance(dim2, int) and -len(self.b_shape) <= dim2 <= len(self.b_shape) - 1
@@ -1309,20 +1426,21 @@ class Message:
             # weights has shape (b_shape + s_shape)
             new_weight = torch.diagonal(new_weight, dim1=dim1, dim2=dim2)
             # Permute the appended diagonal batch dimension to the end of the existing batch dimensions
-            perm_order = list(range(len(self.b_shape))) + [new_weight.dim() - 1] + \
-                list(range(len(self.b_shape), len(self.b_shape) + len(self.s_shape)))
+            new_b_dims = len(self.b_shape) - 2
+            perm_order = list(range(new_b_dims)) + [new_weight.dim() - 1] + \
+                list(range(new_b_dims, new_b_dims + len(self.s_shape)))
             new_weight = new_weight.permute(perm_order)
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
 
     def batch_diag_embed(self, diag_dim=-1, target_dim1=-2, target_dim2=-1):
         """Returns a message whose diagonals of certain 2D planes (dimensions specified by `target_dim1` and
-        `target_dim2`) are filled by slices of self along the dimension specified by `diag_dim`).
+        `target_dim2`) are filled by slices of self along the dimension `diag_dim` of the self message).
 
         The last dimension of self is chosen by default as the diagonal entries to be filled, and the last two
         dimensions of the new message are chosen by default as the 2D planes where the diagonal entries will be filled
@@ -1365,9 +1483,10 @@ class Message:
         assert isinstance(target_dim2, int) and -len(self.b_shape) - 1 <= target_dim2 <= len(self.b_shape)
 
         # Translate dim value to positive if it's negative
+        # For target_dim1 and target_dim2, need to compensate for 1 more dimension in the returned message
         diag_dim = len(self.b_shape) + diag_dim if diag_dim < 0 else diag_dim
-        target_dim1 = len(self.b_shape) + 1 + target_dim1 if target_dim1 < 0 else target_dim1
-        target_dim2 = len(self.b_shape) + 1 + target_dim2 if target_dim2 < 0 else target_dim2
+        target_dim1 = len(self.b_shape) + 2 + target_dim1 if target_dim1 < 0 else target_dim1
+        target_dim2 = len(self.b_shape) + 2 + target_dim2 if target_dim2 < 0 else target_dim2
         # Get new batch shape. The size of target_dim1 and target_dim2 is determined by the size of diag_dim
         diag_size = self.b_shape[diag_dim]
         other_shape = list(self.b_shape[:diag_dim] + self.b_shape[diag_dim + 1:])
@@ -1402,12 +1521,12 @@ class Message:
             perm_order.remove(diag_dim)
             perm_order.append(diag_dim)
             log_weight = log_weight.permute(perm_order)
-            log_weight = torch.diag_embed(log_weight, dim1=target_dim1, dim2=target_dim1)
-            new_weight = torch.exp(target_dim1)
+            log_weight = torch.diag_embed(log_weight, dim1=target_dim1, dim2=target_dim2)
+            new_weight = torch.exp(log_weight)
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1463,7 +1582,7 @@ class Message:
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1528,7 +1647,7 @@ class Message:
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1576,7 +1695,7 @@ class Message:
             new_weight = torch.exp(log_weight)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1629,7 +1748,7 @@ class Message:
             new_weight = new_weight.contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_b_shape, self.e_shape,
+                          new_b_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1671,7 +1790,7 @@ class Message:
             new_weight = torch.reshape(new_weight, new_batch_shape + self.s_shape)
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
+                          new_batch_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1711,6 +1830,9 @@ class Message:
         new_batch_shape = torch.Size(list(new_batch_shape)) if not isinstance(new_batch_shape, torch.Size) else \
             new_batch_shape
 
+        # Replace any -1 entry in new_batch_shape with size of the corresponding dimension of self
+        new_batch_shape = torch.Size([s if s != -1 else self.b_shape[i] for i, s in enumerate(new_batch_shape)])
+
         new_parameter = self.parameter
         new_particles = self.particles
         new_weight = self.weight
@@ -1726,7 +1848,7 @@ class Message:
             new_weight = new_weight.expand(new_shape).contiguous()
 
         new_msg = Message(self.type,
-                          self.p_shape, self.s_shape, new_batch_shape, self.e_shape,
+                          new_batch_shape, self.p_shape, self.s_shape, self.e_shape,
                           new_parameter, new_particles, new_weight, new_log_densities,
                           device=self.device, **self.attr)
         return new_msg
@@ -1754,6 +1876,8 @@ class Message:
 
         * Weights are kept the same, but the tensor will be cloned.
 
+        The transformation's event dimensions should be equal to or less than 1, i.e., ``trans.event_dim <= 1``.
+
         Parameters
         ----------
         trans : torch.distributions.transforms.Transform
@@ -1764,25 +1888,27 @@ class Message:
         Message
             The transformed message.
 
-        Raises
-        ------
-        AssertionError
-            If `dist_info` attribute is not present in ``self.attr``
-
         See Also
         --------
         `torch.distributions.Transform <https://pytorch.org/docs/stable/distributions.html#torch.distributions.transforms.Transform>`_
         """
         assert isinstance(trans, Transform)
+        assert trans.event_dim <= 1
         assert MessageType.Particles in self.type
 
         # First clone and reduce
         cloned_msg = self.reduce_type(MessageType.Particles)
-        new_particles = cloned_msg.particles
-        new_log_densities = cloned_msg.log_densities
+        new_particles = tuple(trans(p) for p in cloned_msg.particles)
 
-        new_particles = trans(new_particles)
-        new_log_densities += trans.log_abs_det_jacobian(cloned_msg.particles, new_particles)
+        new_log_densities = []
+        for i, d in enumerate(cloned_msg.log_densities):
+            new_d = d - trans.log_abs_det_jacobian(cloned_msg.particles[i], new_particles[i]).sum(-1) \
+                if trans.event_dim == 0 else d - trans.log_abs_det_jacobian(cloned_msg.particles[i], new_particles[i])
+            new_log_densities.append(new_d)
+        # new_log_densities = tuple(d - trans.log_abs_det_jacobian(cloned_msg.particles[i], new_particles[i]).sum(-1)
+        #                           if trans.event_dim == 0 else d - trans.log_abs_det_jacobian(cloned_msg.particles[i],
+        #                                                                                       new_particles[i])
+        #                           for i, d in enumerate(cloned_msg.log_densities))
 
         new_msg = Message(cloned_msg.type,
                           batch_shape=cloned_msg.b_shape,
@@ -1794,7 +1920,7 @@ class Message:
 
     def event_reweight(self, target_log_prob):
         """Returns a new message with the same type of `self` with the same particle values and log sampling densities
-        as `self`, but a different weight tensor, derived from importance weighting `target_log_pdf` against stored
+        as `self`, but a different weight tensor, derived from importance weighting `target_log_prob` against stored
         log sampling density tensors in ``self.log_densities``.
 
         `self` 's type must be either ``MessageType.Particles`` or ``MessageType.Both`` to support this method.
@@ -1864,7 +1990,7 @@ class Message:
         corresponding to marginalizing the corresponding random variable.
 
         Only messages with particles support this operation. If `self`'s message type is ``MessageType.Both``, a
-        ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.
+        ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
 
         Parameters
         ----------
@@ -1891,8 +2017,8 @@ class Message:
 
         Marginalization of the particles is implemented by simply discarding the target particle value tensor as well as
         its corresponding log sampling density tensor, and summing over the target prob tensor over the event dimension.
-        The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the
-        marginal sampling density tensor.
+        The target prob tensor is recovered by multiplying the weight tensor with the exponential of the cross product
+        of all of the marginal log sampling density tensor.
 
         Note that the target prob tensor recovered in this way is **NOT** the
         actual probability w.r.t. the target distributions, but one that is proportional to that up to a normalization
@@ -1918,16 +2044,21 @@ class Message:
         # First take cross product of all marginal sampling density
         expand_log_den = []
         for j, d in enumerate(self.log_densities):
-            view_dim = [-1] * (len(self.e_shape) - 1)
-            view_dim.insert(j, self.s_shape[j])
-            expand_log_den.append(d.view(view_dim))
+            # view_dim = [-1] * (len(self.e_shape) - 1)
+            # view_dim.insert(j, self.s_shape[j])
+            # expand_log_den.append(d.view(view_dim))
+            expanded_d = d
+            for i in range(j):
+                expanded_d = expanded_d.unsqueeze(0)
+            for i in range(j + 1, self.num_rvs):
+                expanded_d = expanded_d.unsqueeze(-1)
+            expand_log_den.append(expanded_d)
 
         # Take joint sum and exponentialize, which is equivalent to cross product.
         joint_density = torch.exp(sum(expand_log_den))
         # Now expand dimensions even more to full batch dimensions. Resulting shape should be (b_shape + s_shape)
         view_dim = [1] * len(self.b_shape) + list(self.s_shape)
         joint_density = joint_density.view(view_dim)
-        assert joint_density.shape == self.b_shape + self.s_shape
 
         # Recover target_prob, and sum over event_dim.
         target_prob = joint_density * self.weight
@@ -1961,14 +2092,18 @@ class Message:
         Only messages with particles support this operation. If `self`'s message type is ``MessageType.Both``, a
         ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.
 
+        ``.contiguous()`` will be called on the tensors to make sure the resulting particle, log density, and weight
+        tensors are contiguous in memory.
+
         Parameters
         ----------
         cat_event_dims : iterable of int
-            The list of event dimensions to be concatenated. Must have length at least 2. Each should be in range
+            The list of event dimensions to be concatenated. Must have length at least 2 and at most the length of
+            self's event shape (number of random variables). Each should be in range
             ``[-len(event_shape), len(event_shape) - 1]``.
         target_event_dim : int
             The target event dimension where the concatenated event will be placed. Should be in range
-            ``[-len(event_shape) + k, len(event_shape) - k - 1]``, where ``k`` equals to ``len(cat_event_dims)``.
+            ``[-len(event_shape) + k - 1, len(event_shape) - k]``, where ``k`` equals to ``len(cat_event_dims)``.
 
         Returns
         -------
@@ -1982,18 +2117,18 @@ class Message:
         """
         assert isinstance(cat_event_dims, Iterable)
         cat_event_dims = list(cat_event_dims)
-        assert len(cat_event_dims) >= 2
-        assert all(isinstance(d, int) and
-                   -len(self.e_shape) + len(cat_event_dims) <= d <= len(self.e_shape) - len(cat_event_dims) - 1
-                   for d in cat_event_dims)
-        assert isinstance(target_event_dim, int) and -len(self.e_shape) <= target_event_dim <= len(self.e_shape) - 1
+        assert 2 <= len(cat_event_dims) <= self.num_rvs
+        assert all(isinstance(d, int) and -self.num_rvs <= d <= self.num_rvs - 1 for d in cat_event_dims)
+        assert isinstance(target_event_dim, int) and \
+               -self.num_rvs + len(cat_event_dims) - 1 <= target_event_dim <= self.num_rvs - len(cat_event_dims)
         assert MessageType.Particles in self.type, \
             "Only message with particles can concatenate event dimensions. Such operation on distribution parameter is " \
             "not well defined."
 
         # Convert dims to positive values if they are negative
         cat_event_dims = [len(self.e_shape) + d if d < 0 else d for d in cat_event_dims]
-        target_event_dim = len(self.e_shape) + target_event_dim if target_event_dim < 0 else target_event_dim
+        target_event_dim = len(self.e_shape) - len(cat_event_dims) + 1 + target_event_dim \
+            if target_event_dim < 0 else target_event_dim
 
         # Collect elements to be concatenated, in the order given by cat_event_dims. Also the pre-flattened shape
         cat_particles = list(self.particles[i] for i in cat_event_dims)
@@ -2005,24 +2140,29 @@ class Message:
         # New shapes
         new_s_shape = [self.s_shape[i] for i in range(len(self.s_shape)) if i not in cat_event_dims]
         new_s_shape.insert(target_event_dim, np.prod([self.s_shape[j] for j in cat_event_dims]))
+        new_s_shape = torch.Size(new_s_shape)
         new_e_shape = [self.e_shape[i] for i in range(len(self.e_shape)) if i not in cat_event_dims]
         new_e_shape.insert(target_event_dim, sum([self.e_shape[j] for j in cat_event_dims]))
+        new_e_shape = torch.Size(new_e_shape)
 
         # Combinatorially concatenate particle values. Flatten result and insert to the rest to form new particle tuple
         comb_particles = KnowledgeServer.combinatorial_cat(cat_particles)
         assert comb_particles.shape[:-1] == cat_s_shape
-        flat_particles = comb_particles.view(-1, comb_particles.shape[-1])        # flatten
+        flat_particles = comb_particles.view(-1, comb_particles.shape[-1]) .contiguous()       # flatten
         new_particles = res_particles[:target_event_dim] + [flat_particles] + res_particles[target_event_dim:]
 
         # Take cross product of marginal sampling densities and flatten.
         expand_log_den = []
         for j, d in enumerate(cat_densities):
-            view_dim = [-1] * (len(cat_s_shape) - 1)
-            view_dim.insert(j, cat_s_shape[j])
-            expand_log_den.append(d.view(view_dim))
+            for i in range(j):
+                d = d.unsqueeze(0)
+            for i in range(j + 1, len(cat_densities)):
+                d = d.unsqueeze(-1)
+            expand_log_den.append(d)
+
         joint_log_den = sum(expand_log_den)
         assert joint_log_den.shape == cat_s_shape
-        flat_log_den = joint_log_den.view(-1)       # flatten
+        flat_log_den = joint_log_den.view(-1).contiguous()       # flatten
         new_densities = res_densities[:target_event_dim] + [flat_log_den] + res_densities[target_event_dim:]
 
         # Reshape weight tensor into correct flattened shape
@@ -2032,14 +2172,21 @@ class Message:
             # of shape (b_shape + sample_shape)
             b_cat_event_dims = list(len(self.b_shape) + d for d in cat_event_dims)     # Account for batch dims at front
             b_target_event_dim = len(self.b_shape) + target_event_dim
-            for dim in b_cat_event_dims:
-                perm_order = list(d for d in range(new_weight.dim()) if d != dim) + [dim]
-                new_weight = new_weight.permute(perm_order)
-            assert new_weight.shape[-len(cat_event_dims):] == cat_s_shape
-            new_weight = new_weight.view(new_weight.shape[:-len(cat_event_dims)] + torch.Size([1]))     # flatten
+
+            perm_order = list(i for i in range(len(self.b_shape + self.s_shape)) if i not in b_cat_event_dims) + \
+                         b_cat_event_dims
+            new_weight = new_weight.permute(perm_order).contiguous()
+
+            # for dim in b_cat_event_dims:
+            #     perm_order = list(d for d in range(new_weight.dim()) if d != dim) + [dim]
+            #     new_weight = new_weight.permute(perm_order)
+            # assert new_weight.shape[-len(cat_event_dims):] == cat_s_shape
+
+            new_weight = new_weight.view(new_weight.shape[:-len(cat_event_dims)] + torch.Size([-1]))     # flatten
+
             perm_order = list(range(new_weight.dim() - 1))
             perm_order.insert(b_target_event_dim, -1)
-            new_weight = new_weight.permute(perm_order)         # Permute flattened dims to target_event_dim
+            new_weight = new_weight.permute(perm_order).contiguous()         # Permute flattened dims to target_event_dim
 
         new_msg = Message(MessageType.Particles,
                           batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,

@@ -1,0 +1,1377 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pysigma.utils &mdash; PySigma  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../references/index.html">API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../references/cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/cognitive.html#summarization">Summarization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../references/graphical/index.html">Graphical Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/abstract-base-nodes.html#beta-factor-node">Beta Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#parameter-store-factor-node">Parameter Store Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/conditional-nodes.html">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#filter-variable-node">Filter Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#event-aggregation-factor-node">Event Aggregation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/conditional-nodes.html#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/graphical/other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../references/graphical/other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../references/utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#utility-functions">Utility Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../references/utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pysigma.utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pysigma.utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Utility functions</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.distributions</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Distribution</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span><span class="p">,</span> <span class="n">integer_interval</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.kl</span> <span class="k">import</span> <span class="n">kl_divergence</span>
+
+
+<span class="k">def</span> <span class="nf">intern_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">struc_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add prefix and brackets to transform user provided structure name to internal name</span>
+<span class="sd">    :param name:    Structure name</span>
+<span class="sd">    :param struc_type:    one of &quot;type&quot;, &quot;predicate&quot;, or &quot;conditional</span>
+<span class="sd">    :return:        processed name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">struc_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;predicate&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span> <span class="s2">&quot;unknown type for processing structure name&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;TYPE_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+    <span class="k">elif</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;predicate&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;PRED_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;COND_[&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">extern_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">struc_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inverse operation of intern_name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">struc_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;predicate&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span> <span class="s2">&quot;unknown type for processing structure name&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;TYPE_&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;predicate&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;PRED_[&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">struc_type</span> <span class="o">==</span> <span class="s2">&quot;conditional&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;COND_[&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">name</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="compatible_shape"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.compatible_shape">[docs]</a><span class="k">def</span> <span class="nf">compatible_shape</span><span class="p">(</span><span class="n">msg_shape1</span><span class="p">,</span> <span class="n">msg_shape2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks whether the two given message shapes are compatible.</span>
+
+<span class="sd">    Both `msg_shape1` and `msg_shape2` should be an iterable of `torch.Size` and have the contents</span>
+<span class="sd">    ``(batch_shape, param_shape, sample_shape, event_shape)``. An empty shape, i.e., ``torch.Size([])``, will be deemed</span>
+<span class="sd">    compatible with any other shape. `msg_shape1` is compatible with `msg_shape2` if and only if all of its four entries</span>
+<span class="sd">    are compatible with their counterpart in `msg_shape2`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    msg_shape1 : tuple of torch.Size</span>
+<span class="sd">        First shape. Should have the format ``(batch_shape, param_shape, sample_shape, event_shape)``.</span>
+<span class="sd">    msg_shape2 : tuple of torch.Size</span>
+<span class="sd">        Second shape. Same as `msg_shape1`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if both shape are compatible.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg_shape1</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg_shape1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">msg_shape1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg_shape2</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg_shape2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">msg_shape2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">s1</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([])</span> <span class="ow">or</span> <span class="n">s2</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([])</span> <span class="ow">or</span> <span class="n">s1</span> <span class="o">==</span> <span class="n">s2</span> <span class="k">for</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">msg_shape1</span><span class="p">,</span> <span class="n">msg_shape2</span><span class="p">))</span></div>
+
+
+<span class="c1"># TODO: Global dictionary that designates which PyTorch&#39;s distribution class is finite discrete</span>
+<span class="n">FINITE_DISCRETE_CLASSES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">,</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">,</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Binomial</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="c1"># TODO: DistributionServer class</span>
+<div class="viewcode-block" id="DistributionServer"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer">[docs]</a><span class="k">class</span> <span class="nc">DistributionServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Serving distribution class dependent utilities</span>
+
+<span class="sd">    * Conversion between PyTorch distribution parameters and distribution instance:</span>
+
+<span class="sd">      ``param2dist()``, ``dist2param()``</span>
+
+<span class="sd">    * Translation between PyTorch distribution parameters and natural parameters for exponential family distribution:</span>
+
+<span class="sd">      ``natural2exp_dist()``, ``exp_dist2natural()``</span>
+
+<span class="sd">    * Get vector of moments from a given distribution instance:</span>
+
+<span class="sd">      ``get_moments()``</span>
+
+<span class="sd">    * Draw particles from distribution instance:</span>
+
+<span class="sd">      ``draw_particles()``</span>
+
+<span class="sd">    * Get log probability density from given particles:</span>
+
+<span class="sd">      ``log_pdf()``</span>
+
+
+<span class="sd">    Certain distribution classes require special handling, for example for those categorized as finite discrete,</span>
+<span class="sd">    particle values will be drawn uniformly, covering every value in the RV&#39;s value range (support) once and only once,</span>
+<span class="sd">    while assigning each particle its probability mass as its particle weight.</span>
+
+<span class="sd">    Therefore we delegate all such special handling to this class on an individual basis.</span>
+
+<span class="sd">    Note that input and output will conform to the format understandable by PyTorch&#39;s distribution class. To</span>
+<span class="sd">    translate to and from formats compatible to PySigma&#39;s predicate knowledge, use KnowledgeServer class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Public class method API</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DistributionServer.param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.param2dist">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">param2dist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">b_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">e_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts distribution parameter to a distribution instance.</span>
+
+<span class="sd">        Depending on the context and Predicate knowledge format, the parameter `param` may belong to different</span>
+<span class="sd">        representation systems, in which case it should be interpreted differently. Such specification should be</span>
+<span class="sd">        sufficiently described in the argument `dist_info` in a prior consent format.</span>
+
+<span class="sd">        The optional arguments `b_shape` and `e_shape` stand for distribution&#39;s batch shape and event shape</span>
+<span class="sd">        respectively. They are used primarily for sanity check. Note that this event shape `e_shape` pertains to</span>
+<span class="sd">        PyTorch&#39;s distribution class specification, and therefore may or may not be different from the event shape of</span>
+<span class="sd">        particles in PySigma&#39;s cognitive format.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dist_class : type</span>
+<span class="sd">            The distribution class. Must be a subclass of ``torch.distributions.Distribution``.</span>
+<span class="sd">        param : torch.Tensor</span>
+<span class="sd">            The parameter tensor. The last dimension is assumed to be the parameter dimension, and sizes of the</span>
+<span class="sd">            dimensions at the front should be equal to `b_shape`.</span>
+<span class="sd">        b_shape : torch.Size, optional</span>
+<span class="sd">            The batch shape of the distribution. Used for shape sanity check.</span>
+<span class="sd">        e_shape : torch.Size, optional</span>
+<span class="sd">            The presumed event shape of the distribution. Used for shape sanity check.</span>
+<span class="sd">        dist_info : dict, optional</span>
+<span class="sd">            An optional dict containing all relevant information in order to correctly interpret the parameter `param`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.distributions.Distribution</span>
+<span class="sd">            The instantiated distribution instance.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError</span>
+<span class="sd">            If the conversion procedure specific to `dist_class` has not been implemented yet.</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the converted distribution instance has different batch shape and event shape than specified `b_shape`</span>
+<span class="sd">            and `e_shape` respectively.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">b_shape</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">e_shape</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist_info</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_param2dist</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Conversion from parameters to distribution instance for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; &quot;</span>
+                                      <span class="s2">&quot;not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+
+        <span class="n">dist</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_param2dist</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">param</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">b_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">!=</span> <span class="n">b_shape</span><span class="p">)</span> <span class="ow">or</span> \
+                <span class="p">(</span><span class="n">e_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span> <span class="o">!=</span> <span class="n">e_shape</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The shape of the generated distribution </span><span class="si">{}</span><span class="s2"> does not match the provided shape. &quot;</span>
+                             <span class="s2">&quot;Provided (batch_shape, event_shape) == (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">), but instead got (</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">).&quot;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dist</span><span class="p">),</span> <span class="n">b_shape</span><span class="p">,</span> <span class="n">e_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">dist</span></div>
+
+<div class="viewcode-block" id="DistributionServer.dist2param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.dist2param">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">dist2param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract the parameter tensor from a given distribution instance.</span>
+
+<span class="sd">        Depending on the context and Predicate knowledge format, the desired parameter may belong to different</span>
+<span class="sd">        representation systems, in which case it should be generated differently. Such specification should be</span>
+<span class="sd">        sufficiently described in the argument `dist_info` in a prior consent format.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dist : torch.distributions.Distribution</span>
+<span class="sd">            The distribution instance from which to extract the parameter.</span>
+<span class="sd">        dist_info : dict, optional</span>
+<span class="sd">            An optional dict containing all relevant information in order to correctly generate the parameter `param`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            The parameter tensor in the desired format.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError</span>
+<span class="sd">            If the conversion procedure specific to the distribution class of `dist` has not been implemented yet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist_info</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="n">dist_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_dist2param</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Conversion from distribution instance to parameters for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; &quot;</span>
+                                      <span class="s2">&quot;not yet implemented&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_dist2param</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DistributionServer.get_moments"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.get_moments">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_moments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get vector of moments from a given distribution instance</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">           Implement with dist_info</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_moments</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n_moments</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+        <span class="n">dist_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Get moments method for distribution class &#39;</span><span class="si">{}</span><span class="s2">&#39; not yet implemented&quot;</span>
+                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DistributionServer.draw_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.draw_particles">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Draw a list of `num_particles` event particles from the given distribution specified by `dist`. The event</span>
+<span class="sd">        particles drawn will be in the format compatible with DistributionServer and PyTorch.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dist : torch.distributions.Distribution</span>
+<span class="sd">            The distribution instance from which to sample particles</span>
+<span class="sd">        num_particles : int</span>
+<span class="sd">            The number of particles to be drawn</span>
+<span class="sd">        dist_info : dict, optional</span>
+<span class="sd">            Additional dist info necessary for drawing particles in the correct format.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            the list of particles drawn, of shape ``[num_particles, event_size]``</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError</span>
+<span class="sd">            If the given distribution yields multi-dimensional events, and no corresponding special drawing method is</span>
+<span class="sd">            found in ``cls.dict_draw_particles`` method map.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Unless distribution-class-specific drawing method is specified and registered in ``cls.dict_draw_particles``</span>
+<span class="sd">        method map, the distribution instance `dist` will be directly queried to draw the list of samples.</span>
+
+<span class="sd">        The distribution instance `dist` is assumed batched, with a variable batch size(shape). However, we want to draw</span>
+<span class="sd">        a single unique list of particles that is representative of each and every single distribution in the batch,</span>
+<span class="sd">        i.e., draw a list of particles from the joint distribution regardless of the batch dimensions. Therefore, we</span>
+<span class="sd">        take the view that drawing samples from `dist` simultaneously across the batch, which results in a sample tensor</span>
+<span class="sd">        that involves the batch dimension, and ignoring the batch dimensions, is equivalent to first selecting uniformly</span>
+<span class="sd">        which single distribution in the batch we wish draw from, and drawing samples from it, and repeating this</span>
+<span class="sd">        process over and over again. The latter approach, when the samples are aggregated, yields a particle list</span>
+<span class="sd">        that is representative of the joint distribution of the whole batch.</span>
+
+<span class="sd">        Accordingly, the sampling process is implemented by drawing `n` batched samples from `dist`, where</span>
+<span class="sd">        ``n = num_particles // batch_size + 1``, collapses the batch dimensions, random shuffle across the collapsed</span>
+<span class="sd">        sample dimension, and truncate to select only a number of ``num_particles`` samples.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_particles</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist_info</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="n">dist_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_draw_particles</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">particles</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_draw_particles</span><span class="p">[</span><span class="n">dist_class</span><span class="p">](</span><span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">num_particles</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Default particle drawing procedure only supports distribution class with &quot;</span>
+                                          <span class="s2">&quot;1-dimensional events. For distribution class that yields multi-dimensional &quot;</span>
+                                          <span class="s2">&quot;events, special method needs to be implemented and registered in &quot;</span>
+                                          <span class="s2">&quot;`DistributionServer.dict_draw_particles` method map. Found distribution &quot;</span>
+                                          <span class="s2">&quot;of type </span><span class="si">{}</span><span class="s2"> with event shape </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">))</span>
+            <span class="n">batch_size</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">num_particles</span> <span class="o">//</span> <span class="n">batch_size</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">btch_ptcl</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">sample_n</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>        <span class="c1"># Draw n batched particles</span>
+            <span class="k">assert</span> <span class="n">btch_ptcl</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">n</span><span class="p">])</span> <span class="o">+</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">+</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span>
+            <span class="n">flat_ptcl</span> <span class="o">=</span> <span class="n">btch_ptcl</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">shuf_ptcl</span> <span class="o">=</span> <span class="n">flat_ptcl</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">flat_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>       <span class="c1"># shuffle across collapsed sample dimension</span>
+            <span class="n">particles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">shuf_ptcl</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">num_particles</span><span class="p">)</span>   <span class="c1"># truncate</span>
+
+        <span class="k">return</span> <span class="n">particles</span></div>
+
+<div class="viewcode-block" id="DistributionServer.log_prob"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.log_prob">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">log_prob</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the log probability mass/density of the given particle values w.r.t. the given batched distribution</span>
+<span class="sd">        instance.</span>
+
+<span class="sd">        The particle value should be in PyTorch format that is compatible with PyTorch&#39;s distribution classes. This</span>
+<span class="sd">        means the last dimension of `values` is assumed the event dimension, and should be compatible with, if not</span>
+<span class="sd">        identical to, ``dist.event_shape``. Every other dimensions to the front is assumed sample dimensions, the sizes</span>
+<span class="sd">        of which together forms the ``sample_shape``.</span>
+
+<span class="sd">        The distribution instance `dist` is assumed batched. In other words, its batch shape ``dist.batch_shape`` should</span>
+<span class="sd">        not be empty.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dist : torch.distributions.Distribution</span>
+<span class="sd">            A batched distribution instance. Its batch shape ``dist.batch_shape`` should not be empty.</span>
+<span class="sd">        values : torch.Tensor</span>
+<span class="sd">            A tensor with shape ``(sample_shape + [event_size])``</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            The log probability mass/density tensor, of shape ``(dist.batch_shape + sample_shape)``</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the ``event_size`` found in `values` is different from `dist.event_shape`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">values</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">2</span>
+
+        <span class="c1"># dist_class = type(dist)</span>
+        <span class="c1"># if dist_class not in cls.dict_log_pdf.keys():</span>
+        <span class="c1">#     raise NotImplementedError(&quot;Get log pdf method for distribution class &#39;{}&#39; not yet implemented&quot;</span>
+        <span class="c1">#                               .format(dist_class))</span>
+        <span class="c1"># return cls.dict_log_pdf[dist_class](dist, particles)</span>
+
+        <span class="c1"># Extract shapes</span>
+        <span class="n">sample_shape</span><span class="p">,</span> <span class="n">event_shape</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">batch_shape</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span>
+        <span class="k">assert</span> <span class="n">event_shape</span> <span class="o">==</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">,</span> \
+            <span class="s2">&quot;The event shape (</span><span class="si">{}</span><span class="s2">) found in the given particles is different from the event shape (</span><span class="si">{}</span><span class="s2">) found in the &quot;</span> \
+            <span class="s2">&quot;distribution instance&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">)</span>
+
+        <span class="c1"># Insert singleton dimensions into the particles tensor, and repeat along those dimensions to expand to</span>
+        <span class="c1"># full batch shape.</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">)):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">))</span>
+        <span class="n">repeat_times</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">repeat_times</span><span class="p">)</span>
+
+        <span class="c1"># Query the actual distribution instance</span>
+        <span class="n">log_prob</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="c1"># The returned log prob tensor should have shape (sample_shape + batch_shape). We need to permute these</span>
+        <span class="c1"># dimensions to conform to the Cognitive format</span>
+        <span class="k">assert</span> <span class="n">log_prob</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">sample_shape</span> <span class="o">+</span> <span class="n">batch_shape</span>
+        <span class="n">perm_order</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">))]</span> <span class="o">+</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">))]</span>
+        <span class="n">log_prob</span> <span class="o">=</span> <span class="n">log_prob</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
+
+        <span class="c1"># Also call contiguous() to rearrange the memory layout</span>
+        <span class="n">log_prob</span> <span class="o">=</span> <span class="n">log_prob</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">log_prob</span></div>
+
+<div class="viewcode-block" id="DistributionServer.kl_norm"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.kl_norm">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">kl_norm</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist1</span><span class="p">,</span> <span class="n">dist2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get the norm of the KL divergence of two given batched distributions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist1</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist2</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">dist1</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">==</span> <span class="n">dist2</span><span class="o">.</span><span class="n">batch_shape</span>
+        <span class="n">kl</span> <span class="o">=</span> <span class="n">kl_divergence</span><span class="p">(</span><span class="n">dist1</span><span class="p">,</span> <span class="n">dist2</span><span class="p">)</span>
+        <span class="n">kl_norm</span> <span class="o">=</span> <span class="n">kl</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">kl_norm</span></div>
+
+<div class="viewcode-block" id="DistributionServer.transform_param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.transform_param">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">transform_param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">,</span> <span class="n">trans</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            .. todo::</span>
+<span class="sd">               To implement</span>
+
+<span class="sd">            Return the parameter of the transformed distribution</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        DEFAULT methods that may be applicable to multiple general distribution classes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_get_moments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Default method for getting moments, but only supports up to second order moment (i.e. X^2)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">n_moments</span> <span class="o">&lt;=</span> <span class="mi">2</span>
+
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">mean</span>
+        <span class="k">if</span> <span class="n">n_moments</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mean</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">square</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">variance</span> <span class="o">+</span> <span class="n">mean</span> <span class="o">**</span> <span class="mi">2</span>
+            <span class="c1"># Stack mean and square to insert a new last dimension</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">mean</span><span class="p">,</span> <span class="n">square</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_draw_particles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Default method for drawing particles. Draw according to the distribution itself.</span>
+<span class="sd">            Therefore, weights are uniform, and sampling log densities are the distribution&#39;s log pdf</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">num_particles</span><span class="p">])</span>
+        <span class="n">particles</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">sample_shape</span><span class="o">=</span><span class="n">s_shape</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># uniform weights</span>
+        <span class="n">sampling_log_densities</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">particles</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_log_pdf</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="n">log_pdf</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">particles</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">log_pdf</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Categorical distribution</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_categorical_param2dist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            For categorical, params assumed to be fed as the &#39;probs&#39; attribute</span>
+<span class="sd">            # TODO: different parameter scheme and dist_info schema specification</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">probs</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dist</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_categorical_dist2param</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            # TODO: different parameter scheme and dist_info schema specification</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance&#39;s</span>
+<span class="sd">                &#39;probs&#39; attribute. Particles will be drawn uniformly covering every value in the RV&#39;s domain once and</span>
+<span class="sd">                only once, while their probability mass will be assigned as the particle weights respectively.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">)</span>
+        <span class="n">span</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">b_shape</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span>
+        <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">num_particles</span><span class="p">)</span>
+
+        <span class="n">particles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">s_shape</span> <span class="o">+</span> <span class="n">b_shape</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">span</span><span class="p">):</span>
+            <span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">i</span>
+
+        <span class="c1"># Weights obtained from probs attribute, by simply permuting the last dimension to first dimension</span>
+        <span class="n">n_dims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="n">n_dims</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_dims</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>      <span class="c1"># clone to prevent accidental in-place value change</span>
+
+        <span class="c1"># Since we are effectively drawing particles uniformly from the finite discrete domain, the sampling pdf is also</span>
+        <span class="c1">#   uniform</span>
+        <span class="n">sampling_log_densities</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">sampling_log_densities</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        distribution class dependent method pointer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dict_draw_particles</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="n">_categorical_draw</span>
+    <span class="p">}</span>
+    <span class="n">dict_log_pdf</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_param2dist</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_dist2param</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_natural2exp_param</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_exp_param2natural</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_natural2exp_dist</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_exp_dist2natural</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+    <span class="n">dict_get_moments</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="KnowledgeServer"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer">[docs]</a><span class="k">class</span> <span class="nc">KnowledgeServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Knowledge Server class. Provides service regarding a Predicate&#39;s knowledge.</span>
+
+<span class="sd">    The architecture should hold one KnowledgeServer instance for each Predicate instantiated to cache knowledge</span>
+<span class="sd">    contents and provide distribution related service.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dist_class : type</span>
+<span class="sd">        The distribution class of the Predicate&#39;s knowledge. Must be a subclass of ``torch.distributions.Distribution``.</span>
+<span class="sd">    rv_sizes : iterable of int</span>
+<span class="sd">        The sizes of the random variables of the Predicate&#39;s knowledge. Note that the order given by the iterable will</span>
+<span class="sd">        be respected.</span>
+<span class="sd">    rv_constraints : iterable of torch.distributions.constraints.Constraint</span>
+<span class="sd">        The value constraints of the random variables. Note that the order given by the iterable will be respected.</span>
+<span class="sd">    rv_num_particles : iterable of int</span>
+<span class="sd">        The number of marginal particles that should be drawn w.r.t. each random variable. Must have the same length as</span>
+<span class="sd">        `rv_sizes` and `rv_constraints`, i.e., the number of random variables.</span>
+<span class="sd">    dist_info : dict, optional</span>
+<span class="sd">        An optional attribute dict that contains all necessary information for DistributionServer to draw particles and</span>
+<span class="sd">        query particles&#39; log pdf.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dist_class : type</span>
+<span class="sd">    rv_sizes : tuple of int</span>
+<span class="sd">    rv_constraints : tuple of torch.distributions.constraints.Constraint</span>
+<span class="sd">    rv_num_particles : tuple of int</span>
+<span class="sd">    dist_info : dict</span>
+<span class="sd">    num_rvs : int</span>
+<span class="sd">        Number of random variables involved in specifying the Predicate knowledge.</span>
+<span class="sd">    e_shape : torch.Size</span>
+<span class="sd">        The event shape of predicate&#39;s knowledge. Inferred form `rv_sizes`.</span>
+<span class="sd">    particles : tuple of torch.Tensor</span>
+<span class="sd">        The cached tuple of marginal particle event tensors corresponding to the random variables. This attribute is set</span>
+<span class="sd">        when `draw_grid_particles` is called with ``update_cache=True``.</span>
+<span class="sd">    log_densities : tuple of torch.Tensor</span>
+<span class="sd">        The cached tuple of log sampling density tensors corresponding to each of the marginal particle event. This</span>
+<span class="sd">        attribute is set when `draw_grid_particles` is called with ``update_cache=True``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    In order to provide service to both predicate nodes and conditional nodes in all stages, KnowledgeServer should</span>
+<span class="sd">    store and manipulate data regarding the random variables only. In other words, only message components that do not</span>
+<span class="sd">    involve batch dimensions should be cached; this includes particle value tensors and log sampling density tensors,</span>
+<span class="sd">    but excludes both parameter and weight tensors. The latter ones&#39; shapes are not invariant throughout the stages</span>
+<span class="sd">    in the conditional subgraph, and therefore should be specified by the callee.</span>
+
+<span class="sd">    Signatures for special private distribution class dependent methods:</span>
+
+<span class="sd">    * Cognitive to PyTorch event format translation method: ``2torch_event(particles) --&gt; particles``</span>
+<span class="sd">    * PyTorch to Cognitive event format translation method: ``2cognitive_event(particles) --&gt; particles``</span>
+<span class="sd">    * Special marginal particle list sampling method: ``special_draw(batched_dist) --&gt; particles, log_densities``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">rv_sizes</span><span class="p">,</span> <span class="n">rv_constraints</span><span class="p">,</span> <span class="n">rv_num_particles</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_sizes</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_constraints</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">rv_constraints</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_num_particles</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">rv_num_particles</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist_info</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="o">=</span> <span class="n">dist_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rv_constraints</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rv_num_particles</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span> <span class="o">=</span> <span class="n">dist_info</span>
+
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">])</span>
+
+        <span class="c1"># Cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># distribution-dependent translation method pointer. Indexed by distribution class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_event</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2torch_event</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2cognitive_event</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2cognitive_event</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2special_draw</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">tuple</span><span class="p">([</span><span class="n">integer_interval</span><span class="p">]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_draw</span>
+        <span class="p">}</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Public API</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="KnowledgeServer.draw_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.draw_particles">[docs]</a>    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_param</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">update_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Draws new particles for the associated predicate w.r.t. the given `batched_param`. Returns necessary</span>
+<span class="sd">        components to instantiate a particles message.</span>
+
+<span class="sd">        This method is typically called by the predicate&#39;s LTMFN node during modification phase, in which the new</span>
+<span class="sd">        updated batched parameter tensor has been obtained and provided by `batched_param`. This method is then</span>
+<span class="sd">        proceed to:</span>
+
+<span class="sd">        1. instantiate the batched distribution instances from the batched parameter tensor,</span>
+<span class="sd">        2. draw a single unique list of **marginal** particle values w.r.t. each random variable from the entire batch</span>
+<span class="sd">           of distribution instances,</span>
+<span class="sd">        3. calculate their corresponding marginal sampling densities,</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        batched_param : torch.Tensor</span>
+<span class="sd">            The new batched parameter tensor, of shape ``(batch_shape + [param_size])``.</span>
+<span class="sd">        batch_shape : torch.Size</span>
+<span class="sd">            The batch shape</span>
+<span class="sd">        update_cache : bool</span>
+<span class="sd">            Whether to replace the cache content in ``self.particles`` and ``self.log_densities`` with the result of</span>
+<span class="sd">            calling this method.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        particles : tuple of torch.Tensor</span>
+<span class="sd">            The marginal particle lists w.r.t. each random variable in order.</span>
+<span class="sd">        log_densities : tuple of torch.Tensor</span>
+<span class="sd">            The marginal sampling log densities w.r.t. each random variable in order.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Some remarks regarding the aforementioned step 2 and 3:</span>
+
+<span class="sd">        The tuple set of the types of the rv constraints specified in ``self.rv_constraints`` will be used to look up</span>
+<span class="sd">        the pre-specified method map ``self.dict_2special_draw``. If an entry present, will used that method to obtain</span>
+<span class="sd">        the returning ``particles`` and ``log_densities``. This is particularly useful, for instance, in the case of</span>
+<span class="sd">        finite discrete random variables where a regular lattice should be drawn uniformly.</span>
+
+<span class="sd">        Otherwise, the standard procedure will be carried out.</span>
+<span class="sd">        ``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batched_param</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">batched_param</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">batch_shape</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">update_cache</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+
+        <span class="n">batched_dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">batched_param</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
+
+        <span class="c1"># Look up for special draw method</span>
+        <span class="n">cstr</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">))</span>      <span class="c1"># Take set to eliminate duplicate constraint types</span>
+        <span class="k">if</span> <span class="n">cstr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2special_draw</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2special_draw</span><span class="p">[</span><span class="n">cstr</span><span class="p">](</span><span class="n">batched_dist</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_draw</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">)</span>
+        <span class="c1"># Check shape and type</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particles</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">log_densities</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">log_densities</span><span class="p">))</span>
+
+        <span class="c1"># Cache the particle list if asked for</span>
+        <span class="k">if</span> <span class="n">update_cache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="o">=</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span>
+
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span></div>
+
+<div class="viewcode-block" id="KnowledgeServer.surrogate_log_prob"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.surrogate_log_prob">[docs]</a>    <span class="k">def</span> <span class="nf">surrogate_log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">alt_particles</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_map</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution</span>
+<span class="sd">        instance.</span>
+
+<span class="sd">        A batched distribution instance will be instantiated from `param`, along with registered metadata in</span>
+<span class="sd">        `self.dist_info`.</span>
+
+<span class="sd">        If `index_map` is not specified, each entries in the iterable `alt_particles` must represent events of the</span>
+<span class="sd">        Predicate&#39;s random argument at the same index in the predicate argument list. If the entry is &#39;None&#39;, the</span>
+<span class="sd">        cached particle tensor of that predicate argument will be used instead.</span>
+
+<span class="sd">        Alternatively, one can specify a dictionary `index_map` mapping integer index to an integer index or a list of</span>
+<span class="sd">        indices. The entry ``alt_particles[i]`` will be taken as the particle tensor for the ``index_map[i]`` th</span>
+<span class="sd">        predicate argument. If ``index_map[i]`` is a list of integers, then the particle tensor at this position will be</span>
+<span class="sd">        interpreted as the concatenated/joint events of those predicate arguments whose indices are in ``index_map[i]``.</span>
+<span class="sd">        Note that the entry ``alt_particles[i]`` can be ``None``, however in this case ``index_map[i]`` must refer to</span>
+<span class="sd">        one predicate argument only. **If there is any predicate argument that is not referenced by values of**</span>
+<span class="sd">        `index_map` **, then the returning** `surrogate_log_prob` **will be marginalized over this predicate argument.**</span>
+
+<span class="sd">        Correspondingly, if ``index_map`` is specified, then all indices in ``alt_particles`` must appear as keys.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        param : torch.Tensor, optional</span>
+<span class="sd">            The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob</span>
+<span class="sd">            being queried. Should have the same shape as the cached ``self.batched_param``.</span>
+<span class="sd">        alt_particles : list of (torch.Tensor or None), or None</span>
+<span class="sd">            The surrogate particles to be queried. If not None, each entry must either be None, so that the</span>
+<span class="sd">            corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last</span>
+<span class="sd">            dimension size equal to the corresponding value in ``self.rv_sizes``. Defaults to None</span>
+<span class="sd">        index_map: dict, or None</span>
+<span class="sd">            The optional index mapping. If specified, all applicable indices into `alt_particles` must appear as keys</span>
+<span class="sd">            in this dict. The ``i`` th entry in `alt_particles` will be taken as the surrogate particles for the</span>
+<span class="sd">            predicate argument whose index is ``index_map[i]`` if ``index_map[i]`` is an integer, or the joint surrogate</span>
+<span class="sd">            particles for those arguments whose indices appear in ``index_map[i]`` if ``index_map[i]`` is a list.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            The log probability tensor, of shape ``(batch_shape + sample_shape)``, where ``batch_shape`` is the batch</span>
+<span class="sd">            shape of the Predicate&#39;s knowledge, inferred from the shape of `param`, and ``sample_shape`` is the list of</span>
+<span class="sd">            sample sizes of the queried particles in the order given by `alt_particles`. In other words,</span>
+<span class="sd">            ``sample_shape[i] == alt_particles[i].shape[0]``. If ``alt_particles[i]``, it is the sample size of the</span>
+<span class="sd">            cached particle tensor of the corresponding predicate argument.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `self.batched_param` is ``None``, meaning no cached parameters to instantiate distribution instance.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `alt_particles` contains ``None`` but ``self.particles`` is also None, meaning no cached particles.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `alt_param` is specified but it has different shape than ``self.batched_param``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">alt_particles</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">index_map</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_map</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="n">index_map_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">alt_particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">index_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Check keys value set</span>
+                <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">index_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">)))</span>
+                <span class="c1"># Check values format</span>
+                <span class="k">assert</span> <span class="nb">all</span><span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">))</span> <span class="ow">or</span>
+                           <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">))</span>
+                           <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_map</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                <span class="c1"># Check values set</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_map</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                        <span class="n">index_map_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">index_map_values</span> <span class="o">+=</span> <span class="n">v</span>
+                <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">index_map_values</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)))</span>
+                <span class="c1"># Check None entry correspondence</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
+                <span class="c1"># Check tensor shape</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">index_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+                        <span class="k">assert</span> <span class="n">alt_particles</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                            <span class="k">assert</span> <span class="n">alt_particles</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">assert</span> <span class="n">alt_particles</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Check number of tensors and tensor format</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span>
+                <span class="nb">all</span><span class="p">(</span><span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">index_map</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="n">alt_particles</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span>
+
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">alt_particles</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+            <span class="s2">&quot;Found `None` in `alt_particles`, but no particles have been cached yet to be used instead.&quot;</span>
+
+        <span class="c1"># Combinatorially concatenate particles to obtain full joint particle list.</span>
+        <span class="c1"># This excludes the concatenated joint particles, if index_map is specified.</span>
+        <span class="n">num_unref</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">index_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">precat_ptcl</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))</span>
+            <span class="n">cog_ptcl</span> <span class="o">=</span> <span class="n">KnowledgeServer</span><span class="o">.</span><span class="n">combinatorial_cat</span><span class="p">(</span><span class="n">precat_ptcl</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unref_arg_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">index_map_values</span><span class="p">]</span>
+            <span class="n">num_unref</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unref_arg_ids</span><span class="p">)</span>
+            <span class="c1"># Directly perform combinatorial concatenation on provided list of particles, with unreferenced arguments&#39;</span>
+            <span class="c1"># particles appended to the front, if there&#39;s any. Resulting tensor have correct sample shape for the output</span>
+            <span class="c1"># (except those corresponding to unreferenced arguments at the front) but wrong event shape</span>
+            <span class="c1"># (and values if there&#39;s any unreferenced argument).</span>
+            <span class="n">ref_ptcl</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))</span>
+            <span class="n">unref_ptcl</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">unref_arg_ids</span><span class="p">)</span>
+            <span class="n">precat_ptcl</span> <span class="o">=</span> <span class="n">unref_ptcl</span> <span class="o">+</span> <span class="n">ref_ptcl</span>
+            <span class="n">cat_ptcl</span> <span class="o">=</span> <span class="n">KnowledgeServer</span><span class="o">.</span><span class="n">combinatorial_cat</span><span class="p">(</span><span class="n">precat_ptcl</span><span class="p">)</span>
+            <span class="c1"># So we split into chunks, permute and re-concatenate chunks so that the event dimension aligns with</span>
+            <span class="c1"># predicate arguments in the correct order</span>
+            <span class="n">split_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">unref_arg_ids</span><span class="p">]</span> <span class="o">+</span> \
+                          <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
+                           <span class="k">else</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                           <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">))]</span>
+            <span class="n">split_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cat_ptcl</span><span class="p">,</span> <span class="n">split_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># Fill list</span>
+            <span class="n">cog_ptcl_list</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span>
+            <span class="c1"># Fill referenced particles</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alt_particles</span><span class="p">)):</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">index_map</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="n">cog_ptcl_list</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">split_ptcl</span><span class="p">[</span><span class="n">num_unref</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Split joint particles again, and put particles in slot in the order given by the list</span>
+                    <span class="n">split_joint_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">v</span><span class="p">]</span>
+                    <span class="n">split_joint_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">split_ptcl</span><span class="p">[</span><span class="n">num_unref</span> <span class="o">+</span> <span class="n">i</span><span class="p">],</span> <span class="n">split_joint_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+                        <span class="n">cog_ptcl_list</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">=</span> <span class="n">split_joint_ptcl</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="c1"># Fill unreferenced particles</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unref_arg_ids</span><span class="p">):</span>
+                <span class="n">cog_ptcl_list</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">split_ptcl</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="c1"># Concatenate into original cognitive format</span>
+            <span class="n">cog_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">cog_ptcl_list</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">cog_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span>
+
+        <span class="c1"># Transform joint event values from Cognitive format to PyTorch format</span>
+        <span class="n">torch_ptcl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2torch_event</span><span class="p">(</span><span class="n">cog_ptcl</span><span class="p">)</span>
+        <span class="c1"># Instantiate the distribution instance</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
+        <span class="c1"># Query DistributionServer</span>
+        <span class="n">log_prob</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch_ptcl</span><span class="p">)</span>
+        <span class="c1"># Marginalize over unreferenced dimensions if needed</span>
+        <span class="k">if</span> <span class="n">num_unref</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Marginalize first few dimensions, since we&#39;ve put them at front</span>
+            <span class="n">prob</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_prob</span><span class="p">)</span>
+            <span class="n">marg_prob</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_unref</span><span class="p">)))</span>
+            <span class="n">log_prob</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">marg_prob</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">log_prob</span></div>
+
+<div class="viewcode-block" id="KnowledgeServer.event2torch_event"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.event2torch_event">[docs]</a>    <span class="k">def</span> <span class="nf">event2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cat_particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Translates joint particle event values from the Cognitive format to a format understandable by PyTorch</span>
+<span class="sd">        distribution class.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        cat_particles : torch.Tensor</span>
+<span class="sd">            A tensor representing the list of concatenated particle events in Cognitive format. Its last dimension will</span>
+<span class="sd">            be taken as the event dimension and should be equal to the sum of rv sizes in ``self.rv_sizes``, while all</span>
+<span class="sd">            other dimensions will be taken as the sample dimensions.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            A tensor representing a list of translated particle events from `cat_particles`. Its last dimension size</span>
+<span class="sd">            depends on the PyTorch format representation of events, while the sizes of other dimensions are the same as</span>
+<span class="sd">            `cat_particles`.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        The specific translation method may vary depending on the distribution class. Therefore, this method serves only</span>
+<span class="sd">        as an API entry point where the specific translation procedure will be looked up in ``self.dict_2torch_event``</span>
+<span class="sd">        using the registered distribution class ``self.dist_class``. If no entry is found, then will assume no special</span>
+<span class="sd">        translation is necessary and will return the input `cat_particles` as is.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+            <span class="s2">&quot;No distribution class has been registered. No way to translate given particle event values.&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_event</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_event</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">](</span><span class="n">cat_particles</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">cat_particles</span>
+
+        <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="KnowledgeServer.event2cognitive_event"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.event2cognitive_event">[docs]</a>    <span class="k">def</span> <span class="nf">event2cognitive_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Translates joint particle event values from the PyTorch distribution class format to Cognitive format.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        particles : torch.Tensor</span>
+<span class="sd">            A tensor representing the particle events in PyTorch-compatible format. Its last dimension will be taken</span>
+<span class="sd">            as the event dimension, while all other dimensions will be taken as the sample dimensions.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            A concatenated tensor representing a list of translated particle events from `cat_particles`, where the</span>
+<span class="sd">            events are concatenated along the last dimension, with size of each chunk in accordance with</span>
+<span class="sd">            `self.rv_sizes`, and the sizes of all other dimensions are the same as `particles`.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        The specific translation method may vary depending on the distribution class. Therefore, this method serves only</span>
+<span class="sd">        as an API entry point where the specific translation procedure will be looked up in</span>
+<span class="sd">        ``self.dict_2cognitive_event`` using the registered distribution class ``self.dist_class``. If no entry is</span>
+<span class="sd">        found, then will assume no special translation is necessary and will return the input `cat_particles` as is.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+            <span class="s2">&quot;No distribution class has been registered. No way to translate given particle event values.&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2cognitive_event</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2cognitive_event</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">](</span><span class="n">particles</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">particles</span>
+
+        <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Utility static methods</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="KnowledgeServer.combinatorial_cat"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.combinatorial_cat">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">combinatorial_cat</span><span class="p">(</span><span class="n">particles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper static method that combinatorially concatenates the list of event particles specified by `particles`.</span>
+
+<span class="sd">        Returns the contained tensor directly if there is only one entry in `particles`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        particles : iterable of torch.Tensor</span>
+<span class="sd">            The list of particles to be concatenated. Each element should be a tensor with a shape of length 2, where</span>
+<span class="sd">            the first dimension is assumed the sample dimension, and second dimension assumed the event dimension.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            The combinatorially concatenated event particle tensor of shape::</span>
+
+<span class="sd">                [sample_size[0], ..., sample_size[m], event_size[0]+...+event_size[m]]</span>
+
+<span class="sd">            where ``sample_size[i]`` is the sample size of the ``i`` th particle, and similarly is ``event_size[i]``.</span>
+<span class="sd">            Its total number of dimensions, i.e. ``.dim()``, is equal to the number of random variables plus 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">particles</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">particles</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">particles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">particles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span>
+        <span class="n">sample_size_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">particles</span><span class="p">]</span>
+        <span class="n">event_size</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">e</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">particles</span><span class="p">])</span>
+
+        <span class="c1"># 1. Repeat each particle tensor to expand to full sample dimensions.</span>
+        <span class="n">exp_particles</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particles</span><span class="p">):</span>
+            <span class="c1"># Insert singleton sample dimensions</span>
+            <span class="n">dims</span> <span class="o">=</span> <span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>        <span class="c1"># singleton dimensions</span>
+            <span class="n">dims</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>      <span class="c1"># original sample dimension</span>
+            <span class="n">dims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>         <span class="c1"># append event dimension at the end</span>
+            <span class="n">p_viewed</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
+            <span class="c1"># Repeat tensor along inserted singleton dimensions</span>
+            <span class="n">repeat_times</span> <span class="o">=</span> <span class="n">sample_size_list</span><span class="p">[:</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">sample_size_list</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">p_repeated</span> <span class="o">=</span> <span class="n">p_viewed</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">repeat_times</span><span class="p">)</span>
+            <span class="n">exp_particles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p_repeated</span><span class="p">)</span>
+
+        <span class="c1"># 2. Concatenate along the event dimensions</span>
+        <span class="n">comb_cat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">exp_particles</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">comb_cat</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">sample_size_list</span> <span class="o">+</span> <span class="p">[</span><span class="n">event_size</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">comb_cat</span></div>
+
+<div class="viewcode-block" id="KnowledgeServer.combinatorial_decat"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.combinatorial_decat">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">combinatorial_decat</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">,</span> <span class="n">split_sizes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper static method that combinatorially de-concatenate the joint particles specified by `cat_particles`,</span>
+<span class="sd">        with the event size of the particle tensors in each de-concatenated list given by `split_sizes`. This method</span>
+<span class="sd">        implements the exact opposite operation of `combinatorial_cat`.</span>
+
+<span class="sd">        An exception will be raised if `cat_particles` cannot be properly de-concatenated, for instance if it is not</span>
+<span class="sd">        previously a result produced by `combinatorial_cat`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        cat_particles : torch.Tensor</span>
+<span class="sd">            The concatenated particle tensor, of shape::</span>
+
+<span class="sd">                [sample_size[0], ..., sample_size[m], sum(split_sizes)]</span>
+
+<span class="sd">            where `m` is the number of variables to split/de-concatenate, to which the length of `split_sizes` should</span>
+<span class="sd">            equal.</span>
+<span class="sd">        split_sizes : list of int</span>
+<span class="sd">            A list of integers denoting the event size of each split variable in order.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple of torch.Tensor</span>
+<span class="sd">            The tuple of de-concatenated particles. The `i` th entry has shape ``[sample_size[i], split_sizes[i]]``.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If `cat_particles` was not a result from `combinatorial_cat` and cannot be properly de-concatenated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">2</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">split_sizes</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">split_sizes</span><span class="p">)</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_sizes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span> <span class="o">!=</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> numbers in `split_sizes`, therefore expect `cat_particles` have </span><span class="si">{}</span><span class="s2"> dimensions. &quot;</span>
+                             <span class="s2">&quot;Instead found </span><span class="si">{}</span><span class="s2"> dimensions.&quot;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">dim</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">split_sizes</span><span class="p">)</span> <span class="o">!=</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The sum of `split_sizes` is </span><span class="si">{}</span><span class="s2">, therefore expect the last dimension of `cat_particles`, &quot;</span>
+                             <span class="s2">&quot;corresponding to the event dimension of joint particles, have an equal size. Instead &quot;</span>
+                             <span class="s2">&quot;found a dimension size of </span><span class="si">{}</span><span class="s2">&quot;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">split_sizes</span><span class="p">),</span> <span class="n">cat_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="n">split_exp_ptcl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">,</span> <span class="n">split_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">split_ptcl</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Check for uniqueness to determine if original tensor could be properly de-concatenated</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">exp_ptcl</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">split_exp_ptcl</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">exp_ptcl</span> <span class="o">=</span> <span class="n">exp_ptcl</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">j</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">exp_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The provided `cat_particles` cannot be properly de-concatenated. The </span><span class="si">{}</span><span class="s2">th &quot;</span>
+                                         <span class="s2">&quot;split particle tensor with shape </span><span class="si">{}</span><span class="s2">, cannot be reduced to unique elements &quot;</span>
+                                         <span class="s2">&quot;along dimension </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">split_exp_ptcl</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">j</span><span class="p">))</span>
+            <span class="n">split_ptcl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exp_ptcl</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">exp_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">exp_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">split_ptcl</span><span class="p">)</span></div>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Default methods that are distribution class independent</span>
+<span class="sd">            - _default_draw:</span>
+<span class="sd">                Draw a single unique list of marginal particles given batch of distributions and calculate marginal log </span>
+<span class="sd">                sampling densities .</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_default_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_dist</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
+        <span class="n">b_dims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batched_dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
+        <span class="n">b_size</span> <span class="o">=</span> <span class="n">batched_dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+        <span class="c1"># Acquire raw joint particles in PyTorch format</span>
+        <span class="n">max_num_ptcl</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">)</span>
+        <span class="n">raw_ptcl</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">draw_particles</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">max_num_ptcl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
+
+        <span class="c1"># Translate to cognitive format, split and adjust sample sizes</span>
+        <span class="n">joint_ptcl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2cognitive_event</span><span class="p">(</span><span class="n">raw_ptcl</span><span class="p">)</span>
+        <span class="n">marg_ptcl_full</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">joint_ptcl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">marg_ptcl_narrow</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">marg_ptcl_full</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">))</span>
+
+        <span class="c1"># Obtain log densities w.r.t. the combinatorially concatenated event lattice</span>
+        <span class="n">comb_cat_ptcl</span> <span class="o">=</span> <span class="n">KnowledgeServer</span><span class="o">.</span><span class="n">combinatorial_cat</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">)</span>
+        <span class="n">raw_comb_cat_ptcl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2torch_event</span><span class="p">(</span><span class="n">comb_cat_ptcl</span><span class="p">)</span>      <span class="c1"># back to torch format again so DS can understand</span>
+        <span class="n">comb_log_dens</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">raw_comb_cat_ptcl</span><span class="p">)</span>
+
+        <span class="c1"># Marginalize the lattice densities, by first taking average over batch dims then marginalize over individual</span>
+        <span class="c1"># rv dims for each rv</span>
+        <span class="c1"># Note that for the batch dims we take average, instead of marginalization by taking sum. This is because</span>
+        <span class="c1"># lattice_dens is the CONDITIONAL probability of joint rv events conditioned on the batch index, NOT the joint</span>
+        <span class="c1"># probability which involves the batch index as rv as well. We also assume the prior probability over the batch</span>
+        <span class="c1"># index as rv is uniform.</span>
+        <span class="n">lattice_dens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">comb_log_dens</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">b_dims</span><span class="p">):</span>
+            <span class="n">lattice_dens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lattice_dens</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">lattice_dens</span> <span class="o">/=</span> <span class="n">b_size</span>     <span class="c1"># IMPORTANT: normalize by the batch size, otherwise not valid probabilities</span>
+        <span class="k">assert</span> <span class="n">lattice_dens</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span>
+
+        <span class="n">marg_log_dens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">):</span>
+            <span class="n">marg_dens_j</span> <span class="o">=</span> <span class="n">lattice_dens</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">):</span>
+                <span class="n">marg_dens_j</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">marg_dens_j</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">marg_log_dens_j</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">marg_dens_j</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">marg_log_dens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marg_log_dens_j</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">)</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Categorical distribution. Assumes all RV have size 1</span>
+<span class="sd">            - event translation from pred to torch:</span>
+<span class="sd">                Take a tuple of tensors each corresponding to one RV&#39;s value assignment. Compute value by taking volume </span>
+<span class="sd">                product</span>
+<span class="sd">            - event translation from torch to pred:</span>
+<span class="sd">                Take volume modulo of the event values. Return a tuple a tensors</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_categorical_var_span</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Helper function to determine the value range of each rv</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">integer_interval</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">-</span> <span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">),</span> \
+            <span class="s2">&quot;While attempting to translate Categorical events to PyTorch format, expect random variable sizes to be &quot;</span> \
+            <span class="s2">&quot;all 1, but instead found sizes </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
+
+        <span class="c1"># First split joint event values</span>
+        <span class="n">split_particles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Get rv span</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+        <span class="c1"># Taking volume product</span>
+        <span class="n">volume_prod</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># Going backward through spans to take product</span>
+        <span class="k">for</span> <span class="n">val</span><span class="p">,</span> <span class="n">span</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">split_particles</span><span class="p">),</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">var_span</span><span class="p">)):</span>
+            <span class="c1"># Cumulative summation by the product of i_th variable&#39;s value with its base</span>
+            <span class="n">volume_prod</span> <span class="o">+=</span> <span class="n">val</span> <span class="o">*</span> <span class="n">base</span>
+            <span class="c1"># Base of i_th var is the product of the spans of all later variables (i.e. from (i+1)th to n_th variable)</span>
+            <span class="n">base</span> <span class="o">*=</span> <span class="n">span</span>
+
+        <span class="k">return</span> <span class="n">volume_prod</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_2cognitive_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">),</span> \
+            <span class="s2">&quot;While attempting to translate Categorical events to PyTorch format, expect random variable sizes to be &quot;</span> \
+            <span class="s2">&quot;all 1, but instead found sizes </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
+
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+        <span class="c1"># Treat values as volume products and take mod w.r.t. variables&#39; spans</span>
+        <span class="n">modulo_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">residue</span> <span class="o">=</span> <span class="n">particles</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">var_span</span><span class="p">)</span>
+        <span class="c1"># Going forward through spans to take modulo</span>
+        <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">:</span>
+            <span class="n">base</span> <span class="o">/=</span> <span class="n">span</span>
+            <span class="n">modulo_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">residue</span> <span class="o">%</span> <span class="n">base</span><span class="p">)</span>
+            <span class="n">residue</span> <span class="o">=</span> <span class="n">residue</span> <span class="o">//</span> <span class="n">base</span>
+
+        <span class="c1"># Concatenate the modulo list</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">modulo_list</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Draw particles components for Categorical distributions. Returns a finite discrete well-spaced lattice as the</span>
+<span class="sd">        particle values and uniform log sampling densities.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+        <span class="n">particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
+        <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">span</span><span class="p">)</span> <span class="o">/</span> <span class="n">span</span><span class="p">)</span> <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

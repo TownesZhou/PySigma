@@ -1,0 +1,797 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Conditional Subgraph Nodes &mdash; PySigma  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Other Structural Nodes" href="other-structural-nodes.html" />
+    <link rel="prev" title="Predicate Subgraph Nodes" href="predicate-nodes.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> PySigma
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/intro.html">Introduction and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction/getting-started.html">Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API References</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../cognitive.html">Cognitive Language Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#type">Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#predicate">Predicate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#conditional">Conditional</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#variablemap">VariableMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#factorfunction">FactorFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cognitive.html#summarization">Summarization</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Graphical Architecture</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="data-structures.html">Basic Data Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable-metatypes">Variable Metatypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#variable">Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#message-types">Message Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#message">Message</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data-structures.html#linkdata">LinkData</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="abstract-base-nodes.html">Abstract Base Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#node">Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#factor-node">Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#variable-node">Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#alpha-factor-node">Alpha Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="abstract-base-nodes.html#beta-factor-node">Beta Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="predicate-nodes.html">Predicate Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#working-memory-variable-node">Working Memory Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#long-term-memory-factor-node">Long-Term Memory Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#parameter-store-factor-node">Parameter Store Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#perceptual-buffer-node">Perceptual Buffer Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="predicate-nodes.html#working-memory-factor-node">Working Memory Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Conditional Subgraph Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#expansion-summarization-factor-node">Expansion / Summarization Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relational-mapping-factor-node">Relational Mapping Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#concatenation-marginalization-transformation-factor-node">Concatenation, Marginalization, &amp; Transformation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#filter-variable-node">Filter Variable Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#event-aggregation-factor-node">Event Aggregation Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#event-resolution-factor-node">Event Resolution Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beta-join-factor-node">Beta Join Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gamma-factor-node">Gamma Factor Node</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="other-structural-nodes.html">Other Structural Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="other-structural-nodes.html#default-factor-node">Default Factor Node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="other-structural-nodes.html#default-variable-node">Default Variable Node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#utility-functions">Utility Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#distributionserver">DistributionServer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils.html#knowledgeserver">KnowledgeServer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Example Models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PySigma</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">API References</a> &raquo;</li>
+        
+          <li><a href="index.html">Graphical Architecture</a> &raquo;</li>
+        
+      <li>Conditional Subgraph Nodes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/references/graphical/conditional-nodes.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="conditional-subgraph-nodes">
+<h1>Conditional Subgraph Nodes<a class="headerlink" href="#conditional-subgraph-nodes" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="expansion-summarization-factor-node">
+<h2>Expansion / Summarization Factor Node<a class="headerlink" href="#expansion-summarization-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.ESFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ESFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">sum_op</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expansion / Summarization Factor Node</p>
+<p>This node should be connected to two DVNs that share the same set of random variables but perhaps different
+relational variables, with the DVN on the outward propagation side having a set of relational variables that is a
+subset of the set of relational variables of the DVN on the inward propagation side. The task of this node is to
+manipulate the incoming message’s batch dimensions so that they align with the relational variable dimensions of the
+target DVN. Specifically:</p>
+<ul class="simple">
+<li><p>For the inward propagation, since the target DVN may include relational variables that do not present in the
+source DVN, this procedure consists of <strong>expansion</strong> of the message’s batch dimensions to make space for these
+missing relational variables, as well as <strong>permutation</strong> of the expanded dimensions so that they are in the same
+order as demanded by the target DVN.</p></li>
+<li><p>For the outward propagation, it’s the exact opposite. <strong>Summarization</strong> across the message batch dimensions
+associated with those un-referenced relational variables is first carried out, followed by the same
+<strong>permutation</strong> procedure.</p></li>
+</ul>
+<p>The summarization step can be thought of as a search or optimization problem, for which one finds a single
+distribution instance that best “summarizes” the behaviors of an entire (finite) space of distribution instances,
+where the dimensions of the space are spanned by the un-referenced relational variables. The semantics of such
+summarization can vary depending on the use case. The default summarization procedure implements the semantics of
+“combining” distributions, i.e.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">p_1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">p_2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="o">...</span> <span class="o">*</span> <span class="n">p_k</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>but a custom summarization procedure can also be declared using the <cite>sum_op</cite> argument to implement other semantics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
+<li><p><strong>sum_op</strong> (<a class="reference internal" href="../cognitive.html#pysigma.structures.Summarization" title="pysigma.structures.Summarization"><em>Summarization</em></a><em>, </em><em>optional</em>) – The summarization operation functor to be called during outward propagation. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>, in which case
+the “combination” semantic is implemented.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.ESFN.sum_op">
+<code class="sig-name descname">sum_op</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.sum_op" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expands and permutes the incoming message’s relational variable dimensions to match the target outgoing
+relational variable dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If the set of source DVN’s relational variables is not a subset of the set of target DVN’s relational
+    variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ESFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summarizes over incoming message’s un-referenced relational variable dimensions and permute to match the
+target outgoing relational variable dimensions.</p>
+<p>The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
+uses default summarization semantic defined at the Message level.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If the set of source DVN’s relational variables is not a subset of the set of target DVN’s relational
+    variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="relational-mapping-factor-node">
+<h2>Relational Mapping Factor Node<a class="headerlink" href="#relational-mapping-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">RMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">arg2var</span></em>, <em class="sig-param"><span class="n">var2arg</span></em>, <em class="sig-param"><span class="n">arg2var_map</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Relation Variable Mapping Node</p>
+<p>Converts predicate arguments from and to pattern variables. Applies relational variable’s <cite>VariableMap</cite> (if
+specified) by manipulating message batch dimensions. This node can thus implements the semantic of inner-pattern
+relational variable matching.</p>
+<p>Mappings between the source relational arguments and target relational variables as well as that from source
+relational arguments to <cite>VariableMap</cite> instances need to be provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
+<li><p><strong>arg2var</strong> (<em>dict</em>) – Dictionary mapping predicate relational argument <cite>Variable</cite> instance to pattern relational variable <cite>Variable</cite>
+instance.</p></li>
+<li><p><strong>var2arg</strong> (<em>dict</em>) – Dictionary mapping pattern relational variable <cite>Variable</cite> instance to LIST of predicate relational argument
+<cite>Variable</cite> instances. The list length would be longer than 1 if the relational variable is being referenced
+by multiple arguments.</p></li>
+<li><p><strong>arg2var_map</strong> (<em>dict</em>) – Dictionary mapping predicate relational argument <cite>Variable</cite> instance to a <cite>VariableMap</cite> instance if one is
+specified for this argument. If an argument is not associated with a <cite>VariableMap</cite>, it should not appear in this
+dictionary.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg2var">
+<code class="sig-name descname">arg2var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.var2arg">
+<code class="sig-name descname">var2arg</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.var2arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map">
+<code class="sig-name descname">arg2var_map</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg_set">
+<code class="sig-name descname">arg_set</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>The set of predicate argument <cite>Variable</cite> instances. Obtained from the keys of <cite>arg2var</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.var_set">
+<code class="sig-name descname">var_set</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.var_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>The set of pattern variable <cite>Variable</cite> instances. Obtained from the keys of <cite>var2arg</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_tuple">
+<code class="sig-name descname">arg2var_map_tuple</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtained from <cite>arg2var_map</cite>. Mapping from predicate argument to the mapping dictionary (if a <cite>VariableMap</cite> is
+specified).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_inv_tuple">
+<code class="sig-name descname">arg2var_map_inv_tuple</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.arg2var_map_inv_tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtained from <cite>arg2var_map</cite>. Mapping from predicate argument to the INVERSE mapping dictionary (if a
+<cite>VariableMap</cite> is specified).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inward computation. Converts predicate relational arguments to pattern relational variables. Applies mappings
+to relational variable’s values, if specified.</p>
+<p>For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the inverse
+mapping should be used to map predicate arguments to pattern variables.</p>
+<p>Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument
+and pattern variable respectively. However to be user friendly this should be checked beforehand by compiler.</p>
+<p>Note that domain should be a subset of predicate argument size range, but image should be exactly equal to
+the pattern variable size range</p>
+<p>The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, &amp; permute</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld</span></em>, <em class="sig-param"><span class="n">out_ld</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.RMFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outward computation. Converts pattern relational variables to predicate relational arguments. Applies
+mappings to relational variable’s values, if specified.</p>
+<p>For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the
+original forward mapping should be used to map pattern variables to predicate arguments.</p>
+<p>Will check anyway if domain and image of the forward map agree with the size range of the predicate argument
+and pattern variable respectively. However to be user friendly this should be checked beforehand by
+compiler.</p>
+<p>Note that image of the map should be a subset of predicate argument size range, but its domain should be
+exactly equal to the pattern variable size range.</p>
+<p>The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, &amp; permute</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="concatenation-marginalization-transformation-factor-node">
+<h2>Concatenation, Marginalization, &amp; Transformation Factor Node<a class="headerlink" href="#concatenation-marginalization-transformation-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">CMTN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">args2var</span></em>, <em class="sig-param"><span class="n">var2trans</span></em>, <em class="sig-param"><span class="n">preemptive</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenation, Marginalization, &amp; Transformation Node</p>
+<p>Transforms the joint predicate pattern messages from and to a list of univariate pattern element messages
+representative of the events of each of the referenced pattern random variables.</p>
+<p>By default, outgoing messages that consists of only particles contents will be marked with a special attribute
+<code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>. Alternatively, a <cite>preemptive</cite> attribute can be set at the node level during the
+initialization of this node, in which case when set to <code class="docutils literal notranslate"><span class="pre">True</span></code> the outgoing message will always be marked with
+<code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>.</p>
+<p>Marking a message with <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code> indicates that the event particle values of this message should be
+taken as the universal event values for the corresponding pattern variable during this cognitive cycle. Any other
+predicate pattern that references this pattern variable should be forced to adopt this list of event values.
+Therefore, at most one CNTN among all those that reference the same pattern variable can send preemptive messages,
+otherwise an exception will be raised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node</p></li>
+<li><p><strong>args2var</strong> (<em>dict</em>) – The dictionary mapping either a single predicate random argument <cite>Variable</cite> instance, or a <cite>tuple</cite> of predicate
+random argument <cite>Variable</cite> instances, to a single pattern random variable <cite>Variable</cite> instance.</p></li>
+<li><p><strong>var2trans</strong> (<em>dict</em>) – The dictionary mapping a pattern random variable <cite>Variable</cite> instance to a <cite>Transform</cite> instance, if a
+transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the
+predicate pattern, there must be a corresponding FVN connected to this CMTN.</p></li>
+<li><p><strong>preemptive</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether the outgoing messages to all downstream nodes will always be marked with <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.args2var">
+<code class="sig-name descname">args2var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.args2var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.var2trans">
+<code class="sig-name descname">var2trans</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.var2trans" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.preemptive">
+<code class="sig-name descname">preemptive</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.preemptive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Some additional checks for CMTN</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>For each pattern element in the predicate pattern, generate a univariate message that is representative of
+the marginal events of the associated pattern variable. Sends this message to the FVN that corresponds to this
+pattern element.</p>
+<p>The above message generation step is done by the following procedure:</p>
+<ol class="arabic">
+<li><p>Marginalize over any un-referenced predicate arguments</p></li>
+<li><p>For each random pattern element:</p>
+<ol class="arabic simple">
+<li><p>Compute the outgoing message’s particles component:</p>
+<ol class="arabic simple">
+<li><p>marginalize the message over all other predicate random arguments that are not referenced by this
+pattern element.</p></li>
+<li><p>If this pattern element references multiple predicate random arguments in a list, then concatenate
+these dimensions. The resulting message should consist of a single event dimension.</p></li>
+<li><p>If a transformation is declared on the associated pattern random variable, then apply the INVERSE of
+the transformation on the message.</p></li>
+</ol>
+</li>
+<li><p>Annotate the outgoing message’s parameter component (if included in incoming message):</p>
+<ol class="arabic simple">
+<li><p>Annotate the message with <code class="docutils literal notranslate"><span class="pre">param_event_mismatch</span> <span class="pre">==</span> <span class="pre">False</span></code> label to indicate the particles above
+approximates the same distribution the parameters are encoding, only if there is only one pattern
+element, and it references all predicate random arguments in the correct order (the original order when
+these arguments were declared)</p></li>
+<li><p>In any other case, annotate the message with <code class="docutils literal notranslate"><span class="pre">event_space=True</span></code> label.</p></li>
+</ol>
+</li>
+<li><p>If the message do not contain parameters components, or if <code class="docutils literal notranslate"><span class="pre">self.preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>, annotate the
+outgoing message with special attribute <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>. Otherwise, annotate with
+<code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">False</span></code>.</p></li>
+</ol>
+<ol class="arabic simple" start="3">
+<li><p>Send this message to the corresponding outgoing linkdata</p></li>
+</ol>
+</li>
+</ol>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.CMTN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="filter-variable-node">
+<h2>Filter Variable Node<a class="headerlink" href="#filter-variable-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">FVN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter Variable Node</p>
+<p>Compares incoming message’s particle values against the constraints declared for the random variable. Filters out
+the particles if they do not meet the constraints, and raise an exception in this case if the message does not
+contain parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>preemptive</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the outgoing message will always be marked with the special attribute <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN.ran_var">
+<code class="sig-name descname">ran_var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.ran_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>The single random variable this FVN is representing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable">Variable</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN.val_constraints">
+<code class="sig-name descname">val_constraints</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.val_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>The value constraints extracted from <cite>ran_var</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set of torch.distributions.constraints.Constraint</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>FVN only admits one incoming link, but can admit multiple outgoing links</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.FVN.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.FVN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filters particles if the particle values do not meet the pre-specified value constraints of the random
+random variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the message being filtered does not contain parameters; this means the outgoing message would be None
+    had we sent out the filtered message.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="event-aggregation-factor-node">
+<h2>Event Aggregation Factor Node<a class="headerlink" href="#event-aggregation-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">EAFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ran_var</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Event Aggregation Factor Node</p>
+<p>An EAFN aggregates, for a represented conditional pattern random variable, a universal list of event particle values
+that should be adopted and evaluated by all predicate patterns who reference this pattern variable. In other words,
+the particles message sent by this node can be viewed as an augmented list of particles that both necessarily meets
+the value constraint of this pattern variable and sufficiently covers the important regions in the event space
+of each predicate pattern prior distribution.</p>
+<p>Connected from Filter Variable Nodes, an EAFN expects incoming messages to contain at least either particles or
+parameters, preferably both. In addition, messages should be marked with a boolean attribute <code class="docutils literal notranslate"><span class="pre">preemptive</span></code>. A
+message with <code class="docutils literal notranslate"><span class="pre">preemptive</span> <span class="pre">==</span> <span class="pre">True</span></code> indicates its list of event particle values will be taken directly as the final
+universal list of event particle values, ignoring all other messages. An EAFN therefore expects to receive only
+one preemptive message, otherwise an exception will be raised. If all messages are not preemptive, then the lists of
+event values from all of them (if applicable, i.e., if said message contains particles) will be taken and
+concatenated to form the universal list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of this node.</p></li>
+<li><p><strong>ran_var</strong> (<a class="reference internal" href="data-structures.html#pysigma.defs.Variable" title="pysigma.defs.Variable"><em>Variable</em></a>) – The pattern random variable this EAFN is representing.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.name">
+<code class="sig-name descname">name</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.ran_var">
+<code class="sig-name descname">ran_var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.ran_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.e_shape">
+<code class="sig-name descname">e_shape</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.e_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The event shape. Inffered from <cite>ran_var</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>All connected variable node should only represent one single random variable, and it must be <cite>self.ran_var</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>In no incoming message is preemptive, then aggregate particle event values and log sampling densities.
+Otherwise, take the particle event values and log sampling densities form the preemptive message. If there are
+more than one preemptive message, raise an exception.</p>
+<p>Outgoing message will be an identity Particles message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If found multiple preemptive messages.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.EAFN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.EAFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outward message computation. To be implemented by child class.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="event-resolution-factor-node">
+<h2>Event Resolution Factor Node<a class="headerlink" href="#event-resolution-factor-node" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN">
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.alpha_beta_nodes.</code><code class="sig-name descname">ERFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ks</span></em>, <em class="sig-param"><span class="n">args2var</span></em>, <em class="sig-param"><span class="n">var2trans</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Event Resolution Factor Node</p>
+<p>An ERFN receives messages containing the universal event values determined by EAFN for each of the pattern variable
+referenced by the represented predicate pattern, as well as another one message that is the original unprocessed
+message sent by the alpha subgraph terminal node (ESFN), whose event values are unprocessed. This node then proceeds
+to compare the universal event values of each pattern variable against the original event values of the associated
+predicate arguments from the unprocessed message. If all such comparisons are equal, then the original message would
+be sent, otherwise the universal event values will be taken as the surrogate particle values in place of the
+original ones, followed by a step of importance re-weighting to yield an augmented message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ks</strong> (<a class="reference internal" href="../utils.html#pysigma.utils.KnowledgeServer" title="pysigma.utils.KnowledgeServer"><em>KnowledgeServer</em></a>) – The KnowledgeServer instance for the represented predicate pattern.</p></li>
+<li><p><strong>args2var</strong> (<em>dict</em>) – The dictionary mapping either a single predicate random argument <cite>Variable</cite> instance, or a <cite>tuple</cite> of predicate
+random argument <cite>Variable</cite> instances, to a single pattern random variable <cite>Variable</cite> instance.</p></li>
+<li><p><strong>var2trans</strong> (<em>dict</em>) – The dictionary mapping a pattern random variable <cite>Variable</cite> instance to a <cite>Transform</cite> instance, if a
+transformation is declared for this pattern variable. Accordingly, for each pattern element declared in the
+predicate pattern, there must be a corresponding FVN connected to this CMTN.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.ks">
+<code class="sig-name descname">ks</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.ks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.args2var">
+<code class="sig-name descname">args2var</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.args2var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.var2trans">
+<code class="sig-name descname">var2trans</code><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.var2trans" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>ERFN admits only one outgoing linkdata connecting to a DVN with full predicate arguments as random variables.</p>
+<p>ERFN can admit multiple incoming linkdata, but each must be labeled with a boolean special attribute
+<code class="docutils literal notranslate"><span class="pre">&quot;original&quot;</span></code>. Each of the <code class="docutils literal notranslate"><span class="pre">original==False</span></code> linkdata must connect to a DVN that is one-to-one corresponding
+to one of the pattern variable referenced by the represented predicate pattern. On the other hand, only one
+<code class="docutils literal notranslate"><span class="pre">original==True</span></code> linkdata can be admitted, and it must be a DVN with full predicate arguments as random
+variables, similar to the outgoing DVN node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.inward_compute">
+<code class="sig-name descname">inward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.inward_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>The following procedure is carried out:</p>
+<ol class="arabic">
+<li><p>For each pattern element (args &amp; var pair in <code class="docutils literal notranslate"><span class="pre">self.args2var</span></code>):</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Gather the universal event values of the pattern variable from corresponding incoming linkdata</p></li>
+<li><p>If a transformation is declared on this pattern element, then apply the FORWARD (inverse of inverse)
+transformation on the universal event values</p></li>
+<li><p>Save the (transformed) event values as part of the surrogate particles.</p></li>
+</ol>
+</div></blockquote>
+</li>
+<li><p>Retrieve the message parameter from the “original” message</p></li>
+<li><p>Use the surrogate particles to create an augmented Particles message, combine with original parameters,
+and perform importance re-weighting. Send the resulting message</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.alpha_beta_nodes.ERFN.outward_compute">
+<code class="sig-name descname">outward_compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_ld_list</span></em>, <em class="sig-param"><span class="n">out_ld_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.alpha_beta_nodes.ERFN.outward_compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="beta-join-factor-node">
+<h2>Beta Join Factor Node<a class="headerlink" href="#beta-join-factor-node" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gamma-factor-node">
+<h2>Gamma Factor Node<a class="headerlink" href="#gamma-factor-node" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="other-structural-nodes.html" class="btn btn-neutral float-right" title="Other Structural Nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="predicate-nodes.html" class="btn btn-neutral float-left" title="Predicate Subgraph Nodes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Jincheng Zhou, Yunzhe Wang, Volkan Ustun, Paul Rosenbloom @ USC Institute for Creative Technologies
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

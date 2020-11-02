@@ -2,8 +2,7 @@
     PySigma package init file. Include definition of the Sigma class, the top-level interface to Sigma cognitive
         architecture.
 """
-from .structures import *
-from .graphical import *
+from .graphical import Graph
 from .cognitive import _register, _compiler, _runner, _perception, _adaption, _inspector
 
 
@@ -62,84 +61,18 @@ class Sigma:
 
     # Methods for adding Sigma structures #
 
-    def add(self, structure):
-        _register.add(self, structure)
-
-    def add_type(self, *args, **kwargs):
-        _register.add_type(self, *args, **kwargs)
-
-    def add_predicate(self, *args, **kwargs):
-        _register.add_predicate(self, *args, **kwargs)
-
-    def add_conditional(self, *args, **kwargs):
-        _register.add_conditional(self, *args, **kwargs)
-
-    def _register_type(self, sigma_type):
-        _register._register_type(self, sigma_type)
-
-    def _register_predicate(self, predicate):
-        _register._register_predicate(self, predicate)
-
-    def _register_conditional(self, conditional):
-        _register._register_conditional(self, conditional)
-
 
     # Methods for Sigma structure compilation #
-
-    def _compile_predicate(self, predicate):
-        _compiler._compile_predicate(self, predicate)
-
-    def _compile_conditional(self, conditional):
-        _compiler._compile_conditional(self, conditional)
 
 
     # Methods for Setting Perceptions and Prior Knowledge #
 
-    def perceive(self, predicates, messages):
-        _perception.perceive(self, predicates, messages)
-
-    def set_perception(self, predicates, perceive_funcs):
-        _perception.set_perception(self, predicates, perceive_funcs)
-
-    def set_assumption(self, predicates, priors):
-        _perception.set_assumption(self, predicates, priors)
-
-    def set_evidence(self, predicate, evidence):
-        _perception.set_evidence(self, predicate, evidence)
-
 
     # Methods for adaption phase #
-
-    def _select(self):
-        _adaption._select(self)
 
 
     # Methods for running Sigma program #
 
-    def _order_nodes(self):
-        _runner._order_nodes(self)
-
-    def _solve(self, verbose):
-        _runner._solve(self, verbose)
-
-    def _modify(self):
-        _runner._modify(self)
-
-    def decide(self, num_cycles, verbose=0):
-        _runner.decide(self, num_cycles, verbose)
-
 
     # Methods for printing stuff
-
-    def print_predicate_memory(self, predicates):
-        _inspector.print_predicate_memory(self, predicates)
-
-    def _print_pred_mem(self):
-        _inspector._print_pred_mem(self)
-
-    def print_combined_action(self, predicates):
-        _inspector.print_combined_action(self, predicates)
-
-    def _print_pred_action(self):
-        _inspector._print_pred_action(self)
 
