@@ -8,7 +8,7 @@ from torch import Size
 import torch.distributions as D
 import torch.distributions.transforms as T
 from pysigma.defs import Message, MessageType
-
+from .utils import cuda_only
 
 # Numerical accuracy
 EPS = 1e-6
@@ -150,11 +150,9 @@ class TestMessage:
                       k1=1, k2=2, k3=3)
         assert msg.attr['k1'] == 1 and msg.attr['k2'] == 2 and msg.attr['k3'] == 3
 
+    @cuda_only
     def test_correct_init_with_device(self):
         # Only run this test if GPU is available
-        if not torch.cuda.is_available():
-            return
-
         device = torch.cuda.current_device()
         # Parameter type
         t1 = torch.randn([5, 3])
@@ -443,10 +441,10 @@ class TestMessage:
                        a=1, b=2, c=3, extra=4)
         assert msg1 != msg2
 
+    @cuda_only
+    def test_eq_cuda(self):
         # Test with different devices
         # Only run this test if GPU is available
-        if not torch.cuda.is_available():
-            return
         device = torch.cuda.current_device()
 
         t1 = torch.randn([5, 3])
@@ -1056,11 +1054,9 @@ class TestMessage:
         assert msg1.same_particles_as(msg2)
         assert msg2.same_particles_as(msg1)
 
+    @cuda_only
     def test_diff_param_different_devices(self):
         # Only run this test if GPU is available
-        if not torch.cuda.is_available():
-            return
-
         device = torch.cuda.current_device()
         msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
                        parameter=torch.randn([5, 3]))
@@ -1157,10 +1153,9 @@ class TestMessage:
         assert msg1.diff_param(msg2) == 0
         assert msg2.diff_param(msg1) == 0
 
+    @cuda_only
     def test_diff_weight_different_device(self):
         # Only run this test if GPU is available
-        if not torch.cuda.is_available():
-            return
 
         device = torch.cuda.current_device()
         msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
@@ -1377,11 +1372,9 @@ class TestMessage:
         assert msg.weight is not cloned_msg.weight
         assert all(d is not rd for d, rd in zip(msg.log_densities, cloned_msg.log_densities))
 
+    @cuda_only
     def test_clone(self):
         # Carry out this test only if system has cuda
-        if not torch.cuda.is_available():
-            return
-
         device = torch.cuda.current_device()
 
         # Test both
