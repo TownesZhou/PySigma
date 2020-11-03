@@ -293,7 +293,7 @@ class Node(ABC):
         *any*, and for other nodes their quiescence states depend only on whether `compute()` has ever been called
         within the current decision phase.
         """
-        return any(in_ld.new for in_ld in self.in_linkdata)
+        return all(not in_ld.new for in_ld in self.in_linkdata)
 
     @abstractmethod
     def add_link(self, linkdata):
