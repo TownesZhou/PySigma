@@ -3,7 +3,6 @@
 """
 import pytest
 from unittest.mock import MagicMock
-import torch
 from torch import Size
 
 from pysigma.graphical.basic_nodes import FactorNode, VariableNode, LinkData
@@ -17,7 +16,7 @@ class FactorNodeForTest(FactorNode):
 
 class TestFactorNode():
 
-    def test_add_link_invalid(self):
+    def test_add_link_not_connected_to_self(self):
         # Test add a link where the factor node is not self
         mock_vn = MagicMock(spec=VariableNode)
         mock_vn.name = "test_variable_node"
@@ -30,7 +29,7 @@ class TestFactorNode():
         with pytest.raises(AssertionError):
             fn.add_link(ld)
 
-    def test_add_link_correct_already_existing(self):
+    def test_add_link_correct_duplicate(self):
         mock_vn = MagicMock(spec=VariableNode)
         mock_vn.name = "test_variable_node"
         msg_shape = (Size([10]), Size([2]), Size([3, 4]), Size([5, 6]))

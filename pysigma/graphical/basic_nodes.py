@@ -431,9 +431,9 @@ class VariableNode(Node, ABC):
         """
         assert isinstance(linkdata, LinkData)
         assert linkdata.vn is self
-        assert linkdata.msg_shape == (self.b_shape, self.p_shape, self.s_shape, self.e_shape), \
-            "At {}: The linkdata to be registered with the current node does not impose the same message shape " \
-            "restriction as this node does. Current node's shape: (batch_shape, param_shape, sample_shape, " \
+        assert compatible_shape(linkdata.msg_shape, (self.b_shape, self.p_shape, self.s_shape, self.e_shape)), \
+            "At {}: The message shape of the linkdata to be registered is not compatible with the predefined message " \
+            "shape of the current variable node. Current node's shape: (batch_shape, param_shape, sample_shape, " \
             "event_shape) = {}. Found linkdata's shape: {}"\
             .format(self.name, (self.b_shape, self.p_shape, self.s_shape, self.e_shape), linkdata.msg_shape)
         if linkdata in self.in_linkdata + self.out_linkdata:

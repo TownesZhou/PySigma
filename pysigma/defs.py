@@ -105,6 +105,9 @@ class Variable:
         return self.name
 
     def __repr__(self):
+        return str(self)
+
+    def __repr__(self):
         return self.name
 
     def __hash__(self):
