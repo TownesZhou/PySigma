@@ -16,7 +16,7 @@ from .utils import KnowledgeServer
     All PySigma global variables / constants should be declared below.
 """
 # Global numerical precision
-NP_EPSILON = 10e-7
+NP_EPSILON = 1e-6
 
 
 # Variable Metatypes and Variable for general inference

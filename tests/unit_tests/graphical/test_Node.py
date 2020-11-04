@@ -76,3 +76,9 @@ class TestNode():
             node = NodeForTest("test_node")
             node.compute()
             assert node.visited
+
+    def test_reset_state(self):
+        node = NodeForTest("test_node")
+        node.visited = True
+        node.reset_state()
+        assert not node.visited

@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import torch
-from ..defs import VariableMetatype, Variable, MessageType, Message
+from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
 from ..utils import compatible_shape
 
 """
@@ -23,7 +23,7 @@ class LinkData:
     Note that links are directional, and two of such links should be specified with opposite directions to represent
     a bidirectional link between a factor node and a variable node.
 
-    During construction of the graph, its instance should be passed to NetworkX methods as the edge data to instantiate
+    During construction of the graph, its instance would be passed to NetworkX methods as the edge data to instantiate
     an edge.
 
     Parameters
@@ -35,11 +35,11 @@ class LinkData:
     to_fn : bool
         True if this link is pointing toward the factor node.
     msg_shape : tuple of torch.Size
-        The shape of the message to carry. Used for sanity check of message shapes. Should be in the format
-        ``(batch_shape, param_shape, sample_shape, event_shape)``. An empty shape ``torch.Size([])`` should be used as
-        the default none shape.
+        The shape of the message to carry. Used for sanity check of message shapes. Should be a 4-tuple of
+        ``torch.Size()`` in the format ``(batch_shape, param_shape, sample_shape, event_shape)``. An empty shape
+        ``torch.Size([])`` represents the default none shape.
     epsilon : float, optional
-        Epsilon upper bound for checking message difference.
+        Epsilon upper bound for checking message difference. Defaults to ``defs.NP_EPSILON``.
 
     Attributes
     ----------
@@ -62,16 +62,7 @@ class LinkData:
     pretty_log : dict
         Pretty logging for front-end visualization.
     """
-    def __init__(self, vn, fn, to_fn, msg_shape, epsilon=10e-5, **kwargs):
-        """
-        :param vn:      VariableNode instance that this link is incident to
-        :param fn:      FactorNode instance that this link is incident to
-        :param to_fn:   True/False indicating whether this link is pointing toward a factor node
-        :param msg_shape    Fixed message shape that this linkdata will carry. Used for checking dimensions
-                            For Parameter message, should be (batch_shape + param_shape)
-                            For particles message, should be (sample_shape + batch_shape + event_shape)
-        :param epsilon:     epsilon upper bound for checking message difference using KL divergence
-        """
+    def __init__(self, vn, fn, to_fn, msg_shape, epsilon=NP_EPSILON, **kwargs):
         assert isinstance(vn, VariableNode)
         assert isinstance(fn, FactorNode)
         assert isinstance(msg_shape, tuple) and len(msg_shape) == 4 and \
@@ -104,6 +95,9 @@ class LinkData:
             return vn_name + " --> " + fn_name
         return fn_name + " --> " + vn_name
 
+    def __repr__(self):
+        return str(self)
+
     def reset_shape(self, msg_shape):
         """Reset shape for the Message
 
@@ -115,12 +109,13 @@ class LinkData:
 
         Warnings
         --------
-        This method will clear the memory buffer ``self.memory`` and set ``self.new`` to False.
+        This method will reset the memory buffer ``self.memory`` to initial identity value and set ``self.new`` to
+        False.
         """
         assert isinstance(msg_shape, tuple) and len(msg_shape) == 4 and \
             all(isinstance(s, torch.Size) for s in msg_shape)
         self.msg_shape = msg_shape
-        self.memory = None
+        self.memory = Message.identity()
         self.new = False
 
     def write(self, new_msg, check_diff=True, clone=False):
@@ -171,7 +166,7 @@ class LinkData:
 
         .. note::
 
-           If want to set a new message of a different message type than the current memory, make sure reset_shape()
+           If want to set a new message of a different message shape than the current memory, make sure reset_shape()
            is first called so that shape check works for the new message.
         """
         assert isinstance(new_msg, Message)
@@ -181,19 +176,18 @@ class LinkData:
             "{}".format(str(self), self.msg_shape, new_msg.shape)
 
         # Will replace the memory immediately if any one of the following conditions is met:
-        #   - self.memory is None
         #   - check_diff is False
         #   - new message has different type
         #   - new message has Undefined type
         #   - messages have particles and new message has different particle values and/or sampling log densities
-        if self.memory is None or check_diff is False or new_msg.type != self.memory.type or \
+        if check_diff is False or new_msg.type != self.memory.type or \
                 new_msg.type == MessageType.Undefined or\
                 (MessageType.Particles in new_msg.type and not self.memory.same_particles_as(new_msg)):
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
             return
 
-        # Otherwise, check difference by KL-divergence
+        # Otherwise, check difference
         if MessageType.Parameter in self.memory.type:
             # For Parameter message, compare batch average L2 distance
             # Parameter tensor has shape (batch_shape + param_shape), with param_shape of length 1
