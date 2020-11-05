@@ -10,35 +10,37 @@ from torch.distributions.constraints import Constraint, integer_interval
 from torch.distributions.kl import kl_divergence
 
 
-def intern_name(name: str, struc_type: str):
+def intern_name(name: str, struct_type: str):
     """
         Add prefix and brackets to transform user provided structure name to internal name
     :param name:    Structure name
-    :param struc_type:    one of "type", "predicate", or "conditional
+    :param struct_type:    one of "type", "predicate", or "conditional
     :return:        processed name
     """
-    assert struc_type in ["type", "predicate", "conditional"], "unknown type for processing structure name"
+    struct_type = struct_type.upper()
+    assert struct_type in ["TYPE", "PREDICATE", "CONDITIONAL"], "unknown type for processing structure name"
     assert isinstance(name, str)
-    if struc_type == "type":
-        return "TYPE_[" + name.upper() + "]"
-    elif struc_type == "predicate":
-        return "PRED_[" + name.upper() + "]"
+    if struct_type == "TYPE":
+        return "TYPE_[" + name + "]"
+    elif struct_type == "PREDICATE":
+        return "PRED_[" + name + "]"
     else:
-        return "COND_[" + name.upper() + "]"
+        return "COND_[" + name + "]"
 
 
-def extern_name(name: str, struc_type: str):
+def extern_name(name: str, struct_type: str):
     """
         Inverse operation of intern_name
     """
-    assert struc_type in ["type", "predicate", "conditional"], "unknown type for processing structure name"
+    struct_type = struct_type.upper()
+    assert struct_type in ["TYPE", "PREDICATE", "CONDITIONAL"], "unknown type for processing structure name"
     assert isinstance(name, str)
-    if struc_type == "type":
-        assert name.find("TYPE_") >= 0
-    if struc_type == "predicate":
-        assert name.find("PRED_[") >= 0
-    if struc_type == "conditional":
-        assert name.find("COND_[") >= 0
+    if struct_type == "TYPE":
+        assert name[:6] == "TYPE_[" and name[-1] == "]"
+    if struct_type == "PREDICATE":
+        assert name[:6] == "PRED_[" and name[-1] == "]"
+    if struct_type == "CONDITIONAL":
+        assert name[:6] == "COND_[" and name[-1] == "]"
     return name[6:-1]
 
 
