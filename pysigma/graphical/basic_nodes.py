@@ -456,7 +456,8 @@ class DFN(FactorNode):
     """Default (Dummy) Factor Node.
 
     No special computation. Simply relays message to one or multiple incident variable nodes. Requires that incident
-    variable nodes share the same variables. Only admits one incoming link but can connect with multiple outgoing links.
+    variable nodes have compatible variable shapes. Only admits one incoming link but can connect with multiple outgoing
+    links.
 
     Since all incident variable nodes should share the same variables, these variables will also be registered in the
     attributes.
@@ -487,6 +488,11 @@ class DFN(FactorNode):
         self.index_vars = None
         self.ran_vars = None
 
+        self.b_shape = torch.Size([])
+        self.p_shape = torch.Size([])
+        self.s_shape = torch.Size([])
+        self.e_shape = torch.Size([])
+
     def add_link(self, linkdata):
         """Checks that all variable nodes on the other side of the linkdata share the same set of variables. Infer
         attribute values from the connected variable nodes' variables.
@@ -511,16 +517,26 @@ class DFN(FactorNode):
         assert isinstance(linkdata, LinkData)
         # Make sure no more than on incoming link
         assert not linkdata.to_fn or len(self.in_linkdata) == 0
-        # Also make sure incident variable nodes' var_list agree with each other
+        # Check that the variable shape of the newly connected variable node is compatible with the rest
+        if self.rel_vars is not None:
+            assert compatible_shape((self.b_shape, self.p_shape, self.s_shape, self.e_shape), linkdata.msg_shape), \
+                "In DFN {}: the message shape of the linkdata is not compatible with the variable shape of already " \
+                "existing variable nodes. Expecting message shape compatible with {}, but found {}"\
+                .format(self.name, (self.b_shape, self.p_shape, self.s_shape, self.e_shape), linkdata.msg_shape)
+
+        # Register variables and shapes
         if self.rel_vars is None:
+            self.rel_vars = linkdata.vn.rel_vars
+            self.b_shape = linkdata.vn.b_shape
+        if self.param_var is None:
             self.param_var = linkdata.vn.param_var
-            self.index_vars = linkdata.vn.rel_vars
+            self.p_shape = linkdata.vn.p_shape
+        if self.index_vars is None:
+            self.index_vars = linkdata.vn.index_vars
+            self.s_shape = linkdata.vn.s_shape
+        if self.ran_vars is None:
             self.ran_vars = linkdata.vn.ran_vars
-        else:
-            assert self.rel_vars == linkdata.vn.rel_vars
-            assert self.param_var == linkdata.vn.param_var
-            assert self.index_vars == linkdata.vn.index_vars
-            assert self.ran_vars == linkdata.vn.ran_vars
+            self.e_shape = linkdata.vn.e_shape
 
         super(DFN, self).add_link(linkdata)
 
