@@ -74,11 +74,12 @@ class TestDFN():
 
         fn = DFN("test_dfn")
         fn.in_linkdata.append(mock_in_ld)
-        fn.in_linkdata.append(mock_out_ld)
+        fn.out_linkdata.append(mock_out_ld)
 
         with patch("pysigma.graphical.basic_nodes.DFN.quiescence", new_callable=PropertyMock) as mock_quiescence:
             mock_quiescence.return_value = True
             fn.compute()
+            mock_in_ld.read.assert_not_called()
             mock_out_ld.write.assert_not_called()
 
     def test_compute_do(self):
@@ -98,4 +99,5 @@ class TestDFN():
             mock_quiescence.return_value = False
             fn.compute()
             for mock_out_ld in mock_out_ld_list:
+                mock_in_ld.read.assert_called_once()
                 mock_out_ld.write.assert_called_once_with(mock_msg)

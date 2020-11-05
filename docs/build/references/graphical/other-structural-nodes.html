@@ -228,7 +228,8 @@
 <em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">DFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Default (Dummy) Factor Node.</p>
 <p>No special computation. Simply relays message to one or multiple incident variable nodes. Requires that incident
-variable nodes share the same variables. Only admits one incoming link but can connect with multiple outgoing links.</p>
+variable nodes have compatible variable shapes. Only admits one incoming link but can connect with multiple outgoing
+links.</p>
 <p>Since all incident variable nodes should share the same variables, these variables will also be registered in the
 attributes.</p>
 <dl class="field-list simple">

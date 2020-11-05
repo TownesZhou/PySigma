@@ -14,9 +14,10 @@ class NodeForTest(Node):
     
     def add_link(self, linkdata):
         super(NodeForTest, self).add_link(linkdata)
-    
+
+    @Node.compute_control
     def compute(self):
-        super(NodeForTest, self).compute()
+        pass
 
 
 class TestNode():

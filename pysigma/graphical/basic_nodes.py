@@ -300,18 +300,36 @@ class Node(ABC):
     def compute(self):
         """Compute method to be called to propagate messages during decision phases.
 
-        Note that ``super()`` must be called within `compute()` method in any child class, because all abstract
-        node-level statistics logging is taken care of herein.
-
-        The default quiescence behavior for `compute()` is to return directly if `self.quiescence` is ``True``,
-        without logging anything or performing any further computation. Note that such behavior may or may not be
-        desired by child node class.
+        Note
+        ----
+        Note that in a subclass, when overriding this method, it must be decorated with
+        ``@parent_class.compute_control`` where ``parent_class`` is the parent class of said subclass so that
+        the message propagation process can be controlled and relevant stats be set.
         """
-        # Return directly if quiesced
-        if self.quiescence:
-            return
-        # General logging regarding node computation statistics to be added here
-        self.visited = True
+        raise NotImplementedError
+
+    @staticmethod
+    def compute_control(compute_func):
+        """Decorator that controls the message processing of this node depending on the quiescence state and set
+        corresponding stats when the processing is completed. This decorator **must** always be used with the
+        `compute()` method in any Node subclass.
+
+        Basic controls:
+            - Return directly and prevent computation if reached quiescence.
+            - Set ``visited`` to true after the computation.
+        """
+        assert callable(compute_func)
+
+        def wrapper(self):
+            # Return directly if quiesced. avoid any computation
+            if self.quiescence:
+                return
+            # Call the actual compute method
+            compute_func(self)
+            # Set stats aftermath
+            self.visited = True
+
+        return wrapper
 
     def reset_state(self):
         """Clears and resets the node's message propagation statistics to prepare logging for the imminent decision
@@ -540,11 +558,11 @@ class DFN(FactorNode):
 
         super(DFN, self).add_link(linkdata)
 
+    @FactorNode.compute_control
     def compute(self):
         """Relay untempered message to downstream variable nodes.
 
         """
-        super(DFN, self).compute()
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
@@ -597,11 +615,11 @@ class DVN(VariableNode):
 
         super(DVN, self).add_link(linkdata)
 
+    @VariableNode.compute_control
     def compute(self):
         """Relay untempered message to downstream factor nodes.
 
         """
-        super(DVN, self).compute()
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
