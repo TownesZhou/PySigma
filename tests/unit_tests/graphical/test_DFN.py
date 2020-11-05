@@ -7,7 +7,7 @@ from torch import Size
 from torch.distributions.constraints import real
 
 from pysigma.defs import Message
-from pysigma.graphical.basic_nodes import DFN, FactorNode, VariableNode, LinkData
+from pysigma.graphical.basic_nodes import DFN, LinkData
 from pysigma.defs import Variable, VariableMetatype
 from .test_VariableNode import VariableNodeForTest
 

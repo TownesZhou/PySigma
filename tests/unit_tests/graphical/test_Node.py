@@ -5,7 +5,7 @@
 import pytest
 import torch
 from unittest.mock import MagicMock, PropertyMock, patch
-from pysigma.graphical.basic_nodes import Node, LinkData
+from pysigma.graphical.basic_nodes import Node
 from ..utils import cuda_only
 
 

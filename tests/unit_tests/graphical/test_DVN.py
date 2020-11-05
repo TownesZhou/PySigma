@@ -4,12 +4,10 @@
 import pytest
 from unittest.mock import patch, PropertyMock, MagicMock
 from torch import Size
-from torch.distributions.constraints import real
 
 from pysigma.defs import Message
-from pysigma.graphical.basic_nodes import DVN, FactorNode, VariableNode, LinkData
+from pysigma.graphical.basic_nodes import DVN, FactorNode, LinkData
 from pysigma.defs import Variable, VariableMetatype
-from .test_VariableNode import VariableNodeForTest
 
 
 class TestDVN():
