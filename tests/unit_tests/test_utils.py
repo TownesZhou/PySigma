@@ -353,6 +353,14 @@ class TestDistributionServer:
         assert equal_within_error(dist.probs, expected_param)
 
     def test_categorical_dist2param(self):
-        pass
+        b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
+        param = torch.rand(b_shape + p_shape)
+        dist = D.Categorical(probs=param)
+        dist_info = None
+        expected_param = param / param.sum(dim=-1, keepdim=True)
+
+        returned_value = DS.dist2param(dist, dist_info)
+
+        assert equal_within_error(returned_value, expected_param)
 
     # endregion
