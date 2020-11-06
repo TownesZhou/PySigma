@@ -262,9 +262,9 @@ class DistributionServer:
         process over and over again. The latter approach, when the samples are aggregated, yields a particle list
         that is representative of the joint distribution of the whole batch.
 
-        Accordingly, the sampling process is implemented by drawing `n` batched samples from `dist`, where
-        ``n = num_particles // batch_size + 1``, collapses the batch dimensions, random shuffle across the collapsed
-        sample dimension, and truncate to select only a number of ``num_particles`` samples.
+        Accordingly, the sampling process is implemented by first drawing `n` batched samples from `dist`, where
+        ``n = num_particles // batch_size + 1``, then collapsing the batch dimensions, and finally randomly shuffling
+        across the collapsed sample dimension, and truncate to select only a number of ``num_particles`` samples.
         """
         assert isinstance(dist, Distribution)
         assert isinstance(num_particles, int)
@@ -283,7 +283,7 @@ class DistributionServer:
                                           "of type {} with event shape {}".format(dist_class, dist.batch_shape))
             batch_size = dist.batch_shape.numel()
             n = num_particles // batch_size + 1
-            btch_ptcl = dist.sample_n(n)        # Draw n batched particles
+            btch_ptcl = dist.sample((n,))        # Draw n batched particles
             assert btch_ptcl.shape == torch.Size([n]) + dist.batch_shape + dist.event_shape
             flat_ptcl = btch_ptcl.view(-1, dist.event_shape[0])
             shuf_ptcl = flat_ptcl[torch.randperm(flat_ptcl.shape[0])]       # shuffle across collapsed sample dimension

@@ -239,4 +239,50 @@ class TestDistributionServer:
 
                 assert torch.equal(DS.get_moments(mock_dist, n_moments), expected_moments)
                 mock_callable.assert_called_once_with(mock_dist, n_moments)
+
+    def test_draw_particles_special_method(self):
+        # Test that special drawing method is called if the dist class is registered in the class's registry
+        # Mock dist instance
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist_class = D.Distribution
+        num_ptcl = 10
+        dist_info = None
+        expected_particles = torch.randn([num_ptcl, 1])
+
+        # Patch type so that type(mock_dist) returns mock_dist_class
+        with patch("pysigma.utils.type") as t:
+            t.side_effect = lambda dist: mock_dist_class if dist is mock_dist else type(dist)
+
+            # Patch class registry
+            with patch("pysigma.utils.DistributionServer.dict_draw_particles", new_callable=PropertyMock) as d:
+                # Mock special draw particles method
+                mock_callable = MagicMock(side_effect=
+                                          lambda dist, num_particles, dist_info: expected_particles
+                                          if dist is mock_dist and num_particles is num_ptcl else None)
+                d.return_value = {mock_dist_class: mock_callable}
+
+                assert torch.equal(DS.draw_particles(mock_dist, num_ptcl, dist_info=dist_info), expected_particles)
+
+    def test_draw_particles_default(self):
+        # Test the default drawing method.
+        # Mock dist instance
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist_class = D.Distribution
+        num_ptcl = 100
+        dist_info = None
+
+        mock_dist.batch_shape, mock_dist.event_shape = Size([3, 4]), Size([5])
+        mock_dist.sample.side_effect = lambda size: torch.randn([size[0], 3, 4, 5])
+
+        # Patch type so that type(mock_dist) returns mock_dist_class
+        with patch("pysigma.utils.type") as t:
+            t.side_effect = lambda dist: mock_dist_class if dist is mock_dist else type(dist)
+
+            # Patch class registry
+            with patch("pysigma.utils.DistributionServer.dict_draw_particles", new_callable=PropertyMock) as d:
+                # Mock special draw particles method
+                d.return_value = {}
+
+                returned_ptcl = DS.draw_particles(mock_dist, num_ptcl, dist_info)
+                assert returned_ptcl.shape == Size([num_ptcl, 5])
     # endregion
