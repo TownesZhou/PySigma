@@ -145,7 +145,7 @@ class TestDistributionServer:
 
         with patch("pysigma.utils.DistributionServer.dict_param2dist", new_callable=PropertyMock) as d:
             # Mock the sub-level class method that are returned by looking up the class registry
-            mock_callable = MagicMock(side_effect=lambda cls, param, dist_info : dist)
+            mock_callable = MagicMock(side_effect=lambda param, dist_info : dist)
             mock_descriptor = MagicMock()
             mock_descriptor.__func__ = mock_callable
             # Set content of mocked class registry dictionary
@@ -166,7 +166,7 @@ class TestDistributionServer:
 
         with patch("pysigma.utils.DistributionServer.dict_param2dist", new_callable=PropertyMock) as d:
             # Mock the sub-level class method that are returned by looking up the class registry
-            mock_callable = MagicMock(side_effect=lambda cls, param, dist_info: dist)
+            mock_callable = MagicMock(side_effect=lambda param, dist_info: dist)
             mock_descriptor = MagicMock()
             mock_descriptor.__func__ = mock_callable
             # Set content of mocked class registry dictionary
@@ -177,7 +177,7 @@ class TestDistributionServer:
             # mock_callable.assert_called_once_with(random_param, dist_info)
             mock_callable.assert_called_once()
             call_args = mock_callable.call_args[0]
-            assert call_args[1] is random_param and call_args[2] is dist_info
+            assert call_args[0] is random_param and call_args[1] is dist_info
 
     def test_dist2param_dist_class_not_found(self):
         # Test that specified dist class cannot be found in the class's registry
@@ -208,7 +208,9 @@ class TestDistributionServer:
             with patch("pysigma.utils.DistributionServer.dict_dist2param", new_callable=PropertyMock) as d:
                 mock_callable = MagicMock(side_effect=
                                           lambda dist, dist_info: expected_param if dist is mock_dist else None)
-                d.return_value = {mock_dist_class: mock_callable}
+                mock_descriptor = MagicMock()
+                mock_descriptor.__func__ = mock_callable
+                d.return_value = {mock_dist_class: mock_descriptor}
 
                 assert torch.equal(DS.dist2param(mock_dist, dist_info=dist_info), expected_param)
                 mock_callable.assert_called_once_with(mock_dist, dist_info)
@@ -350,5 +352,7 @@ class TestDistributionServer:
         assert isinstance(dist, dist_class)
         assert equal_within_error(dist.probs, expected_param)
 
+    def test_categorical_dist2param(self):
+        pass
 
     # endregion

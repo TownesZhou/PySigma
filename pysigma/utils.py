@@ -168,7 +168,7 @@ class DistributionServer:
         # The class-level dictionary returns a class method descriptor. The actual callable is obtained via the
         #   descriptor's __func__ attribute
         callable_method = cls.dict_param2dist[dist_class].__func__
-        dist = callable_method(cls, param, dist_info)
+        dist = callable_method(param, dist_info)
         if (b_shape is not None and dist.batch_shape != b_shape) or \
                 (e_shape is not None and dist.event_shape != e_shape):
             raise ValueError("The shape of the generated distribution {} does not match the provided shape. "
@@ -208,7 +208,7 @@ class DistributionServer:
         if dist_class not in cls.dict_dist2param.keys():
             raise NotImplementedError("Conversion from distribution instance to parameters for distribution class '{}' "
                                       "not yet implemented".format(dist_class))
-        return cls.dict_dist2param[dist_class](dist, dist_info)
+        return cls.dict_dist2param[dist_class].__func__(dist, dist_info)
 
     @classmethod
     def get_moments(cls, dist, n_moments=1):
@@ -422,8 +422,8 @@ class DistributionServer:
     """
         Categorical distribution
     """
-    @classmethod
-    def _categorical_param2dist(cls, params, dist_info):
+    @staticmethod
+    def _categorical_param2dist(params, dist_info):
         """
             For categorical, params assumed to be fed as the 'probs' attribute
             # TODO: different parameter scheme and dist_info schema specification
@@ -431,15 +431,15 @@ class DistributionServer:
         dist = torch.distributions.Categorical(probs=params)
         return dist
 
-    @classmethod
-    def _categorical_dist2param(cls, dist, dist_info):
+    @staticmethod
+    def _categorical_dist2param(dist, dist_info):
         """
             # TODO: different parameter scheme and dist_info schema specification
         """
         return dist.probs
 
-    @classmethod
-    def _categorical_draw(cls, dist, num_particles):
+    @staticmethod
+    def _categorical_draw(dist, num_particles):
         """
             Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance's
                 'probs' attribute. Particles will be drawn uniformly covering every value in the RV's domain once and
