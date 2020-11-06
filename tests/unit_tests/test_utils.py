@@ -75,6 +75,23 @@ def test_extern_name_correct():
     assert extern_name(name, struc_type) == expected_name
 
 
+def test_intern_extern_reversible():
+    name, struc_type = "Test_Name", "type"
+    v1 = intern_name(name, struc_type)
+    v2 = extern_name(v1, struc_type)
+    assert name == v2
+
+    name, struc_type = "Test_Name", "predicate"
+    v1 = intern_name(name, struc_type)
+    v2 = extern_name(v1, struc_type)
+    assert name == v2
+
+    name, struc_type = "Test_Name", "conditional"
+    v1 = intern_name(name, struc_type)
+    v2 = extern_name(v1, struc_type)
+    assert name == v2
+
+
 def test_compatible_shape_invalid_arguments():
     shape1 = None
     shape2 = None
@@ -245,7 +262,9 @@ class TestDistributionServer:
                 mock_callable = MagicMock(side_effect=
                                           lambda dist, moments: expected_moments
                                           if dist is mock_dist and moments == n_moments else None)
-                d.return_value = {mock_dist_class: mock_callable}
+                mock_descriptor = MagicMock()
+                mock_descriptor.__func__ = mock_callable
+                d.return_value = {mock_dist_class: mock_descriptor}
 
                 assert torch.equal(DS.get_moments(mock_dist, n_moments), expected_moments)
                 mock_callable.assert_called_once_with(mock_dist, n_moments)
@@ -269,7 +288,9 @@ class TestDistributionServer:
                 mock_callable = MagicMock(side_effect=
                                           lambda dist, num_particles, dist_info: expected_particles
                                           if dist is mock_dist and num_particles is num_ptcl else None)
-                d.return_value = {mock_dist_class: mock_callable}
+                mock_descriptor = MagicMock()
+                mock_descriptor.__func__ = mock_callable
+                d.return_value = {mock_dist_class: mock_descriptor}
 
                 assert torch.equal(DS.draw_particles(mock_dist, num_ptcl, dist_info=dist_info), expected_particles)
 

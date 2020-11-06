@@ -224,7 +224,7 @@ class DistributionServer:
         if dist_class not in cls.dict_get_moments.keys():
             raise NotImplementedError("Get moments method for distribution class '{}' not yet implemented"
                                       .format(dist_class))
-        return cls.dict_get_moments[dist_class](dist, n_moments)
+        return cls.dict_get_moments[dist_class].__func__(dist, n_moments)
 
     @classmethod
     def draw_particles(cls, dist, num_particles, dist_info=None):
@@ -275,7 +275,7 @@ class DistributionServer:
 
         dist_class = type(dist)
         if dist_class in cls.dict_draw_particles.keys():
-            particles = cls.dict_draw_particles[dist_class](dist, num_particles, dist_info)
+            particles = cls.dict_draw_particles[dist_class].__func__(dist, num_particles, dist_info)
             assert particles.shape[0] == num_particles
         else:
             if len(dist.event_shape) > 1:
