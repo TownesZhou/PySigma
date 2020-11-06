@@ -157,10 +157,9 @@ class TestDistributionServer:
         random_param = torch.randn([3, 5])
         b_shape, e_shape = Size([3]), Size([5])
         dist = MagicMock(spec_set=D.Distribution)  # Mock a dist instance
-        # dist.batch_shape = PropertyMock(return_value=Size([1]))
-        # dist.event_shape = PropertyMock(return_value=Size([5]))
         dist.batch_shape = Size([3])
         dist.event_shape = Size([5])
+        dist_info = None
 
         with patch("pysigma.utils.DistributionServer.dict_param2dist", new_callable=PropertyMock) as d:
             # Mock the sub-level class method that are returned by looking up the class registry
@@ -168,7 +167,9 @@ class TestDistributionServer:
             # Set content of mocked class registry dictionary
             d.return_value = {dist_class: mock_callable}
 
-            assert DS.param2dist(dist_class, random_param, b_shape=b_shape, e_shape=e_shape) is dist
+            assert DS.param2dist(dist_class, random_param,
+                                 b_shape=b_shape, e_shape=e_shape, dist_info=dist_info) is dist
+            mock_callable.assert_called_once_with(random_param, dist_info)
 
     def test_dist2param_dist_class_not_found(self):
         # Test that specified dist class cannot be found in the class's registry
@@ -189,6 +190,7 @@ class TestDistributionServer:
         # Test correct return value
         mock_dist_class = D.Distribution
         mock_dist = MagicMock(spec_set=D.Distribution)
+        dist_info = None
         expected_param = torch.randn([3, 5])
 
         # Mock the builtin type()
@@ -200,6 +202,41 @@ class TestDistributionServer:
                                           lambda dist, dist_info: expected_param if dist is mock_dist else None)
                 d.return_value = {mock_dist_class: mock_callable}
 
-                assert torch.equal(DS.dist2param(mock_dist), expected_param)
+                assert torch.equal(DS.dist2param(mock_dist, dist_info=dist_info), expected_param)
+                mock_callable.assert_called_once_with(mock_dist, dist_info)
 
+    def test_get_moments_dist_class_not_found(self):
+        # Test that specified dist class cannot be found in the class's registry
+        mock_dist_class = D.Distribution
+        mock_dist = MagicMock(spec_set=D.Distribution)
+
+        # Mock the builtin type()
+        with patch("pysigma.utils.type") as t:
+            t.side_effect = lambda dist: mock_dist_class if dist is mock_dist else type(dist)
+
+            with patch("pysigma.utils.DistributionServer.dict_get_moments", new_callable=PropertyMock) as d:
+                d.return_value = {}
+
+                with pytest.raises(NotImplementedError):
+                    DS.get_moments(mock_dist)
+
+    def test_get_moments_correct(self):
+        # Test correct returned value
+        mock_dist_class = D.Distribution
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        n_moments = 2
+        expected_moments = torch.randn([3, 5])
+
+        # Mock the builtin type()
+        with patch("pysigma.utils.type") as t:
+            t.side_effect = lambda dist: mock_dist_class if dist is mock_dist else type(dist)
+
+            with patch("pysigma.utils.DistributionServer.dict_get_moments", new_callable=PropertyMock) as d:
+                mock_callable = MagicMock(side_effect=
+                                          lambda dist, moments: expected_moments
+                                          if dist is mock_dist and moments == n_moments else None)
+                d.return_value = {mock_dist_class: mock_callable}
+
+                assert torch.equal(DS.get_moments(mock_dist, n_moments), expected_moments)
+                mock_callable.assert_called_once_with(mock_dist, n_moments)
     # endregion

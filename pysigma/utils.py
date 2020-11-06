@@ -208,7 +208,7 @@ class DistributionServer:
         return cls.dict_dist2param[dist_class](dist, dist_info)
 
     @classmethod
-    def get_moments(cls, dist, n_moments):
+    def get_moments(cls, dist, n_moments=1):
         """Get vector of moments from a given distribution instance
 
         .. todo::
