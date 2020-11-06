@@ -11,8 +11,10 @@ from pysigma.utils import intern_name, extern_name, compatible_shape
 from pysigma.utils import DistributionServer as DS
 from pysigma.utils import KnowledgeServer as KS
 
+from .utils import equal_within_error
 
-# region
+
+# region: Testing module-level functions in utils.py
 def test_intern_name_invalid():
     name, struc_type = "Test", "something else"
     with pytest.raises(AssertionError):
@@ -118,8 +120,7 @@ def test_compatible_shape_incompatible():
 
 class TestDistributionServer:
 
-    # region
-    # Test top-level methods using mocks
+    # region: Test top-level methods using mocks
     def test_param2dist_dist_class_not_found(self):
         # Test that the specified dist class cannot be found in the class's registry
         dist_class = D.Distribution
@@ -144,9 +145,11 @@ class TestDistributionServer:
 
         with patch("pysigma.utils.DistributionServer.dict_param2dist", new_callable=PropertyMock) as d:
             # Mock the sub-level class method that are returned by looking up the class registry
-            mock_callable = MagicMock(side_effect=lambda param, dist_info : dist)
+            mock_callable = MagicMock(side_effect=lambda cls, param, dist_info : dist)
+            mock_descriptor = MagicMock()
+            mock_descriptor.__func__ = mock_callable
             # Set content of mocked class registry dictionary
-            d.return_value = {dist_class: mock_callable}
+            d.return_value = {dist_class: mock_descriptor}
 
             with pytest.raises(ValueError):
                 DS.param2dist(dist_class, random_param, b_shape=b_shape, e_shape=e_shape)
@@ -163,13 +166,18 @@ class TestDistributionServer:
 
         with patch("pysigma.utils.DistributionServer.dict_param2dist", new_callable=PropertyMock) as d:
             # Mock the sub-level class method that are returned by looking up the class registry
-            mock_callable = MagicMock(side_effect=lambda param, dist_info: dist)
+            mock_callable = MagicMock(side_effect=lambda cls, param, dist_info: dist)
+            mock_descriptor = MagicMock()
+            mock_descriptor.__func__ = mock_callable
             # Set content of mocked class registry dictionary
-            d.return_value = {dist_class: mock_callable}
+            d.return_value = {dist_class: mock_descriptor}
 
             assert DS.param2dist(dist_class, random_param,
                                  b_shape=b_shape, e_shape=e_shape, dist_info=dist_info) is dist
-            mock_callable.assert_called_once_with(random_param, dist_info)
+            # mock_callable.assert_called_once_with(random_param, dist_info)
+            mock_callable.assert_called_once()
+            call_args = mock_callable.call_args[0]
+            assert call_args[1] is random_param and call_args[2] is dist_info
 
     def test_dist2param_dist_class_not_found(self):
         # Test that specified dist class cannot be found in the class's registry
@@ -327,5 +335,20 @@ class TestDistributionServer:
 
         returned_value = DS.log_prob(dist, ptcl)
         assert returned_value.shape == b_shape + s_shape
+
+    # endregion
+
+    # region: special methods with Categorical distribution class
+    def test_categorical_param2dist(self):
+        b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
+        dist_class = D.Categorical
+        param = torch.rand(b_shape + p_shape)
+        expected_param = param / param.sum(dim=-1, keepdim=True)
+
+        dist = DS.param2dist(dist_class, param, b_shape, e_shape)
+
+        assert isinstance(dist, dist_class)
+        assert equal_within_error(dist.probs, expected_param)
+
 
     # endregion

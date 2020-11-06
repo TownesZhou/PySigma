@@ -165,7 +165,10 @@ class DistributionServer:
             raise NotImplementedError("Conversion from parameters to distribution instance for distribution class '{}' "
                                       "not yet implemented".format(dist_class))
 
-        dist = cls.dict_param2dist[dist_class](param, dist_info)
+        # The class-level dictionary returns a class method descriptor. The actual callable is obtained via the
+        #   descriptor's __func__ attribute
+        callable_method = cls.dict_param2dist[dist_class].__func__
+        dist = callable_method(cls, param, dist_info)
         if (b_shape is not None and dist.batch_shape != b_shape) or \
                 (e_shape is not None and dist.event_shape != e_shape):
             raise ValueError("The shape of the generated distribution {} does not match the provided shape. "
@@ -377,7 +380,7 @@ class DistributionServer:
 
             Return the parameter of the transformed distribution
         """
-        pass
+        raise NotImplementedError
 
     """
         DEFAULT methods that may be applicable to multiple general distribution classes
@@ -387,7 +390,7 @@ class DistributionServer:
         """
             Default method for getting moments, but only supports up to second order moment (i.e. X^2)
         """
-        assert n_moments <= 2
+        assert n_moments <= 2, "Default moment calculation only supports up to the second moment."
 
         mean = dist.mean
         if n_moments == 1:
@@ -398,23 +401,23 @@ class DistributionServer:
             result = torch.stack([mean, square], dim=len(mean.shape))
             return result
 
-    @classmethod
-    def _default_draw_particles(cls, dist, num_particles):
-        """
-            Default method for drawing particles. Draw according to the distribution itself.
-            Therefore, weights are uniform, and sampling log densities are the distribution's log pdf
-        """
-        s_shape = torch.Size([num_particles])
-        particles = dist.sample(sample_shape=s_shape)
-        weights = 1  # uniform weights
-        sampling_log_densities = dist.log_prob(value=particles)
+    # @classmethod
+    # def _default_draw_particles(cls, dist, num_particles):
+    #     """
+    #         Default method for drawing particles. Draw according to the distribution itself.
+    #         Therefore, weights are uniform, and sampling log densities are the distribution's log pdf
+    #     """
+    #     s_shape = torch.Size([num_particles])
+    #     particles = dist.sample(sample_shape=s_shape)
+    #     weights = 1  # uniform weights
+    #     sampling_log_densities = dist.log_prob(value=particles)
+    #
+    #     return particles, weights, sampling_log_densities
 
-        return particles, weights, sampling_log_densities
-
-    @classmethod
-    def _default_log_pdf(cls, dist, particles):
-        log_pdf = dist.log_prob(value=particles)
-        return log_pdf
+    # @classmethod
+    # def _default_log_pdf(cls, dist, particles):
+    #     log_pdf = dist.log_prob(value=particles)
+    #     return log_pdf
 
     """
         Categorical distribution
@@ -466,16 +469,16 @@ class DistributionServer:
         distribution class dependent method pointer
     """
     dict_draw_particles = {
-        torch.distributions.Categorical: _categorical_draw
+        torch.distributions.Categorical: _categorical_draw,
     }
     dict_log_pdf = {
 
     }
     dict_param2dist = {
-
+        torch.distributions.Categorical: _categorical_param2dist,
     }
     dict_dist2param = {
-
+        torch.distributions.Categorical: _categorical_dist2param,
     }
     dict_natural2exp_param = {
 
