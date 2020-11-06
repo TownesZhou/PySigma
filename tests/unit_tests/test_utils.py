@@ -170,7 +170,36 @@ class TestDistributionServer:
 
             assert DS.param2dist(dist_class, random_param, b_shape=b_shape, e_shape=e_shape) is dist
 
-    def test_dist2param(self):
-        pass
+    def test_dist2param_dist_class_not_found(self):
+        # Test that specified dist class cannot be found in the class's registry
+        mock_dist_class = D.Distribution
+        mock_dist = MagicMock(spec_set=D.Distribution)
+
+        # Mock the builtin type()
+        with patch("pysigma.utils.type") as t:
+            t.side_effect = lambda dist: mock_dist_class if dist is mock_dist else type(dist)
+
+            with patch("pysigma.utils.DistributionServer.dict_dist2param", new_callable=PropertyMock) as d:
+                d.return_value = {}
+
+                with pytest.raises(NotImplementedError):
+                    DS.dist2param(mock_dist)
+
+    def test_dist2param_correct(self):
+        # Test correct return value
+        mock_dist_class = D.Distribution
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        expected_param = torch.randn([3, 5])
+
+        # Mock the builtin type()
+        with patch("pysigma.utils.type") as t:
+            t.side_effect = lambda dist: mock_dist_class if dist is mock_dist else type(dist)
+
+            with patch("pysigma.utils.DistributionServer.dict_dist2param", new_callable=PropertyMock) as d:
+                mock_callable = MagicMock(side_effect=
+                                          lambda dist, dist_info: expected_param if dist is mock_dist else None)
+                d.return_value = {mock_dist_class: mock_callable}
+
+                assert torch.equal(DS.dist2param(mock_dist), expected_param)
 
     # endregion
