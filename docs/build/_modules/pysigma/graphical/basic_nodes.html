@@ -516,12 +516,14 @@
 
 <span class="sd">        Note</span>
 <span class="sd">        ----</span>
-<span class="sd">        Note that in a subclass, when overriding this method, it must be decorated with ``@compute_control`` so that</span>
+<span class="sd">        Note that in a subclass, when overriding this method, it must be decorated with</span>
+<span class="sd">        ``@parent_class.compute_control`` where ``parent_class`` is the parent class of said subclass so that</span>
 <span class="sd">        the message propagation process can be controlled and relevant stats be set.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
-<div class="viewcode-block" id="Node.compute_control"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.compute_control">[docs]</a>    <span class="k">def</span> <span class="nf">compute_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compute_func</span><span class="p">):</span>
+<div class="viewcode-block" id="Node.compute_control"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.compute_control">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">compute_control</span><span class="p">(</span><span class="n">compute_func</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Decorator that controls the message processing of this node depending on the quiescence state and set</span>
 <span class="sd">        corresponding stats when the processing is completed. This decorator **must** always be used with the</span>
 <span class="sd">        `compute()` method in any Node subclass.</span>
@@ -531,14 +533,16 @@
 <span class="sd">            - Set ``visited`` to true after the computation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">callable</span><span class="p">(</span><span class="n">compute_func</span><span class="p">)</span>
-        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">():</span>
+
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
             <span class="c1"># Return directly if quiesced. avoid any computation</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiescence</span><span class="p">:</span>
                 <span class="k">return</span>
             <span class="c1"># Call the actual compute method</span>
-            <span class="n">compute_func</span><span class="p">()</span>
+            <span class="n">compute_func</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
             <span class="c1"># Set stats aftermath</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">visited</span> <span class="o">=</span> <span class="kc">True</span>
+
         <span class="k">return</span> <span class="n">wrapper</span></div>
 
 <div class="viewcode-block" id="Node.reset_state"><a class="viewcode-back" href="../../../references/graphical/abstract-base-nodes.html#pysigma.graphical.basic_nodes.Node.reset_state">[docs]</a>    <span class="k">def</span> <span class="nf">reset_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -768,11 +772,11 @@
 
         <span class="nb">super</span><span class="p">(</span><span class="n">DFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="DFN.compute"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="DFN.compute"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DFN.compute">[docs]</a>    <span class="nd">@FactorNode</span><span class="o">.</span><span class="n">compute_control</span>
+    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Relay untempered message to downstream variable nodes.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">DFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="n">in_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">:</span>
@@ -825,11 +829,11 @@
 
         <span class="nb">super</span><span class="p">(</span><span class="n">DVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="DVN.compute"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DVN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="DVN.compute"><a class="viewcode-back" href="../../../references/graphical/other-structural-nodes.html#pysigma.graphical.basic_nodes.DVN.compute">[docs]</a>    <span class="nd">@VariableNode</span><span class="o">.</span><span class="n">compute_control</span>
+    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Relay untempered message to downstream factor nodes.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">DVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="n">in_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">out_ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">:</span>

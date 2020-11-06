@@ -341,7 +341,7 @@ sufficiently described in the argument <cite>dist_info</cite> in a prior consent
 
 <dl class="py method">
 <dt id="pysigma.utils.DistributionServer.get_moments">
-<em class="property">classmethod </em><code class="sig-name descname">get_moments</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">n_moments</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.get_moments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.get_moments" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">get_moments</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">n_moments</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.get_moments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.get_moments" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get vector of moments from a given distribution instance</p>
 <div class="admonition-todo admonition" id="id1">
 <p class="admonition-title">Todo</p>
@@ -384,9 +384,9 @@ that involves the batch dimension, and ignoring the batch dimensions, is equival
 which single distribution in the batch we wish draw from, and drawing samples from it, and repeating this
 process over and over again. The latter approach, when the samples are aggregated, yields a particle list
 that is representative of the joint distribution of the whole batch.</p>
-<p>Accordingly, the sampling process is implemented by drawing <cite>n</cite> batched samples from <cite>dist</cite>, where
-<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">num_particles</span> <span class="pre">//</span> <span class="pre">batch_size</span> <span class="pre">+</span> <span class="pre">1</span></code>, collapses the batch dimensions, random shuffle across the collapsed
-sample dimension, and truncate to select only a number of <code class="docutils literal notranslate"><span class="pre">num_particles</span></code> samples.</p>
+<p>Accordingly, the sampling process is implemented by first drawing <cite>n</cite> batched samples from <cite>dist</cite>, where
+<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">num_particles</span> <span class="pre">//</span> <span class="pre">batch_size</span> <span class="pre">+</span> <span class="pre">1</span></code>, then collapsing the batch dimensions, and finally randomly shuffling
+across the collapsed sample dimension, and truncate to select only a number of <code class="docutils literal notranslate"><span class="pre">num_particles</span></code> samples.</p>
 </dd></dl>
 
 <dl class="py method">

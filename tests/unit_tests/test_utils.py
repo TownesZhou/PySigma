@@ -285,4 +285,47 @@ class TestDistributionServer:
 
                 returned_ptcl = DS.draw_particles(mock_dist, num_ptcl, dist_info)
                 assert returned_ptcl.shape == Size([num_ptcl, 5])
+
+    def test_log_prob_differnt_event_shape(self):
+        # Test that the dist instance has a different event shape than the last dimension of the provided particles
+
+        s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([4])
+        ptcl = torch.randn(s_shape + e_shape)
+        # Mock a distribution instance that have expected event shape part of its batch shape
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape = b_shape + e_shape
+        mock_dist.event_shape = Size([])     # Empty event shape
+
+        with pytest.raises(AssertionError):
+            DS.log_prob(mock_dist, ptcl)
+
+    def test_log_prob_correct_mock(self):
+        # Test successful operation using mocks
+        s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([4])
+        # Mock distribution instance
+        ptcl = torch.randn(s_shape + e_shape)
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape = b_shape
+        mock_dist.event_shape = e_shape
+        # Mocking log_prob() method
+        mock_dist.log_prob.side_effect = lambda values: torch.randn(values.shape[:-1])
+
+        returned_value = DS.log_prob(mock_dist, ptcl)
+        assert returned_value.shape == b_shape + s_shape
+
+    def test_log_prob_correct_normal_distribution(self):
+        # Use Normal distribution class to test
+        # Test successful operation using mocks
+        s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([4])
+
+        # Create Normal dist instance with correct batch and event shape
+        loc, scale = torch.randn(b_shape + e_shape), torch.rand(b_shape + e_shape)
+        org_dist = D.Normal(loc, scale)
+        dist = D.Independent(org_dist, len(org_dist.batch_shape) - len(b_shape))
+
+        ptcl = torch.randn(s_shape + e_shape)
+
+        returned_value = DS.log_prob(dist, ptcl)
+        assert returned_value.shape == b_shape + s_shape
+
     # endregion

@@ -331,14 +331,15 @@ within the current decision phase.</p>
 <dd><p>Compute method to be called to propagate messages during decision phases.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Note that in a subclass, when overriding this method, it must be decorated with <code class="docutils literal notranslate"><span class="pre">&#64;compute_control</span></code> so that
+<p>Note that in a subclass, when overriding this method, it must be decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;parent_class.compute_control</span></code> where <code class="docutils literal notranslate"><span class="pre">parent_class</span></code> is the parent class of said subclass so that
 the message propagation process can be controlled and relevant stats be set.</p>
 </div>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical.basic_nodes.Node.compute_control">
-<code class="sig-name descname">compute_control</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">compute_func</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.compute_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.compute_control" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">compute_control</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">compute_func</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.compute_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.compute_control" title="Permalink to this definition">¶</a></dt>
 <dd><p>Decorator that controls the message processing of this node depending on the quiescence state and set
 corresponding stats when the processing is completed. This decorator <strong>must</strong> always be used with the
 <cite>compute()</cite> method in any Node subclass.</p>
