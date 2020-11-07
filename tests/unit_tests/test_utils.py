@@ -75,7 +75,7 @@ def test_extern_name_correct():
     assert extern_name(name, struc_type) == expected_name
 
 
-def test_intern_extern_reversible():
+def test_intern_extern_invertible_1():
     name, struc_type = "Test_Name", "type"
     v1 = intern_name(name, struc_type)
     v2 = extern_name(v1, struc_type)
@@ -89,6 +89,23 @@ def test_intern_extern_reversible():
     name, struc_type = "Test_Name", "conditional"
     v1 = intern_name(name, struc_type)
     v2 = extern_name(v1, struc_type)
+    assert name == v2
+
+
+def test_intern_extern_invertible_2():
+    name, struc_type = "TYPE_[Test_name]", "type"
+    v1 = extern_name(name, struc_type)
+    v2 = intern_name(v1, struc_type)
+    assert name == v2
+
+    name, struc_type = "PRED_[Test_name]", "predicate"
+    v1 = extern_name(name, struc_type)
+    v2 = intern_name(v1, struc_type)
+    assert name == v2
+
+    name, struc_type = "COND_[Test_name]", "conditional"
+    v1 = extern_name(name, struc_type)
+    v2 = intern_name(v1, struc_type)
     assert name == v2
 
 
@@ -383,5 +400,17 @@ class TestDistributionServer:
         returned_value = DS.dist2param(dist, dist_info)
 
         assert equal_within_error(returned_value, expected_param)
+
+    # TODO: wait for after refactor
+    @pytest.mark.skip("Wait for refactor")
+    def test_categorical_draw_particles(self):
+        b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
+        n_particles = 20
+        param = torch.rand(b_shape + p_shape)
+        dist = D.Categorical(probs=param)
+        dist_info = None
+
+        returned_value = DS.draw_particles(dist, n_particles, dist_info)
+        assert returned_value.shape == Size([n_particles]) + e_shape
 
     # endregion

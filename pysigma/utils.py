@@ -154,6 +154,20 @@ class DistributionServer:
         ValueError
             If the converted distribution instance has different batch shape and event shape than specified `b_shape`
             and `e_shape` respectively.
+
+        Note
+        ----
+        Implemented distribution classes:
+
+        +--------------------+--------------------------+-------------------------------------+-------+
+        | Distribution class | Input parameter shape    | Returned distribution shapes        | Notes |
+        |                    |                          +------------------+------------------+-------+
+        |                    |                          | dist.batch_shape | dist.event_shape |       |
+        +====================+==========================+==================+==================+=======+
+        | Categorical        | b_shape + [ num_logits ] | b_shape          | [] (empty shape) |       |
+        +--------------------+--------------------------+------------------+------------------+-------+
+
+
         """
         assert issubclass(dist_class, torch.distributions.Distribution)
         assert isinstance(param, torch.Tensor)
@@ -200,6 +214,17 @@ class DistributionServer:
         ------
         NotImplementedError
             If the conversion procedure specific to the distribution class of `dist` has not been implemented yet.
+
+        Note
+        ----
+        Implemented distribution classes:
+
+        +--------------------+-----------------------------------+-------+
+        | Distribution class | Returned parameter shapes         | Notes |
+        +====================+===================================+=======+
+        | Categorical        | dist.batch_shape + [ num_logits ] |       |
+        +--------------------+-----------------------------------+-------+
+
         """
         assert isinstance(dist, Distribution)
         assert dist_info is None or isinstance(dist_info, dict)
@@ -226,10 +251,14 @@ class DistributionServer:
                                       .format(dist_class))
         return cls.dict_get_moments[dist_class].__func__(dist, n_moments)
 
+    # TODO: Refactor - merge functionality with KnowledgeServer.draw_particles()
     @classmethod
     def draw_particles(cls, dist, num_particles, dist_info=None):
         """Draw a list of `num_particles` event particles from the given distribution specified by `dist`. The event
         particles drawn will be in the format compatible with DistributionServer and PyTorch.
+
+        Note that, since some PyTorch distribution have empty event shape, this means the returned particles for these
+        distribution classes would also have empty event shape.
 
         Parameters
         ----------
@@ -243,7 +272,8 @@ class DistributionServer:
         Returns
         -------
         torch.Tensor
-            the list of particles drawn, of shape ``[num_particles, event_size]``
+            the list of particles drawn, of shape ``[num_particles] + event_shape``. `event_shape` may be empty,
+            depending on the distribution class.
 
         Raises
         ------
@@ -438,8 +468,9 @@ class DistributionServer:
         """
         return dist.probs
 
+    # TODO: Refactor - merge functionality with KnowledgeServer.draw_particles()
     @staticmethod
-    def _categorical_draw(dist, num_particles):
+    def _categorical_draw(dist, num_particles, dist_info):
         """
             Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance's
                 'probs' attribute. Particles will be drawn uniformly covering every value in the RV's domain once and
@@ -447,23 +478,22 @@ class DistributionServer:
         """
         assert isinstance(dist, torch.distributions.Categorical)
         span = dist.probs.shape[-1]
-        b_shape = dist.batch_shape
-        s_shape = torch.Size(num_particles)
+        s_shape = torch.Size([num_particles])
 
-        particles = torch.ones(s_shape + b_shape)
+        particles = torch.ones(s_shape)
         for i in range(span):
             particles[i] = particles[i] * i
 
         # Weights obtained from probs attribute, by simply permuting the last dimension to first dimension
-        n_dims = len(dist.probs.shape)
-        dims = [n_dims-1, ] + [i for i in range(n_dims - 1)]
-        weights = dist.probs.clone().permute(dims)      # clone to prevent accidental in-place value change
+        # n_dims = len(dist.probs.shape)
+        # dims = [n_dims-1, ] + [i for i in range(n_dims - 1)]
+        # weights = dist.probs.clone().permute(dims)      # clone to prevent accidental in-place value change
 
         # Since we are effectively drawing particles uniformly from the finite discrete domain, the sampling pdf is also
         #   uniform
-        sampling_log_densities = 0
+        # sampling_log_densities = 0
 
-        return particles, weights, sampling_log_densities
+        return particles
 
     """
         distribution class dependent method pointer
