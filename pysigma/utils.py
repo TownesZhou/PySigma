@@ -596,8 +596,8 @@ class KnowledgeServer:
 
         assert len(self.rv_sizes) == len(self.rv_constraints)
         self.num_rvs = len(self.rv_sizes)
-        self.e_shape = torch.Size(rv_sizes)
-        self.s_shape = torch.Size([n for n in self.rv_num_particles])
+        self.e_shape = torch.Size(self.rv_sizes)
+        self.s_shape = torch.Size(self.rv_num_particles)
 
         # Cache
         self.particles = None
@@ -643,9 +643,11 @@ class KnowledgeServer:
         Returns
         -------
         particles : tuple of torch.Tensor
-            The marginal particle lists w.r.t. each random variable in order.
+            The marginal particle lists w.r.t. each random variable in order. The i-th particle tensor has shape
+            ``[ s_shape[i], e_shape[i] ]``.
         log_densities : tuple of torch.Tensor
-            The marginal sampling log densities w.r.t. each random variable in order.
+            The marginal sampling log densities w.r.t. each random variable in order. The i-th log sampling density
+            tensor has shape ``[ s_shape[i] ]``.
 
         Notes
         -----
@@ -663,8 +665,7 @@ class KnowledgeServer:
         assert isinstance(batched_param, torch.Tensor) and batched_param.shape[:-1] == batch_shape
         assert isinstance(update_cache, bool)
 
-        batched_dist = DistributionServer.param2dist(self.dist_class, batched_param, batch_shape, self.e_shape,
-                                                     self.dist_info)
+        batched_dist = DistributionServer.param2dist(self.dist_class, batched_param, dist_info=self.dist_info)
 
         # Look up for special draw method
         cstr = tuple(set(type(c) for c in self.rv_constraints))      # Take set to eliminate duplicate constraint types
@@ -677,7 +678,7 @@ class KnowledgeServer:
             all(isinstance(p, torch.Tensor) and p.shape == torch.Size([self.s_shape[j], self.e_shape[j]])
                 for j, p in enumerate(particles))
         assert isinstance(log_densities, tuple) and \
-            all(isinstance(d, torch.Tensor) and d.shape == torch.Size(self.s_shape[j])
+            all(isinstance(d, torch.Tensor) and d.shape == torch.Size([self.s_shape[j]])
                 for j, d in enumerate(log_densities))
 
         # Cache the particle list if asked for

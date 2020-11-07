@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import torch
 from torch import Size
 import torch.distributions as D
+import torch.distributions.constraints as C
 
 from pysigma.utils import intern_name, extern_name, compatible_shape
 from pysigma.utils import DistributionServer as DS
@@ -414,3 +415,51 @@ class TestDistributionServer:
         assert returned_value.shape == Size([n_particles]) + e_shape
 
     # endregion
+
+
+class TestKnowledgeServer:
+
+    def test_init(self):
+        dist_class = D.MultivariateNormal
+        rv_sizes = [2, 3]
+        rv_cstr = [C.real, C.real]
+        rv_num_particles = [10, 15]
+        dist_info = None
+
+        ks = KS(dist_class, rv_sizes, rv_cstr, rv_num_particles, dist_info)
+
+        assert ks.num_rvs == 2 and ks.e_shape == Size(rv_sizes) and ks.s_shape == Size(rv_num_particles)
+
+    # region: Test top-level methods using mocks
+    def test_draw_particles(self):
+        mock_dist_class = D.Distribution
+        rv_sizes, rv_cstr, rv_num_particles = [2, 3], [C.real, C.real], [10, 15]
+        dist_info = None
+        ks = KS(mock_dist_class, rv_sizes, rv_cstr, rv_num_particles, dist_info)
+
+        # Dummy parameter
+        param = torch.randn([4, 5, 6])
+        batch_shape = Size([4, 5])
+        # Mock batched dist instance
+        mock_dist = MagicMock(spec_set=D.Distribution)
+
+        # Set mocked return values
+        mock_particles = tuple([torch.randn([10, 2]), torch.randn([15, 3])])
+        mock_log_densities = tuple([torch.rand([10]), torch.rand([15])])
+
+        # Patch DistributionServer.param2dist
+        with patch("pysigma.utils.DistributionServer.param2dist") as d:
+            d.side_effect = lambda arg_dist_class, arg_param, b_shape=None, e_shape=None, dist_info=None: \
+                mock_dist if arg_dist_class is mock_dist_class and equal_within_error(arg_param, param) else None
+
+            # Patch class-level method registry to ensure that default_draw is called
+            # type(ks).dict_2special_draw = PropertyMock(return_value={})
+            with patch.object(ks, "dict_2special_draw", {}):
+                # Patch ks._default_draw()
+                with patch.object(ks, "_default_draw") as p:
+                    p.return_value = (mock_particles, mock_log_densities)
+                    return_val_1, return_val_2 = ks.draw_particles(param, batch_shape, update_cache=True)
+                    assert all(equal_within_error(a, b) for a, b in zip(return_val_1, mock_particles))
+                    assert all(equal_within_error(a, b) for a, b in zip(return_val_2, mock_log_densities))
+                    assert all(equal_within_error(a, b) for a, b in zip(return_val_1, ks.particles))
+                    assert all(equal_within_error(a, b) for a, b in zip(return_val_2, ks.log_densities))
