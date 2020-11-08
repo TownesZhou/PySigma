@@ -543,10 +543,19 @@
         <span class="sd">&quot;&quot;&quot;Get the log probability mass/density of the given particle values w.r.t. the given batched distribution</span>
 <span class="sd">        instance.</span>
 
-<span class="sd">        The particle value should be in PyTorch format that is compatible with PyTorch&#39;s distribution classes. This</span>
-<span class="sd">        means the last dimension of `values` is assumed the event dimension, and should be compatible with, if not</span>
-<span class="sd">        identical to, ``dist.event_shape``. Every other dimensions to the front is assumed sample dimensions, the sizes</span>
-<span class="sd">        of which together forms the ``sample_shape``.</span>
+<span class="sd">        `values` should have at least 2 dimensions. Its last dimension will be interpreted as the event dimension, and</span>
+<span class="sd">        every other dimensions at front be interpreted as sample dimensions. The size of its event dimension, i.e.,</span>
+<span class="sd">        event shape, must be compatible with the event shape of the distribution instance, i.e., ``dist.event_shape``:</span>
+
+<span class="sd">            - If ``dist.event_shape == torch.Size([])``, i.e., empty shape, the last dimension of `values` must be</span>
+<span class="sd">              singleton, i.e., ``values.shape[-1] == 1``. This is because PyTorch distribution class by default does not</span>
+<span class="sd">              retain the singleton event dimension if it is empty, while in PySigma&#39;s representation of particles, a</span>
+<span class="sd">              separate event dimension must present.</span>
+<span class="sd">            - Otherwise if ``dist.event_shape`` is not an empty shape, then it must be that</span>
+<span class="sd">              ``values.event_shape[-1:] == dist.event_shape``.</span>
+
+<span class="sd">        An AssertionError will be thrown if the above check does not pass. Accordingly, if ``values.shape[-1] == 1``,</span>
+<span class="sd">        then ``values``&#39;s last dimension will be squeezed before being queried against the distribution instance `dist`.</span>
 
 <span class="sd">        The distribution instance `dist` is assumed batched. In other words, its batch shape ``dist.batch_shape`` should</span>
 <span class="sd">        not be empty.</span>
@@ -556,7 +565,7 @@
 <span class="sd">        dist : torch.distributions.Distribution</span>
 <span class="sd">            A batched distribution instance. Its batch shape ``dist.batch_shape`` should not be empty.</span>
 <span class="sd">        values : torch.Tensor</span>
-<span class="sd">            A tensor with shape ``(sample_shape + [event_size])``</span>
+<span class="sd">            A tensor with shape ``(sample_shape + [event_size])``. The last dimension must present.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -566,21 +575,18 @@
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        AssertionError</span>
-<span class="sd">            If the ``event_size`` found in `values` is different from `dist.event_shape`.</span>
+<span class="sd">            If `dist` has empty batch shape.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the ``event_size`` found in `values` is not compatible with `dist.event_shape`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">values</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">2</span>
 
-        <span class="c1"># dist_class = type(dist)</span>
-        <span class="c1"># if dist_class not in cls.dict_log_pdf.keys():</span>
-        <span class="c1">#     raise NotImplementedError(&quot;Get log pdf method for distribution class &#39;{}&#39; not yet implemented&quot;</span>
-        <span class="c1">#                               .format(dist_class))</span>
-        <span class="c1"># return cls.dict_log_pdf[dist_class](dist, particles)</span>
-
         <span class="c1"># Extract shapes</span>
         <span class="n">sample_shape</span><span class="p">,</span> <span class="n">event_shape</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span>
         <span class="n">batch_shape</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span>
-        <span class="k">assert</span> <span class="n">event_shape</span> <span class="o">==</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">,</span> \
+        <span class="k">assert</span> <span class="p">(</span><span class="n">event_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span> <span class="ow">and</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]))</span> <span class="ow">or</span> \
+               <span class="p">(</span><span class="n">event_shape</span> <span class="o">==</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shap</span><span class="p">),</span> \
             <span class="s2">&quot;The event shape (</span><span class="si">{}</span><span class="s2">) found in the given particles is different from the event shape (</span><span class="si">{}</span><span class="s2">) found in the &quot;</span> \
             <span class="s2">&quot;distribution instance&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">)</span>
 
@@ -629,7 +635,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        DEFAULT methods that may be applicable to multiple general distribution classes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionServer._default_get_moments"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._default_get_moments">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_default_get_moments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Default method for getting moments, but only supports up to second order moment (i.e. X^2)</span>
@@ -643,7 +649,7 @@
             <span class="n">square</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">variance</span> <span class="o">+</span> <span class="n">mean</span> <span class="o">**</span> <span class="mi">2</span>
             <span class="c1"># Stack mean and square to insert a new last dimension</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">mean</span><span class="p">,</span> <span class="n">square</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">result</span>
+            <span class="k">return</span> <span class="n">result</span></div>
 
     <span class="c1"># @classmethod</span>
     <span class="c1"># def _default_draw_particles(cls, dist, num_particles):</span>
@@ -666,24 +672,52 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Categorical distribution</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="DistributionServer._categorical_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_categorical_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            For categorical, params assumed to be fed as the &#39;probs&#39; attribute</span>
-<span class="sd">            # TODO: different parameter scheme and dist_info schema specification</span>
+<span class="sd">            .. todo::</span>
+<span class="sd">               TODO: different parameter scheme and dist_info schema specification</span>
+
+<span class="sd">            For Categorical distribution, params assumed by default to be the values of &#39;probs&#39; attribute</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            params : torch.Tensor</span>
+<span class="sd">                By default, of shape ``batch_shape + [num_logits]``, where ``num_logits`` is the number of possible</span>
+<span class="sd">                outcomes of the categorical random variable.</span>
+<span class="sd">            dist_info : dict</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            torch.distributions.Categorical</span>
+<span class="sd">                Returns a categorical distribution instance, with ``batch_shape`` the same as the batch shape of input</span>
+<span class="sd">                `param`, and ``event_shape == torch.Size([])``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">probs</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dist</span>
+        <span class="k">return</span> <span class="n">dist</span></div>
 
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="DistributionServer._categorical_dist2param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_dist2param">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_categorical_dist2param</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            # TODO: different parameter scheme and dist_info schema specification</span>
+<span class="sd">            .. todo::</span>
+<span class="sd">               TODO: different parameter scheme and dist_info schema specification</span>
+
+<span class="sd">            For Categorical distribution, params assumed by default to be the values of &#39;probs&#39; attribute</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            dist : torch.distributions.Categorical</span>
+<span class="sd">            dist_info : dict</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            torch.Tensor</span>
+<span class="sd">                By default, returns `dist.probs`, of shape ``dist.batch_shape + [num_logits]``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span>
+        <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span></div>
 
     <span class="c1"># TODO: Refactor - merge functionality with KnowledgeServer.draw_particles()</span>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="DistributionServer._categorical_draw"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_draw">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance&#39;s</span>
@@ -707,7 +741,7 @@
         <span class="c1">#   uniform</span>
         <span class="c1"># sampling_log_densities = 0</span>
 
-        <span class="k">return</span> <span class="n">particles</span>
+        <span class="k">return</span> <span class="n">particles</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        distribution class dependent method pointer</span>
@@ -1265,7 +1299,7 @@
 <span class="sd">                Draw a single unique list of marginal particles given batch of distributions and calculate marginal log </span>
 <span class="sd">                sampling densities .</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">_default_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_dist</span><span class="p">):</span>
+<div class="viewcode-block" id="KnowledgeServer._default_draw"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._default_draw">[docs]</a>    <span class="k">def</span> <span class="nf">_default_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_dist</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
         <span class="n">b_dims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batched_dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
         <span class="n">b_size</span> <span class="o">=</span> <span class="n">batched_dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
@@ -1307,7 +1341,7 @@
             <span class="n">marg_log_dens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marg_log_dens_j</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">))</span>
 
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">)</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Categorical distribution. Assumes all RV have size 1</span>
@@ -1317,12 +1351,12 @@
 <span class="sd">            - event translation from torch to pred:</span>
 <span class="sd">                Take volume modulo of the event values. Return a tuple a tensors</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">_categorical_var_span</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="KnowledgeServer._categorical_var_span"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._categorical_var_span">[docs]</a>    <span class="k">def</span> <span class="nf">_categorical_var_span</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Helper function to determine the value range of each rv</span>
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">integer_interval</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">-</span> <span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">-</span> <span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_categorical_2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+<div class="viewcode-block" id="KnowledgeServer._categorical_2torch_event"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._categorical_2torch_event">[docs]</a>    <span class="k">def</span> <span class="nf">_categorical_2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">),</span> \
             <span class="s2">&quot;While attempting to translate Categorical events to PyTorch format, expect random variable sizes to be &quot;</span> \
             <span class="s2">&quot;all 1, but instead found sizes </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
@@ -1341,9 +1375,9 @@
             <span class="c1"># Base of i_th var is the product of the spans of all later variables (i.e. from (i+1)th to n_th variable)</span>
             <span class="n">base</span> <span class="o">*=</span> <span class="n">span</span>
 
-        <span class="k">return</span> <span class="n">volume_prod</span>
+        <span class="k">return</span> <span class="n">volume_prod</span></div>
 
-    <span class="k">def</span> <span class="nf">_categorical_2cognitive_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
+<div class="viewcode-block" id="KnowledgeServer._categorical_2cognitive_event"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._categorical_2cognitive_event">[docs]</a>    <span class="k">def</span> <span class="nf">_categorical_2cognitive_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">),</span> \
             <span class="s2">&quot;While attempting to translate Categorical events to PyTorch format, expect random variable sizes to be &quot;</span> \
@@ -1362,9 +1396,9 @@
 
         <span class="c1"># Concatenate the modulo list</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">modulo_list</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="n">result</span></div>
 
-    <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<div class="viewcode-block" id="KnowledgeServer._categorical_draw"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._categorical_draw">[docs]</a>    <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Draw particles components for Categorical distributions. Returns a finite discrete well-spaced lattice as the</span>
 <span class="sd">        particle values and uniform log sampling densities.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1372,7 +1406,7 @@
         <span class="n">particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
         <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">span</span><span class="p">)</span> <span class="o">/</span> <span class="n">span</span><span class="p">)</span> <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span></div>
+        <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span></div></div>
 </pre></div>
 
            </div>

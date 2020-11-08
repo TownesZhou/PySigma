@@ -329,10 +329,19 @@ class DistributionServer:
         """Get the log probability mass/density of the given particle values w.r.t. the given batched distribution
         instance.
 
-        The particle value should be in PyTorch format that is compatible with PyTorch's distribution classes. This
-        means the last dimension of `values` is assumed the event dimension, and should be compatible with, if not
-        identical to, ``dist.event_shape``. Every other dimensions to the front is assumed sample dimensions, the sizes
-        of which together forms the ``sample_shape``.
+        `values` should have at least 2 dimensions. Its last dimension will be interpreted as the event dimension, and
+        every other dimensions at front be interpreted as sample dimensions. The size of its event dimension, i.e.,
+        event shape, must be compatible with the event shape of the distribution instance, i.e., ``dist.event_shape``:
+
+            - If ``dist.event_shape == torch.Size([])``, i.e., empty shape, the last dimension of `values` must be
+              singleton, i.e., ``values.shape[-1] == 1``. This is because PyTorch distribution class by default does not
+              retain the singleton event dimension if it is empty, while in PySigma's representation of particles, a
+              separate event dimension must present.
+            - Otherwise if ``dist.event_shape`` is not an empty shape, then it must be that
+              ``values.event_shape[-1:] == dist.event_shape``.
+
+        An AssertionError will be thrown if the above check does not pass. Accordingly, if ``values.shape[-1] == 1``,
+        then ``values``'s last dimension will be squeezed before being queried against the distribution instance `dist`.
 
         The distribution instance `dist` is assumed batched. In other words, its batch shape ``dist.batch_shape`` should
         not be empty.
@@ -342,7 +351,7 @@ class DistributionServer:
         dist : torch.distributions.Distribution
             A batched distribution instance. Its batch shape ``dist.batch_shape`` should not be empty.
         values : torch.Tensor
-            A tensor with shape ``(sample_shape + [event_size])``
+            A tensor with shape ``(sample_shape + [event_size])``. The last dimension must present.
 
         Returns
         -------
@@ -352,29 +361,34 @@ class DistributionServer:
         Raises
         ------
         AssertionError
-            If the ``event_size`` found in `values` is different from `dist.event_shape`.
+            If `dist` has empty batch shape.
+        AssertionError
+            If the ``event_size`` found in `values` is not compatible with `dist.event_shape`.
         """
         assert isinstance(dist, Distribution) and len(dist.batch_shape) >= 1
         assert isinstance(values, torch.Tensor) and values.dim() >= 2
 
-        # dist_class = type(dist)
-        # if dist_class not in cls.dict_log_pdf.keys():
-        #     raise NotImplementedError("Get log pdf method for distribution class '{}' not yet implemented"
-        #                               .format(dist_class))
-        # return cls.dict_log_pdf[dist_class](dist, particles)
-
         # Extract shapes
         sample_shape, event_shape = values.shape[:-1], values.shape[-1:]
         batch_shape = dist.batch_shape
-        assert event_shape == dist.event_shape, \
-            "The event shape ({}) found in the given particles is different from the event shape ({}) found in the " \
-            "distribution instance".format(event_shape, dist.event_shape)
+        assert (event_shape == torch.Size([1]) and dist.event_shape == torch.Size([])) or \
+               (event_shape == dist.event_shape), \
+            "The given particle tensor's event shape is not compatible with that of the given distribution instance. " \
+            "Found shape {} in the particle tensor, so expect shape {} in the distribution instance. Instead found " \
+            "{}".format(event_shape, (torch.Size([]) if event_shape == torch.Size([1]) else event_shape),
+                        dist.event_shape)
+        # Shrink particle event dimension if it's singleton
+        if event_shape == torch.Size([1]):
+            values = values.squeeze(dim=-1)
 
         # Insert singleton dimensions into the particles tensor, and repeat along those dimensions to expand to
         # full batch shape.
         for i in range(len(batch_shape)):
             values = values.unsqueeze(dim=len(sample_shape))
-        repeat_times = [1] * len(sample_shape) + list(batch_shape) + [1]
+        # Repeat values along batch dimensions. Only append a 1 to the end if the value's event dimension is not
+        #   singleton and has not been removed
+        repeat_times = [1] * len(sample_shape) + list(batch_shape) + ([1] if event_shape != torch.Size([1]) else [])
+
         values = values.repeat(repeat_times)
 
         # Query the actual distribution instance
@@ -455,8 +469,23 @@ class DistributionServer:
     @staticmethod
     def _categorical_param2dist(params, dist_info):
         """
-            For categorical, params assumed to be fed as the 'probs' attribute
-            # TODO: different parameter scheme and dist_info schema specification
+            .. todo::
+               TODO: different parameter scheme and dist_info schema specification
+
+            For Categorical distribution, params assumed by default to be the values of 'probs' attribute
+
+            Parameters
+            ----------
+            params : torch.Tensor
+                By default, of shape ``batch_shape + [num_logits]``, where ``num_logits`` is the number of possible
+                outcomes of the categorical random variable.
+            dist_info : dict
+
+            Returns
+            -------
+            torch.distributions.Categorical
+                Returns a categorical distribution instance, with ``batch_shape`` the same as the batch shape of input
+                `param`, and ``event_shape == torch.Size([])``.
         """
         dist = torch.distributions.Categorical(probs=params)
         return dist
@@ -464,7 +493,20 @@ class DistributionServer:
     @staticmethod
     def _categorical_dist2param(dist, dist_info):
         """
-            # TODO: different parameter scheme and dist_info schema specification
+            .. todo::
+               TODO: different parameter scheme and dist_info schema specification
+
+            For Categorical distribution, params assumed by default to be the values of 'probs' attribute
+
+            Parameters
+            ----------
+            dist : torch.distributions.Categorical
+            dist_info : dict
+
+            Returns
+            -------
+            torch.Tensor
+                By default, returns `dist.probs`, of shape ``dist.batch_shape + [num_logits]``.
         """
         return dist.probs
 

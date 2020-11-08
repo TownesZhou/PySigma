@@ -335,9 +335,8 @@ class TestDistributionServer:
                 returned_ptcl = DS.draw_particles(mock_dist, num_ptcl, dist_info)
                 assert returned_ptcl.shape == Size([num_ptcl, 5])
 
-    def test_log_prob_differnt_event_shape(self):
-        # Test that the dist instance has a different event shape than the last dimension of the provided particles
-
+    def test_log_prob_incompatible_event_shape_1(self):
+        # Test that the dist instance has an incompatible event shape than the last dimension of the provided particles
         s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([4])
         ptcl = torch.randn(s_shape + e_shape)
         # Mock a distribution instance that have expected event shape part of its batch shape
@@ -348,8 +347,21 @@ class TestDistributionServer:
         with pytest.raises(AssertionError):
             DS.log_prob(mock_dist, ptcl)
 
-    def test_log_prob_correct_mock(self):
+    def test_log_prob_incompatible_event_shape_2(self):
+        # Test that the dist instance has an incompatible event shape than the last dimension of the provided particles
+        s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([1])
+        ptcl = torch.randn(s_shape + e_shape)
+        # Mock a distribution instance that have expected event shape part of its batch shape
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape = b_shape + e_shape
+        mock_dist.event_shape = Size([2])     # Empty event shape
+
+        with pytest.raises(AssertionError):
+            DS.log_prob(mock_dist, ptcl)
+
+    def test_log_prob_correct_mock_non_singleton(self):
         # Test successful operation using mocks
+        # Scenario 1: non-singleton event dimension
         s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([4])
         # Mock distribution instance
         ptcl = torch.randn(s_shape + e_shape)
@@ -362,15 +374,81 @@ class TestDistributionServer:
         returned_value = DS.log_prob(mock_dist, ptcl)
         assert returned_value.shape == b_shape + s_shape
 
-    def test_log_prob_correct_normal_distribution(self):
-        # Use Normal distribution class to test
+    def test_log_prob_correct_mock_non_singleton_large_shape(self):
+        # Test successful operation using mocks
+        # Scenario 2: non-singleton event dimension, large sample and batch shapes
+        s_shape, b_shape, e_shape = Size([10, 11, 12, 13]), Size([2, 3, 4]), Size([4])
+        # Mock distribution instance
+        ptcl = torch.randn(s_shape + e_shape)
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape = b_shape
+        mock_dist.event_shape = e_shape
+        # Mocking log_prob() method
+        mock_dist.log_prob.side_effect = lambda values: torch.randn(values.shape[:-1])
+
+        returned_value = DS.log_prob(mock_dist, ptcl)
+        assert returned_value.shape == b_shape + s_shape
+
+    def test_log_prob_correct_mock_singleton(self):
+        # Test successful operation using mocks
+        # Scenario 3: singleton event dimension
+        s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([1])
+        # Mock distribution instance
+        ptcl = torch.randn(s_shape + e_shape)
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape = b_shape
+        mock_dist.event_shape = Size([])
+        # Mocking log_prob() method
+        mock_dist.log_prob.side_effect = lambda values: torch.randn_like(values)
+
+        returned_value = DS.log_prob(mock_dist, ptcl)
+        assert returned_value.shape == b_shape + s_shape
+
+    def test_log_prob_correct_mock_singleton_large_shape(self):
+        # Test successful operation using mocks
+        # Scenario 4: singleton event dimension, large sample and batch shapes
+        s_shape, b_shape, e_shape = Size([10, 11, 12, 13]), Size([2, 3, 4]), Size([1])
+        # Mock distribution instance
+        ptcl = torch.randn(s_shape + e_shape)
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape = b_shape
+        mock_dist.event_shape = Size([])
+        # Mocking log_prob() method
+        mock_dist.log_prob.side_effect = lambda values: torch.randn_like(values)
+
+        returned_value = DS.log_prob(mock_dist, ptcl)
+        assert returned_value.shape == b_shape + s_shape
+
+    def test_log_prob_correct_normal_distribution_non_singleton(self):
+        # Use Multivariate Normal distribution class to test particles with non-singleton event dimension
         # Test successful operation using mocks
         s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([4])
 
         # Create Normal dist instance with correct batch and event shape
-        loc, scale = torch.randn(b_shape + e_shape), torch.rand(b_shape + e_shape)
-        org_dist = D.Normal(loc, scale)
-        dist = D.Independent(org_dist, len(org_dist.batch_shape) - len(b_shape))
+        loc = torch.randn(b_shape + e_shape)
+        cov = torch.eye(e_shape[0])
+        for i in range(len(b_shape)):
+            cov = cov.unsqueeze(dim=0)
+        repeat_times = list(b_shape) + [1, 1]
+        cov = cov.repeat(repeat_times)
+
+        dist = D.MultivariateNormal(loc, cov)
+
+        ptcl = torch.randn(s_shape + e_shape)
+
+        returned_value = DS.log_prob(dist, ptcl)
+        assert returned_value.shape == b_shape + s_shape
+
+    def test_log_prob_correct_normal_distribution_singleton(self):
+        # Use univariate Normal distribution class to test particles with singleton event dimension
+        # Test successful operation using mocks
+        s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([1])
+
+        # Create Normal dist instance with correct batch and event shape
+        loc = torch.randn(b_shape)
+        scale = torch.randn(b_shape)
+
+        dist = D.Normal(loc, scale)
 
         ptcl = torch.randn(s_shape + e_shape)
 
@@ -1151,3 +1229,9 @@ class TestKnowledgeServer:
         cat_particles = torch.randn([6, 3])
         with pytest.raises(ValueError):
             KS.combinatorial_decat(cat_particles, split_size)
+
+    # endregion
+
+    # region: distribution-class specific method
+    def test_default_draw(self):
+        pass

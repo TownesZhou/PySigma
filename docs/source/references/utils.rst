@@ -13,6 +13,7 @@ DistributionServer
 .. autoclass:: pysigma.utils.DistributionServer
    :members:
    :undoc-members:
+   :private-members:
 
 KnowledgeServer
 ---------------
@@ -20,3 +21,4 @@ KnowledgeServer
 .. autoclass:: pysigma.utils.KnowledgeServer
    :members:
    :undoc-members:
+   :private-members:

@@ -452,17 +452,28 @@ across the collapsed sample dimension, and truncate to select only a number of <
 <em class="property">classmethod </em><code class="sig-name descname">log_prob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">values</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.log_prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.log_prob" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the log probability mass/density of the given particle values w.r.t. the given batched distribution
 instance.</p>
-<p>The particle value should be in PyTorch format that is compatible with PyTorch’s distribution classes. This
-means the last dimension of <cite>values</cite> is assumed the event dimension, and should be compatible with, if not
-identical to, <code class="docutils literal notranslate"><span class="pre">dist.event_shape</span></code>. Every other dimensions to the front is assumed sample dimensions, the sizes
-of which together forms the <code class="docutils literal notranslate"><span class="pre">sample_shape</span></code>.</p>
+<p><cite>values</cite> should have at least 2 dimensions. Its last dimension will be interpreted as the event dimension, and
+every other dimensions at front be interpreted as sample dimensions. The size of its event dimension, i.e.,
+event shape, must be compatible with the event shape of the distribution instance, i.e., <code class="docutils literal notranslate"><span class="pre">dist.event_shape</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">dist.event_shape</span> <span class="pre">==</span> <span class="pre">torch.Size([])</span></code>, i.e., empty shape, the last dimension of <cite>values</cite> must be
+singleton, i.e., <code class="docutils literal notranslate"><span class="pre">values.shape[-1]</span> <span class="pre">==</span> <span class="pre">1</span></code>. This is because PyTorch distribution class by default does not
+retain the singleton event dimension if it is empty, while in PySigma’s representation of particles, a
+separate event dimension must present.</p></li>
+<li><p>Otherwise if <code class="docutils literal notranslate"><span class="pre">dist.event_shape</span></code> is not an empty shape, then it must be that
+<code class="docutils literal notranslate"><span class="pre">values.event_shape[-1:]</span> <span class="pre">==</span> <span class="pre">dist.event_shape</span></code>.</p></li>
+</ul>
+</div></blockquote>
+<p>An AssertionError will be thrown if the above check does not pass. Accordingly, if <code class="docutils literal notranslate"><span class="pre">values.shape[-1]</span> <span class="pre">==</span> <span class="pre">1</span></code>,
+then <code class="docutils literal notranslate"><span class="pre">values</span></code>’s last dimension will be squeezed before being queried against the distribution instance <cite>dist</cite>.</p>
 <p>The distribution instance <cite>dist</cite> is assumed batched. In other words, its batch shape <code class="docutils literal notranslate"><span class="pre">dist.batch_shape</span></code> should
 not be empty.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dist</strong> (<em>torch.distributions.Distribution</em>) – A batched distribution instance. Its batch shape <code class="docutils literal notranslate"><span class="pre">dist.batch_shape</span></code> should not be empty.</p></li>
-<li><p><strong>values</strong> (<em>torch.Tensor</em>) – A tensor with shape <code class="docutils literal notranslate"><span class="pre">(sample_shape</span> <span class="pre">+</span> <span class="pre">[event_size])</span></code></p></li>
+<li><p><strong>values</strong> (<em>torch.Tensor</em>) – A tensor with shape <code class="docutils literal notranslate"><span class="pre">(sample_shape</span> <span class="pre">+</span> <span class="pre">[event_size])</span></code>. The last dimension must present.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -472,7 +483,10 @@ not be empty.</p>
 <dd class="field-odd"><p>torch.Tensor</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AssertionError</strong> – If the <code class="docutils literal notranslate"><span class="pre">event_size</span></code> found in <cite>values</cite> is different from <cite>dist.event_shape</cite>.</p>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If <cite>dist</cite> has empty batch shape.</p></li>
+<li><p><strong>AssertionError</strong> – If the <code class="docutils literal notranslate"><span class="pre">event_size</span></code> found in <cite>values</cite> is not compatible with <cite>dist.event_shape</cite>.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -491,6 +505,72 @@ not be empty.</p>
 <p>To implement</p>
 </div>
 <p>Return the parameter of the transformed distribution</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._default_get_moments">
+<em class="property">classmethod </em><code class="sig-name descname">_default_get_moments</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">n_moments</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._default_get_moments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._default_get_moments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default method for getting moments, but only supports up to second order moment (i.e. X^2)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._categorical_param2dist">
+<em class="property">static </em><code class="sig-name descname">_categorical_param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_param2dist" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition-todo admonition" id="id3">
+<p class="admonition-title">Todo</p>
+<p>TODO: different parameter scheme and dist_info schema specification</p>
+</div>
+<p>For Categorical distribution, params assumed by default to be the values of ‘probs’ attribute</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>torch.Tensor</em>) – By default, of shape <code class="docutils literal notranslate"><span class="pre">batch_shape</span> <span class="pre">+</span> <span class="pre">[num_logits]</span></code>, where <code class="docutils literal notranslate"><span class="pre">num_logits</span></code> is the number of possible
+outcomes of the categorical random variable.</p></li>
+<li><p><strong>dist_info</strong> (<em>dict</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Returns a categorical distribution instance, with <code class="docutils literal notranslate"><span class="pre">batch_shape</span></code> the same as the batch shape of input
+<cite>param</cite>, and <code class="docutils literal notranslate"><span class="pre">event_shape</span> <span class="pre">==</span> <span class="pre">torch.Size([])</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.distributions.Categorical</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._categorical_dist2param">
+<em class="property">static </em><code class="sig-name descname">_categorical_dist2param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_dist2param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_dist2param" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition-todo admonition" id="id4">
+<p class="admonition-title">Todo</p>
+<p>TODO: different parameter scheme and dist_info schema specification</p>
+</div>
+<p>For Categorical distribution, params assumed by default to be the values of ‘probs’ attribute</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dist</strong> (<em>torch.distributions.Categorical</em>) – </p></li>
+<li><p><strong>dist_info</strong> (<em>dict</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>By default, returns <cite>dist.probs</cite>, of shape <code class="docutils literal notranslate"><span class="pre">dist.batch_shape</span> <span class="pre">+</span> <span class="pre">[num_logits]</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._categorical_draw">
+<em class="property">static </em><code class="sig-name descname">_categorical_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">num_particles</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_draw" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance’s</dt><dd><p>‘probs’ attribute. Particles will be drawn uniformly covering every value in the RV’s domain once and
+only once, while their probability mass will be assigned as the particle weights respectively.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py attribute">
@@ -878,6 +958,33 @@ equal.</p>
 <dd class="field-even"><p><strong>ValueError</strong> – If <cite>cat_particles</cite> was not a result from <cite>combinatorial_cat</cite> and cannot be properly de-concatenated.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.KnowledgeServer._default_draw">
+<code class="sig-name descname">_default_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">batched_dist</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer._default_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer._default_draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.KnowledgeServer._categorical_var_span">
+<code class="sig-name descname">_categorical_var_span</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer._categorical_var_span"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer._categorical_var_span" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.KnowledgeServer._categorical_2torch_event">
+<code class="sig-name descname">_categorical_2torch_event</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">particles</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer._categorical_2torch_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer._categorical_2torch_event" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.KnowledgeServer._categorical_2cognitive_event">
+<code class="sig-name descname">_categorical_2cognitive_event</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">particles</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer._categorical_2cognitive_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer._categorical_2cognitive_event" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.KnowledgeServer._categorical_draw">
+<code class="sig-name descname">_categorical_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer._categorical_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer._categorical_draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw particles components for Categorical distributions. Returns a finite discrete well-spaced lattice as the
+particle values and uniform log sampling densities.</p>
 </dd></dl>
 
 </dd></dl>
