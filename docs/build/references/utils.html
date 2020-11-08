@@ -696,8 +696,10 @@ calling this method.</p></li>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>particles</strong> (<em>tuple of torch.Tensor</em>) – The marginal particle lists w.r.t. each random variable in order.</p></li>
-<li><p><strong>log_densities</strong> (<em>tuple of torch.Tensor</em>) – The marginal sampling log densities w.r.t. each random variable in order.</p></li>
+<li><p><strong>particles</strong> (<em>tuple of torch.Tensor</em>) – The marginal particle lists w.r.t. each random variable in order. The i-th particle tensor has shape
+<code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">s_shape[i],</span> <span class="pre">e_shape[i]</span> <span class="pre">]</span></code>.</p></li>
+<li><p><strong>log_densities</strong> (<em>tuple of torch.Tensor</em>) – The marginal sampling log densities w.r.t. each random variable in order. The i-th log sampling density
+tensor has shape <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">s_shape[i]</span> <span class="pre">]</span></code>.</p></li>
 </ul>
 </p>
 </dd>
@@ -720,24 +722,32 @@ instance.</p>
 <p>A batched distribution instance will be instantiated from <cite>param</cite>, along with registered metadata in
 <cite>self.dist_info</cite>.</p>
 <p>If <cite>index_map</cite> is not specified, each entries in the iterable <cite>alt_particles</cite> must represent events of the
-Predicate’s random argument at the same index in the predicate argument list. If the entry is ‘None’, the
-cached particle tensor of that predicate argument will be used instead.</p>
-<p>Alternatively, one can specify a dictionary <cite>index_map</cite> mapping integer index to an integer index or a list of
-indices. The entry <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> will be taken as the particle tensor for the <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> th
-predicate argument. If <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> is a list of integers, then the particle tensor at this position will be
-interpreted as the concatenated/joint events of those predicate arguments whose indices are in <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code>.
-Note that the entry <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> can be <code class="docutils literal notranslate"><span class="pre">None</span></code>, however in this case <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> must refer to
-one predicate argument only. <strong>If there is any predicate argument that is not referenced by values of</strong>
-<cite>index_map</cite> <strong>, then the returning</strong> <cite>surrogate_log_prob</cite> <strong>will be marginalized over this predicate argument.</strong></p>
-<p>Correspondingly, if <code class="docutils literal notranslate"><span class="pre">index_map</span></code> is specified, then all indices in <code class="docutils literal notranslate"><span class="pre">alt_particles</span></code> must appear as keys.</p>
+Predicate’s random argument at the same index in the predicate argument list. If an entry in <cite>alt_particles</cite> is
+‘None’, then the respective cached particle tensor in <cite>self.particles</cite> representing that predicate argument will
+be used instead.</p>
+<p>Alternatively, <cite>index_map</cite> can be specified as a dictionary mapping integer index to an integer index or a list
+of indices. The entry <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> will be taken as the particle tensor for the <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> th
+predicate argument. If <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> is a list of integers, then the particle tensor <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code>
+will be interpreted as the <strong>concatenated/joint events</strong> of the corresponding predicate arguments.</p>
+<p>For example, if <code class="docutils literal notranslate"><span class="pre">index_map[i]</span> <span class="pre">=</span> <span class="pre">[0,</span> <span class="pre">3]</span></code>, then the particle tensor <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> will be regarded as
+the joint events of the 0-th and 3-rd predicate arguments. This means that an attempt will be made to
+combinatorially de-concatenate the tensor <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code>. If this process fails, an AssertionError will
+be thrown.</p>
+<p>Note that the entry <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> can be <code class="docutils literal notranslate"><span class="pre">None</span></code>, however in this case <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> must refer to
+one predicate argument only, i.e., <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> must be an integer. <strong>If there is any predicate argument
+that is not referenced by values of</strong> <cite>index_map</cite> <strong>, then the returning</strong> <cite>surrogate_log_prob</cite> <strong>will be
+marginalized over this predicate argument.</strong></p>
+<p>Accordingly, if <code class="docutils literal notranslate"><span class="pre">index_map</span></code> is specified, then all indices of <code class="docutils literal notranslate"><span class="pre">alt_particles</span></code> must appear as keys in
+<code class="docutils literal notranslate"><span class="pre">index_map</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>param</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
-being queried. Should have the same shape as the cached <code class="docutils literal notranslate"><span class="pre">self.batched_param</span></code>.</p></li>
+being queried.</p></li>
 <li><p><strong>alt_particles</strong> (<em>list of</em><em> (</em><em>torch.Tensor</em><em> or </em><em>None</em><em>)</em><em>, or </em><em>None</em>) – The surrogate particles to be queried. If not None, each entry must either be None, so that the
 corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last
-dimension size equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>. Defaults to None</p></li>
+dimension size equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>. Must specify if <cite>index_map</cite> is
+specified. Defaults to None.</p></li>
 <li><p><strong>index_map</strong> (<em>dict</em><em>, or </em><em>None</em>) – The optional index mapping. If specified, all applicable indices into <cite>alt_particles</cite> must appear as keys
 in this dict. The <code class="docutils literal notranslate"><span class="pre">i</span></code> th entry in <cite>alt_particles</cite> will be taken as the surrogate particles for the
 predicate argument whose index is <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> if <code class="docutils literal notranslate"><span class="pre">index_map[i]</span></code> is an integer, or the joint surrogate
@@ -747,19 +757,15 @@ particles for those arguments whose indices appear in <code class="docutils lite
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The log probability tensor, of shape <code class="docutils literal notranslate"><span class="pre">(batch_shape</span> <span class="pre">+</span> <span class="pre">sample_shape)</span></code>, where <code class="docutils literal notranslate"><span class="pre">batch_shape</span></code> is the batch
 shape of the Predicate’s knowledge, inferred from the shape of <cite>param</cite>, and <code class="docutils literal notranslate"><span class="pre">sample_shape</span></code> is the list of
-sample sizes of the queried particles in the order given by <cite>alt_particles</cite>. In other words,
-<code class="docutils literal notranslate"><span class="pre">sample_shape[i]</span> <span class="pre">==</span> <span class="pre">alt_particles[i].shape[0]</span></code>. If <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code>, it is the sample size of the
-cached particle tensor of the corresponding predicate argument.</p>
+sample sizes of the queried particles <strong>in the order given by `alt_particles`</strong>. In other words,
+<code class="docutils literal notranslate"><span class="pre">sample_shape[i]</span> <span class="pre">==</span> <span class="pre">alt_particles[i].shape[0]</span></code>. If <code class="docutils literal notranslate"><span class="pre">alt_particles[i]</span></code> is None, then it is the sample
+size of the cached particle tensor respectively.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>torch.Tensor</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>AssertionError</strong> – If <cite>self.batched_param</cite> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, meaning no cached parameters to instantiate distribution instance.</p></li>
-<li><p><strong>AssertionError</strong> – If <cite>alt_particles</cite> contains <code class="docutils literal notranslate"><span class="pre">None</span></code> but <code class="docutils literal notranslate"><span class="pre">self.particles</span></code> is also None, meaning no cached particles.</p></li>
-<li><p><strong>AssertionError</strong> – If <cite>alt_param</cite> is specified but it has different shape than <code class="docutils literal notranslate"><span class="pre">self.batched_param</span></code>.</p></li>
-</ul>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>alt_particles</cite> contains <code class="docutils literal notranslate"><span class="pre">None</span></code> but <code class="docutils literal notranslate"><span class="pre">self.particles</span></code> is also None, meaning no cached particles.</p>
 </dd>
 </dl>
 </dd></dl>

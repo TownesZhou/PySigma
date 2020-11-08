@@ -695,28 +695,38 @@ class KnowledgeServer:
         `self.dist_info`.
 
         If `index_map` is not specified, each entries in the iterable `alt_particles` must represent events of the
-        Predicate's random argument at the same index in the predicate argument list. If the entry is 'None', the
-        cached particle tensor of that predicate argument will be used instead.
+        Predicate's random argument at the same index in the predicate argument list. If an entry in `alt_particles` is
+        'None', then the respective cached particle tensor in `self.particles` representing that predicate argument will
+        be used instead.
 
-        Alternatively, one can specify a dictionary `index_map` mapping integer index to an integer index or a list of
-        indices. The entry ``alt_particles[i]`` will be taken as the particle tensor for the ``index_map[i]`` th
-        predicate argument. If ``index_map[i]`` is a list of integers, then the particle tensor at this position will be
-        interpreted as the concatenated/joint events of those predicate arguments whose indices are in ``index_map[i]``.
+        Alternatively, `index_map` can be specified as a dictionary mapping integer index to an integer index or a list
+        of indices. The entry ``alt_particles[i]`` will be taken as the particle tensor for the ``index_map[i]`` th
+        predicate argument. If ``index_map[i]`` is a list of integers, then the particle tensor ``alt_particles[i]``
+        will be interpreted as the **concatenated/joint events** of the corresponding predicate arguments.
+
+        For example, if ``index_map[i] = [0, 3]``, then the particle tensor ``alt_particles[i]`` will be regarded as
+        the joint events of the 0-th and 3-rd predicate arguments. This means that an attempt will be made to
+        combinatorially de-concatenate the tensor ``alt_particles[i]``. If this process fails, an AssertionError will
+        be thrown.
+
         Note that the entry ``alt_particles[i]`` can be ``None``, however in this case ``index_map[i]`` must refer to
-        one predicate argument only. **If there is any predicate argument that is not referenced by values of**
-        `index_map` **, then the returning** `surrogate_log_prob` **will be marginalized over this predicate argument.**
+        one predicate argument only, i.e., ``index_map[i]`` must be an integer. **If there is any predicate argument
+        that is not referenced by values of** `index_map` **, then the returning** `surrogate_log_prob` **will be
+        marginalized over this predicate argument.**
 
-        Correspondingly, if ``index_map`` is specified, then all indices in ``alt_particles`` must appear as keys.
+        Accordingly, if ``index_map`` is specified, then all indices of ``alt_particles`` must appear as keys in
+        ``index_map``.
 
         Parameters
         ----------
         param : torch.Tensor, optional
             The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
-            being queried. Should have the same shape as the cached ``self.batched_param``.
+            being queried.
         alt_particles : list of (torch.Tensor or None), or None
             The surrogate particles to be queried. If not None, each entry must either be None, so that the
             corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last
-            dimension size equal to the corresponding value in ``self.rv_sizes``. Defaults to None
+            dimension size equal to the corresponding value in ``self.rv_sizes``. Must specify if `index_map` is
+            specified. Defaults to None.
         index_map: dict, or None
             The optional index mapping. If specified, all applicable indices into `alt_particles` must appear as keys
             in this dict. The ``i`` th entry in `alt_particles` will be taken as the surrogate particles for the
@@ -728,18 +738,14 @@ class KnowledgeServer:
         torch.Tensor
             The log probability tensor, of shape ``(batch_shape + sample_shape)``, where ``batch_shape`` is the batch
             shape of the Predicate's knowledge, inferred from the shape of `param`, and ``sample_shape`` is the list of
-            sample sizes of the queried particles in the order given by `alt_particles`. In other words,
-            ``sample_shape[i] == alt_particles[i].shape[0]``. If ``alt_particles[i]``, it is the sample size of the
-            cached particle tensor of the corresponding predicate argument.
+            sample sizes of the queried particles **in the order given by `alt_particles`**. In other words,
+            ``sample_shape[i] == alt_particles[i].shape[0]``. If ``alt_particles[i]`` is None, then it is the sample
+            size of the cached particle tensor respectively.
 
         Raises
         ------
         AssertionError
-            If `self.batched_param` is ``None``, meaning no cached parameters to instantiate distribution instance.
-        AssertionError
             If `alt_particles` contains ``None`` but ``self.particles`` is also None, meaning no cached particles.
-        AssertionError
-            If `alt_param` is specified but it has different shape than ``self.batched_param``.
         """
         assert isinstance(param, torch.Tensor)
         assert alt_particles is None or isinstance(alt_particles, list)
@@ -775,8 +781,9 @@ class KnowledgeServer:
             else:
                 # Check number of tensors and tensor format
                 assert len(alt_particles) == self.num_rvs
-                all(p is None or (isinstance(p, torch.Tensor) and p.dim() == 2 and p.shape[-1] == self.rv_sizes[i])
-                    for i, p in enumerate(alt_particles))
+                assert all(p is None or (isinstance(p, torch.Tensor) and p.dim() == 2 and
+                                         p.shape[-1] == self.rv_sizes[i])
+                           for i, p in enumerate(alt_particles))
         else:
             assert index_map is None
             alt_particles = (None,) * self.num_rvs
@@ -828,7 +835,7 @@ class KnowledgeServer:
 
             # Concatenate into original cognitive format
             cog_ptcl = torch.cat(cog_ptcl_list, dim=-1)
-        assert cog_ptcl.shape[-1] == self.e_shape
+        assert cog_ptcl.shape[-1] == sum(self.e_shape)
 
         # Transform joint event values from Cognitive format to PyTorch format
         torch_ptcl = self.event2torch_event(cog_ptcl)
@@ -838,9 +845,13 @@ class KnowledgeServer:
         log_prob = DistributionServer.log_prob(dist, torch_ptcl)
         # Marginalize over unreferenced dimensions if needed
         if num_unref > 0:
-            # Marginalize first few dimensions, since we've put them at front
+            # Marginalize first few sample dimensions, since we've put them at front
+            # Note that the actual front are batch dimensions, which we should not touch.
+            # Infer number of batch dimensions at front from param. Assume here that param's last and only the last
+            #   dimension is the event dimension, everything else is batch dimension
+            num_b_dims = param.dim() - 1
             prob = torch.exp(log_prob)
-            marg_prob = torch.sum(prob, dim=tuple(range(num_unref)))
+            marg_prob = torch.sum(prob, dim=tuple(range(num_b_dims, num_b_dims + num_unref)))
             log_prob = torch.log(marg_prob)
 
         return log_prob

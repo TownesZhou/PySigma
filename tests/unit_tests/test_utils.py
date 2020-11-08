@@ -463,3 +463,472 @@ class TestKnowledgeServer:
                     assert all(equal_within_error(a, b) for a, b in zip(return_val_2, mock_log_densities))
                     assert all(equal_within_error(a, b) for a, b in zip(return_val_1, ks.particles))
                     assert all(equal_within_error(a, b) for a, b in zip(return_val_2, ks.log_densities))
+
+    def test_surrogate_log_prob_default_particles_no_index_map_single_rv(self):
+        # Test using mocks, alt_particles=None, index_map=None, 1 random variable
+        # Define shapes
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10]), Size([2])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = [torch.randn(s_shape + e_shape)]
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = None
+        index_map = None
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + s_shape
+
+    def test_surrogate_log_prob_default_particles_no_index_map_multiple_rv(self):
+        # Test using mocks, alt_particles=None, index_map=None, 3 random variable
+        # Define shapes
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real,C.real,C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = None
+        index_map = None
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + s_shape
+
+    def test_surrogate_log_prob_full_alt_particles_no_index_map_multiple_rv(self):
+        # Test using mocks, full alt_particles, index_map=None, 3 random variable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+        index_map = None
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + s_shape
+
+    def test_surrogate_log_prob_partial_alt_particles_no_index_map_multiple_rv(self):
+        # Test using mocks, partial alt_particles with None elements, index_map=None, 3 random variable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn(s_shape[0], e_shape[0]), None, torch.randn(s_shape[2], e_shape[2])]
+        index_map = None
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + s_shape
+
+    def test_surrogate_log_prob_full_alt_particles_one_to_one_surjective_index_map_multiple_rv(self):
+        # Test using mocks, full alt_particles, one-to-one index mapping that have all rv mapped, 3 random variable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn([20, 4]), torch.randn([10, 2]), torch.randn([15, 3])]
+        index_map = {0: 2, 1: 0, 2: 1}
+        expected_s_shape = Size([20, 10, 15])
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + expected_s_shape
+
+    def test_surrogate_log_prob_full_alt_particles_one_to_one_partial_index_map_multiple_rv_1(self):
+        # Test using mocks, full alt_particles, one-to-one index mapping that misses 1 rv, 3 random variable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+
+        param = torch.randn(b_shape + p_shape)
+        # index_map only maps to a partial set of rv
+        alt_particles = [torch.randn([20, 4]), torch.randn([15, 3])]
+        index_map = {0: 2, 1: 1}
+        expected_s_shape = Size([20, 15])
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + expected_s_shape
+
+    def test_surrogate_log_prob_full_alt_particles_one_to_one_partial_index_map_multiple_rv_2(self):
+        # Test using mocks, full alt_particles, one-to-one index mapping that misses 2 rv, 3 random variable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+
+        param = torch.randn(b_shape + p_shape)
+        # index_map only maps to a partial set of rv
+        alt_particles = [torch.randn([20, 4])]
+        index_map = {0: 2}
+        expected_s_shape = Size([20])
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + expected_s_shape
+
+    def test_surrogate_log_prob_full_alt_particles_one_to_multiple_full_index_map_multiple_rv_1(self):
+        # Test using mocks, full alt_particles, one-to-multiple index mapping, 3 random variable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+
+        param = torch.randn(b_shape + p_shape)
+        # index_map only maps the first alt particle to 2 rv, and the second alt particle to 1 rv
+        #   The first alt particle needs to be the result of combinatorial concat
+        index_map = {0: [0, 2], 1: 1}
+        to_cat = [torch.randn([10, 2]), torch.randn([20, 4])]
+        cat = ks.combinatorial_cat(to_cat).view(-1, 6)
+        alt_particles = [cat, torch.randn([15, 3])]
+        expected_s_shape = Size([200, 15])
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + expected_s_shape
+
+    def test_surrogate_log_prob_full_alt_particles_one_to_multiple_full_index_map_multiple_rv_2(self):
+        # Test using mocks, full alt_particles, one-to-multiple index mapping, 3 random variable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        # Test data and mock objects
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+
+        param = torch.randn(b_shape + p_shape)
+        # index_map only maps the first alt particle to all rv
+        #   The first alt particle needs to be the result of combinatorial concat
+        index_map = {0: [0, 2, 1]}
+        to_cat = [torch.randn([10, 2]), torch.randn([20, 4]), torch.randn([15, 3])]
+        cat = ks.combinatorial_cat(to_cat).view(-1, 9)
+        alt_particles = [cat]
+        expected_s_shape = Size([3000])
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, e_shape
+
+        # Mock method calls
+        with patch.object(ks, "event2torch_event") as p1:
+            p1.side_effect = lambda t: t
+
+            with patch("pysigma.utils.DistributionServer.param2dist") as p2:
+                p2.return_value = mock_dist
+
+                with patch("pysigma.utils.DistributionServer.log_prob") as p3:
+                    p3.side_effect = lambda dist, ptcl: torch.randn(dist.batch_shape + ptcl.shape[:-1])
+
+                    return_val = ks.surrogate_log_prob(param, alt_particles, index_map)
+
+                    assert return_val.shape == b_shape + expected_s_shape
+
+    def test_surrogate_log_prob_exception_none_alt_particles_when_no_cache(self):
+        # Test that AssertionError is thrown if alt_particles is None, or contains None when no cached particles
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = None
+
+        param = torch.randn(b_shape + p_shape)
+
+        # Test 1: alt_particles is None
+        alt_particles = None
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles)
+
+        # Test 2: alt_particles is a list that contains None
+        alt_particles = [torch.randn([10, 2]), None, None]
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles)
+
+    def test_surrogate_log_prob_exception_none_alt_particles_when_index_map_specified(self):
+        # Test that AssertionError is thrown if alt_particles is None when index_map is specified
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = None
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = None
+        index_map = {0:0, 1:1, 2:2}
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles, index_map)
+
+    def test_surrogate_log_prob_exception_wrong_index_map_key(self):
+        # Test that AssertionError is thrown if the keys in index_map are not indexable in alt_particles
+        # Scenario 1: missing some indices
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = None
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+        index_map = {0: 0, 1: 1}
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles, index_map)
+
+    def test_surrogate_log_prob_exception_wrong_index_map_value_1(self):
+        # Test that AssertionError is thrown if the values in index_map are not indexable in alt_particles
+        # Scenario 1: single value not indexable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = None
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn([s, e]) for s, e in zip(s_shape, e_shape)]
+        index_map = {0: 0, 1: 1, 2: 3}
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles, index_map)
+
+    def test_surrogate_log_prob_exception_wrong_index_map_value_2(self):
+        # Test that AssertionError is thrown if the values in index_map are not indexable in alt_particles
+        # Scenario 1: some elements in a list of values not indexable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = None
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn([10, 2]),
+                         ks.combinatorial_cat([torch.randn(15, 3), torch.randn([20, 4])]).view(-1, 7)]
+        index_map = {0: 0, 1: [1, 3]}
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles, index_map)
+
+    def test_surrogate_log_prob_exception_none_entry_mapped_index_map_list(self):
+        # Test that AssertionError is thrown if i in index_map is mapped to a list of indices, while the i-th item
+        #   in alt_particles is None
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = None
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn([10, 2]), None]
+        index_map = {0: 0, 1: [1, 2]}
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles, index_map)
+
+    def test_surrogate_log_prob_exception_wrong_alt_particles_event_shape_1(self):
+        # Test that Assertion error is thrown if the event shape of some item in alt_particles is wrong
+        # Scenario 1: map to single rv
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = None
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn([10, 2]), torch.randn([15, 3]), torch.randn([20, 5])]
+        index_map = None
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles, index_map)
+
+    def test_surrogate_log_prob_exception_wrong_alt_particles_event_shape_2(self):
+        # Test that Assertion error is thrown if the event shape of some item in alt_particles is wrong
+        # Scenario 2: map to multiple rv
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+        ks.particles = None
+
+        param = torch.randn(b_shape + p_shape)
+        alt_particles = [torch.randn([10, 2]), torch.randn([15, 8])]
+        index_map = {0: 0, 1: [1, 2]}
+        with pytest.raises(AssertionError):
+            ks.surrogate_log_prob(param, alt_particles, index_map)
