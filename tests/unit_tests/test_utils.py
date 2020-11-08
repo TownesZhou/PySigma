@@ -932,3 +932,59 @@ class TestKnowledgeServer:
         index_map = {0: 0, 1: [1, 2]}
         with pytest.raises(AssertionError):
             ks.surrogate_log_prob(param, alt_particles, index_map)
+
+    def test_event2torch_event_invalid_event_shape(self):
+        # Test that AssertionError is thrown if cat_particles has wrong concatenated event shape
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+
+        cat_particles = torch.randn([11, 12, 13, 10])
+
+        with pytest.raises(AssertionError):
+            ks.event2torch_event(cat_particles)
+
+    def test_event2torch_event_default(self):
+        # Test default behavior using mocks
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+
+        cat_particles = torch.randn([11, 12, 13, 9])
+
+        # Patch registry dictionary to ensure dist_class is not registered
+        with patch.object(ks, "dict_2torch_event", {}):
+            return_val = ks.event2torch_event(cat_particles)
+
+            assert equal_within_error(return_val, cat_particles)
+
+    def test_event2torch_event_registry(self):
+        # Test translation behavior using mocks
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2]), Size([10, 15, 20]), Size([2, 3, 4])
+
+        dist_class = D.Distribution
+        rv_sizes = e_shape
+        rv_constraints = (C.real, C.real, C.real,)
+        rv_num_particles = s_shape
+        dist_info = None
+        ks = KS(dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info)
+
+        cat_particles = torch.randn([11, 12, 13, 9])
+
+        # Patch registry dictionary to ensure dist_class is registered
+        mock_callable = lambda t: torch.randn(t.shape[:-1] + Size([1]))
+        with patch.object(ks, "dict_2torch_event", {dist_class: mock_callable}):
+            return_val = ks.event2torch_event(cat_particles)
+
+            assert return_val.shape == Size([11, 12, 13, 1])
+
