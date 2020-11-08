@@ -1026,4 +1026,61 @@ class TestKnowledgeServer:
 
             assert return_val.shape == Size([11, 12, 13, 9])
 
+    def test_combinatorial_cat_single_particle(self):
+        # Test that the original particle tensor is returned if there's only one particle in the input list
+        particles = [torch.randn([20, 5])]
+        return_val = KS.combinatorial_cat(particles)
+        assert equal_within_error(return_val, particles[0])
 
+    def test_combinatorial_cat_shape(self):
+        # Test correctness of return value shape
+        s_shape, e_shape = Size([2, 3, 4, 5]), Size([6, 7, 8, 9])
+        particles = [torch.randn(s, e) for s, e in zip(s_shape, e_shape)]
+        return_val = KS.combinatorial_cat(particles)
+        assert return_val.shape == s_shape + Size([sum(e_shape)])
+
+    def test_combinatorial_cat_content_ad_hoc_1(self):
+        # Test correctness of contents using ad hoc values
+        s_shape, e_shape = Size([2, 3]), Size([2, 1])
+        particles = [
+            torch.tensor(
+                [[0., 1.],
+                [2., 3.]]
+            ),
+            torch.tensor(
+                [[4.], [5.], [6.]]
+            )
+        ]
+        expected_val = torch.tensor(
+            [[[0., 1., 4.],
+             [0., 1., 5.],
+             [0., 1., 6.]],
+             [[2., 3., 4.],
+             [2., 3., 5.],
+             [2., 3., 6.]]]
+        )
+        return_val = KS.combinatorial_cat(particles)
+        assert equal_within_error(return_val, expected_val)
+
+    def test_combinatorial_cat_content_ad_hoc_1(self):
+        # Test correctness of contents using ad hoc values
+        s_shape, e_shape = Size([2, 3]), Size([2, 1])
+        particles = [
+            torch.tensor(
+                [[4.], [5.], [6.]]
+            ),
+            torch.tensor(
+                [[0., 1.],
+                [2., 3.]]
+            ),
+        ]
+        expected_val = torch.tensor(
+            [[[4., 0., 1.],
+              [4., 2., 3.]],
+             [[5., 0., 1.],
+              [5., 2., 3.]],
+             [[6., 0., 1.],
+              [6., 2., 3.]]]
+        )
+        return_val = KS.combinatorial_cat(particles)
+        assert equal_within_error(return_val, expected_val)
