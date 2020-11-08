@@ -1084,3 +1084,70 @@ class TestKnowledgeServer:
         )
         return_val = KS.combinatorial_cat(particles)
         assert equal_within_error(return_val, expected_val)
+
+    def test_combinatorial_decat_ad_hoc_1(self):
+        # Test correctness using ad hoc values
+        split_size = [2, 1]
+        cat_particles = torch.tensor(
+            [[[0., 1., 4.],
+             [0., 1., 5.],
+             [0., 1., 6.]],
+             [[2., 3., 4.],
+             [2., 3., 5.],
+             [2., 3., 6.]]]
+        )
+        expected_val = [
+            torch.tensor(
+                [[0., 1.],
+                [2., 3.]]
+            ),
+            torch.tensor(
+                [[4.], [5.], [6.]]
+            )
+        ]
+        return_val = KS.combinatorial_decat(cat_particles, split_size)
+        assert all(equal_within_error(t, e) for t, e in zip(return_val, expected_val))
+
+    def test_combinatorial_decat_ad_hoc_2(self):
+        # Test correctness using ad hoc values
+        split_size = [1, 2]
+        cat_particles = torch.tensor(
+            [[[4., 0., 1.],
+              [4., 2., 3.]],
+             [[5., 0., 1.],
+              [5., 2., 3.]],
+             [[6., 0., 1.],
+              [6., 2., 3.]]]
+        )
+        expected_val = [
+            torch.tensor(
+                [[4.], [5.], [6.]]
+            ),
+            torch.tensor(
+                [[0., 1.],
+                [2., 3.]]
+            ),
+        ]
+        return_val = KS.combinatorial_decat(cat_particles, split_size)
+        assert all(equal_within_error(t, e) for t, e in zip(return_val, expected_val))
+
+    def test_combinatorial_decat_invalid_val_ad_hoc(self):
+        # Test that ValueError is thrown if provided particle cannot be decat, using ad hoc values
+        split_size = [1, 2]     # Wrong split size. Therefore cannot be decat
+        cat_particles = torch.tensor(
+            [[[0., 1., 4.],
+              [0., 1., 5.],
+              [0., 1., 6.]],
+             [[2., 3., 4.],
+              [2., 3., 5.],
+              [2., 3., 6.]]]
+        )
+        with pytest.raises(ValueError):
+            KS.combinatorial_decat(cat_particles, split_size)
+
+    def test_combinatorial_decat_invalid_val_random(self):
+        # Test that ValueError is thrown if provided particle cannot be decat, using random values
+        split_size = [1, 2]
+        cat_particles = torch.randn([6, 3])
+        with pytest.raises(ValueError):
+            KS.combinatorial_decat(cat_particles, split_size)
