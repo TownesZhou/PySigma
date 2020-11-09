@@ -724,13 +724,12 @@ class KnowledgeServer:
         else:
             particles, log_densities = self._default_draw(batched_dist)
         # Check shape and type
-        # TODO: resume check
-        # assert isinstance(particles, tuple) and \
-        #     all(isinstance(p, torch.Tensor) and p.shape == torch.Size([self.s_shape[j], self.e_shape[j]])
-        #         for j, p in enumerate(particles))
-        # assert isinstance(log_densities, tuple) and \
-        #     all(isinstance(d, torch.Tensor) and d.shape == torch.Size([self.s_shape[j]])
-        #         for j, d in enumerate(log_densities))
+        assert isinstance(particles, tuple) and \
+            all(isinstance(p, torch.Tensor) and p.shape == torch.Size([self.s_shape[j], self.e_shape[j]])
+                for j, p in enumerate(particles))
+        assert isinstance(log_densities, tuple) and \
+            all(isinstance(d, torch.Tensor) and d.shape == torch.Size([self.s_shape[j]])
+                for j, d in enumerate(log_densities))
 
         # Cache the particle list if asked for
         if update_cache:
@@ -1237,7 +1236,8 @@ class KnowledgeServer:
         particle values and uniform log sampling densities.
         """
         var_span = self._categorical_var_span()
-        particles = tuple(torch.arange(c.lower_bound, c.upper_bound + 1, 1.0) for c in self.rv_constraints)
+        particles = tuple(torch.arange(c.lower_bound, c.upper_bound + 1, 1.0).unsqueeze(dim=-1)
+                          for c in self.rv_constraints)
         log_densities = tuple(torch.log(torch.ones(span) / span) for span in var_span)
 
         return particles, log_densities

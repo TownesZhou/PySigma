@@ -1728,7 +1728,7 @@ class TestKnowledgeServer:
         ptcl, dens = ks._categorical_draw()
 
         assert len(ptcl) == len(dens) == 1
-        assert equal_within_error(ptcl[0], torch.tensor([0., 1., 2., 3., 4., 5.]))
+        assert equal_within_error(ptcl[0], torch.tensor([[0.], [1.], [2.], [3.], [4.], [5.]]))
         assert equal_within_error(torch.exp(dens[0]), torch.ones([6]) / 6)
 
     def test_categorical_draw_multivariate(self):
@@ -1742,9 +1742,9 @@ class TestKnowledgeServer:
         ptcl, dens = ks._categorical_draw()
 
         assert len(ptcl) == len(dens) == 3
-        assert equal_within_error(ptcl[0], torch.tensor([0., 1.]))
-        assert equal_within_error(ptcl[1], torch.tensor([0., 1., 2., 3., 4.]))
-        assert equal_within_error(ptcl[2], torch.tensor([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]))
+        assert equal_within_error(ptcl[0], torch.tensor([[0.], [1.]]))
+        assert equal_within_error(ptcl[1], torch.tensor([[0.], [1.], [2.], [3.], [4.]]))
+        assert equal_within_error(ptcl[2], torch.tensor([[0.], [1.], [2.], [3.], [4.], [5.], [6.], [7.], [8.], [9.]]))
         assert equal_within_error(torch.exp(dens[0]), torch.ones([2]) / 2)
         assert equal_within_error(torch.exp(dens[1]), torch.ones([5]) / 5)
         assert equal_within_error(torch.exp(dens[2]), torch.ones([10]) / 10)
@@ -1827,9 +1827,9 @@ class TestKnowledgeServer:
         ptcl, dens = ks.draw_particles(param, b_shape, update_cache=False)
 
         assert len(ptcl) == len(dens) == 3
-        assert equal_within_error(ptcl[0], torch.tensor([0., 1.]))
-        assert equal_within_error(ptcl[1], torch.tensor([0., 1., 2., 3., 4.]))
-        assert equal_within_error(ptcl[2], torch.tensor([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]))
+        assert equal_within_error(ptcl[0], torch.tensor([[0.], [1.]]))
+        assert equal_within_error(ptcl[1], torch.tensor([[0.], [1.], [2.], [3.], [4.]]))
+        assert equal_within_error(ptcl[2], torch.tensor([[0.], [1.], [2.], [3.], [4.], [5.], [6.], [7.], [8.], [9.]]))
         assert equal_within_error(torch.exp(dens[0]), torch.ones([2]) / 2)
         assert equal_within_error(torch.exp(dens[1]), torch.ones([5]) / 5)
         assert equal_within_error(torch.exp(dens[2]), torch.ones([10]) / 10)
