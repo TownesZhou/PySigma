@@ -1705,3 +1705,35 @@ class TestKnowledgeServer:
         ptcl = torch.randint(0, 100, [num_ptcl, 1])
         return_val = ks._categorical_2torch_event(ks._categorical_2cognitive_event(ptcl))
         assert equal_within_error(return_val, ptcl)
+
+    def test_categorical_draw_univariate(self):
+        # Test with a single RV
+        s_shape, e_shape = Size([15]), Size([1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 5),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        ptcl, dens = ks._categorical_draw()
+
+        assert len(ptcl) == len(dens) == 1
+        assert equal_within_error(ptcl[0], torch.tensor([0., 1., 2., 3., 4., 5.]))
+        assert equal_within_error(torch.exp(dens[0]), torch.ones([6]) / 6)
+
+    def test_categorical_draw_multivariate(self):
+        # Test with a single RV
+        s_shape, e_shape = Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        ptcl, dens = ks._categorical_draw()
+
+        assert len(ptcl) == len(dens) == 3
+        assert equal_within_error(ptcl[0], torch.tensor([0., 1.]))
+        assert equal_within_error(ptcl[1], torch.tensor([0., 1., 2., 3., 4.]))
+        assert equal_within_error(ptcl[2], torch.tensor([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]))
+        assert equal_within_error(torch.exp(dens[0]), torch.ones([2]) / 2)
+        assert equal_within_error(torch.exp(dens[1]), torch.ones([5]) / 5)
+        assert equal_within_error(torch.exp(dens[2]), torch.ones([10]) / 10)
