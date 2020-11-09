@@ -1600,6 +1600,17 @@ class TestKnowledgeServer:
         expected_span = (6, 9, 4)
         assert span == expected_span
 
+    def test_categorical_enforced_sample_shape(self):
+        s_shape, e_shape = Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        s_shape = ks._categorical_enforced_sample_shape()
+
+        assert s_shape == Size([2, 5, 10])
+
     def test_categorical_2torch_event_univariate(self):
         # Test with a single RV
         s_shape, e_shape = Size([15]), Size([1])
@@ -1737,6 +1748,16 @@ class TestKnowledgeServer:
         assert equal_within_error(torch.exp(dens[0]), torch.ones([2]) / 2)
         assert equal_within_error(torch.exp(dens[1]), torch.ones([5]) / 5)
         assert equal_within_error(torch.exp(dens[2]), torch.ones([10]) / 10)
+
+    def test_integration_categorical_init_enforced_sample_shape(self):
+        # Integration test: sample shape is enforced during init
+        s_shape, e_shape = Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        assert ks.s_shape == Size([2, 5, 10])
 
     def test_integration_categorical_event2torch_event(self):
         # Integration test: event2torch_event() with Categorical distribution

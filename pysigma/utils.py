@@ -625,12 +625,26 @@ class KnowledgeServer:
     * PyTorch to Cognitive event format translation method: ``2cognitive_event(particles) --> particles``
     * Special marginal particle list sampling method: ``special_draw(batched_dist) --> particles, log_densities``
     """
-    def __init__(self, dist_class, rv_sizes, rv_constraints, rv_num_particles, dist_info=None):
+    def __init__(self, dist_class, rv_sizes, rv_constraints, rv_num_particles=[], dist_info=None):
         assert issubclass(dist_class, Distribution)
         assert isinstance(rv_sizes, Iterable) and all(isinstance(s, int) and s > 0 for s in rv_sizes)
         assert isinstance(rv_constraints, Iterable) and all(isinstance(c, Constraint) for c in rv_constraints)
         assert isinstance(rv_num_particles, Iterable) and all(isinstance(n, int) and n > 0 for n in rv_num_particles)
         assert dist_info is None or isinstance(dist_info, dict)
+
+        # distribution-dependent translation method pointer. Indexed by distribution class
+        self.dict_2enforced_sample_shape = {
+            torch.distributions.Categorical: self._categorical_enforced_sample_shape
+        }
+        self.dict_2torch_event = {
+            torch.distributions.Categorical: self._categorical_2torch_event
+        }
+        self.dict_2cognitive_event = {
+            torch.distributions.Categorical: self._categorical_2cognitive_event
+        }
+        self.dict_2special_draw = {
+            tuple([integer_interval]): self._categorical_draw
+        }
 
         self.dist_class = dist_class
         self.rv_sizes = tuple(rv_sizes)
@@ -641,22 +655,14 @@ class KnowledgeServer:
         assert len(self.rv_sizes) == len(self.rv_constraints)
         self.num_rvs = len(self.rv_sizes)
         self.e_shape = torch.Size(self.rv_sizes)
-        self.s_shape = torch.Size(self.rv_num_particles)
+        # Check if sample shape is enforced for this distribution class. If yes, use the enforced sample shape,
+        #   Otherwise, infer from rv_num_particles
+        self.s_shape = self.dict_2enforced_sample_shape[self.dist_class]() \
+            if dist_class in self.dict_2enforced_sample_shape.keys() else torch.Size(self.rv_num_particles)
 
         # Cache
         self.particles = None
         self.log_densities = None
-
-        # distribution-dependent translation method pointer. Indexed by distribution class
-        self.dict_2torch_event = {
-            torch.distributions.Categorical: self._categorical_2torch_event
-        }
-        self.dict_2cognitive_event = {
-            torch.distributions.Categorical: self._categorical_2cognitive_event
-        }
-        self.dict_2special_draw = {
-            tuple([integer_interval]): self._categorical_draw
-        }
 
     """
     Public API
@@ -1177,6 +1183,12 @@ class KnowledgeServer:
         # Helper function to determine the value range of each rv
         assert all(isinstance(c, integer_interval) for c in self.rv_constraints)
         return tuple(c.upper_bound - c.lower_bound + 1 for c in self.rv_constraints)
+
+    def _categorical_enforced_sample_shape(self):
+        # Enforce a predefined sample shape inferred from the RV constraints
+        # Get variable span
+        var_span = self._categorical_var_span()
+        return torch.Size(var_span)
 
     def _categorical_2torch_event(self, particles):
         assert all(s == 1 for s in self.rv_sizes), \
