@@ -296,7 +296,28 @@ class DistributionServer:
         process over and over again. The latter approach, when the samples are aggregated, yields a particle list
         that is representative of the joint distribution of the whole batch.
 
-        Accordingly, the sampling process is implemented by first drawing `n` batched samples from `dist`, where
+        Mathematically, we would like to draw particles ``p`` from the joint distribution::
+
+           p ~ P(V, B) = P(V | B) * P(B)
+
+        where ``V`` is the random variable, and ``B`` is the batch index. In this way, ``p`` will be representative of
+        each and every distribution instance stored in ``dist``, which can be expressed as ``P(V | B)``. Note that
+        the expression above effectively describes a Markov chain. Therefore, ``p`` can be drawn in steps::
+
+           b ~ P(B)
+           p ~ P(V | b)
+
+        However, since we assume ``P(B)`` is uniform, this process is equivalent to iteratively drawing ``p`` from
+        ``P(V | b)`` for each ``b``::
+
+           p_list = []
+           for i in range(B):
+              p ~ P(V | b)
+              p_list.append(p)
+
+        Conveniently, the default batch sampling method implemented in PyTorch distribution class already provide us
+        the above method to generate a batch of particles uniformly. Therefore, the sampling process is implemented by
+        first drawing `n` batched samples from `dist`, where
         ``n = num_particles // batch_size + 1``, then collapsing the batch dimensions, and finally randomly shuffling
         across the collapsed sample dimension, and truncate to select only a number of ``num_particles`` samples.
         """
@@ -1075,6 +1096,27 @@ class KnowledgeServer:
                 sampling densities .
     """
     def _default_draw(self, batched_dist):
+        """
+        The process for drawing marginal particles and calculating corresponding sampling densities:
+
+        Assume there are two random variables `V` and `U`. We would like to draw samples ``v`` and ``u`` from the
+        joint distribution ::
+
+           v ~ P(V, U, B)
+           u ~ P(V, U, B)
+
+        where `B` is the batch index. Using `DistributionServer.draw_particles()`, we can already obtain a list of
+        joint particles ``(v_i, u_i)`` from ``P(V, U, B)``. Refer to the documentation of that method for more
+        details.
+
+        Now, we take apart ``v`` and ``u`` from the joint particles list, and form a lattice of re-assembled particles
+        ``(v_i, u_j)``. The individual values ``v_i`` and ``u_j`` can be then taken as the final marginal particles, and
+        it is straightforward to approximate their respective sampling densities. Simply::
+
+           P(V=v_i) ~= sum( P(V=v_i, U=u_j, B=b) ) for all u_j and b
+           P(U=u_j) ~= sum( P(V=v_i, U=u_j, B=b) ) for all v_i and b
+
+        """
         assert isinstance(batched_dist, Distribution)
         b_dims = len(batched_dist.batch_shape)
         b_size = batched_dist.batch_shape.numel()
@@ -1087,7 +1129,7 @@ class KnowledgeServer:
         joint_ptcl = self.event2cognitive_event(raw_ptcl)
         marg_ptcl_full = torch.split(joint_ptcl, self.rv_sizes, dim=-1)
         marg_ptcl_narrow = list(torch.narrow(p, dim=0, start=0, length=self.rv_num_particles[j])
-                                for j, p in marg_ptcl_full)
+                                for j, p in enumerate(marg_ptcl_full))
         assert all(p.shape == torch.Size([self.s_shape[j], self.e_shape[j]]) for j, p in enumerate(marg_ptcl_narrow))
 
         # Obtain log densities w.r.t. the combinatorially concatenated event lattice
@@ -1114,7 +1156,7 @@ class KnowledgeServer:
                 marg_dens_j = torch.sum(marg_dens_j, dim=i, keepdim=True)
             marg_log_dens_j = torch.log(marg_dens_j.view(-1))
             marg_log_dens.append(marg_log_dens_j)
-        assert all(d.shape == torch.Size(self.s_shape[j]) for j, d in enumerate(marg_log_dens))
+        assert all(d.shape == torch.Size([self.s_shape[j]]) for j, d in enumerate(marg_log_dens))
 
         return tuple(marg_ptcl_narrow), tuple(marg_log_dens)
 

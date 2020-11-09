@@ -444,7 +444,28 @@ that involves the batch dimension, and ignoring the batch dimensions, is equival
 which single distribution in the batch we wish draw from, and drawing samples from it, and repeating this
 process over and over again. The latter approach, when the samples are aggregated, yields a particle list
 that is representative of the joint distribution of the whole batch.</p>
-<p>Accordingly, the sampling process is implemented by first drawing <cite>n</cite> batched samples from <cite>dist</cite>, where
+<p>Mathematically, we would like to draw particles <code class="docutils literal notranslate"><span class="pre">p</span></code> from the joint distribution:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p</span> <span class="o">~</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">=</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span> <span class="o">|</span> <span class="n">B</span><span class="p">)</span> <span class="o">*</span> <span class="n">P</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">V</span></code> is the random variable, and <code class="docutils literal notranslate"><span class="pre">B</span></code> is the batch index. In this way, <code class="docutils literal notranslate"><span class="pre">p</span></code> will be representative of
+each and every distribution instance stored in <code class="docutils literal notranslate"><span class="pre">dist</span></code>, which can be expressed as <code class="docutils literal notranslate"><span class="pre">P(V</span> <span class="pre">|</span> <span class="pre">B)</span></code>. Note that
+the expression above effectively describes a Markov chain. Therefore, <code class="docutils literal notranslate"><span class="pre">p</span></code> can be drawn in steps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">b</span> <span class="o">~</span> <span class="n">P</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+<span class="n">p</span> <span class="o">~</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span> <span class="o">|</span> <span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>However, since we assume <code class="docutils literal notranslate"><span class="pre">P(B)</span></code> is uniform, this process is equivalent to iteratively drawing <code class="docutils literal notranslate"><span class="pre">p</span></code> from
+<code class="docutils literal notranslate"><span class="pre">P(V</span> <span class="pre">|</span> <span class="pre">b)</span></code> for each <code class="docutils literal notranslate"><span class="pre">b</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">):</span>
+   <span class="n">p</span> <span class="o">~</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span> <span class="o">|</span> <span class="n">b</span><span class="p">)</span>
+   <span class="n">p_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Conveniently, the default batch sampling method implemented in PyTorch distribution class already provide us
+the above method to generate a batch of particles uniformly. Therefore, the sampling process is implemented by
+first drawing <cite>n</cite> batched samples from <cite>dist</cite>, where
 <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">num_particles</span> <span class="pre">//</span> <span class="pre">batch_size</span> <span class="pre">+</span> <span class="pre">1</span></code>, then collapsing the batch dimensions, and finally randomly shuffling
 across the collapsed sample dimension, and truncate to select only a number of <code class="docutils literal notranslate"><span class="pre">num_particles</span></code> samples.</p>
 </dd></dl>
@@ -565,19 +586,9 @@ outcomes of the categorical random variable.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt id="pysigma.utils.DistributionServer._categorical_draw">
-<em class="property">static </em><code class="sig-name descname">_categorical_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">num_particles</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_draw" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance’s</dt><dd><p>‘probs’ attribute. Particles will be drawn uniformly covering every value in the RV’s domain once and
-only once, while their probability mass will be assigned as the particle weights respectively.</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py attribute">
 <dt id="pysigma.utils.DistributionServer.dict_draw_particles">
-<code class="sig-name descname">dict_draw_particles</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_draw_particles" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dict_draw_particles</code><em class="property"> = {}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_draw_particles" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -965,7 +976,24 @@ equal.</p>
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer._default_draw">
 <code class="sig-name descname">_default_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">batched_dist</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer._default_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer._default_draw" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The process for drawing marginal particles and calculating corresponding sampling densities:</p>
+<p>Assume there are two random variables <cite>V</cite> and <cite>U</cite>. We would like to draw samples <code class="docutils literal notranslate"><span class="pre">v</span></code> and <code class="docutils literal notranslate"><span class="pre">u</span></code> from the
+joint distribution</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">~</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+<span class="n">u</span> <span class="o">~</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <cite>B</cite> is the batch index. Using <cite>DistributionServer.draw_particles()</cite>, we can already obtain a list of
+joint particles <code class="docutils literal notranslate"><span class="pre">(v_i,</span> <span class="pre">u_i)</span></code> from <code class="docutils literal notranslate"><span class="pre">P(V,</span> <span class="pre">U,</span> <span class="pre">B)</span></code>. Refer to the documentation of that method for more
+details.</p>
+<p>Now, we take apart <code class="docutils literal notranslate"><span class="pre">v</span></code> and <code class="docutils literal notranslate"><span class="pre">u</span></code> from the joint particles list, and form a lattice of re-assembled particles
+<code class="docutils literal notranslate"><span class="pre">(v_i,</span> <span class="pre">u_j)</span></code>. The individual values <code class="docutils literal notranslate"><span class="pre">v_i</span></code> and <code class="docutils literal notranslate"><span class="pre">u_j</span></code> can be then taken as the final marginal particles, and
+it is straightforward to approximate their respective sampling densities. Simply:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="o">=</span><span class="n">v_i</span><span class="p">)</span> <span class="o">~=</span> <span class="nb">sum</span><span class="p">(</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="o">=</span><span class="n">v_i</span><span class="p">,</span> <span class="n">U</span><span class="o">=</span><span class="n">u_j</span><span class="p">,</span> <span class="n">B</span><span class="o">=</span><span class="n">b</span><span class="p">)</span> <span class="p">)</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">u_j</span> <span class="ow">and</span> <span class="n">b</span>
+<span class="n">P</span><span class="p">(</span><span class="n">U</span><span class="o">=</span><span class="n">u_j</span><span class="p">)</span> <span class="o">~=</span> <span class="nb">sum</span><span class="p">(</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="o">=</span><span class="n">v_i</span><span class="p">,</span> <span class="n">U</span><span class="o">=</span><span class="n">u_j</span><span class="p">,</span> <span class="n">B</span><span class="o">=</span><span class="n">b</span><span class="p">)</span> <span class="p">)</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">v_i</span> <span class="ow">and</span> <span class="n">b</span>
+</pre></div>
+</div>
+</dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer._categorical_var_span">

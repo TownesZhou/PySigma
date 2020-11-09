@@ -510,7 +510,28 @@
 <span class="sd">        process over and over again. The latter approach, when the samples are aggregated, yields a particle list</span>
 <span class="sd">        that is representative of the joint distribution of the whole batch.</span>
 
-<span class="sd">        Accordingly, the sampling process is implemented by first drawing `n` batched samples from `dist`, where</span>
+<span class="sd">        Mathematically, we would like to draw particles ``p`` from the joint distribution::</span>
+
+<span class="sd">           p ~ P(V, B) = P(V | B) * P(B)</span>
+
+<span class="sd">        where ``V`` is the random variable, and ``B`` is the batch index. In this way, ``p`` will be representative of</span>
+<span class="sd">        each and every distribution instance stored in ``dist``, which can be expressed as ``P(V | B)``. Note that</span>
+<span class="sd">        the expression above effectively describes a Markov chain. Therefore, ``p`` can be drawn in steps::</span>
+
+<span class="sd">           b ~ P(B)</span>
+<span class="sd">           p ~ P(V | b)</span>
+
+<span class="sd">        However, since we assume ``P(B)`` is uniform, this process is equivalent to iteratively drawing ``p`` from</span>
+<span class="sd">        ``P(V | b)`` for each ``b``::</span>
+
+<span class="sd">           p_list = []</span>
+<span class="sd">           for i in range(B):</span>
+<span class="sd">              p ~ P(V | b)</span>
+<span class="sd">              p_list.append(p)</span>
+
+<span class="sd">        Conveniently, the default batch sampling method implemented in PyTorch distribution class already provide us</span>
+<span class="sd">        the above method to generate a batch of particles uniformly. Therefore, the sampling process is implemented by</span>
+<span class="sd">        first drawing `n` batched samples from `dist`, where</span>
 <span class="sd">        ``n = num_particles // batch_size + 1``, then collapsing the batch dimensions, and finally randomly shuffling</span>
 <span class="sd">        across the collapsed sample dimension, and truncate to select only a number of ``num_particles`` samples.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -733,38 +754,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span></div>
 
-    <span class="c1"># TODO: Refactor - merge functionality with KnowledgeServer.draw_particles()</span>
-<div class="viewcode-block" id="DistributionServer._categorical_draw"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_draw">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_categorical_draw</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance&#39;s</span>
-<span class="sd">                &#39;probs&#39; attribute. Particles will be drawn uniformly covering every value in the RV&#39;s domain once and</span>
-<span class="sd">                only once, while their probability mass will be assigned as the particle weights respectively.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">)</span>
-        <span class="n">span</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">num_particles</span><span class="p">])</span>
-
-        <span class="n">particles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">s_shape</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">span</span><span class="p">):</span>
-            <span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">i</span>
-
-        <span class="c1"># Weights obtained from probs attribute, by simply permuting the last dimension to first dimension</span>
-        <span class="c1"># n_dims = len(dist.probs.shape)</span>
-        <span class="c1"># dims = [n_dims-1, ] + [i for i in range(n_dims - 1)]</span>
-        <span class="c1"># weights = dist.probs.clone().permute(dims)      # clone to prevent accidental in-place value change</span>
-
-        <span class="c1"># Since we are effectively drawing particles uniformly from the finite discrete domain, the sampling pdf is also</span>
-        <span class="c1">#   uniform</span>
-        <span class="c1"># sampling_log_densities = 0</span>
-
-        <span class="k">return</span> <span class="n">particles</span></div>
-
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        distribution class dependent method pointer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">dict_draw_particles</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="n">_categorical_draw</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">dict_log_pdf</span> <span class="o">=</span> <span class="p">{</span>
 
@@ -1317,6 +1310,27 @@
 <span class="sd">                sampling densities .</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="KnowledgeServer._default_draw"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._default_draw">[docs]</a>    <span class="k">def</span> <span class="nf">_default_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_dist</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The process for drawing marginal particles and calculating corresponding sampling densities:</span>
+
+<span class="sd">        Assume there are two random variables `V` and `U`. We would like to draw samples ``v`` and ``u`` from the</span>
+<span class="sd">        joint distribution ::</span>
+
+<span class="sd">           v ~ P(V, U, B)</span>
+<span class="sd">           u ~ P(V, U, B)</span>
+
+<span class="sd">        where `B` is the batch index. Using `DistributionServer.draw_particles()`, we can already obtain a list of</span>
+<span class="sd">        joint particles ``(v_i, u_i)`` from ``P(V, U, B)``. Refer to the documentation of that method for more</span>
+<span class="sd">        details.</span>
+
+<span class="sd">        Now, we take apart ``v`` and ``u`` from the joint particles list, and form a lattice of re-assembled particles</span>
+<span class="sd">        ``(v_i, u_j)``. The individual values ``v_i`` and ``u_j`` can be then taken as the final marginal particles, and</span>
+<span class="sd">        it is straightforward to approximate their respective sampling densities. Simply::</span>
+
+<span class="sd">           P(V=v_i) ~= sum( P(V=v_i, U=u_j, B=b) ) for all u_j and b</span>
+<span class="sd">           P(U=u_j) ~= sum( P(V=v_i, U=u_j, B=b) ) for all v_i and b</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
         <span class="n">b_dims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batched_dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
         <span class="n">b_size</span> <span class="o">=</span> <span class="n">batched_dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
@@ -1329,7 +1343,7 @@
         <span class="n">joint_ptcl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2cognitive_event</span><span class="p">(</span><span class="n">raw_ptcl</span><span class="p">)</span>
         <span class="n">marg_ptcl_full</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">joint_ptcl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">marg_ptcl_narrow</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-                                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">marg_ptcl_full</span><span class="p">)</span>
+                                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_ptcl_full</span><span class="p">))</span>
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">))</span>
 
         <span class="c1"># Obtain log densities w.r.t. the combinatorially concatenated event lattice</span>
@@ -1356,7 +1370,7 @@
                 <span class="n">marg_dens_j</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">marg_dens_j</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">marg_log_dens_j</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">marg_dens_j</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
             <span class="n">marg_log_dens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marg_log_dens_j</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">)</span></div>
 
