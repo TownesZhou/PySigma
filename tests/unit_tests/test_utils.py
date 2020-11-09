@@ -1833,3 +1833,20 @@ class TestKnowledgeServer:
         assert equal_within_error(torch.exp(dens[0]), torch.ones([2]) / 2)
         assert equal_within_error(torch.exp(dens[1]), torch.ones([5]) / 5)
         assert equal_within_error(torch.exp(dens[2]), torch.ones([10]) / 10)
+
+    def test_integration_surrogate_log_prob_1(self):
+        # Integration test: surrogate_log_prob() with Categorical distribution
+        # Scenario 1: using cached particles
+        b_shape, s_shape, e_shape = Size([3, 4, 5]), Size([2, 5, 10]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+        ks.particles, _ = ks._categorical_draw()
+
+        param = torch.randn(b_shape + Size([100]))
+
+        log_prob = ks.surrogate_log_prob(param, alt_particles=None, index_map=None)
+
+        assert log_prob.shape == b_shape + s_shape
+
