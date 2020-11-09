@@ -1111,10 +1111,14 @@ class KnowledgeServer:
 
         Now, we take apart ``v`` and ``u`` from the joint particles list, and form a lattice of re-assembled particles
         ``(v_i, u_j)``. The individual values ``v_i`` and ``u_j`` can be then taken as the final marginal particles, and
-        it is straightforward to approximate their respective sampling densities. Simply::
+        it is straightforward to approximate, **up to a constant factor**, the value of their respective sampling
+        densities . Simply::
 
            P(V=v_i) ~= sum( P(V=v_i, U=u_j, B=b) ) for all u_j and b
            P(U=u_j) ~= sum( P(V=v_i, U=u_j, B=b) ) for all v_i and b
+
+        To reiterate, the values calculated herein are not approximations of the actual marginal probabilities, but
+        approximations that are proportional to the actual marginal probabilities up to a constant factor.
 
         """
         assert isinstance(batched_dist, Distribution)

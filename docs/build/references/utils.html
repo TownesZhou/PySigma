@@ -988,11 +988,14 @@ joint particles <code class="docutils literal notranslate"><span class="pre">(v_
 details.</p>
 <p>Now, we take apart <code class="docutils literal notranslate"><span class="pre">v</span></code> and <code class="docutils literal notranslate"><span class="pre">u</span></code> from the joint particles list, and form a lattice of re-assembled particles
 <code class="docutils literal notranslate"><span class="pre">(v_i,</span> <span class="pre">u_j)</span></code>. The individual values <code class="docutils literal notranslate"><span class="pre">v_i</span></code> and <code class="docutils literal notranslate"><span class="pre">u_j</span></code> can be then taken as the final marginal particles, and
-it is straightforward to approximate their respective sampling densities. Simply:</p>
+it is straightforward to approximate, <strong>up to a constant factor</strong>, the value of their respective sampling
+densities . Simply:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="o">=</span><span class="n">v_i</span><span class="p">)</span> <span class="o">~=</span> <span class="nb">sum</span><span class="p">(</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="o">=</span><span class="n">v_i</span><span class="p">,</span> <span class="n">U</span><span class="o">=</span><span class="n">u_j</span><span class="p">,</span> <span class="n">B</span><span class="o">=</span><span class="n">b</span><span class="p">)</span> <span class="p">)</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">u_j</span> <span class="ow">and</span> <span class="n">b</span>
 <span class="n">P</span><span class="p">(</span><span class="n">U</span><span class="o">=</span><span class="n">u_j</span><span class="p">)</span> <span class="o">~=</span> <span class="nb">sum</span><span class="p">(</span> <span class="n">P</span><span class="p">(</span><span class="n">V</span><span class="o">=</span><span class="n">v_i</span><span class="p">,</span> <span class="n">U</span><span class="o">=</span><span class="n">u_j</span><span class="p">,</span> <span class="n">B</span><span class="o">=</span><span class="n">b</span><span class="p">)</span> <span class="p">)</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">v_i</span> <span class="ow">and</span> <span class="n">b</span>
 </pre></div>
 </div>
+<p>To reiterate, the values calculated herein are not approximations of the actual marginal probabilities, but
+approximations that are proportional to the actual marginal probabilities up to a constant factor.</p>
 </dd></dl>
 
 <dl class="py method">

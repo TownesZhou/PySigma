@@ -1325,10 +1325,14 @@
 
 <span class="sd">        Now, we take apart ``v`` and ``u`` from the joint particles list, and form a lattice of re-assembled particles</span>
 <span class="sd">        ``(v_i, u_j)``. The individual values ``v_i`` and ``u_j`` can be then taken as the final marginal particles, and</span>
-<span class="sd">        it is straightforward to approximate their respective sampling densities. Simply::</span>
+<span class="sd">        it is straightforward to approximate, **up to a constant factor**, the value of their respective sampling</span>
+<span class="sd">        densities . Simply::</span>
 
 <span class="sd">           P(V=v_i) ~= sum( P(V=v_i, U=u_j, B=b) ) for all u_j and b</span>
 <span class="sd">           P(U=u_j) ~= sum( P(V=v_i, U=u_j, B=b) ) for all v_i and b</span>
+
+<span class="sd">        To reiterate, the values calculated herein are not approximations of the actual marginal probabilities, but</span>
+<span class="sd">        approximations that are proportional to the actual marginal probabilities up to a constant factor.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batched_dist</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>

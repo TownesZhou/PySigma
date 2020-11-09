@@ -334,8 +334,8 @@ class TestDistributionServer:
                 returned_ptcl = DS.draw_particles(mock_dist, num_ptcl, dist_info)
                 assert returned_ptcl.shape == Size([num_ptcl, 5])
 
-    def test_draw_particles_default_non_singleton_actual(self):
-        # Test the default drawing method with particles with non-singleton event dimension using actual distribution
+    def test_draw_particles_default_non_singleton_real(self):
+        # Test the default drawing method with particles with non-singleton event dimension using real distribution
         # Testing with MultivariateNormal as example
         b_shape, e_shape = Size([3, 4]), Size([5])
 
@@ -380,8 +380,8 @@ class TestDistributionServer:
                 returned_ptcl = DS.draw_particles(mock_dist, num_ptcl, dist_info)
                 assert returned_ptcl.shape == Size([num_ptcl, 1])       # Singleton event dimension
 
-    def test_draw_particles_default_singleton_actual(self):
-        # Test the default drawing method with particles with singleton event dimension using actual distribution
+    def test_draw_particles_default_singleton_real(self):
+        # Test the default drawing method with particles with singleton event dimension using real distribution
         # Testing with Normal as example
         b_shape, e_shape = Size([3, 4]), Size([1])
 
@@ -1286,5 +1286,293 @@ class TestKnowledgeServer:
     # endregion
 
     # region: distribution-class specific method
-    def test_default_draw(self):
-        pass
+    def test_default_draw_univariate_single_batch_mock_shape(self):
+        # Test correct shape with 1 RV, single batch, with mocks
+        b_shape, s_shape, e_shape = Size([1]), Size([150]), Size([1])
+
+        dist_class = D.Distribution
+        rv_cstr = (C.real,)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, Size([])
+
+        # Mock dist sample method
+        mock_dist.sample.side_effect = lambda size: \
+            torch.randn(Size(size) + mock_dist.batch_shape + mock_dist.event_shape)
+
+        # Mock dist log_prob method
+        def mock_log_prob(val):
+            b_e_len = len(mock_dist.batch_shape) + len(mock_dist.event_shape)
+            if val.shape[-b_e_len:] != mock_dist.batch_shape + mock_dist.event_shape:
+                raise ValueError("Input value tensor shape not compatible: expect trailing shape {}, but found: {}"
+                                 .format(mock_dist.batch_shape + mock_dist.event_shape, val.shape[-b_e_len:]))
+            random_log_prob = torch.randn(val.shape[:-b_e_len] + mock_dist.batch_shape)
+            return random_log_prob
+        mock_dist.log_prob.side_effect = mock_log_prob
+
+        return_ptcl, return_dens = ks._default_draw(mock_dist)
+
+        assert len(return_ptcl) == len(return_dens) == 1
+        assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
+        assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
+
+    def test_default_draw_univariate_single_batch_real_shape(self):
+        # Test correct shape with 1 RV, single batch, with real distribution instance
+        # Test using univariate Normal distribution as instance
+        b_shape, s_shape, e_shape = Size([1]), Size([150]), Size([1])
+
+        # Use real Normal distribution
+        dist_class = D.Normal
+        loc, scale = torch.randn(b_shape), torch.rand(b_shape)
+        dist = D.Normal(loc, scale)
+
+        rv_cstr = (C.real,)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        return_ptcl, return_dens = ks._default_draw(dist)
+
+        assert len(return_ptcl) == len(return_dens) == 1
+        assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
+        assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
+
+    def test_default_draw_univariate_multiple_batch_mock_shape(self):
+        # Test correct shape with 1 RV, multiple batch dimensions, with mocks
+        b_shape, s_shape, e_shape = Size([3, 4, 5]), Size([150]), Size([1])
+
+        dist_class = D.Distribution
+        rv_cstr = (C.real,)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, Size([])
+
+        # Mock dist sample method
+        mock_dist.sample.side_effect = lambda size: \
+            torch.randn(Size(size) + mock_dist.batch_shape + mock_dist.event_shape)
+
+        # Mock dist log_prob method
+        def mock_log_prob(val):
+            b_e_len = len(mock_dist.batch_shape) + len(mock_dist.event_shape)
+            if val.shape[-b_e_len:] != mock_dist.batch_shape + mock_dist.event_shape:
+                raise ValueError("Input value tensor shape not compatible: expect trailing shape {}, but found: {}"
+                                 .format(mock_dist.batch_shape + mock_dist.event_shape, val.shape[-b_e_len:]))
+            random_log_prob = torch.randn(val.shape[:-b_e_len] + mock_dist.batch_shape)
+            return random_log_prob
+        mock_dist.log_prob.side_effect = mock_log_prob
+
+        return_ptcl, return_dens = ks._default_draw(mock_dist)
+
+        assert len(return_ptcl) == len(return_dens) == 1
+        assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
+        assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
+
+    def test_default_draw_univariate_multiple_batch_real_shape(self):
+        # Test correct shape with 1 RV, multiple batch dimensions, with real distribution instance
+        # Test using univariate Normal distribution as instance
+        b_shape, s_shape, e_shape = Size([3, 4, 5]), Size([150]), Size([1])
+
+        # Use real Normal distribution
+        dist_class = D.Normal
+        loc, scale = torch.randn(b_shape), torch.rand(b_shape)
+        dist = D.Normal(loc, scale)
+
+        rv_cstr = (C.real,)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        return_ptcl, return_dens = ks._default_draw(dist)
+
+        assert len(return_ptcl) == len(return_dens) == 1
+        assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
+        assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
+
+    def test_default_draw_univariate_multiple_batch_real_content(self):
+        # Test correct content with 1 RV, multiple batch dimensions, with real distribution instance
+        # Test using univariate Normal distribution as instance
+        b_shape, s_shape, e_shape = Size([3, 4, 5]), Size([150]), Size([1])
+
+        # Use real Normal distribution
+        dist_class = D.Normal
+        loc, scale = torch.randn(b_shape), torch.rand(b_shape)
+        dist = D.Normal(loc, scale)
+
+        rv_cstr = (C.real,)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        return_ptcl, return_dens = ks._default_draw(dist)
+
+        # Test that the density is indeed the batch-average density
+        ptcl, dens = return_ptcl[0], return_dens[0]
+
+        # Get rid of singleton event dimension
+        ptcl = ptcl.squeeze(dim=-1)
+        # Unsqueeze and expand to insert batch dimensions
+        for i in range(len(b_shape)):
+            ptcl = ptcl.unsqueeze(dim=-1)
+        ptcl = ptcl.expand_as(torch.ones(s_shape + b_shape))
+
+        # Take average across batch
+        log_prob = dist.log_prob(ptcl)
+        prob = torch.exp(log_prob)
+        batch_avg_prob = prob.mean(dim=list(range(len(s_shape), len(s_shape) + len(b_shape))))
+        batch_avg_log_prob = torch.log(batch_avg_prob)
+
+        assert equal_within_error(dens, batch_avg_log_prob)
+
+    def test_default_draw_multivariate_single_batch_mock_shape(self):
+        # Test correct shape with 3 RVs, single batch, with mocks
+        b_shape, s_shape, e_shape = Size([1]), Size([10, 15, 20]), Size([1, 2, 3])
+
+        dist_class = D.Distribution
+        rv_cstr = (C.real, C.real, C.real)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, Size([sum(e_shape)])
+
+        # Mock dist sample method
+        mock_dist.sample.side_effect = lambda size: \
+            torch.randn(Size(size) + mock_dist.batch_shape + mock_dist.event_shape)
+
+        # Mock dist log_prob method
+        def mock_log_prob(val):
+            b_e_len = len(mock_dist.batch_shape) + len(mock_dist.event_shape)
+            if val.shape[-b_e_len:] != mock_dist.batch_shape + mock_dist.event_shape:
+                raise ValueError("Input value tensor shape not compatible: expect trailing shape {}, but found: {}"
+                                 .format(mock_dist.batch_shape + mock_dist.event_shape, val.shape[-b_e_len:]))
+            random_log_prob = torch.randn(val.shape[:-b_e_len] + mock_dist.batch_shape)
+            return random_log_prob
+        mock_dist.log_prob.side_effect = mock_log_prob
+
+        return_ptcl, return_dens = ks._default_draw(mock_dist)
+
+        assert len(return_ptcl) == len(return_dens) == 3
+        assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
+        assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
+
+    def test_default_draw_multivariate_single_batch_real_shape(self):
+        # Test correct shape with 3 RVs, single batch, with real distribution instance
+        # Test using MultivariateNormal distribution as instance
+        b_shape, s_shape, e_shape = Size([1]), Size([10, 15, 20]), Size([1, 2, 3])
+
+        # Use real Normal distribution
+        dist_class = D.MultivariateNormal
+        dist_e_shape = Size([sum(e_shape)])
+        loc = torch.randn(b_shape + dist_e_shape)
+        cov = torch.eye(dist_e_shape[0])
+        for i in range(len(b_shape)):
+            cov = cov.unsqueeze(dim=0)
+        repeat_times = list(b_shape) + [1, 1]
+        cov = cov.repeat(repeat_times)
+
+        dist = D.MultivariateNormal(loc, cov)
+
+        rv_cstr = [C.real,] * len(e_shape)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        return_ptcl, return_dens = ks._default_draw(dist)
+
+        assert len(return_ptcl) == len(return_dens) == 3
+        assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
+        assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
+
+    def test_default_draw_multivariate_single_batch_real_content(self):
+        # Test correct content with 3 RVs, single batch, with real distribution instance
+        # Test using MultivariateNormal distribution as instance
+        # We test that the returned log densities are approximations of the actual marginal log densities up to a
+        #   constant factor
+        # Since we are using MultivariateNormal distribution, its marginal distributions w.r.t. RV of any size has a
+        #   nice and closed form expression, and more conveniently, happens to also be a MultivariateNormal distribution
+        #   with restricted mean vector and covariance matrix. See here for more details:
+        #       https://en.wikipedia.org/wiki/Multivariate_normal_distribution#Marginal_distributions
+        b_shape, s_shape, e_shape = Size([1]), Size([10, 15, 20]), Size([1, 2, 3])
+
+        # Use real Normal distribution
+        dist_class = D.MultivariateNormal
+        dist_e_shape = Size([sum(e_shape)])
+        loc = torch.randn(b_shape + dist_e_shape)
+        cov = torch.eye(dist_e_shape[0])
+        for i in range(len(b_shape)):
+            cov = cov.unsqueeze(dim=0)
+        repeat_times = list(b_shape) + [1, 1]
+        cov = cov.repeat(repeat_times)
+
+        dist = D.MultivariateNormal(loc, cov)
+
+        rv_cstr = [C.real, ] * len(e_shape)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        return_ptcl, return_log_dens = ks._default_draw(dist)
+        return_dens = [torch.exp(d) for d in return_log_dens]
+
+        # The actual marginal distribution for each RV
+        marg_dist_list = [
+            D.MultivariateNormal(loc[0, :1], cov[0, :1, :1]),
+            D.MultivariateNormal(loc[0, 1:3], cov[0, 1:3, 1:3]),
+            D.MultivariateNormal(loc[0, 3:6], cov[0, 3:6, 3:6])
+        ]
+        actual_dens = [marg_dist.log_prob(p).exp() for marg_dist, p in zip(marg_dist_list, return_ptcl)]
+
+        # Check that the returned densities are proportional to the actual densities
+        return_dens_normal = [d / d.sum() for d in return_dens]
+        actual_dens_normal = [d / d.sum() for d in actual_dens]
+        assert all(equal_within_error(r, a) for r, a in zip(return_dens_normal, actual_dens_normal))
+
+    def test_default_draw_multivariate_multiple_batch_mock_shape(self):
+        # Test correct shape with 3 RVs, multiple batch, with mocks
+        b_shape, s_shape, e_shape = Size([5, 6, 7, 8]), Size([10, 15, 20]), Size([1, 2, 3])
+
+        dist_class = D.Distribution
+        rv_cstr = (C.real, C.real, C.real)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist.batch_shape, mock_dist.event_shape = b_shape, Size([sum(e_shape)])
+
+        # Mock dist sample method
+        mock_dist.sample.side_effect = lambda size: \
+            torch.randn(Size(size) + mock_dist.batch_shape + mock_dist.event_shape)
+
+        # Mock dist log_prob method
+        def mock_log_prob(val):
+            b_e_len = len(mock_dist.batch_shape) + len(mock_dist.event_shape)
+            if val.shape[-b_e_len:] != mock_dist.batch_shape + mock_dist.event_shape:
+                raise ValueError("Input value tensor shape not compatible: expect trailing shape {}, but found: {}"
+                                 .format(mock_dist.batch_shape + mock_dist.event_shape, val.shape[-b_e_len:]))
+            random_log_prob = torch.randn(val.shape[:-b_e_len] + mock_dist.batch_shape)
+            return random_log_prob
+
+        mock_dist.log_prob.side_effect = mock_log_prob
+
+        return_ptcl, return_dens = ks._default_draw(mock_dist)
+
+        assert len(return_ptcl) == len(return_dens) == 3
+        assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
+        assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
+
+    def test_default_draw_multivariate_multiple_batch_real_shape(self):
+        # Test correct shape with 3 RVs, multiple batch, with real distribution instance
+        # Test using MultivariateNormal distribution as instance
+        b_shape, s_shape, e_shape = Size([5, 6, 7, 8]), Size([10, 15, 20]), Size([1, 2, 3])
+
+        # Use real Normal distribution
+        dist_class = D.MultivariateNormal
+        dist_e_shape = Size([sum(e_shape)])
+        loc = torch.randn(b_shape + dist_e_shape)
+        cov = torch.eye(dist_e_shape[0])
+        for i in range(len(b_shape)):
+            cov = cov.unsqueeze(dim=0)
+        repeat_times = list(b_shape) + [1, 1]
+        cov = cov.repeat(repeat_times)
+
+        dist = D.MultivariateNormal(loc, cov)
+
+        rv_cstr = [C.real,] * len(e_shape)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        return_ptcl, return_dens = ks._default_draw(dist)
+
+        assert len(return_ptcl) == len(return_dens) == 3
+        assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
+        assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
+
