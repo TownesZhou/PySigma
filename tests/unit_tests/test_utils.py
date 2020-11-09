@@ -545,18 +545,6 @@ class TestDistributionServer:
 
         assert equal_within_error(returned_value, expected_param)
 
-    # TODO: wait for after refactor
-    @pytest.mark.skip("Wait for refactor")
-    def test_categorical_draw_particles(self):
-        b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
-        n_particles = 20
-        param = torch.rand(b_shape + p_shape)
-        dist = D.Categorical(probs=param)
-        dist_info = None
-
-        returned_value = DS.draw_particles(dist, n_particles, dist_info)
-        assert returned_value.shape == Size([n_particles]) + e_shape
-
     # endregion
 
 

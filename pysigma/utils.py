@@ -519,38 +519,10 @@ class DistributionServer:
         """
         return dist.probs
 
-    # TODO: Refactor - merge functionality with KnowledgeServer.draw_particles()
-    @staticmethod
-    def _categorical_draw(dist, num_particles, dist_info):
-        """
-            Draw categorical particles. Span of RV domain is inferred from last dimension of the distribution instance's
-                'probs' attribute. Particles will be drawn uniformly covering every value in the RV's domain once and
-                only once, while their probability mass will be assigned as the particle weights respectively.
-        """
-        assert isinstance(dist, torch.distributions.Categorical)
-        span = dist.probs.shape[-1]
-        s_shape = torch.Size([num_particles])
-
-        particles = torch.ones(s_shape)
-        for i in range(span):
-            particles[i] = particles[i] * i
-
-        # Weights obtained from probs attribute, by simply permuting the last dimension to first dimension
-        # n_dims = len(dist.probs.shape)
-        # dims = [n_dims-1, ] + [i for i in range(n_dims - 1)]
-        # weights = dist.probs.clone().permute(dims)      # clone to prevent accidental in-place value change
-
-        # Since we are effectively drawing particles uniformly from the finite discrete domain, the sampling pdf is also
-        #   uniform
-        # sampling_log_densities = 0
-
-        return particles
-
     """
         distribution class dependent method pointer
     """
     dict_draw_particles = {
-        torch.distributions.Categorical: _categorical_draw,
     }
     dict_log_pdf = {
 
