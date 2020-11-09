@@ -718,12 +718,13 @@ class KnowledgeServer:
         else:
             particles, log_densities = self._default_draw(batched_dist)
         # Check shape and type
-        assert isinstance(particles, tuple) and \
-            all(isinstance(p, torch.Tensor) and p.shape == torch.Size([self.s_shape[j], self.e_shape[j]])
-                for j, p in enumerate(particles))
-        assert isinstance(log_densities, tuple) and \
-            all(isinstance(d, torch.Tensor) and d.shape == torch.Size([self.s_shape[j]])
-                for j, d in enumerate(log_densities))
+        # TODO: resume check
+        # assert isinstance(particles, tuple) and \
+        #     all(isinstance(p, torch.Tensor) and p.shape == torch.Size([self.s_shape[j], self.e_shape[j]])
+        #         for j, p in enumerate(particles))
+        # assert isinstance(log_densities, tuple) and \
+        #     all(isinstance(d, torch.Tensor) and d.shape == torch.Size([self.s_shape[j]])
+        #         for j, d in enumerate(log_densities))
 
         # Cache the particle list if asked for
         if update_cache:

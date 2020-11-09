@@ -1737,3 +1737,78 @@ class TestKnowledgeServer:
         assert equal_within_error(torch.exp(dens[0]), torch.ones([2]) / 2)
         assert equal_within_error(torch.exp(dens[1]), torch.ones([5]) / 5)
         assert equal_within_error(torch.exp(dens[2]), torch.ones([10]) / 10)
+
+    def test_integration_categorical_event2torch_event(self):
+        # Integration test: event2torch_event() with Categorical distribution
+        s_shape, e_shape = Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        particles = torch.tensor([
+            [0., 0., 0.],
+            [0., 0., 6.],
+            [0., 2., 4.],
+            [0., 3., 8.],
+            [1., 0., 5.],
+            [1., 3., 7.]
+        ])
+        expected_return = torch.tensor([
+            [0.],
+            [6.],
+            [24.],
+            [38.],
+            [55.],
+            [87.]
+        ])
+
+        return_val = ks.event2torch_event(particles)
+        assert equal_within_error(return_val, expected_return)
+
+    def test_integration_categorical_event2cognitive_event(self):
+        # Integration test: event2cognitive_event() with Categorical distribution
+        s_shape, e_shape = Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        particles = torch.tensor([
+            [0.],
+            [6.],
+            [24.],
+            [38.],
+            [55.],
+            [87.]
+        ])
+        expected_return = torch.tensor([
+            [0., 0., 0.],
+            [0., 0., 6.],
+            [0., 2., 4.],
+            [0., 3., 8.],
+            [1., 0., 5.],
+            [1., 3., 7.]
+        ])
+
+        return_val = ks.event2cognitive_event(particles)
+        assert equal_within_error(return_val, expected_return)
+
+    def test_integration_draw_particles(self):
+        # Integration test: draw_particles() with Categorical distribution
+        b_shape, s_shape, e_shape = Size([3, 4, 5]), Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        param = torch.randn(b_shape + Size([100]))
+        ptcl, dens = ks.draw_particles(param, b_shape, update_cache=False)
+
+        assert len(ptcl) == len(dens) == 3
+        assert equal_within_error(ptcl[0], torch.tensor([0., 1.]))
+        assert equal_within_error(ptcl[1], torch.tensor([0., 1., 2., 3., 4.]))
+        assert equal_within_error(ptcl[2], torch.tensor([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]))
+        assert equal_within_error(torch.exp(dens[0]), torch.ones([2]) / 2)
+        assert equal_within_error(torch.exp(dens[1]), torch.ones([5]) / 5)
+        assert equal_within_error(torch.exp(dens[2]), torch.ones([10]) / 10)
