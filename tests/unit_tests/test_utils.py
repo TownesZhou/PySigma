@@ -1576,3 +1576,28 @@ class TestKnowledgeServer:
         assert all(p.shape == Size([s_shape[i], e_shape[i]]) for i, p in enumerate(return_ptcl))
         assert all(d.shape == Size([s_shape[i]]) for i, d in enumerate(return_dens))
 
+    def test_categorical_var_span_univariate(self):
+        # Test var span under a single RV
+        s_shape, e_shape = Size([15]), Size([1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 5),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        span = ks._categorical_var_span()
+        expected_span = (6,)
+        assert span == expected_span
+
+    def test_categorical_var_span_multivariate(self):
+        # Test var span under 3 RVs
+        s_shape, e_shape = Size([15, 20, 25]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 5), C.integer_interval(0, 8), C.integer_interval(0, 3),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        span = ks._categorical_var_span()
+        expected_span = (6, 9, 4)
+        assert span == expected_span
+
+
