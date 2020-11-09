@@ -1640,3 +1640,68 @@ class TestKnowledgeServer:
 
         return_val = ks._categorical_2torch_event(particles)
         assert equal_within_error(return_val, expected_return)
+
+    def test_categorical_2cognitive_event_univariate(self):
+        # Test with a single RV
+        s_shape, e_shape = Size([15]), Size([1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 5),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        particles = torch.randint(0, 6, s_shape + e_shape)
+        return_val = ks._categorical_2cognitive_event(particles)
+
+        assert equal_within_error(particles, return_val)
+
+    def test_categorical_2cognitive_event_univariate(self):
+        # Test with 3 RVs
+        s_shape, e_shape = Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        particles = torch.tensor([
+            [0.],
+            [6.],
+            [24.],
+            [38.],
+            [55.],
+            [87.]
+        ])
+        expected_return = torch.tensor([
+            [0., 0., 0.],
+            [0., 0., 6.],
+            [0., 2., 4.],
+            [0., 3., 8.],
+            [1., 0., 5.],
+            [1., 3., 7.]
+        ])
+
+        return_val = ks._categorical_2cognitive_event(particles)
+        assert equal_within_error(return_val, expected_return)
+
+    def test_categorical_translation_invertible(self):
+        # Test that _categorical_2torch_event() and _categorical_2cognitive_event() are mutually invertible
+        s_shape, e_shape = Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        num_ptcl = 100
+        # Composition 1: cognitive -> torch -> cognitive
+        split_ptcl = [
+            torch.randint(0, 2, [num_ptcl, 1]),
+            torch.randint(0, 5, [num_ptcl, 1]),
+            torch.randint(0, 10, [num_ptcl, 1]),
+        ]
+        ptcl = torch.cat(split_ptcl, dim=-1)
+        return_val = ks._categorical_2cognitive_event(ks._categorical_2torch_event(ptcl))
+        assert equal_within_error(return_val, ptcl)
+
+        # Composition 2: torch -> cognitive -> torch
+        ptcl = torch.randint(0, 100, [num_ptcl, 1])
+        return_val = ks._categorical_2torch_event(ks._categorical_2cognitive_event(ptcl))
+        assert equal_within_error(return_val, ptcl)

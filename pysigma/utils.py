@@ -1212,8 +1212,8 @@ class KnowledgeServer:
         # Going forward through spans to take modulo
         for span in var_span:
             base /= span
-            modulo_list.append(residue % base)
-            residue = residue // base
+            modulo_list.append(residue // base)
+            residue = residue % base
 
         # Concatenate the modulo list
         result = torch.cat(modulo_list, dim=-1)
