@@ -251,14 +251,13 @@ class DistributionServer:
                                       .format(dist_class))
         return cls.dict_get_moments[dist_class].__func__(dist, n_moments)
 
-    # TODO: Refactor - merge functionality with KnowledgeServer.draw_particles()
     @classmethod
     def draw_particles(cls, dist, num_particles, dist_info=None):
         """Draw a list of `num_particles` event particles from the given distribution specified by `dist`. The event
         particles drawn will be in the format compatible with DistributionServer and PyTorch.
 
-        Note that, since some PyTorch distribution have empty event shape, this means the returned particles for these
-        distribution classes would also have empty event shape.
+        Note that, some PyTorch distributions have empty event shape. In these cases, the returned particle tensors will
+        have a singleton event dimension appended at the end.
 
         Parameters
         ----------
@@ -272,8 +271,8 @@ class DistributionServer:
         Returns
         -------
         torch.Tensor
-            the list of particles drawn, of shape ``[num_particles] + event_shape``. `event_shape` may be empty,
-            depending on the distribution class.
+            the list of particles drawn, of shape ``[num_particles] + event_shape``. ``event_shape`` will at least be
+            a singleton shape ``Size([1])``.
 
         Raises
         ------
@@ -284,7 +283,9 @@ class DistributionServer:
         Notes
         -----
         Unless distribution-class-specific drawing method is specified and registered in ``cls.dict_draw_particles``
-        method map, the distribution instance `dist` will be directly queried to draw the list of samples.
+        method map, the distribution instance `dist` will be directly queried to draw the list of samples. Nonetheless,
+        the default process is only applicable to distributions with a single event dimensions. For those that have
+        multiple event dimensions, e.g. some that generates matrix-shaped samples, special method has to be implemented.
 
         The distribution instance `dist` is assumed batched, with a variable batch size(shape). However, we want to draw
         a single unique list of particles that is representative of each and every single distribution in the batch,
@@ -317,8 +318,16 @@ class DistributionServer:
             batch_size = dist.batch_shape.numel()
             n = num_particles // batch_size + 1
             btch_ptcl = dist.sample((n,))        # Draw n batched particles
-            assert btch_ptcl.shape == torch.Size([n]) + dist.batch_shape + dist.event_shape
-            flat_ptcl = btch_ptcl.view(-1, dist.event_shape[0])
+
+            # If dist has empty event shape, then append a singleton event dimension to the end of btch_ptcl
+            if dist.event_shape == torch.Size([]):
+                btch_ptcl = btch_ptcl.unsqueeze(dim=-1)
+                ptcl_event_shape = torch.Size([1])
+            else:
+                ptcl_event_shape = dist.event_shape
+
+            assert btch_ptcl.shape == torch.Size([n]) + dist.batch_shape + ptcl_event_shape
+            flat_ptcl = btch_ptcl.view(-1, ptcl_event_shape[0])
             shuf_ptcl = flat_ptcl[torch.randperm(flat_ptcl.shape[0])]       # shuffle across collapsed sample dimension
             particles = torch.narrow(shuf_ptcl, dim=0, start=0, length=num_particles)   # truncate
 

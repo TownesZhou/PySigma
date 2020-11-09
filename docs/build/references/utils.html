@@ -409,8 +409,8 @@ sufficiently described in the argument <cite>dist_info</cite> in a prior consent
 <em class="property">classmethod </em><code class="sig-name descname">draw_particles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">num_particles</span></em>, <em class="sig-param"><span class="n">dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer.draw_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer.draw_particles" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draw a list of <cite>num_particles</cite> event particles from the given distribution specified by <cite>dist</cite>. The event
 particles drawn will be in the format compatible with DistributionServer and PyTorch.</p>
-<p>Note that, since some PyTorch distribution have empty event shape, this means the returned particles for these
-distribution classes would also have empty event shape.</p>
+<p>Note that, some PyTorch distributions have empty event shape. In these cases, the returned particle tensors will
+have a singleton event dimension appended at the end.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -420,8 +420,8 @@ distribution classes would also have empty event shape.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>the list of particles drawn, of shape <code class="docutils literal notranslate"><span class="pre">[num_particles]</span> <span class="pre">+</span> <span class="pre">event_shape</span></code>. <cite>event_shape</cite> may be empty,
-depending on the distribution class.</p>
+<dd class="field-even"><p>the list of particles drawn, of shape <code class="docutils literal notranslate"><span class="pre">[num_particles]</span> <span class="pre">+</span> <span class="pre">event_shape</span></code>. <code class="docutils literal notranslate"><span class="pre">event_shape</span></code> will at least be
+a singleton shape <code class="docutils literal notranslate"><span class="pre">Size([1])</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>torch.Tensor</p>
@@ -433,7 +433,9 @@ depending on the distribution class.</p>
 </dl>
 <p class="rubric">Notes</p>
 <p>Unless distribution-class-specific drawing method is specified and registered in <code class="docutils literal notranslate"><span class="pre">cls.dict_draw_particles</span></code>
-method map, the distribution instance <cite>dist</cite> will be directly queried to draw the list of samples.</p>
+method map, the distribution instance <cite>dist</cite> will be directly queried to draw the list of samples. Nonetheless,
+the default process is only applicable to distributions with a single event dimensions. For those that have
+multiple event dimensions, e.g. some that generates matrix-shaped samples, special method has to be implemented.</p>
 <p>The distribution instance <cite>dist</cite> is assumed batched, with a variable batch size(shape). However, we want to draw
 a single unique list of particles that is representative of each and every single distribution in the batch,
 i.e., draw a list of particles from the joint distribution regardless of the batch dimensions. Therefore, we

@@ -465,14 +465,13 @@
                                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_class</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dict_get_moments</span><span class="p">[</span><span class="n">dist_class</span><span class="p">]</span><span class="o">.</span><span class="vm">__func__</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">)</span></div>
 
-    <span class="c1"># TODO: Refactor - merge functionality with KnowledgeServer.draw_particles()</span>
 <div class="viewcode-block" id="DistributionServer.draw_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.draw_particles">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">num_particles</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Draw a list of `num_particles` event particles from the given distribution specified by `dist`. The event</span>
 <span class="sd">        particles drawn will be in the format compatible with DistributionServer and PyTorch.</span>
 
-<span class="sd">        Note that, since some PyTorch distribution have empty event shape, this means the returned particles for these</span>
-<span class="sd">        distribution classes would also have empty event shape.</span>
+<span class="sd">        Note that, some PyTorch distributions have empty event shape. In these cases, the returned particle tensors will</span>
+<span class="sd">        have a singleton event dimension appended at the end.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -486,8 +485,8 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        torch.Tensor</span>
-<span class="sd">            the list of particles drawn, of shape ``[num_particles] + event_shape``. `event_shape` may be empty,</span>
-<span class="sd">            depending on the distribution class.</span>
+<span class="sd">            the list of particles drawn, of shape ``[num_particles] + event_shape``. ``event_shape`` will at least be</span>
+<span class="sd">            a singleton shape ``Size([1])``.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
@@ -498,7 +497,9 @@
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
 <span class="sd">        Unless distribution-class-specific drawing method is specified and registered in ``cls.dict_draw_particles``</span>
-<span class="sd">        method map, the distribution instance `dist` will be directly queried to draw the list of samples.</span>
+<span class="sd">        method map, the distribution instance `dist` will be directly queried to draw the list of samples. Nonetheless,</span>
+<span class="sd">        the default process is only applicable to distributions with a single event dimensions. For those that have</span>
+<span class="sd">        multiple event dimensions, e.g. some that generates matrix-shaped samples, special method has to be implemented.</span>
 
 <span class="sd">        The distribution instance `dist` is assumed batched, with a variable batch size(shape). However, we want to draw</span>
 <span class="sd">        a single unique list of particles that is representative of each and every single distribution in the batch,</span>
@@ -531,8 +532,16 @@
             <span class="n">batch_size</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
             <span class="n">n</span> <span class="o">=</span> <span class="n">num_particles</span> <span class="o">//</span> <span class="n">batch_size</span> <span class="o">+</span> <span class="mi">1</span>
             <span class="n">btch_ptcl</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">sample</span><span class="p">((</span><span class="n">n</span><span class="p">,))</span>        <span class="c1"># Draw n batched particles</span>
-            <span class="k">assert</span> <span class="n">btch_ptcl</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">n</span><span class="p">])</span> <span class="o">+</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">+</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span>
-            <span class="n">flat_ptcl</span> <span class="o">=</span> <span class="n">btch_ptcl</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="c1"># If dist has empty event shape, then append a singleton event dimension to the end of btch_ptcl</span>
+            <span class="k">if</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]):</span>
+                <span class="n">btch_ptcl</span> <span class="o">=</span> <span class="n">btch_ptcl</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">ptcl_event_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ptcl_event_shape</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span>
+
+            <span class="k">assert</span> <span class="n">btch_ptcl</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">n</span><span class="p">])</span> <span class="o">+</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">+</span> <span class="n">ptcl_event_shape</span>
+            <span class="n">flat_ptcl</span> <span class="o">=</span> <span class="n">btch_ptcl</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ptcl_event_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">shuf_ptcl</span> <span class="o">=</span> <span class="n">flat_ptcl</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">flat_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>       <span class="c1"># shuffle across collapsed sample dimension</span>
             <span class="n">particles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">shuf_ptcl</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">num_particles</span><span class="p">)</span>   <span class="c1"># truncate</span>
 
@@ -586,15 +595,23 @@
         <span class="n">sample_shape</span><span class="p">,</span> <span class="n">event_shape</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span>
         <span class="n">batch_shape</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span>
         <span class="k">assert</span> <span class="p">(</span><span class="n">event_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span> <span class="ow">and</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]))</span> <span class="ow">or</span> \
-               <span class="p">(</span><span class="n">event_shape</span> <span class="o">==</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shap</span><span class="p">),</span> \
-            <span class="s2">&quot;The event shape (</span><span class="si">{}</span><span class="s2">) found in the given particles is different from the event shape (</span><span class="si">{}</span><span class="s2">) found in the &quot;</span> \
-            <span class="s2">&quot;distribution instance&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">)</span>
+               <span class="p">(</span><span class="n">event_shape</span> <span class="o">==</span> <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">),</span> \
+            <span class="s2">&quot;The given particle tensor&#39;s event shape is not compatible with that of the given distribution instance. &quot;</span> \
+            <span class="s2">&quot;Found shape </span><span class="si">{}</span><span class="s2"> in the particle tensor, so expect shape </span><span class="si">{}</span><span class="s2"> in the distribution instance. Instead found &quot;</span> \
+            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([])</span> <span class="k">if</span> <span class="n">event_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span> <span class="k">else</span> <span class="n">event_shape</span><span class="p">),</span>
+                        <span class="n">dist</span><span class="o">.</span><span class="n">event_shape</span><span class="p">)</span>
+        <span class="c1"># Shrink particle event dimension if it&#39;s singleton</span>
+        <span class="k">if</span> <span class="n">event_shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="c1"># Insert singleton dimensions into the particles tensor, and repeat along those dimensions to expand to</span>
         <span class="c1"># full batch shape.</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">)):</span>
             <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">))</span>
-        <span class="n">repeat_times</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># Repeat values along batch dimensions. Only append a 1 to the end if the value&#39;s event dimension is not</span>
+        <span class="c1">#   singleton and has not been removed</span>
+        <span class="n">repeat_times</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">)</span> <span class="o">+</span> <span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">event_shape</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span> <span class="k">else</span> <span class="p">[])</span>
+
         <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">repeat_times</span><span class="p">)</span>
 
         <span class="c1"># Query the actual distribution instance</span>

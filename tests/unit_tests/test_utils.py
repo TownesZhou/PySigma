@@ -312,9 +312,8 @@ class TestDistributionServer:
 
                 assert torch.equal(DS.draw_particles(mock_dist, num_ptcl, dist_info=dist_info), expected_particles)
 
-    def test_draw_particles_default(self):
-        # Test the default drawing method.
-        # Mock dist instance
+    def test_draw_particles_default_non_singleton_mock(self):
+        # Test the default drawing method with particles with non-singleton event dimension using mocks
         mock_dist = MagicMock(spec_set=D.Distribution)
         mock_dist_class = D.Distribution
         num_ptcl = 100
@@ -334,6 +333,72 @@ class TestDistributionServer:
 
                 returned_ptcl = DS.draw_particles(mock_dist, num_ptcl, dist_info)
                 assert returned_ptcl.shape == Size([num_ptcl, 5])
+
+    def test_draw_particles_default_non_singleton_actual(self):
+        # Test the default drawing method with particles with non-singleton event dimension using actual distribution
+        # Testing with MultivariateNormal as example
+        b_shape, e_shape = Size([3, 4]), Size([5])
+
+        loc = torch.randn(b_shape + e_shape)
+        cov = torch.eye(e_shape[0])
+        for i in range(len(b_shape)):
+            cov = cov.unsqueeze(dim=0)
+        repeat_times = list(b_shape) + [1, 1]
+        cov = cov.repeat(repeat_times)
+
+        dist = D.MultivariateNormal(loc, cov)
+        num_ptcl = 100
+        dist_info = None
+
+        # Patch class registry
+        with patch("pysigma.utils.DistributionServer.dict_draw_particles", new_callable=PropertyMock) as d:
+            # Mock special draw particles method
+            d.return_value = {}
+
+            returned_ptcl = DS.draw_particles(dist, num_ptcl, dist_info)
+            assert returned_ptcl.shape == Size([num_ptcl]) + e_shape
+
+    def test_draw_particles_default_singleton_mock(self):
+        # Test the default drawing method with particles with singleton event dimension using mocks
+        mock_dist = MagicMock(spec_set=D.Distribution)
+        mock_dist_class = D.Distribution
+        num_ptcl = 100
+        dist_info = None
+
+        mock_dist.batch_shape, mock_dist.event_shape = Size([3, 4]), Size([])       # Empty event dimension
+        mock_dist.sample.side_effect = lambda size: torch.randn([size[0], 3, 4])
+
+        # Patch type so that type(mock_dist) returns mock_dist_class
+        with patch("pysigma.utils.type") as t:
+            t.side_effect = lambda dist: mock_dist_class if dist is mock_dist else type(dist)
+
+            # Patch class registry
+            with patch("pysigma.utils.DistributionServer.dict_draw_particles", new_callable=PropertyMock) as d:
+                # Mock special draw particles method
+                d.return_value = {}
+
+                returned_ptcl = DS.draw_particles(mock_dist, num_ptcl, dist_info)
+                assert returned_ptcl.shape == Size([num_ptcl, 1])       # Singleton event dimension
+
+    def test_draw_particles_default_singleton_actual(self):
+        # Test the default drawing method with particles with singleton event dimension using actual distribution
+        # Testing with Normal as example
+        b_shape, e_shape = Size([3, 4]), Size([1])
+
+        loc = torch.randn(b_shape)
+        scale = torch.randn(b_shape)
+
+        dist = D.Normal(loc, scale)
+        num_ptcl = 100
+        dist_info = None
+
+        # Patch class registry
+        with patch("pysigma.utils.DistributionServer.dict_draw_particles", new_callable=PropertyMock) as d:
+            # Mock special draw particles method
+            d.return_value = {}
+
+            returned_ptcl = DS.draw_particles(dist, num_ptcl, dist_info)
+            assert returned_ptcl.shape == Size([num_ptcl]) + e_shape
 
     def test_log_prob_incompatible_event_shape_1(self):
         # Test that the dist instance has an incompatible event shape than the last dimension of the provided particles
@@ -424,7 +489,7 @@ class TestDistributionServer:
         # Test successful operation using mocks
         s_shape, b_shape, e_shape = Size([10]), Size([2, 3]), Size([4])
 
-        # Create Normal dist instance with correct batch and event shape
+        # Create MultivariateNormal dist instance with correct batch and event shape
         loc = torch.randn(b_shape + e_shape)
         cov = torch.eye(e_shape[0])
         for i in range(len(b_shape)):
