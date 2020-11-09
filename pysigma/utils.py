@@ -1187,7 +1187,7 @@ class KnowledgeServer:
         # Get rv span
         var_span = self._categorical_var_span()
         # Taking volume product
-        volume_prod = 1
+        volume_prod = 0
         base = 1
         # Going backward through spans to take product
         for val, span in zip(reversed(split_particles), reversed(var_span)):

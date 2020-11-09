@@ -1600,4 +1600,43 @@ class TestKnowledgeServer:
         expected_span = (6, 9, 4)
         assert span == expected_span
 
+    def test_categorical_2torch_event_univariate(self):
+        # Test with a single RV
+        s_shape, e_shape = Size([15]), Size([1])
 
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 5),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        particles = torch.randint(0, 6, s_shape + e_shape)
+        return_val = ks._categorical_2torch_event(particles)
+
+        assert equal_within_error(particles, return_val)
+
+    def test_categorical_2torch_event_multivariate_ad_hoc(self):
+        # Test with 3 RVs
+        s_shape, e_shape = Size([10, 15, 20]), Size([1, 1, 1])
+
+        dist_class = D.Categorical
+        rv_cstr = (C.integer_interval(0, 1), C.integer_interval(0, 4), C.integer_interval(0, 9),)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        particles = torch.tensor([
+            [0., 0., 0.],
+            [0., 0., 6.],
+            [0., 2., 4.],
+            [0., 3., 8.],
+            [1., 0., 5.],
+            [1., 3., 7.]
+        ])
+        expected_return = torch.tensor([
+            [0.],
+            [6.],
+            [24.],
+            [38.],
+            [55.],
+            [87.]
+        ])
+
+        return_val = ks._categorical_2torch_event(particles)
+        assert equal_within_error(return_val, expected_return)
