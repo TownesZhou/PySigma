@@ -538,7 +538,64 @@ class DistributionServer:
             torch.Tensor
                 By default, returns `dist.probs`, of shape ``dist.batch_shape + [num_logits]``.
         """
+        assert isinstance(dist, torch.distributions.Categorical)
         return dist.probs
+
+    """
+        Univariate Normal Distribution
+    """
+    @staticmethod
+    def _normal_param2dist(params, dist_info):
+        """
+            For Univariate Normal distributions, ``param_shape`` is ``[2]``. The first slice of the input parameter
+            tensor will be interpreted as the `loc` argument to the PyTorch Normal distribution, and the second slice
+            will be interpreted as the `scale` argument.
+
+            Parameters
+            ----------
+            params : torch.Tensor
+                Parameter tensor, with ``param_shape == Size([2])``, i.e., last dimension has a size of 2.
+            dist_info : dict
+
+            Returns
+            -------
+            torch.distributions.Normal
+                A univariate normal distribution instance
+        """
+        # Check that the last dimension of params is has a size of 2
+        assert params.shape[-1] == 2, "While attempting to translate distribution parameters to a Univariate Normal " \
+                                      "distribution, expect the last dimension of the parameter tensor has a size of " \
+                                      "2. Instead, found size {}.".format(params.shape[-1])
+        index = torch.tensor([0, 1], dtype=torch.long)
+        loc, scale = params.index_select(dim=-1, index=index[0]), params.index_select(dim=-1, index=index[1])
+        # Squeeze out the last singleton dimension
+        loc = loc.squeeze(dim=-1)
+        scale = scale.squeeze(dim=-1)
+
+        dist = torch.distributions.Normal(loc, scale)
+
+        return dist
+
+    @staticmethod
+    def _normal_dist2param(dist, dist_info):
+        """
+            For Univariate Normal distribution, the returned parameter tensor will be ``dist.loc`` and ``dist.scale``
+            stacked together along a new event dimension appended to as the last dimension. The first slice will be
+            ``dist.loc`` and the second slice be ``dist.scale``.
+
+            Parameters
+            ----------
+            dist : torch.distributions.Normal
+            dist_info : dict
+
+            Returns
+            -------
+            torch.Tensor
+                The parameter tensor, with the last event dimension have a size of 2
+        """
+        assert isinstance(dist, torch.distributions.Normal)
+        params = torch.stack([dist.loc, dist.scale], dim=-1)
+        return params
 
     """
         distribution class dependent method pointer
@@ -550,9 +607,11 @@ class DistributionServer:
     }
     dict_param2dist = {
         torch.distributions.Categorical: _categorical_param2dist,
+        torch.distributions.Normal: _normal_param2dist,
     }
     dict_dist2param = {
         torch.distributions.Categorical: _categorical_dist2param,
+        torch.distributions.Normal: _normal_dist2param,
     }
     dict_natural2exp_param = {
 

@@ -13,7 +13,7 @@ from pysigma.utils import KnowledgeServer as KS
 from ...utils import equal_within_error
 
 
-class TestDistributionServerCategorical():
+class TestDistributionServer():
 
     def test_param2dist(self):
         b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
@@ -38,7 +38,7 @@ class TestDistributionServerCategorical():
         assert equal_within_error(returned_value, expected_param)
 
 
-class TestKnowledgeServerCategorical():
+class TestKnowledgeServer():
 
     def test_categorical_var_span_univariate(self):
         # Test var span under a single RV
