@@ -380,7 +380,8 @@
 <span class="sd">        +====================+==========================+==================+==================+=======+</span>
 <span class="sd">        | Categorical        | b_shape + [ num_logits ] | b_shape          | [] (empty shape) |       |</span>
 <span class="sd">        +--------------------+--------------------------+------------------+------------------+-------+</span>
-
+<span class="sd">        | Normal             | b_shape + [ 2 ]          | b_shape          | [] (empty shape) |       |</span>
+<span class="sd">        +--------------------+--------------------------+------------------+------------------+-------+</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Distribution</span><span class="p">)</span>
@@ -437,6 +438,8 @@
 <span class="sd">        | Distribution class | Returned parameter shapes         | Notes |</span>
 <span class="sd">        +====================+===================================+=======+</span>
 <span class="sd">        | Categorical        | dist.batch_shape + [ num_logits ] |       |</span>
+<span class="sd">        +--------------------+-----------------------------------+-------+</span>
+<span class="sd">        | Normal             | dist.batch_shape + [ 2 ]          |       |</span>
 <span class="sd">        +--------------------+-----------------------------------+-------+</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -730,6 +733,10 @@
 <span class="sd">            torch.distributions.Categorical</span>
 <span class="sd">                Returns a categorical distribution instance, with ``batch_shape`` the same as the batch shape of input</span>
 <span class="sd">                `param`, and ``event_shape == torch.Size([])``.</span>
+
+<span class="sd">            See Also</span>
+<span class="sd">            --------</span>
+<span class="sd">            `torch.distributions.Categorical &lt;https://pytorch.org/docs/stable/distributions.html#categorical&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">probs</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dist</span></div>
@@ -751,8 +758,77 @@
 <span class="sd">            -------</span>
 <span class="sd">            torch.Tensor</span>
 <span class="sd">                By default, returns `dist.probs`, of shape ``dist.batch_shape + [num_logits]``.</span>
+
+<span class="sd">            See Also</span>
+<span class="sd">            --------</span>
+<span class="sd">            `torch.distributions.Categorical &lt;https://pytorch.org/docs/stable/distributions.html#categorical&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span></div>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Univariate Normal Distribution</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DistributionServer._normal_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._normal_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_normal_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            For Univariate Normal distributions, ``param_shape`` is ``[2]``. The first slice of the input parameter</span>
+<span class="sd">            tensor will be interpreted as the `loc` argument to the PyTorch Normal distribution, and the second slice</span>
+<span class="sd">            will be interpreted as the `scale` argument.</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            params : torch.Tensor</span>
+<span class="sd">                Parameter tensor, with ``param_shape == Size([2])``, i.e., last dimension has a size of 2.</span>
+<span class="sd">            dist_info : dict</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            torch.distributions.Normal</span>
+<span class="sd">                A univariate normal distribution instance</span>
+
+<span class="sd">            See Also</span>
+<span class="sd">            --------</span>
+<span class="sd">            `torch.distributions.Normal &lt;https://pytorch.org/docs/stable/distributions.html#normal&gt;`_</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check that the last dimension of params is has a size of 2</span>
+        <span class="k">assert</span> <span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;While attempting to translate distribution parameters to a Univariate Normal &quot;</span> \
+                                      <span class="s2">&quot;distribution, expect the last dimension of the parameter tensor has a size of &quot;</span> \
+                                      <span class="s2">&quot;2. Instead, found size </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+        <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">params</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="c1"># Squeeze out the last singleton dimension</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="n">loc</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dist</span></div>
+
+<div class="viewcode-block" id="DistributionServer._normal_dist2param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._normal_dist2param">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_normal_dist2param</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            For Univariate Normal distribution, the returned parameter tensor will be ``dist.loc`` and ``dist.scale``</span>
+<span class="sd">            stacked together along a new event dimension appended to as the last dimension. The first slice will be</span>
+<span class="sd">            ``dist.loc`` and the second slice be ``dist.scale``.</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            dist : torch.distributions.Normal</span>
+<span class="sd">            dist_info : dict</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            torch.Tensor</span>
+<span class="sd">                The parameter tensor, with the last event dimension have a size of 2</span>
+
+<span class="sd">            See Also</span>
+<span class="sd">            --------</span>
+<span class="sd">            `torch.distributions.Normal &lt;https://pytorch.org/docs/stable/distributions.html#normal&gt;`_</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">scale</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">params</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        distribution class dependent method pointer</span>
@@ -764,9 +840,11 @@
     <span class="p">}</span>
     <span class="n">dict_param2dist</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="n">_categorical_param2dist</span><span class="p">,</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">:</span> <span class="n">_normal_param2dist</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">dict_dist2param</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="n">_categorical_dist2param</span><span class="p">,</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">:</span> <span class="n">_normal_dist2param</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">dict_natural2exp_param</span> <span class="o">=</span> <span class="p">{</span>
 
@@ -839,12 +917,26 @@
 <span class="sd">    * PyTorch to Cognitive event format translation method: ``2cognitive_event(particles) --&gt; particles``</span>
 <span class="sd">    * Special marginal particle list sampling method: ``special_draw(batched_dist) --&gt; particles, log_densities``</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">rv_sizes</span><span class="p">,</span> <span class="n">rv_constraints</span><span class="p">,</span> <span class="n">rv_num_particles</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">rv_sizes</span><span class="p">,</span> <span class="n">rv_constraints</span><span class="p">,</span> <span class="n">rv_num_particles</span><span class="o">=</span><span class="p">[],</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">Distribution</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_sizes</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">rv_sizes</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_constraints</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">rv_constraints</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rv_num_particles</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">rv_num_particles</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist_info</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="c1"># distribution-dependent translation method pointer. Indexed by distribution class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2enforced_sample_shape</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_enforced_sample_shape</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_event</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2torch_event</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2cognitive_event</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2cognitive_event</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2special_draw</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">tuple</span><span class="p">([</span><span class="n">integer_interval</span><span class="p">]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_draw</span>
+        <span class="p">}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span> <span class="o">=</span> <span class="n">dist_class</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rv_sizes</span><span class="p">)</span>
@@ -855,22 +947,14 @@
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">)</span>
+        <span class="c1"># Check if sample shape is enforced for this distribution class. If yes, use the enforced sample shape,</span>
+        <span class="c1">#   Otherwise, infer from rv_num_particles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2enforced_sample_shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">]()</span> \
+            <span class="k">if</span> <span class="n">dist_class</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_2enforced_sample_shape</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_num_particles</span><span class="p">)</span>
 
         <span class="c1"># Cache</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="c1"># distribution-dependent translation method pointer. Indexed by distribution class</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2torch_event</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2torch_event</span>
-        <span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2cognitive_event</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_2cognitive_event</span>
-        <span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dict_2special_draw</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="nb">tuple</span><span class="p">([</span><span class="n">integer_interval</span><span class="p">]):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_draw</span>
-        <span class="p">}</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Public API</span>
@@ -1391,6 +1475,12 @@
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">integer_interval</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">-</span> <span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="KnowledgeServer._categorical_enforced_sample_shape"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._categorical_enforced_sample_shape">[docs]</a>    <span class="k">def</span> <span class="nf">_categorical_enforced_sample_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Enforce a predefined sample shape inferred from the RV constraints</span>
+        <span class="c1"># Get variable span</span>
+        <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">var_span</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="KnowledgeServer._categorical_2torch_event"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._categorical_2torch_event">[docs]</a>    <span class="k">def</span> <span class="nf">_categorical_2torch_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">),</span> \
             <span class="s2">&quot;While attempting to translate Categorical events to PyTorch format, expect random variable sizes to be &quot;</span> \
@@ -1401,7 +1491,7 @@
         <span class="c1"># Get rv span</span>
         <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
         <span class="c1"># Taking volume product</span>
-        <span class="n">volume_prod</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">volume_prod</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">base</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="c1"># Going backward through spans to take product</span>
         <span class="k">for</span> <span class="n">val</span><span class="p">,</span> <span class="n">span</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">split_particles</span><span class="p">),</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">var_span</span><span class="p">)):</span>
@@ -1426,8 +1516,8 @@
         <span class="c1"># Going forward through spans to take modulo</span>
         <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">:</span>
             <span class="n">base</span> <span class="o">/=</span> <span class="n">span</span>
-            <span class="n">modulo_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">residue</span> <span class="o">%</span> <span class="n">base</span><span class="p">)</span>
-            <span class="n">residue</span> <span class="o">=</span> <span class="n">residue</span> <span class="o">//</span> <span class="n">base</span>
+            <span class="n">modulo_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">residue</span> <span class="o">//</span> <span class="n">base</span><span class="p">)</span>
+            <span class="n">residue</span> <span class="o">=</span> <span class="n">residue</span> <span class="o">%</span> <span class="n">base</span>
 
         <span class="c1"># Concatenate the modulo list</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">modulo_list</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
@@ -1438,7 +1528,8 @@
 <span class="sd">        particle values and uniform log sampling densities.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">var_span</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_var_span</span><span class="p">()</span>
-        <span class="n">particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
+        <span class="n">particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">lower_bound</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                          <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
         <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">span</span><span class="p">)</span> <span class="o">/</span> <span class="n">span</span><span class="p">)</span> <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span></div></div>

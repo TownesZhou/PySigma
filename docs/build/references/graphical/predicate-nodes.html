@@ -229,16 +229,17 @@
 <dd><p>Working Memory Variable Node.</p>
 <p>Gate node connecting predicate structure to conditionals.</p>
 <p>WMVN will attempt to combine incoming messages, regardless of whether they come from alpha terminals in Conditional
-subgraphs, or from other nodes in the Predicate subgraph. The combined message generally yields the semantics of
-marginal belief coming from a certain part of the graphical model, and is sent to downstream nodes for further
-processing.</p>
+subgraphs, or from other nodes in the Predicate subgraph. The combination generally yields a message that is
+representative of the marginal belief from a certain part of the graphical model. It is then sent to downstream
+nodes for further processing.</p>
 <p>A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
 particles needs to be queried.</p>
 <dl class="simple">
-<dt>WMVN quiescence state:</dt><dd><p>A WMVN reaches quiescence state if and only if <strong>all</strong> incoming linkdata do not contain new message.</p>
+<dt>WMVN quiescence state:</dt><dd><p>A WMVN reaches quiescence state if and only if <strong>all</strong> incoming linkdata do not contain new message. Same as
+default quiescence state definition.</p>
 </dd>
 </dl>
-<p>It is defined as such so that, although inefficiency may be induced due to WMVN having to fire multiple times while
+<p>It is defined as such so that, although it may not be efficient that WMVN has to fire multiple times while
 sending partially complete messages, it is guaranteed that no new arriving message would be blocked herein simply
 because other messages were blocked elsewhere and did not arrive at this node, consequently blocking all downstream
 processing.</p>
@@ -271,87 +272,14 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 
 <dl class="py method">
 <dt id="pysigma.graphical.predicate_nodes.WMVN.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMVN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Combine incoming message to this Predicate subgraph.</p>
-<p>Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
-FAN node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist
-Particles type messages but all of them are homogeneous (sharing the same particle values as well as sampling
-log densities).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>AssertionError</strong> – If found that not all incoming messages contain either parameter or particles, or both.</p></li>
-<li><p><strong>AssertionError</strong> – If the <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type messages in the incoming links do not share the same particles
-    (including particle value tensors and/or particle log sampling density tensors)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Warns</dt>
-<dd class="field-even"><p><strong>UserWarning</strong> – If there is only one incoming link, but this link is connected to a factor node that is also connected from
-this WMVN via an outgoing link. This means, per Sum-Product exclusion principle, that this outgoing link
-will also be neglected during compute() and no new message will ever be propagated via this link.</p>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>Following combination procedure is carried out to conform to the standard of all inference methods</p>
-<ol class="arabic">
-<li><p>If incoming messages all contains parameter, then these parameters will be combined. The outgoing message
-will contain the combined parameter. Otherwise if any incoming message does not contain parameter, this
-procedure will not be performed and the outgoing message will not contain parameter, but rather a combined
-particle list will be computed. See the followings.</p>
-<p>For the parameter message combination procedure and accompanying assumptions, see
-<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more details.</p>
-</li>
-<li><p>If any incoming message also contains particles, then it is imperative that all such messages contain the
-same particle values as well as particle log sampling densities. The particle weights will be gathered from
-these messages and combined. For all other parameter messages that only contain parameters, the particles
-from these particles messages will be used as the surrogate particles to generate a particle message as
-approximation, which will take part in the particles combination procedure.</p></li>
-</ol>
-<p>In short, here is a summary listing the correspondence between incoming message types and outgoing message
-types:</p>
-<table class="docutils align-default">
-<colgroup>
-<col style="width: 57%" />
-<col style="width: 43%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Incoming Message Types</p></th>
-<th class="head"><p>Outgoing Message Type</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Parameter</p></td>
-<td><p>Parameter</p></td>
-</tr>
-<tr class="row-odd"><td><p>Particles</p></td>
-<td><p>Particles</p></td>
-</tr>
-<tr class="row-even"><td><p>Both</p></td>
-<td><p>Both</p></td>
-</tr>
-<tr class="row-odd"><td><p>Parameter + Particles</p></td>
-<td><p>Particles</p></td>
-</tr>
-<tr class="row-even"><td><p>Parameter + Both</p></td>
-<td><p>Both</p></td>
-</tr>
-<tr class="row-odd"><td><p>Particles + Both</p></td>
-<td><p>Particles</p></td>
-</tr>
-<tr class="row-even"><td><p>Parameter + Particles + Both</p></td>
-<td><p>Particles</p></td>
-</tr>
-</tbody>
-</table>
-<p>Or, logically speaking, the outgoing message will contain particles if <strong>any</strong> incoming message also contains
-particles, but it will contain parameter only if <strong>all</strong> incoming messages contain parameters.</p>
-<p>Note that in any case, incoming message can not be <code class="docutils literal notranslate"><span class="pre">MessageType.Undefined</span></code> type, in which case an exception
-will be raised.</p>
-<p>When combining messages, will exclude message from the link to which the combined message is to send to (if
-such a bidirected link exists). This implements the Sum-Product algorithm’s variable node semantics, if
-this WMVN is served as both WMVN_IN and WMVN_OUT, i.e., if the predicate is of memory-less vector type.</p>
-<p>Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
-share the same set of incoming links that provide the messages, previously computed result will be reused</p>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMVN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute method to be called to propagate messages during decision phases.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that in a subclass, when overriding this method, it must be decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;parent_class.compute_control</span></code> where <code class="docutils literal notranslate"><span class="pre">parent_class</span></code> is the parent class of said subclass so that
+the message propagation process can be controlled and relevant stats be set.</p>
+</div>
 </dd></dl>
 
 </dd></dl>

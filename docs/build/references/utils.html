@@ -340,6 +340,12 @@ dimensions at the front should be equal to <cite>b_shape</cite>.</p></li>
 <td><p>[] (empty shape)</p></td>
 <td></td>
 </tr>
+<tr class="row-even"><td><p>Normal</p></td>
+<td><p>b_shape + [ 2 ]</p></td>
+<td><p>b_shape</p></td>
+<td><p>[] (empty shape)</p></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -387,6 +393,10 @@ sufficiently described in the argument <cite>dist_info</cite> in a prior consent
 <tbody>
 <tr class="row-even"><td><p>Categorical</p></td>
 <td><p>dist.batch_shape + [ num_logits ]</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Normal</p></td>
+<td><p>dist.batch_shape + [ 2 ]</p></td>
 <td></td>
 </tr>
 </tbody>
@@ -560,6 +570,10 @@ outcomes of the categorical random variable.</p></li>
 <dd class="field-odd"><p>torch.distributions.Categorical</p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#categorical">torch.distributions.Categorical</a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -584,6 +598,62 @@ outcomes of the categorical random variable.</p></li>
 <dd class="field-odd"><p>torch.Tensor</p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#categorical">torch.distributions.Categorical</a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._normal_param2dist">
+<em class="property">static </em><code class="sig-name descname">_normal_param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._normal_param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._normal_param2dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>For Univariate Normal distributions, <code class="docutils literal notranslate"><span class="pre">param_shape</span></code> is <code class="docutils literal notranslate"><span class="pre">[2]</span></code>. The first slice of the input parameter
+tensor will be interpreted as the <cite>loc</cite> argument to the PyTorch Normal distribution, and the second slice
+will be interpreted as the <cite>scale</cite> argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>torch.Tensor</em>) – Parameter tensor, with <code class="docutils literal notranslate"><span class="pre">param_shape</span> <span class="pre">==</span> <span class="pre">Size([2])</span></code>, i.e., last dimension has a size of 2.</p></li>
+<li><p><strong>dist_info</strong> (<em>dict</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A univariate normal distribution instance</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.distributions.Normal</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#normal">torch.distributions.Normal</a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._normal_dist2param">
+<em class="property">static </em><code class="sig-name descname">_normal_dist2param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._normal_dist2param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._normal_dist2param" title="Permalink to this definition">¶</a></dt>
+<dd><p>For Univariate Normal distribution, the returned parameter tensor will be <code class="docutils literal notranslate"><span class="pre">dist.loc</span></code> and <code class="docutils literal notranslate"><span class="pre">dist.scale</span></code>
+stacked together along a new event dimension appended to as the last dimension. The first slice will be
+<code class="docutils literal notranslate"><span class="pre">dist.loc</span></code> and the second slice be <code class="docutils literal notranslate"><span class="pre">dist.scale</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dist</strong> (<em>torch.distributions.Normal</em>) – </p></li>
+<li><p><strong>dist_info</strong> (<em>dict</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The parameter tensor, with the last event dimension have a size of 2</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#normal">torch.distributions.Normal</a></p>
+</div>
 </dd></dl>
 
 <dl class="py attribute">
@@ -598,12 +668,12 @@ outcomes of the categorical random variable.</p></li>
 
 <dl class="py attribute">
 <dt id="pysigma.utils.DistributionServer.dict_param2dist">
-<code class="sig-name descname">dict_param2dist</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_param2dist" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dict_param2dist</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;, &lt;class 'torch.distributions.normal.Normal'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_param2dist" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="pysigma.utils.DistributionServer.dict_dist2param">
-<code class="sig-name descname">dict_dist2param</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_dist2param" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dict_dist2param</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;, &lt;class 'torch.distributions.normal.Normal'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_dist2param" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -638,7 +708,7 @@ outcomes of the categorical random variable.</p></li>
 <h2>KnowledgeServer<a class="headerlink" href="#knowledgeserver" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.utils.KnowledgeServer">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.utils.</code><code class="sig-name descname">KnowledgeServer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist_class</span></em>, <em class="sig-param"><span class="n">rv_sizes</span></em>, <em class="sig-param"><span class="n">rv_constraints</span></em>, <em class="sig-param"><span class="n">rv_num_particles</span></em>, <em class="sig-param"><span class="n">dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.utils.</code><code class="sig-name descname">KnowledgeServer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist_class</span></em>, <em class="sig-param"><span class="n">rv_sizes</span></em>, <em class="sig-param"><span class="n">rv_constraints</span></em>, <em class="sig-param"><span class="n">rv_num_particles</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">dist_info</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Knowledge Server class. Provides service regarding a Predicate’s knowledge.</p>
 <p>The architecture should hold one KnowledgeServer instance for each Predicate instantiated to cache knowledge
 contents and provide distribution related service.</p>
@@ -1001,6 +1071,11 @@ approximations that are proportional to the actual marginal probabilities up to 
 <dl class="py method">
 <dt id="pysigma.utils.KnowledgeServer._categorical_var_span">
 <code class="sig-name descname">_categorical_var_span</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer._categorical_var_span"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer._categorical_var_span" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.KnowledgeServer._categorical_enforced_sample_shape">
+<code class="sig-name descname">_categorical_enforced_sample_shape</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#KnowledgeServer._categorical_enforced_sample_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.KnowledgeServer._categorical_enforced_sample_shape" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">

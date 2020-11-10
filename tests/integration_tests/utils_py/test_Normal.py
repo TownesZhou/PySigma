@@ -69,4 +69,62 @@ class TestDistributionServer():
 
 
 class TestKnowledgeServer():
-    pass
+
+    def test_draw_particles(self):
+        b_shape, s_shape, e_shape = Size([4, 5, 6]), Size([20]), Size([1])
+
+        dist_class = D.Normal
+        rv_cstr = (C.real,)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        loc, scale = torch.randn(b_shape), torch.rand(b_shape)
+        param = torch.stack([loc, scale], dim=-1)
+        dist = D.Normal(loc, scale)
+
+        ptcl, dens = ks.draw_particles(param, b_shape, update_cache=False)
+        ptcl, dens = ptcl[0], dens[0]
+
+        # Check shape
+        assert ptcl.shape == s_shape + e_shape
+        assert dens.shape == s_shape
+
+        # Check content
+        # Insert batch dimensions into particles
+        expand_ptcl = ptcl
+        for i in range(len(b_shape)):
+            expand_ptcl = expand_ptcl.unsqueeze(dim=1)
+        expand_ptcl = expand_ptcl.expand_as(torch.ones(s_shape + b_shape + e_shape)).squeeze(dim=-1)
+
+        log_prob = dist.log_prob(expand_ptcl)
+        prob = torch.exp(log_prob)
+        avg_prob = prob.mean(dim=[1, 2, 3])
+        expected_log_dens = torch.log(avg_prob)
+
+        assert equal_within_error(dens, expected_log_dens)
+
+    def test_surrogate_log_prob(self):
+        b_shape, s_shape, e_shape = Size([4, 5, 6]), Size([20]), Size([1])
+
+        dist_class = D.Normal
+        rv_cstr = (C.real,)
+        ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
+
+        loc, scale = torch.randn(b_shape), torch.rand(b_shape)
+        param = torch.stack([loc, scale], dim=-1)
+        dist = D.Normal(loc, scale)
+
+        alt_ptcl = torch.randn(s_shape + e_shape)
+
+        log_prob = ks.surrogate_log_prob(param, alt_particles=[alt_ptcl])
+
+        expand_ptcl = alt_ptcl
+        # Insert batch dimensions
+        for i in range(len(b_shape)):
+            expand_ptcl = expand_ptcl.unsqueeze(dim=1)
+        expand_ptcl = expand_ptcl.expand_as(torch.ones(s_shape + b_shape + e_shape))
+        expected_log_prob = dist.log_prob(expand_ptcl.squeeze(dim=-1))
+        # Switch sample and batch dimensions
+        perm_order = [1, 2, 3, 0]
+        expected_log_prob = expected_log_prob.permute(perm_order)
+
+        assert equal_within_error(log_prob, expected_log_prob)

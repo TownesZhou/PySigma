@@ -166,7 +166,8 @@ class DistributionServer:
         +====================+==========================+==================+==================+=======+
         | Categorical        | b_shape + [ num_logits ] | b_shape          | [] (empty shape) |       |
         +--------------------+--------------------------+------------------+------------------+-------+
-
+        | Normal             | b_shape + [ 2 ]          | b_shape          | [] (empty shape) |       |
+        +--------------------+--------------------------+------------------+------------------+-------+
 
         """
         assert issubclass(dist_class, torch.distributions.Distribution)
@@ -223,6 +224,8 @@ class DistributionServer:
         | Distribution class | Returned parameter shapes         | Notes |
         +====================+===================================+=======+
         | Categorical        | dist.batch_shape + [ num_logits ] |       |
+        +--------------------+-----------------------------------+-------+
+        | Normal             | dist.batch_shape + [ 2 ]          |       |
         +--------------------+-----------------------------------+-------+
 
         """
@@ -516,6 +519,10 @@ class DistributionServer:
             torch.distributions.Categorical
                 Returns a categorical distribution instance, with ``batch_shape`` the same as the batch shape of input
                 `param`, and ``event_shape == torch.Size([])``.
+
+            See Also
+            --------
+            `torch.distributions.Categorical <https://pytorch.org/docs/stable/distributions.html#categorical>`_
         """
         dist = torch.distributions.Categorical(probs=params)
         return dist
@@ -537,6 +544,10 @@ class DistributionServer:
             -------
             torch.Tensor
                 By default, returns `dist.probs`, of shape ``dist.batch_shape + [num_logits]``.
+
+            See Also
+            --------
+            `torch.distributions.Categorical <https://pytorch.org/docs/stable/distributions.html#categorical>`_
         """
         assert isinstance(dist, torch.distributions.Categorical)
         return dist.probs
@@ -561,6 +572,10 @@ class DistributionServer:
             -------
             torch.distributions.Normal
                 A univariate normal distribution instance
+
+            See Also
+            --------
+            `torch.distributions.Normal <https://pytorch.org/docs/stable/distributions.html#normal>`_
         """
         # Check that the last dimension of params is has a size of 2
         assert params.shape[-1] == 2, "While attempting to translate distribution parameters to a Univariate Normal " \
@@ -592,6 +607,10 @@ class DistributionServer:
             -------
             torch.Tensor
                 The parameter tensor, with the last event dimension have a size of 2
+
+            See Also
+            --------
+            `torch.distributions.Normal <https://pytorch.org/docs/stable/distributions.html#normal>`_
         """
         assert isinstance(dist, torch.distributions.Normal)
         params = torch.stack([dist.loc, dist.scale], dim=-1)
