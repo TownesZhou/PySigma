@@ -2,11 +2,10 @@
     Unit tests for abstract base Node class
 """
 
-import pytest
 import torch
 from unittest.mock import MagicMock, PropertyMock, patch
 from pysigma.graphical.basic_nodes import Node
-from ..utils import cuda_only
+from tests.utils import cuda_only
 
 
 # Since Node class is an abstract base class, we need a make a concrete subclass of it and test the subclass

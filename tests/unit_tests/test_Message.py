@@ -8,7 +8,7 @@ from torch import Size
 import torch.distributions as D
 import torch.distributions.transforms as T
 from pysigma.defs import Message, MessageType
-from .utils import cuda_only
+from tests.utils import cuda_only
 
 # Numerical accuracy
 EPS = 1e-6
