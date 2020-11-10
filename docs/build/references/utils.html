@@ -656,6 +656,60 @@ stacked together along a new event dimension appended to as the last dimension. 
 </div>
 </dd></dl>
 
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._multivariate_normal_param2dist">
+<em class="property">static </em><code class="sig-name descname">_multivariate_normal_param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._multivariate_normal_param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._multivariate_normal_param2dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>For Multivariate Normal distribution, parameters need to consist of a 1-dimensional mean vector and a
+2-dimensional covariance matrix. To represent both within a 1-dimensional event dimension, we interpret
+<cite>params</cite> as a mean vector stacked with a flattened covariance matrix.</p>
+<p>Therefore, assuming the event size is <cite>n</cite>, then <cite>params</cite>’s last dimension should have a size of <cite>(n+1)n</cite>,
+with <code class="docutils literal notranslate"><span class="pre">params[:n]</span></code> being the mean vector, and <code class="docutils literal notranslate"><span class="pre">params[n:</span> <span class="pre">(n+1)n]</span></code> being the flattened covariance matrix.</p>
+<p>The value of <cite>n</cite> will be inferred from the given <cite>params</cite>. An ValueError will be thrown if it cannot be
+inferred.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>torch.tensor</em>) – Distribution parameter. Its last dimension should have a size equal to <code class="docutils literal notranslate"><span class="pre">(n+1)n</span></code> with some integer <cite>n</cite>.</p></li>
+<li><p><strong>dist_info</strong> (<em>dict</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dist</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.distributions.MultivariateNormal</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the last dimension of <cite>params</cite> does not have a proper size.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#multivariatenormal">torch.distributions.MultivariateNormal</a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._multivariate_normal_dist2param">
+<em class="property">static </em><code class="sig-name descname">_multivariate_normal_dist2param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._multivariate_normal_dist2param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._multivariate_normal_dist2param" title="Permalink to this definition">¶</a></dt>
+<dd><p>For Multivariate Normal distribution, the returned parameter tensor will be <code class="docutils literal notranslate"><span class="pre">dist.loc</span></code> concatenated with a
+flattened <code class="docutils literal notranslate"><span class="pre">dist.covariance_matrix</span></code> along the parameter dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dist</strong> (<em>torch.distributions.MultivariateNormal</em>) – </p></li>
+<li><p><strong>dist_info</strong> (<em>dict</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The distribution parameters</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt id="pysigma.utils.DistributionServer.dict_draw_particles">
 <code class="sig-name descname">dict_draw_particles</code><em class="property"> = {}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_draw_particles" title="Permalink to this definition">¶</a></dt>
@@ -668,12 +722,12 @@ stacked together along a new event dimension appended to as the last dimension. 
 
 <dl class="py attribute">
 <dt id="pysigma.utils.DistributionServer.dict_param2dist">
-<code class="sig-name descname">dict_param2dist</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;, &lt;class 'torch.distributions.normal.Normal'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_param2dist" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dict_param2dist</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;, &lt;class 'torch.distributions.normal.Normal'&gt;: &lt;staticmethod object&gt;, &lt;class 'torch.distributions.multivariate_normal.MultivariateNormal'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_param2dist" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="pysigma.utils.DistributionServer.dict_dist2param">
-<code class="sig-name descname">dict_dist2param</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;, &lt;class 'torch.distributions.normal.Normal'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_dist2param" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dict_dist2param</code><em class="property"> = {&lt;class 'torch.distributions.categorical.Categorical'&gt;: &lt;staticmethod object&gt;, &lt;class 'torch.distributions.normal.Normal'&gt;: &lt;staticmethod object&gt;, &lt;class 'torch.distributions.multivariate_normal.MultivariateNormal'&gt;: &lt;staticmethod object&gt;}</em><a class="headerlink" href="#pysigma.utils.DistributionServer.dict_dist2param" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">

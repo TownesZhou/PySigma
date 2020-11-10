@@ -578,7 +578,7 @@ class DistributionServer:
             `torch.distributions.Normal <https://pytorch.org/docs/stable/distributions.html#normal>`_
         """
         # Check that the last dimension of params is has a size of 2
-        assert params.shape[-1] == 2, "While attempting to translate distribution parameters to a Univariate Normal " \
+        assert params.shape[-1] == 2, "While attempting to convert distribution parameters to a Univariate Normal " \
                                       "distribution, expect the last dimension of the parameter tensor has a size of " \
                                       "2. Instead, found size {}.".format(params.shape[-1])
         index = torch.tensor([0, 1], dtype=torch.long)
@@ -617,6 +617,84 @@ class DistributionServer:
         return params
 
     """
+        Multivariate Normal Distribution
+    """
+    @staticmethod
+    def _multivariate_normal_param2dist(params, dist_info):
+        """
+            For Multivariate Normal distribution, parameters need to consist of a 1-dimensional mean vector and a
+            2-dimensional covariance matrix. To represent both within a 1-dimensional event dimension, we interpret
+            `params` as a mean vector stacked with a flattened covariance matrix.
+
+            Therefore, assuming the event size is `n`, then `params`'s last dimension should have a size of `(n+1)n`,
+            with ``params[:n]`` being the mean vector, and ``params[n: (n+1)n]`` being the flattened covariance matrix.
+
+            The value of `n` will be inferred from the given `params`. An ValueError will be thrown if it cannot be
+            inferred.
+
+            Parameters
+            ----------
+            params : torch.tensor
+                Distribution parameter. Its last dimension should have a size equal to ``(n+1)n`` with some integer `n`.
+            dist_info : dict
+
+            Returns
+            -------
+            dist : torch.distributions.MultivariateNormal
+
+            Raises
+            ------
+            ValueError
+                If the last dimension of `params` does not have a proper size.
+
+            See Also
+            --------
+            `torch.distributions.MultivariateNormal <https://pytorch.org/docs/stable/distributions.html#multivariatenormal>`_
+        """
+        # Check params last dimension size
+        p_size = params.shape[-1]
+        x = (np.sqrt(4 * p_size + 1) - 1) / 2
+        if np.floor(x) != x:
+            raise ValueError("While attempting to convert distribution parameters to a MultivariateNormal "
+                             "distribution, the last dimension size of the input parameters cannot be parsed as "
+                             "(n+1)n for some integer n. Found dimension size: {}".format(p_size))
+        n = int(np.floor(x))
+
+        # Parse mean vector and covariance matrix
+        loc, flattened_cov = params.narrow(dim=-1, start=0, length=n), params.narrow(dim=-1, start=n, length=n**2)
+        cov = flattened_cov.view(params.shape[:-1] + torch.Size([n, n]))
+        dist = torch.distributions.MultivariateNormal(loc, cov)
+
+        return dist
+
+    @staticmethod
+    def _multivariate_normal_dist2param(dist, dist_info):
+        """
+            For Multivariate Normal distribution, the returned parameter tensor will be ``dist.loc`` concatenated with a
+            flattened ``dist.covariance_matrix`` along the parameter dimension.
+
+            Parameters
+            ----------
+            dist : torch.distributions.MultivariateNormal
+            dist_info : dict
+
+            Returns
+            -------
+            torch.Tensor
+                The distribution parameters
+        """
+        assert isinstance(dist, torch.distributions.MultivariateNormal)
+
+        b_shape = dist.batch_shape
+        # Get mean vector and covariance matrix
+        loc, cov = dist.loc, dist.covariance_matrix
+        # Flatten cov and concatenate
+        flat_cov = cov.view(b_shape + torch.Size([-1]))
+        params = torch.cat([loc, flat_cov], dim=-1)
+
+        return params
+
+    """
         distribution class dependent method pointer
     """
     dict_draw_particles = {
@@ -627,10 +705,12 @@ class DistributionServer:
     dict_param2dist = {
         torch.distributions.Categorical: _categorical_param2dist,
         torch.distributions.Normal: _normal_param2dist,
+        torch.distributions.MultivariateNormal: _multivariate_normal_param2dist,
     }
     dict_dist2param = {
         torch.distributions.Categorical: _categorical_dist2param,
         torch.distributions.Normal: _normal_dist2param,
+        torch.distributions.MultivariateNormal: _multivariate_normal_dist2param,
     }
     dict_natural2exp_param = {
 

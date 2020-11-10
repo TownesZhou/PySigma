@@ -792,7 +792,7 @@
 <span class="sd">            `torch.distributions.Normal &lt;https://pytorch.org/docs/stable/distributions.html#normal&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Check that the last dimension of params is has a size of 2</span>
-        <span class="k">assert</span> <span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;While attempting to translate distribution parameters to a Univariate Normal &quot;</span> \
+        <span class="k">assert</span> <span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;While attempting to convert distribution parameters to a Univariate Normal &quot;</span> \
                                       <span class="s2">&quot;distribution, expect the last dimension of the parameter tensor has a size of &quot;</span> \
                                       <span class="s2">&quot;2. Instead, found size </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
@@ -831,6 +831,84 @@
         <span class="k">return</span> <span class="n">params</span></div>
 
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Multivariate Normal Distribution</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DistributionServer._multivariate_normal_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._multivariate_normal_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_multivariate_normal_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            For Multivariate Normal distribution, parameters need to consist of a 1-dimensional mean vector and a</span>
+<span class="sd">            2-dimensional covariance matrix. To represent both within a 1-dimensional event dimension, we interpret</span>
+<span class="sd">            `params` as a mean vector stacked with a flattened covariance matrix.</span>
+
+<span class="sd">            Therefore, assuming the event size is `n`, then `params`&#39;s last dimension should have a size of `(n+1)n`,</span>
+<span class="sd">            with ``params[:n]`` being the mean vector, and ``params[n: (n+1)n]`` being the flattened covariance matrix.</span>
+
+<span class="sd">            The value of `n` will be inferred from the given `params`. An ValueError will be thrown if it cannot be</span>
+<span class="sd">            inferred.</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            params : torch.tensor</span>
+<span class="sd">                Distribution parameter. Its last dimension should have a size equal to ``(n+1)n`` with some integer `n`.</span>
+<span class="sd">            dist_info : dict</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            dist : torch.distributions.MultivariateNormal</span>
+
+<span class="sd">            Raises</span>
+<span class="sd">            ------</span>
+<span class="sd">            ValueError</span>
+<span class="sd">                If the last dimension of `params` does not have a proper size.</span>
+
+<span class="sd">            See Also</span>
+<span class="sd">            --------</span>
+<span class="sd">            `torch.distributions.MultivariateNormal &lt;https://pytorch.org/docs/stable/distributions.html#multivariatenormal&gt;`_</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check params last dimension size</span>
+        <span class="n">p_size</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">p_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">!=</span> <span class="n">x</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;While attempting to convert distribution parameters to a MultivariateNormal &quot;</span>
+                             <span class="s2">&quot;distribution, the last dimension size of the input parameters cannot be parsed as &quot;</span>
+                             <span class="s2">&quot;(n+1)n for some integer n. Found dimension size: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p_size</span><span class="p">))</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+        <span class="c1"># Parse mean vector and covariance matrix</span>
+        <span class="n">loc</span><span class="p">,</span> <span class="n">flattened_cov</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="p">),</span> <span class="n">params</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">flattened_cov</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">]))</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">MultivariateNormal</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">cov</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dist</span></div>
+
+<div class="viewcode-block" id="DistributionServer._multivariate_normal_dist2param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._multivariate_normal_dist2param">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_multivariate_normal_dist2param</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            For Multivariate Normal distribution, the returned parameter tensor will be ``dist.loc`` concatenated with a</span>
+<span class="sd">            flattened ``dist.covariance_matrix`` along the parameter dimension.</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            dist : torch.distributions.MultivariateNormal</span>
+<span class="sd">            dist_info : dict</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            torch.Tensor</span>
+<span class="sd">                The distribution parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">MultivariateNormal</span><span class="p">)</span>
+
+        <span class="n">b_shape</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">batch_shape</span>
+        <span class="c1"># Get mean vector and covariance matrix</span>
+        <span class="n">loc</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">covariance_matrix</span>
+        <span class="c1"># Flatten cov and concatenate</span>
+        <span class="n">flat_cov</span> <span class="o">=</span> <span class="n">cov</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">b_shape</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">loc</span><span class="p">,</span> <span class="n">flat_cov</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">params</span></div>
+
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        distribution class dependent method pointer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">dict_draw_particles</span> <span class="o">=</span> <span class="p">{</span>
@@ -841,10 +919,12 @@
     <span class="n">dict_param2dist</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="n">_categorical_param2dist</span><span class="p">,</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">:</span> <span class="n">_normal_param2dist</span><span class="p">,</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">MultivariateNormal</span><span class="p">:</span> <span class="n">_multivariate_normal_param2dist</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">dict_dist2param</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">:</span> <span class="n">_categorical_dist2param</span><span class="p">,</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">:</span> <span class="n">_normal_dist2param</span><span class="p">,</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">MultivariateNormal</span><span class="p">:</span> <span class="n">_multivariate_normal_dist2param</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">dict_natural2exp_param</span> <span class="o">=</span> <span class="p">{</span>
 
