@@ -638,6 +638,21 @@ class TestMessage:
         assert torch.equal(msg.weight, w1)
         assert msg == msg1
 
+    def test_add_using_builtin_sum(self):
+        # Test using builtin sym() on a list of messages
+        # Both message
+        b_s, p_s, s_s, e_s = Size([5]), Size([4]), Size([10]), Size([3])
+        ptcl, dens = [torch.randn(10, 3)], [-torch.rand(10)]
+        msg_list = [Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+                            parameter=torch.randn([5, 4]), particles=ptcl, weight=torch.rand(5, 10), log_densities=dens)
+                    for i in range(3)]
+
+        # When using builtin sum(), need to specify start value, otherwise sum() defaults to using 0 which would cause
+        #   Type errors
+        result = sum(msg_list, Message.identity())
+        expected_val = msg_list[0] + msg_list[1] + msg_list[2]
+        assert result == expected_val
+
     def test_iadd(self):
         t1, t2 = torch.randn([5, 3]), torch.randn([5, 3])
         msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]), parameter=t1)
