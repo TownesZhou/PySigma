@@ -930,7 +930,7 @@ class KnowledgeServer:
         param : torch.Tensor, optional
             The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
             being queried.
-        alt_particles : list of (torch.Tensor or None), or None
+        alt_particles : Iterable of (torch.Tensor or None), or None
             The surrogate particles to be queried. If not None, each entry must either be None, so that the
             corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last
             dimension size equal to the corresponding value in ``self.rv_sizes``. Must specify if `index_map` is
@@ -956,10 +956,11 @@ class KnowledgeServer:
             If `alt_particles` contains ``None`` but ``self.particles`` is also None, meaning no cached particles.
         """
         assert isinstance(param, torch.Tensor)
-        assert alt_particles is None or isinstance(alt_particles, list)
+        assert alt_particles is None or isinstance(alt_particles, Iterable)
         assert index_map is None or isinstance(index_map, dict)
         index_map_values = []
         if alt_particles is not None:
+            alt_particles = list(alt_particles)
             if index_map is not None:
                 # Check keys value set
                 assert set(index_map.keys()) == set(range(len(alt_particles)))

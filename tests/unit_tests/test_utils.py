@@ -12,7 +12,7 @@ from pysigma.utils import intern_name, extern_name, compatible_shape
 from pysigma.utils import DistributionServer as DS
 from pysigma.utils import KnowledgeServer as KS
 
-from tests.utils import equal_within_error
+from tests.utils import equal_within_error, generate_positive_definite
 
 
 # region: Testing module-level functions in utils.py
@@ -1460,18 +1460,22 @@ class TestKnowledgeServer:
         #   nice and closed form expression, and more conveniently, happens to also be a MultivariateNormal distribution
         #   with restricted mean vector and covariance matrix. See here for more details:
         #       https://en.wikipedia.org/wiki/Multivariate_normal_distribution#Marginal_distributions
+
+        # Use a relaxed precision here, because the approximation is coarse
+        precision = 0.1
+
         b_shape, s_shape, e_shape = Size([1]), Size([10, 15, 20]), Size([1, 2, 3])
 
         # Use real Normal distribution
         dist_class = D.MultivariateNormal
         dist_e_shape = Size([sum(e_shape)])
         loc = torch.randn(b_shape + dist_e_shape)
-        cov = torch.eye(dist_e_shape[0])
-        for i in range(len(b_shape)):
-            cov = cov.unsqueeze(dim=0)
-        repeat_times = list(b_shape) + [1, 1]
-        cov = cov.repeat(repeat_times)
-
+        # cov = torch.eye(dist_e_shape[0])
+        # for i in range(len(b_shape)):
+        #     cov = cov.unsqueeze(dim=0)
+        # repeat_times = list(b_shape) + [1, 1]
+        # cov = cov.repeat(repeat_times)
+        cov = generate_positive_definite(b_shape, sum(e_shape))
         dist = D.MultivariateNormal(loc, cov)
 
         rv_cstr = [C.real, ] * len(e_shape)
@@ -1491,7 +1495,7 @@ class TestKnowledgeServer:
         # Check that the returned densities are proportional to the actual densities
         return_dens_normal = [d / d.sum() for d in return_dens]
         actual_dens_normal = [d / d.sum() for d in actual_dens]
-        assert all(equal_within_error(r, a) for r, a in zip(return_dens_normal, actual_dens_normal))
+        assert all(equal_within_error(r, a, precision) for r, a in zip(return_dens_normal, actual_dens_normal))
 
     def test_default_draw_multivariate_multiple_batch_mock_shape(self):
         # Test correct shape with 3 RVs, multiple batch, with mocks
