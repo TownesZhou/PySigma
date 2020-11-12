@@ -8,7 +8,6 @@
     the actual marginal density function, up to a constant factor. Therefore, the marginal particles drawn are valid
     particles, in that they can be used for importance sampling further down the line.
 """
-from unittest.mock import patch
 import torch
 from torch import Size
 from torch.distributions import MultivariateNormal
