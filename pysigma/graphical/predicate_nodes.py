@@ -17,17 +17,18 @@ class WMVN(VariableNode):
     Gate node connecting predicate structure to conditionals.
 
     WMVN will attempt to combine incoming messages, regardless of whether they come from alpha terminals in Conditional
-    subgraphs, or from other nodes in the Predicate subgraph. The combined message generally yields the semantics of
-    marginal belief coming from a certain part of the graphical model, and is sent to downstream nodes for further
-    processing.
+    subgraphs, or from other nodes in the Predicate subgraph. The combination generally yields a message that is
+    representative of the marginal belief from a certain part of the graphical model. It is then sent to downstream
+    nodes for further processing.
 
     A KnowledgeServer instance associated with the belonging Predicate is required because occasionally log prob of
     particles needs to be queried.
 
     WMVN quiescence state:
-        A WMVN reaches quiescence state if and only if **all** incoming linkdata do not contain new message.
+        A WMVN reaches quiescence state if and only if **all** incoming linkdata do not contain new message. Same as
+        default quiescence state definition.
 
-    It is defined as such so that, although inefficiency may be induced due to WMVN having to fire multiple times while
+    It is defined as such so that, although it may not be efficient that WMVN has to fire multiple times while
     sending partially complete messages, it is guaranteed that no new arriving message would be blocked herein simply
     because other messages were blocked elsewhere and did not arrive at this node, consequently blocking all downstream
     processing.
@@ -68,12 +69,13 @@ class WMVN(VariableNode):
         # Cache for temporarily saving computation result for combination
         self._cache = {}
 
+    @VariableNode.compute_control
     def compute(self):
         """Combine incoming message to this Predicate subgraph.
 
         Will attempt to combine incoming messages if there are multiple incoming links, subsuming the functionality of
         FAN node in Lisp Sigma. Combination can be carried out if messages are all Parameter type, or if there exist
-        Particles type messages but all of them are homogeneous (sharing the same particle values as well as sampling
+        Particles type messages but all of them are compatible (sharing the same particle values as well as sampling
         log densities).
 
         Raises
@@ -143,7 +145,6 @@ class WMVN(VariableNode):
         Optimization is implemented by caching the combination result for each outgoing link. If two outgoing links
         share the same set of incoming links that provide the messages, previously computed result will be reused
         """
-        super(WMVN, self).compute()
         # Relay message if only one incoming link
         if len(self.in_linkdata) == 1:
             in_ld = self.in_linkdata[0]
@@ -172,7 +173,7 @@ class WMVN(VariableNode):
                     out_msg = self._cache[in_lds]
                 # Otherwise, compute combined message
                 else:
-                    param_msg, ptcl_msg = None, None
+                    combined_param_msg, combined_ptcl_msg = None, None
                     in_msgs = tuple(in_ld.read() for in_ld in in_lds)
 
                     assert all(MessageType.Parameter in msg.type or MessageType.Particles in msg.type
@@ -184,7 +185,7 @@ class WMVN(VariableNode):
                     # Only if all incoming messages contain parameters should we combine the parameters
                     if all(MessageType.Parameter in msg.type for msg in in_msgs):
                         param_msgs = tuple(msg.reduce_type(MessageType.Parameter) for msg in in_msgs)
-                        param_msg = sum(param_msgs)
+                        combined_param_msg = sum(param_msgs, Message.identity())
 
                     # If any incoming message contains particles, we should proceed to combine them
                     if any(MessageType.Particles in msg.type for msg in in_msgs):
@@ -215,23 +216,23 @@ class WMVN(VariableNode):
                             candidate_msgs.append(surrogate_msg)
 
                         # Combine messages
-                        ptcl_msg = sum(candidate_msgs)
+                        combined_ptcl_msg = sum(candidate_msgs, Message.identity())
 
                     # Compose components
-                    if param_msg is not None and ptcl_msg is not None:
-                        out_msg = Message.compose(param_msg, ptcl_msg)
-                    elif param_msg is not None:
-                        out_msg = param_msg
+                    if combined_param_msg is not None and combined_ptcl_msg is not None:
+                        out_msg = Message.compose(combined_param_msg, combined_ptcl_msg)
+                    elif combined_param_msg is not None:
+                        out_msg = combined_param_msg
                     else:
-                        out_msg = ptcl_msg
+                        out_msg = combined_ptcl_msg
 
-                # Cache result
-                self._cache[in_lds] = out_msg
+                    # Cache result
+                    self._cache[in_lds] = out_msg
                 # Send message
                 out_ld.write(out_msg)
 
             # Clear cache
-            self._cache = {}
+            self._cache.clear()
 
 
 class LTMFN(FactorNode):
