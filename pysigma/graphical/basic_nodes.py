@@ -296,6 +296,14 @@ class Node(ABC):
         """
         raise NotImplementedError
 
+    def modify(self):
+        """Modification method to be called during modification phase
+
+        Since not every nodes necessarily needs to have its contents modified during modification phase, this method
+        is not marked as abstract, and the default behavior is simply to do nothing.
+        """
+        pass
+
     @abstractmethod
     def compute(self):
         """Compute method to be called to propagate messages during decision phases.
