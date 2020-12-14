@@ -217,12 +217,12 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch.nn</span> <span class="k">import</span> <span class="n">Parameter</span>
-<span class="kn">from</span> <span class="nn">..defs</span> <span class="k">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
-<span class="kn">from</span> <span class="nn">.basic_nodes</span> <span class="k">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="k">import</span> <span class="n">compatible_shape</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
+<span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">..defs</span> <span class="kn">import</span> <span class="n">VariableMetatype</span><span class="p">,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">MessageType</span><span class="p">,</span> <span class="n">Message</span><span class="p">,</span> <span class="n">NP_EPSILON</span>
+<span class="kn">from</span> <span class="nn">.basic_nodes</span> <span class="kn">import</span> <span class="n">LinkData</span><span class="p">,</span> <span class="n">VariableNode</span><span class="p">,</span> <span class="n">FactorNode</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">compatible_shape</span><span class="p">,</span> <span class="n">KnowledgeServer</span>
 
 
 <div class="viewcode-block" id="WMVN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.WMVN">[docs]</a><span class="k">class</span> <span class="nc">WMVN</span><span class="p">(</span><span class="n">VariableNode</span><span class="p">):</span>
@@ -273,7 +273,7 @@
 
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ks</span><span class="p">,</span> <span class="n">KnowledgeServer</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">WMVN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">index_var_list</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Working Memory Variable Node&quot;</span>
@@ -482,7 +482,7 @@
 <span class="sd">    Since the message LTMFN sends during the decision phase is not determined by the arriving messages at the same</span>
 <span class="sd">    phase, but rather the internal computation during the modification phase at the last cognitive cycle, it is</span>
 <span class="sd">    sufficient for LTMFN to send messages only once. Therefore, it is simply defined that LTMFN reaches quiescence state</span>
-<span class="sd">    if and only if it has sent a message during this decision phase. </span>
+<span class="sd">    if and only if it has sent a message during this decision phase.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -520,7 +520,7 @@
 <span class="sd">    msg_cache : Message</span>
 <span class="sd">        The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">index_var_list</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">,</span> <span class="n">to_draw</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">rel_var_list</span><span class="p">,</span> <span class="n">param_var</span><span class="p">,</span> <span class="n">index_var_list</span><span class="p">,</span> <span class="n">ran_var_list</span><span class="p">,</span> <span class="n">to_draw</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">LTMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Long-Term Memory Factor Node&quot;</span>
 
@@ -553,6 +553,9 @@
 <span class="sd">        and the later from `WMVN_OUT` (can be the same WMVN instance). However can admit multiple incoming</span>
 <span class="sd">        parameter message link.</span>
 
+<span class="sd">        In the incoming message links&#39; attribute dictionary, a `&quot;type&quot;` keyed entry should be declared with value either</span>
+<span class="sd">        `&quot;param&quot;` or &#39;&quot;event&quot;&#39;.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        linkdata : LinkData</span>
@@ -576,8 +579,10 @@
 
         <span class="c1"># Only admit one outgoing link and that must be WMVN. Check dimensions to be compatible with event message</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">to_fn</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="p">,</span> <span class="n">WMVN</span><span class="p">),</span> \
-                <span class="s2">&quot;Attempting to register more than one outgoing linkdata.&quot;</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="p">,</span> <span class="n">WMVN</span><span class="p">),</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Attempting to register an outgoing link that is not connected to a WMVN.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> \
+                <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Attempting to register more than one outgoing linkdata.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="c1"># Can admit multiple incoming links. Check that link has special attribute declared.</span>
         <span class="c1">#   Check dimension for parameter link and event link respectively</span>
         <span class="k">else</span><span class="p">:</span>
@@ -587,8 +592,11 @@
                 <span class="s2">&quot;At</span><span class="si">{}</span><span class="s2">: Incoming link to a LTMFN must have &#39;type&#39; special attribute with value &#39;event&#39; or &#39;param&#39;&quot;</span>\
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">linkdata</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;event&#39;</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">linkdata</span><span class="o">.</span><span class="n">vn</span><span class="p">,</span> <span class="n">WMVN</span><span class="p">),</span> \
+                    <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Attempting to register an event type incoming link that is not connected to a WMVN&quot;</span>\
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
                 <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ld</span> <span class="k">for</span> <span class="n">ld</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_linkdata</span> <span class="k">if</span> <span class="n">ld</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;event&#39;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>\
-                    <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Attempting to register more than one incoming event type linkdata&quot;</span>
+                    <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: Attempting to register more than one incoming event type linkdata&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">LTMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">linkdata</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="LTMFN.toggle_draw"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.toggle_draw">[docs]</a>    <span class="k">def</span> <span class="nf">toggle_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_draw</span><span class="p">):</span>
@@ -602,7 +610,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">to_draw</span> <span class="o">=</span> <span class="n">to_draw</span></div>
 
-<div class="viewcode-block" id="LTMFN.init_msg"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.init_msg">[docs]</a>    <span class="k">def</span> <span class="nf">init_msg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="LTMFN.modify"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.modify">[docs]</a>    <span class="k">def</span> <span class="nf">modify</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Draws particles and instantiate new message for next cognitive cycle.</span>
 
 <span class="sd">        This method should be called during the modification phase. Parameter will be gathered from incoming `param`</span>
@@ -651,7 +659,14 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span> <span class="o">=</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="LTMFN.compute"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="LTMFN.quiescence"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN.quiescence">[docs]</a>    <span class="k">def</span> <span class="nf">quiescence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Overrides default quiescence behavior. LTMFN reaches quiescence state if and only if it has been visited.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">visited</span></div>
+
+    <span class="nd">@FactorNode</span><span class="o">.</span><span class="n">compute_control</span>
+    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Send message in ``self.msg_cache`` to the connected `WMVN_OUT` node.</span>
 
@@ -666,10 +681,10 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">LTMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
-            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: No cached message at this LTMFN node to be send outward. init_msg() should first be called prior &quot;</span> \
+            <span class="s2">&quot;At </span><span class="si">{}</span><span class="s2">: No cached message at this LTMFN node to be send outward. modify() should first be called prior &quot;</span> \
             <span class="s2">&quot;to calling this method.&quot;</span>
         <span class="n">out_ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_linkdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span><span class="p">)</span></div></div>
+        <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg_cache</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="PSFN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.PSFN">[docs]</a><span class="k">class</span> <span class="nc">PSFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
@@ -707,7 +722,7 @@
 <span class="sd">        The parameter buffer. Should be a tensor of shape ``(batch_shape + param_shape)``. Value defaults to a zero</span>
 <span class="sd">        tensor, when `init_param` is None during initialization.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="p">,</span> <span class="n">init_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="p">,</span> <span class="n">init_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">init_param</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> \
@@ -798,7 +813,7 @@
 <span class="sd">    e_shape : torch.Size</span>
 <span class="sd">        Set by `event_shape`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">PBFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -1027,7 +1042,7 @@
 <span class="sd">    decay_rate</span>
 <span class="sd">    memory</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">decay_rate</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">decay_rate</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">decay_rate</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">decay_rate</span> <span class="o">&lt;=</span> <span class="mi">1</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">WMFN</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pretty_log</span><span class="p">[</span><span class="s2">&quot;node type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Working Memory Function Node&quot;</span>

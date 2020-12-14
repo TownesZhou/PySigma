@@ -339,6 +339,9 @@ class LTMFN(FactorNode):
         and the later from `WMVN_OUT` (can be the same WMVN instance). However can admit multiple incoming
         parameter message link.
 
+        In the incoming message links' attribute dictionary, a `"type"` keyed entry should be declared with value either
+        `"param"` or '"event"'.
+
         Parameters
         ----------
         linkdata : LinkData
@@ -362,8 +365,10 @@ class LTMFN(FactorNode):
 
         # Only admit one outgoing link and that must be WMVN. Check dimensions to be compatible with event message
         if not linkdata.to_fn:
-            assert len(self.out_linkdata) == 0 and isinstance(linkdata.vn, WMVN), \
-                "Attempting to register more than one outgoing linkdata."
+            assert isinstance(linkdata.vn, WMVN), \
+                "At {}: Attempting to register an outgoing link that is not connected to a WMVN.".format(self.name)
+            assert len(self.out_linkdata) == 0, \
+                "At {}: Attempting to register more than one outgoing linkdata.".format(self.name)
         # Can admit multiple incoming links. Check that link has special attribute declared.
         #   Check dimension for parameter link and event link respectively
         else:
@@ -373,8 +378,11 @@ class LTMFN(FactorNode):
                 "At{}: Incoming link to a LTMFN must have 'type' special attribute with value 'event' or 'param'"\
                 .format(self.name)
             if linkdata.attr['type'] == 'event':
+                assert isinstance(linkdata.vn, WMVN), \
+                    "At {}: Attempting to register an event type incoming link that is not connected to a WMVN"\
+                    .format(self.name)
                 assert len(list(ld for ld in self.in_linkdata if ld.attr['type'] == 'event')) == 0,\
-                    "At {}: Attempting to register more than one incoming event type linkdata"
+                    "At {}: Attempting to register more than one incoming event type linkdata".format(self.name)
         super(LTMFN, self).add_link(linkdata)
 
     def toggle_draw(self, to_draw):

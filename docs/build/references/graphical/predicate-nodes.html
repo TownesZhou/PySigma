@@ -420,6 +420,8 @@ if and only if it has sent a message during this decision phase.</p>
 <dd><p>Only admits one incoming and one outgoing event message link, the former should be connected from <cite>WMVN_IN</cite>
 and the later from <cite>WMVN_OUT</cite> (can be the same WMVN instance). However can admit multiple incoming
 parameter message link.</p>
+<p>In the incoming message links’ attribute dictionary, a <cite>“type”</cite> keyed entry should be declared with value either
+<cite>“param”</cite> or ‘“event”’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered. The <code class="docutils literal notranslate"><span class="pre">'type'</span></code> key-ed attribute must present in the linkdata’s attribute
@@ -450,8 +452,8 @@ not draw particles and send <cite>MessageType.Parameter</cite> message</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical.predicate_nodes.LTMFN.init_msg">
-<code class="sig-name descname">init_msg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.init_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.init_msg" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.modify">
+<code class="sig-name descname">modify</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.modify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.modify" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draws particles and instantiate new message for next cognitive cycle.</p>
 <p>This method should be called during the modification phase. Parameter will be gathered from incoming <cite>param</cite>
 linkdata, and in the case of multiple incoming <cite>param</cite> linkdata the parameter tensors gathered will be combined.
@@ -467,18 +469,21 @@ A new list of particles will then be drawn in the cognitive format by querying t
 </dd></dl>
 
 <dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.quiescence">
+<code class="sig-name descname">quiescence</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.quiescence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.quiescence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides default quiescence behavior. LTMFN reaches quiescence state if and only if it has been visited.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pysigma.graphical.predicate_nodes.LTMFN.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Send message in <code class="docutils literal notranslate"><span class="pre">self.msg_cache</span></code> to the connected <cite>WMVN_OUT</cite> node.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>AssertionError</strong> – If there are no connected outgoing linkdata.</p></li>
-<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">self.msg_cache</span></code> is None. This means <cite>init_msg()</cite> were not called prior to the current decision phase
-    which calls this method.</p></li>
-</ul>
-</dd>
-</dl>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute method to be called to propagate messages during decision phases.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that in a subclass, when overriding this method, it must be decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;parent_class.compute_control</span></code> where <code class="docutils literal notranslate"><span class="pre">parent_class</span></code> is the parent class of said subclass so that
+the message propagation process can be controlled and relevant stats be set.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
