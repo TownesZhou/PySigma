@@ -241,32 +241,34 @@ class LTMFN(FactorNode):
     Memorizes and updates the predicate's knowledge across decision cycles. Hosts and maintains the associated
     KnowledgeServer instance to provide service to downstream nodes.
 
-    Admits one incoming link from `WMVN_IN` that contains combined action message toward this predicate by the end of
-    the decision cycle, as well as arbitrary number of incoming links from parameter feeds and/or `WMFN` that contains
-    parameter messages. Special attribute therefore needs to be declared in the linkdata's attribute dictionary to
-    distinguish which one sends "event" message from `WMVN_IN` and which ones send "param" messages from parameter
-    feeds.
+    Admits one incoming link from `WMVN_IN` that sends combined action message toward this predicate by the end of
+    the decision cycle, as well as arbitrary number of other incoming links from parameter feed nodes and/or other parts
+    of the graph that sends parameter messages. Special attribute therefore needs to be declared in the LinkData's
+    attribute dictionary to distinguish which one sends "event" message from `WMVN_IN` and which ones send "param"
+    messages from parameter feeds.
 
-    If there are multiple incoming "param" labeled links, then combination will be carried out by taking summation over
-    the parameters. See
+    If there are multiple incoming "param" labeled links, then the received parameter messages will be combined, using
+    the default Message summation operation. See
     :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>`
     for more details.
 
-    `init_msg()` should be called during modification phase of a cognitive cycle so that the message to be sent to
-    downstream nodes during the next cognitive cycle is prepared herein. This includes gathering new parameters that
-    are ready to be read from the incoming `param` linkdata at the end of the previous decision phase, as well as
-    optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated from the
-    newly gathered parameters. The latter behavior can be set by calling `toggle_draw()` method. In general, it is
-    expected to include as much information as possible in the outgoing message, and so drawing mode should be turned
-    on, but there are also circumstances in which this behavior should be avoided, for instance when the Predicate is
-    perceiving observations / evidence from PBFN, where the particle values should be determined by the observation feed
-    rather than be drawn here at the LTMFN.
+    `modify()` should be called during modification phase of a cognitive cycle so that the message to be sent to
+    downstream nodes during the decision phase of next cognitive cycle is computed herein. This includes gathering new
+    parameters that are ready to be read from the incoming `param` linkdata at the end of the previous decision phase,
+    as well as optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated
+    from the newly gathered parameters. The latter behavior can be set by calling `toggle_draw()` method.
 
-    Particles can optionally be drawn during modification phase of each cognitive cycle by calling `init_msg()` method,
-    which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling
-    procedure.
+    In most cases, it is better to send as much information as possible to the connected conditional subgraph.
+    Therefore, by default particles-drawing mode is on. However, there are also circumstances in which this behavior
+    should be avoided, for instance when the Predicate is perceiving observations / evidence from PBFN, where the
+    particle values should be determined by the observation feed rather than be drawn here at the LTMFN.
 
-    .. todo::  Define LTMFN's quiescence behavior.
+    **Regarding LTMFN's quiescence behavior**:
+
+    Since the message LTMFN sends during the decision phase is not determined by the arriving messages at the same
+    phase, but rather the internal computation during the modification phase at the last cognitive cycle, it is
+    sufficient for LTMFN to send messages only once. Therefore, it is simply defined that LTMFN reaches quiescence state
+    if and only if it has sent a message during this decision phase.
 
     Parameters
     ----------
@@ -386,7 +388,7 @@ class LTMFN(FactorNode):
         """
         self.to_draw = to_draw
 
-    def init_msg(self):
+    def modify(self):
         """Draws particles and instantiate new message for next cognitive cycle.
 
         This method should be called during the modification phase. Parameter will be gathered from incoming `param`
@@ -435,6 +437,13 @@ class LTMFN(FactorNode):
 
         self.msg_cache = new_msg
 
+    def quiescence(self):
+        """Overrides default quiescence behavior. LTMFN reaches quiescence state if and only if it has been visited.
+
+        """
+        return self.visited
+
+    @FactorNode.compute_control
     def compute(self):
         """
         Send message in ``self.msg_cache`` to the connected `WMVN_OUT` node.
@@ -450,7 +459,7 @@ class LTMFN(FactorNode):
         super(LTMFN, self).compute()
         assert len(self.out_linkdata) > 0
         assert self.msg_cache is not None, \
-            "At {}: No cached message at this LTMFN node to be send outward. init_msg() should first be called prior " \
+            "At {}: No cached message at this LTMFN node to be send outward. modify() should first be called prior " \
             "to calling this method."
         out_ld = self.out_linkdata[0]
         out_ld.write(self.msg_cache)

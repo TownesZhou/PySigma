@@ -326,6 +326,14 @@ within the current decision phase.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="pysigma.graphical.basic_nodes.Node.modify">
+<code class="sig-name descname">modify</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.modify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.modify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modification method to be called during modification phase</p>
+<p>Since not every nodes necessarily needs to have its contents modified during modification phase, this method
+is not marked as abstract, and the default behavior is simply to do nothing.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pysigma.graphical.basic_nodes.Node.compute">
 <em class="property">abstract </em><code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute method to be called to propagate messages during decision phases.</p>

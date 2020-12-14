@@ -387,7 +387,7 @@
                     <span class="n">out_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">in_lds</span><span class="p">]</span>
                 <span class="c1"># Otherwise, compute combined message</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">param_msg</span><span class="p">,</span> <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+                    <span class="n">combined_param_msg</span><span class="p">,</span> <span class="n">combined_ptcl_msg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
                     <span class="n">in_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">in_ld</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">in_ld</span> <span class="ow">in</span> <span class="n">in_lds</span><span class="p">)</span>
 
                     <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="ow">or</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span>
@@ -399,7 +399,7 @@
                     <span class="c1"># Only if all incoming messages contain parameters should we combine the parameters</span>
                     <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
                         <span class="n">param_msgs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">)</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">)</span>
-                        <span class="n">param_msg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">param_msgs</span><span class="p">,</span> <span class="n">Message</span><span class="o">.</span><span class="n">identity</span><span class="p">())</span>
+                        <span class="n">combined_param_msg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">param_msgs</span><span class="p">,</span> <span class="n">Message</span><span class="o">.</span><span class="n">identity</span><span class="p">())</span>
 
                     <span class="c1"># If any incoming message contains particles, we should proceed to combine them</span>
                     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">in_msgs</span><span class="p">):</span>
@@ -430,23 +430,23 @@
                             <span class="n">candidate_msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">surrogate_msg</span><span class="p">)</span>
 
                         <span class="c1"># Combine messages</span>
-                        <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">candidate_msgs</span><span class="p">,</span> <span class="n">Message</span><span class="o">.</span><span class="n">identity</span><span class="p">())</span>
+                        <span class="n">combined_ptcl_msg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">candidate_msgs</span><span class="p">,</span> <span class="n">Message</span><span class="o">.</span><span class="n">identity</span><span class="p">())</span>
 
                     <span class="c1"># Compose components</span>
-                    <span class="k">if</span> <span class="n">param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ptcl_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">param_msg</span><span class="p">,</span> <span class="n">ptcl_msg</span><span class="p">)</span>
-                    <span class="k">elif</span> <span class="n">param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">param_msg</span>
+                    <span class="k">if</span> <span class="n">combined_param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">combined_ptcl_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">combined_param_msg</span><span class="p">,</span> <span class="n">combined_ptcl_msg</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">combined_param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">combined_param_msg</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">ptcl_msg</span>
+                        <span class="n">out_msg</span> <span class="o">=</span> <span class="n">combined_ptcl_msg</span>
 
-                <span class="c1"># Cache result</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">in_lds</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_msg</span>
+                    <span class="c1"># Cache result</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">in_lds</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_msg</span>
                 <span class="c1"># Send message</span>
                 <span class="n">out_ld</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_msg</span><span class="p">)</span>
 
             <span class="c1"># Clear cache</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="LTMFN"><a class="viewcode-back" href="../../../references/graphical/predicate-nodes.html#pysigma.graphical.predicate_nodes.LTMFN">[docs]</a><span class="k">class</span> <span class="nc">LTMFN</span><span class="p">(</span><span class="n">FactorNode</span><span class="p">):</span>
@@ -455,32 +455,34 @@
 <span class="sd">    Memorizes and updates the predicate&#39;s knowledge across decision cycles. Hosts and maintains the associated</span>
 <span class="sd">    KnowledgeServer instance to provide service to downstream nodes.</span>
 
-<span class="sd">    Admits one incoming link from `WMVN_IN` that contains combined action message toward this predicate by the end of</span>
-<span class="sd">    the decision cycle, as well as arbitrary number of incoming links from parameter feeds and/or `WMFN` that contains</span>
-<span class="sd">    parameter messages. Special attribute therefore needs to be declared in the linkdata&#39;s attribute dictionary to</span>
-<span class="sd">    distinguish which one sends &quot;event&quot; message from `WMVN_IN` and which ones send &quot;param&quot; messages from parameter</span>
-<span class="sd">    feeds.</span>
+<span class="sd">    Admits one incoming link from `WMVN_IN` that sends combined action message toward this predicate by the end of</span>
+<span class="sd">    the decision cycle, as well as arbitrary number of other incoming links from parameter feed nodes and/or other parts</span>
+<span class="sd">    of the graph that sends parameter messages. Special attribute therefore needs to be declared in the LinkData&#39;s</span>
+<span class="sd">    attribute dictionary to distinguish which one sends &quot;event&quot; message from `WMVN_IN` and which ones send &quot;param&quot;</span>
+<span class="sd">    messages from parameter feeds.</span>
 
-<span class="sd">    If there are multiple incoming &quot;param&quot; labeled links, then combination will be carried out by taking summation over</span>
-<span class="sd">    the parameters. See</span>
+<span class="sd">    If there are multiple incoming &quot;param&quot; labeled links, then the received parameter messages will be combined, using</span>
+<span class="sd">    the default Message summation operation. See</span>
 <span class="sd">    :ref:`Message class notes on arithmetic structures&lt;message-arithmetic-structures-notes&gt;`</span>
 <span class="sd">    for more details.</span>
 
-<span class="sd">    `init_msg()` should be called during modification phase of a cognitive cycle so that the message to be sent to</span>
-<span class="sd">    downstream nodes during the next cognitive cycle is prepared herein. This includes gathering new parameters that</span>
-<span class="sd">    are ready to be read from the incoming `param` linkdata at the end of the previous decision phase, as well as</span>
-<span class="sd">    optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated from the</span>
-<span class="sd">    newly gathered parameters. The latter behavior can be set by calling `toggle_draw()` method. In general, it is</span>
-<span class="sd">    expected to include as much information as possible in the outgoing message, and so drawing mode should be turned</span>
-<span class="sd">    on, but there are also circumstances in which this behavior should be avoided, for instance when the Predicate is</span>
-<span class="sd">    perceiving observations / evidence from PBFN, where the particle values should be determined by the observation feed</span>
-<span class="sd">    rather than be drawn here at the LTMFN.</span>
+<span class="sd">    `modify()` should be called during modification phase of a cognitive cycle so that the message to be sent to</span>
+<span class="sd">    downstream nodes during the decision phase of next cognitive cycle is computed herein. This includes gathering new</span>
+<span class="sd">    parameters that are ready to be read from the incoming `param` linkdata at the end of the previous decision phase,</span>
+<span class="sd">    as well as optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated</span>
+<span class="sd">    from the newly gathered parameters. The latter behavior can be set by calling `toggle_draw()` method.</span>
 
-<span class="sd">    Particles can optionally be drawn during modification phase of each cognitive cycle by calling `init_msg()` method,</span>
-<span class="sd">    which internally calls the corresponding method of the KnowledgeServer instance to perform the Gibbs sampling</span>
-<span class="sd">    procedure.</span>
+<span class="sd">    In most cases, it is better to send as much information as possible to the connected conditional subgraph.</span>
+<span class="sd">    Therefore, by default particles-drawing mode is on. However, there are also circumstances in which this behavior</span>
+<span class="sd">    should be avoided, for instance when the Predicate is perceiving observations / evidence from PBFN, where the</span>
+<span class="sd">    particle values should be determined by the observation feed rather than be drawn here at the LTMFN.</span>
 
-<span class="sd">    .. todo::  Define LTMFN&#39;s quiescence behavior.</span>
+<span class="sd">    **Regarding LTMFN&#39;s quiescence behavior**:</span>
+
+<span class="sd">    Since the message LTMFN sends during the decision phase is not determined by the arriving messages at the same</span>
+<span class="sd">    phase, but rather the internal computation during the modification phase at the last cognitive cycle, it is</span>
+<span class="sd">    sufficient for LTMFN to send messages only once. Therefore, it is simply defined that LTMFN reaches quiescence state</span>
+<span class="sd">    if and only if it has sent a message during this decision phase. </span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>

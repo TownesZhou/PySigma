@@ -961,7 +961,7 @@ marginalized over this predicate argument.</strong></p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>param</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
 being queried.</p></li>
-<li><p><strong>alt_particles</strong> (<em>list of</em><em> (</em><em>torch.Tensor</em><em> or </em><em>None</em><em>)</em><em>, or </em><em>None</em>) – The surrogate particles to be queried. If not None, each entry must either be None, so that the
+<li><p><strong>alt_particles</strong> (<em>Iterable of</em><em> (</em><em>torch.Tensor</em><em> or </em><em>None</em><em>)</em><em>, or </em><em>None</em>) – The surrogate particles to be queried. If not None, each entry must either be None, so that the
 corresponding cached articles will be used instead, or a torch.Tensor, with a shape of length 2 and the last
 dimension size equal to the corresponding value in <code class="docutils literal notranslate"><span class="pre">self.rv_sizes</span></code>. Must specify if <cite>index_map</cite> is
 specified. Defaults to None.</p></li>
