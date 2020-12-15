@@ -413,16 +413,18 @@ class LTMFN(FactorNode):
         # Obtain parameters from incoming 'param' link.
         param_lds = list(ld for ld in self.in_linkdata if ld.attr['type'] == 'param')
         assert len(param_lds) > 0, \
-            "At {}: Attempting to gather parameters, but no incoming param type linkdata found."
+            "At {}: Attempting to gather parameters, but no incoming param type linkdata found.".format(self.name)
 
         param_msgs = tuple(ld.read() for ld in param_lds)
         assert all(MessageType.Parameter in msg.type for msg in param_msgs), \
             "At {}: Expect all messages from incoming param type linkdata to contain parameters, but instead found " \
             "message types: {} from linkdata {}."\
-            .format(self.name, list(msg.type for msg in param_msgs), list(str(ld) for ld in param_lds))
+            .format(self.name,
+                    list(msg.type for msg in param_msgs if MessageType.Parameter not in msg.type),
+                    list(str(ld) for ld, msg in zip(param_lds, param_msgs) if MessageType.Parameter not in msg.type))
 
         # Combine parameter messages and extract the parameter tensor
-        param = sum(param_msgs).parameter
+        param = sum(param_msgs, Message.identity()).parameter
 
         if self.to_draw:
             # Query KnowledgeServer to extract components of a particle list.
@@ -433,15 +435,13 @@ class LTMFN(FactorNode):
             tmp_msg = Message(MessageType.Both,
                               batch_shape=self.b_shape, param_shape=self.p_shape,
                               sample_shape=self.s_shape, event_shape=self.e_shape,
-                              parameter=param, particles=particles, weight=1, log_densities=log_densities,
-                              dist_info=self.ks.dist_info)
+                              parameter=param, particles=particles, weight=1, log_densities=log_densities)
             new_msg = tmp_msg.event_reweight(log_prob)
         else:
             # If not to draw particles, simply cache a Parameter message
             new_msg = Message(MessageType.Parameter,
                               batch_shape=self.b_shape, param_shape=self.p_shape,
-                              parameter=param,
-                              dist_ino=self.ks.dist_info)
+                              parameter=param)
 
         self.msg_cache = new_msg
 

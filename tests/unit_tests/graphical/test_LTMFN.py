@@ -12,6 +12,7 @@ from pysigma.defs import Message, MessageType, Variable, VariableMetatype
 from pysigma.graphical.basic_nodes import LinkData, FactorNode, VariableNode
 from pysigma.graphical.predicate_nodes import LTMFN, WMVN
 from pysigma.utils import KnowledgeServer as KS
+from ..test_Message import TestMessage
 
 from ...utils import generate_positive_definite
 
@@ -24,6 +25,26 @@ class TestLTMFN():
         name = "test_ltmfn"
 
         dist_class = D.Distribution
+        rv_sizes = list(e_shape)
+        rv_cstr = [C.real, ] * len(e_shape)
+        rv_num_ptcl = list(s_shape)
+        ks = KS(dist_class, rv_sizes, rv_cstr, rv_num_ptcl)
+
+        rel_var_list = [Variable("rel_" + str(i), VariableMetatype.Relational, b) for i, b in enumerate(b_shape)]
+        param_var = Variable("param", VariableMetatype.Parameter, p_shape[0])
+        index_var_list = [Variable("index_" + str(i), VariableMetatype.Indexing, s) for i, s in enumerate(s_shape)]
+        ran_var_list = [Variable("ran_" + str(i), VariableMetatype.Random, e, [rv_cstr[i]])
+                        for i, e in enumerate(e_shape)]
+
+        ltmfn = LTMFN(name, ks, rel_var_list, param_var, index_var_list, ran_var_list)
+
+        return ltmfn
+
+    def generate_ltmfn_2(self, b_shape=Size([4, 5]), p_shape=Size([42]), s_shape=Size([10, 15, 20]),
+                         e_shape=Size([1, 2, 3])):
+        name = "test_ltmfn"
+
+        dist_class = D.MultivariateNormal
         rv_sizes = list(e_shape)
         rv_cstr = [C.real, ] * len(e_shape)
         rv_num_ptcl = list(s_shape)
@@ -180,4 +201,67 @@ class TestLTMFN():
         assert len(ltmfn.in_linkdata) == num_param_lds + 1
         assert [ld for ld in ltmfn.in_linkdata if ld.attr['type'] == 'event'][0] is event_ld
         assert set([ld for ld in ltmfn.in_linkdata if ld.attr['type'] == 'param']) == set(param_lds)
+
+    def test_modify_no_param_type_incoming_links(self):
+        msg_shape = (Size([4, 5]), Size([2]), Size([10, 15, 20]), Size([1, 2, 3]))
+        ltmfn = self.generate_ltmfn_1(*msg_shape)
+
+        with pytest.raises(AssertionError, match="At {}: Attempting to gather parameters, but no incoming param type "
+                                                 "linkdata found.".format(ltmfn.name)):
+            ltmfn.modify()
+
+    def test_modify_wrong_message_type(self):
+        msg_shape = (Size([4, 5]), Size([2]), Size([10, 15, 20]), Size([1, 2, 3]))
+        ltmfn = self.generate_ltmfn_1(*msg_shape)
+
+        param_lds = []
+        for i in range(3):
+            mock_vn = MagicMock(VariableNode)
+            mock_vn.name = "test_variable_node_{}".format(i)
+            ld = LinkData(mock_vn, ltmfn, True, msg_shape)
+            ld.attr = {'type': 'param'}
+            param_lds.append(ld)
+
+        param_lds[0].write(TestMessage.random_message(MessageType.Parameter, *msg_shape))
+        param_lds[1].write(TestMessage.random_message(MessageType.Both, *msg_shape))
+        param_lds[2].write(TestMessage.random_message(MessageType.Particles, *msg_shape))
+
+        for param_ld in param_lds:
+            ltmfn.add_link(param_ld)
+
+        with pytest.raises(AssertionError) as excinfo:
+            ltmfn.modify()
+            assert excinfo.value == "At {}: Expect all messages from incoming param type linkdata to contain " \
+                                    "parameters, but instead found message types: {} from linkdata {}." \
+                                    .format(ltmfn.name, [MessageType.Particles], [str(param_lds[2])])
+
+    def test_modify_correct_param_no_draw(self):
+        num_param_lds = 3
+        msg_shape = (Size([4, 5]), Size([2]), Size([10, 15, 20]), Size([1, 2, 3]))
+        ltmfn = self.generate_ltmfn_1(*msg_shape)
+
+        param_lds = []
+        for i in range(num_param_lds):
+            mock_vn = MagicMock(VariableNode)
+            mock_vn.name = "test_variable_node_{}".format(i)
+            ld = LinkData(mock_vn, ltmfn, True, msg_shape)
+            ld.attr = {'type': 'param'}
+            param_lds.append(ld)
+
+        msgs = [TestMessage.random_message(MessageType.Parameter, *msg_shape) for i in range(num_param_lds)]
+        combined_msg = sum(msgs, Message.identity())
+
+        for param_ld, msg in zip(param_lds, msgs):
+            param_ld.write(msg)
+            ltmfn.add_link(param_ld)
+
+        ltmfn.set_draw(False)       # Select no draw
+        ltmfn.modify()
+
+        assert ltmfn.msg_cache == combined_msg
+
+    def test_modify_correct_particles_with_draw(self):
+        pass
+        # TODO: wait for changes to underlying KnowledgeServer/DistributionServer w.r.t. default distribution parameter
+        #   representation.
 
