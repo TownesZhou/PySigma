@@ -256,7 +256,7 @@ class LTMFN(FactorNode):
     downstream nodes during the decision phase of next cognitive cycle is computed herein. This includes gathering new
     parameters that are ready to be read from the incoming `param` linkdata at the end of the previous decision phase,
     as well as optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated
-    from the newly gathered parameters. The latter behavior can be set by calling `toggle_draw()` method.
+    from the newly gathered parameters. The latter behavior can be set by calling `set_draw()` method.
 
     In most cases, it is better to send as much information as possible to the connected conditional subgraph.
     Therefore, by default particles-drawing mode is on. However, there are also circumstances in which this behavior
@@ -385,7 +385,7 @@ class LTMFN(FactorNode):
                     "At {}: Attempting to register more than one incoming event type linkdata".format(self.name)
         super(LTMFN, self).add_link(linkdata)
 
-    def toggle_draw(self, to_draw):
+    def set_draw(self, to_draw):
         """Sets whether this LTMFN should draw particles in `init_msg()` and send `MessageType.Both` type message, or
         not draw particles and send `MessageType.Parameter` message
 

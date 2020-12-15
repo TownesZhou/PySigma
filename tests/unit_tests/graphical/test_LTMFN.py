@@ -153,7 +153,7 @@ class TestLTMFN():
             ltmfn.add_link(ld_1)
             ltmfn.add_link(ld_2)
 
-    def test_add_link_correct_outgoing_link(self):
+    def test_add_link_correct_incoming_link(self):
         # Test adding one event type link and multiple param type links
         num_param_lds = 5
 
