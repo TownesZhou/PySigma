@@ -300,13 +300,14 @@
 
 <span class="sd">      ``param2dist()``, ``dist2param()``</span>
 
-<span class="sd">    * Translation between PyTorch distribution parameters and natural parameters for exponential family distribution:</span>
-
-<span class="sd">      ``natural2exp_dist()``, ``exp_dist2natural()``</span>
+<span class="sd">      Note: by default, parameters are interpreted as natural parameters for exponential family distributions, unless</span>
+<span class="sd">      otherwise specified by provided `dist_info` dictionary. See individual private distribution-dependent methods for</span>
+<span class="sd">      alternative interpretations.</span>
 
 <span class="sd">    * Get vector of moments from a given distribution instance:</span>
 
 <span class="sd">      ``get_moments()``</span>
+<span class="sd">      TODO: NotImplemented</span>
 
 <span class="sd">    * Draw particles from distribution instance:</span>
 
@@ -329,6 +330,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Public class method API</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="DistributionServer.param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer.param2dist">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">param2dist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">b_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">e_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Converts distribution parameter to a distribution instance.</span>
@@ -672,10 +674,11 @@
 <span class="sd">            Return the parameter of the transformed distribution</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
-
+    <span class="c1"># endregion</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        DEFAULT methods that may be applicable to multiple general distribution classes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="DistributionServer._default_get_moments"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._default_get_moments">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_default_get_moments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">n_moments</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -691,7 +694,7 @@
             <span class="c1"># Stack mean and square to insert a new last dimension</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">mean</span><span class="p">,</span> <span class="n">square</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
             <span class="k">return</span> <span class="n">result</span></div>
-
+    <span class="c1"># endregion</span>
     <span class="c1"># @classmethod</span>
     <span class="c1"># def _default_draw_particles(cls, dist, num_particles):</span>
     <span class="c1">#     &quot;&quot;&quot;</span>
@@ -713,13 +716,20 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Categorical distribution</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="DistributionServer._categorical_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_categorical_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            .. todo::</span>
 <span class="sd">               TODO: different parameter scheme and dist_info schema specification</span>
 
-<span class="sd">            For Categorical distribution, params assumed by default to be the values of &#39;probs&#39; attribute</span>
+<span class="sd">            For Categorical distribution, `params` are assumed the natural parameters, unless `sparam_type=regulars` is</span>
+<span class="sd">            declared in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch</span>
+<span class="sd">            Categorical distribution.</span>
+
+<span class="sd">            Mapping from natural parameter to regular parameter (corresponding to the `probs` argument)::</span>
+
+<span class="sd">               [n_1, n_2, ..., n_k] -&gt; [exp(n_1), exp(n_2), ..., exp(n_k)]</span>
 
 <span class="sd">            Parameters</span>
 <span class="sd">            ----------</span>
@@ -765,10 +775,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span></div>
-
+    <span class="c1"># endregion</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Univariate Normal Distribution</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="DistributionServer._normal_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._normal_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_normal_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -829,10 +840,11 @@
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">)</span>
         <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">scale</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">params</span></div>
-
+    <span class="c1"># endregion</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Multivariate Normal Distribution</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="DistributionServer._multivariate_normal_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._multivariate_normal_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_multivariate_normal_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -907,10 +919,11 @@
         <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">loc</span><span class="p">,</span> <span class="n">flat_cov</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">params</span></div>
-
+    <span class="c1"># endregion</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        distribution class dependent method pointer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
     <span class="n">dict_draw_particles</span> <span class="o">=</span> <span class="p">{</span>
     <span class="p">}</span>
     <span class="n">dict_log_pdf</span> <span class="o">=</span> <span class="p">{</span>
@@ -941,6 +954,7 @@
     <span class="n">dict_get_moments</span> <span class="o">=</span> <span class="p">{</span>
 
     <span class="p">}</span></div>
+    <span class="c1"># endregion</span>
 
 
 <div class="viewcode-block" id="KnowledgeServer"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer">[docs]</a><span class="k">class</span> <span class="nc">KnowledgeServer</span><span class="p">:</span>
@@ -1039,6 +1053,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Public API</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="KnowledgeServer.draw_particles"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.draw_particles">[docs]</a>    <span class="k">def</span> <span class="nf">draw_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_param</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">,</span> <span class="n">update_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Draws new particles for the associated predicate w.r.t. the given `batched_param`. Returns necessary</span>
 <span class="sd">        components to instantiate a particles message.</span>
@@ -1352,11 +1367,12 @@
 
         <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rv_sizes</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span></div>
+    <span class="c1"># endregion</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Utility static methods</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="KnowledgeServer.combinatorial_cat"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer.combinatorial_cat">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">combinatorial_cat</span><span class="p">(</span><span class="n">particles</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Helper static method that combinatorially concatenates the list of event particles specified by `particles`.</span>
@@ -1467,6 +1483,7 @@
             <span class="n">split_ptcl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exp_ptcl</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">exp_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">exp_ptcl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
 
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">split_ptcl</span><span class="p">)</span></div>
+    <span class="c1"># endregion</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Default methods that are distribution class independent</span>
@@ -1474,6 +1491,7 @@
 <span class="sd">                Draw a single unique list of marginal particles given batch of distributions and calculate marginal log </span>
 <span class="sd">                sampling densities .</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="KnowledgeServer._default_draw"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._default_draw">[docs]</a>    <span class="k">def</span> <span class="nf">_default_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batched_dist</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The process for drawing marginal particles and calculating corresponding sampling densities:</span>
@@ -1542,6 +1560,7 @@
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_ptcl_narrow</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">marg_log_dens</span><span class="p">)</span></div>
+    <span class="c1"># endregion</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Categorical distribution. Assumes all RV have size 1</span>
@@ -1551,6 +1570,7 @@
 <span class="sd">            - event translation from torch to pred:</span>
 <span class="sd">                Take volume modulo of the event values. Return a tuple a tensors</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># region</span>
 <div class="viewcode-block" id="KnowledgeServer._categorical_var_span"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.KnowledgeServer._categorical_var_span">[docs]</a>    <span class="k">def</span> <span class="nf">_categorical_var_span</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Helper function to determine the value range of each rv</span>
         <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">integer_interval</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rv_constraints</span><span class="p">)</span>
@@ -1614,6 +1634,7 @@
         <span class="n">log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">span</span><span class="p">)</span> <span class="o">/</span> <span class="n">span</span><span class="p">)</span> <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">var_span</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">particles</span><span class="p">,</span> <span class="n">log_densities</span></div></div>
+    <span class="c1"># endregion</span>
 </pre></div>
 
            </div>

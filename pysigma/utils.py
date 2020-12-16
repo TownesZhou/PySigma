@@ -86,13 +86,14 @@ class DistributionServer:
 
       ``param2dist()``, ``dist2param()``
 
-    * Translation between PyTorch distribution parameters and natural parameters for exponential family distribution:
-
-      ``natural2exp_dist()``, ``exp_dist2natural()``
+      Note: by default, parameters are interpreted as natural parameters for exponential family distributions, unless
+      otherwise specified by provided `dist_info` dictionary. See individual private distribution-dependent methods for
+      alternative interpretations.
 
     * Get vector of moments from a given distribution instance:
 
       ``get_moments()``
+      TODO: NotImplemented
 
     * Draw particles from distribution instance:
 
@@ -505,10 +506,13 @@ class DistributionServer:
     @staticmethod
     def _categorical_param2dist(params, dist_info):
         """
-            .. todo::
-               TODO: different parameter scheme and dist_info schema specification
+            For Categorical distribution, `params` are assumed the natural parameters, unless `param_type=regular` is
+            declared in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
+            Categorical distribution.
 
-            For Categorical distribution, params assumed by default to be the values of 'probs' attribute
+            Translation from natural parameter to regular parameter (corresponding to the `probs` argument)::
+
+               [n_1, n_2, ..., n_k] -> [exp(n_1), exp(n_2), ..., exp(n_k)]
 
             Parameters
             ----------
@@ -527,16 +531,23 @@ class DistributionServer:
             --------
             `torch.distributions.Categorical <https://pytorch.org/docs/stable/distributions.html#categorical>`_
         """
-        dist = torch.distributions.Categorical(probs=params)
+        if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
+            probs = params
+        else:
+            probs = torch.exp(params)
+        dist = torch.distributions.Categorical(probs=probs)
         return dist
 
     @staticmethod
     def _categorical_dist2param(dist, dist_info):
         """
-            .. todo::
-               TODO: different parameter scheme and dist_info schema specification
+            For Categorical distribution, `params` are assumed the natural parameters, unless `param_type=regular` is
+            declared in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
+            Categorical distribution.
 
-            For Categorical distribution, params assumed by default to be the values of 'probs' attribute
+            Translation from regular parameter (corresponding to the `probs` argument) to natural parameter ::
+
+               [p_1, p_2, ..., p_k] -> [log(p_1), log(p_2), ..., log(p_k)]
 
             Parameters
             ----------
@@ -553,7 +564,11 @@ class DistributionServer:
             `torch.distributions.Categorical <https://pytorch.org/docs/stable/distributions.html#categorical>`_
         """
         assert isinstance(dist, torch.distributions.Categorical)
-        return dist.probs
+        if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
+            params = dist.probs
+        else:
+            params = torch.log(dist.probs)
+        return params
     # endregion
     """
         Univariate Normal Distribution
@@ -734,6 +749,7 @@ class DistributionServer:
 
     }
     # endregion
+
 
 class KnowledgeServer:
     """Knowledge Server class. Provides service regarding a Predicate's knowledge.

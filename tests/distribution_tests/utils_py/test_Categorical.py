@@ -10,32 +10,59 @@ import torch.distributions.constraints as C
 from pysigma.utils import DistributionServer as DS
 from pysigma.utils import KnowledgeServer as KS
 
-from ...utils import equal_within_error
+from ...utils import equal_within_error, assert_equal_within_error, assert_proportional_within_error, \
+    assert_constant_difference_within_error
 
 
-class TestDistributionServer():
+class TestDistributionServer:
 
-    def test_param2dist(self):
+    def test_param2dist_regular_param(self):
         b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
         dist_class = D.Categorical
         param = torch.rand(b_shape + p_shape)
         expected_param = param / param.sum(dim=-1, keepdim=True)
 
-        dist = DS.param2dist(dist_class, param, b_shape, e_shape)
+        dist_info = {'param_type': 'regular'}
+        dist = DS.param2dist(dist_class, param, b_shape, e_shape, dist_info)
 
         assert isinstance(dist, dist_class)
         assert equal_within_error(dist.probs, expected_param)
 
-    def test_dist2param(self):
+    def test_dist2param_regular_param(self):
         b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
         param = torch.rand(b_shape + p_shape)
         dist = D.Categorical(probs=param)
-        dist_info = None
         expected_param = param / param.sum(dim=-1, keepdim=True)
 
+        dist_info = {'param_type': 'regular'}
         returned_value = DS.dist2param(dist, dist_info)
 
         assert equal_within_error(returned_value, expected_param)
+
+    def test_param2dist_natural_param(self):
+        b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
+        dist_class = D.Categorical
+        natural_param = torch.randn(b_shape + p_shape)
+        expected_regular_param = torch.exp(natural_param)
+
+        dist_info = None
+        dist = DS.param2dist(dist_class, natural_param, b_shape, e_shape, dist_info)
+
+        assert isinstance(dist, dist_class)
+        assert_constant_difference_within_error(dist.logits, natural_param, dims=[-1])
+        assert_proportional_within_error(dist.probs, expected_regular_param, dims=[-1])
+
+    def test_dist2param_natural_param(self):
+        b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([10]), Size([])
+        dist_class = D.Categorical
+        param = torch.rand(b_shape + p_shape)
+        dist = D.Categorical(probs=param)
+        expected_natural_param = torch.log(param)
+
+        dist_info = None
+        returned_value = DS.dist2param(dist, dist_info)
+
+        assert_constant_difference_within_error(returned_value, expected_natural_param, dims=[-1])
 
 
 class TestKnowledgeServer():

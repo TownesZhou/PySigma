@@ -306,7 +306,7 @@ for more details.</p>
 downstream nodes during the decision phase of next cognitive cycle is computed herein. This includes gathering new
 parameters that are ready to be read from the incoming <cite>param</cite> linkdata at the end of the previous decision phase,
 as well as optionally drawing importance weighted particles w.r.t. the batched distributions that are instantiated
-from the newly gathered parameters. The latter behavior can be set by calling <cite>toggle_draw()</cite> method.</p>
+from the newly gathered parameters. The latter behavior can be set by calling <cite>set_draw()</cite> method.</p>
 <p>In most cases, it is better to send as much information as possible to the connected conditional subgraph.
 Therefore, by default particles-drawing mode is on. However, there are also circumstances in which this behavior
 should be avoided, for instance when the Predicate is perceiving observations / evidence from PBFN, where the
@@ -440,8 +440,8 @@ dict.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical.predicate_nodes.LTMFN.toggle_draw">
-<code class="sig-name descname">toggle_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">to_draw</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.toggle_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.toggle_draw" title="Permalink to this definition">¶</a></dt>
+<dt id="pysigma.graphical.predicate_nodes.LTMFN.set_draw">
+<code class="sig-name descname">set_draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">to_draw</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.set_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.set_draw" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets whether this LTMFN should draw particles in <cite>init_msg()</cite> and send <cite>MessageType.Both</cite> type message, or
 not draw particles and send <cite>MessageType.Parameter</cite> message</p>
 <dl class="field-list simple">

@@ -17,6 +17,57 @@ def equal_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, precision
     return torch.max(torch.abs(tensor_1 - tensor_2)) < precision
 
 
+# Self-assertion version of the above method. When assertion fails, reports the maximum absolute difference value.
+def assert_equal_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, precision=EPS):
+    diff = torch.max(torch.abs(tensor_1 - tensor_2))
+    assert diff < precision, "Maximum absolute difference: {}".format(diff.item())
+
+
+# Test that two tensors are off by a constant along the given dims within the given precision
+def constant_difference_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims: list, precision=EPS):
+    diff = tensor_1 - tensor_2
+    diff_max, diff_min = diff, diff
+    for dim in dims:
+        diff_max = torch.max(diff_max, dim=dim)[0]
+        diff_min = torch.min(diff_min, dim=dim)[0]
+    diff_diff = torch.max(torch.abs(diff_max - diff_min))
+    return diff_diff < precision
+
+
+# Self-assertion version of the above method.
+def assert_constant_difference_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims: list, precision=EPS):
+    diff = tensor_1 - tensor_2
+    diff_max, diff_min = diff, diff
+    for dim in dims:
+        diff_max = torch.max(diff_max, dim=dim)[0]
+        diff_min = torch.min(diff_min, dim=dim)[0]
+    diff_diff = torch.max(torch.abs(diff_max - diff_min))
+    assert diff_diff < precision, "Maximum variance between the differences: {}".format(diff_diff)
+
+
+# Test that two tensors are proportional to each other along the given dims with the ratio variance smaller than
+#   the given precision
+def proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims:list, precision=EPS):
+    ratio = tensor_1 / tensor_2
+    ratio_max, ratio_min = ratio, ratio
+    for dim in dims:
+        ratio_max = torch.max(ratio_max, dim=dim)[0]
+        ratio_min = torch.min(ratio_min, dim=dim)[0]
+    ratio_diff = torch.max(torch.abs(ratio_max - ratio_min))
+    return ratio_diff < precision
+
+
+# Self-assertion version of the above method.
+def assert_proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims:list, precision=EPS):
+    ratio = tensor_1 / tensor_2
+    ratio_max, ratio_min = ratio, ratio
+    for dim in dims:
+        ratio_max = torch.max(ratio_max, dim=dim)[0]
+        ratio_min = torch.min(ratio_min, dim=dim)[0]
+    ratio_diff = torch.max(torch.abs(ratio_max - ratio_min))
+    assert ratio_diff < precision, "Maximum ratio difference: {}".format(ratio_max - ratio_min)
+
+
 # Generate a positive definite batched matrix
 # Mostly used as the covariance matrix for MultivariateNormal distribution
 def generate_positive_definite(b_shape: Size, e_size: int):

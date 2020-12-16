@@ -255,12 +255,13 @@ are compatible with their counterpart in <cite>msg_shape2</cite>.</p>
 <ul>
 <li><p>Conversion between PyTorch distribution parameters and distribution instance:</p>
 <p><code class="docutils literal notranslate"><span class="pre">param2dist()</span></code>, <code class="docutils literal notranslate"><span class="pre">dist2param()</span></code></p>
-</li>
-<li><p>Translation between PyTorch distribution parameters and natural parameters for exponential family distribution:</p>
-<p><code class="docutils literal notranslate"><span class="pre">natural2exp_dist()</span></code>, <code class="docutils literal notranslate"><span class="pre">exp_dist2natural()</span></code></p>
+<p>Note: by default, parameters are interpreted as natural parameters for exponential family distributions, unless
+otherwise specified by provided <cite>dist_info</cite> dictionary. See individual private distribution-dependent methods for
+alternative interpretations.</p>
 </li>
 <li><p>Get vector of moments from a given distribution instance:</p>
-<p><code class="docutils literal notranslate"><span class="pre">get_moments()</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">get_moments()</span></code>
+TODO: NotImplemented</p>
 </li>
 <li><p>Draw particles from distribution instance:</p>
 <p><code class="docutils literal notranslate"><span class="pre">draw_particles()</span></code></p>
@@ -553,7 +554,13 @@ not be empty.</p>
 <p class="admonition-title">Todo</p>
 <p>TODO: different parameter scheme and dist_info schema specification</p>
 </div>
-<p>For Categorical distribution, params assumed by default to be the values of ‘probs’ attribute</p>
+<p>For Categorical distribution, <cite>params</cite> are assumed the natural parameters, unless <cite>sparam_type=regulars</cite> is
+declared in <cite>dist_info</cite>, in which case <cite>params</cite> will be taken as the <cite>probs</cite> argument to the PyTorch
+Categorical distribution.</p>
+<p>Mapping from natural parameter to regular parameter (corresponding to the <cite>probs</cite> argument):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">n_1</span><span class="p">,</span> <span class="n">n_2</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">n_k</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="n">exp</span><span class="p">(</span><span class="n">n_1</span><span class="p">),</span> <span class="n">exp</span><span class="p">(</span><span class="n">n_2</span><span class="p">),</span> <span class="o">...</span><span class="p">,</span> <span class="n">exp</span><span class="p">(</span><span class="n">n_k</span><span class="p">)]</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
