@@ -115,6 +115,7 @@ class DistributionServer:
     """
     Public class method API
     """
+    # region
     @classmethod
     def param2dist(cls, dist_class, param, b_shape=None, e_shape=None, dist_info=None):
         """Converts distribution parameter to a distribution instance.
@@ -458,10 +459,11 @@ class DistributionServer:
             Return the parameter of the transformed distribution
         """
         raise NotImplementedError
-
+    # endregion
     """
         DEFAULT methods that may be applicable to multiple general distribution classes
     """
+    # region
     @classmethod
     def _default_get_moments(cls, dist, n_moments):
         """
@@ -477,7 +479,7 @@ class DistributionServer:
             # Stack mean and square to insert a new last dimension
             result = torch.stack([mean, square], dim=len(mean.shape))
             return result
-
+    # endregion
     # @classmethod
     # def _default_draw_particles(cls, dist, num_particles):
     #     """
@@ -499,6 +501,7 @@ class DistributionServer:
     """
         Categorical distribution
     """
+    # region
     @staticmethod
     def _categorical_param2dist(params, dist_info):
         """
@@ -551,10 +554,11 @@ class DistributionServer:
         """
         assert isinstance(dist, torch.distributions.Categorical)
         return dist.probs
-
+    # endregion
     """
         Univariate Normal Distribution
     """
+    # region
     @staticmethod
     def _normal_param2dist(params, dist_info):
         """
@@ -615,10 +619,11 @@ class DistributionServer:
         assert isinstance(dist, torch.distributions.Normal)
         params = torch.stack([dist.loc, dist.scale], dim=-1)
         return params
-
+    # endregion
     """
         Multivariate Normal Distribution
     """
+    # region
     @staticmethod
     def _multivariate_normal_param2dist(params, dist_info):
         """
@@ -693,10 +698,11 @@ class DistributionServer:
         params = torch.cat([loc, flat_cov], dim=-1)
 
         return params
-
+    # endregion
     """
         distribution class dependent method pointer
     """
+    # region
     dict_draw_particles = {
     }
     dict_log_pdf = {
@@ -727,7 +733,7 @@ class DistributionServer:
     dict_get_moments = {
 
     }
-
+    # endregion
 
 class KnowledgeServer:
     """Knowledge Server class. Provides service regarding a Predicate's knowledge.
@@ -825,6 +831,7 @@ class KnowledgeServer:
     """
     Public API
     """
+    # region
     def draw_particles(self, batched_param, batch_shape, update_cache=True):
         """Draws new particles for the associated predicate w.r.t. the given `batched_param`. Returns necessary
         components to instantiate a particles message.
@@ -1138,11 +1145,12 @@ class KnowledgeServer:
 
         assert result.shape[:-1] == particles.shape[:-1] and result.shape[-1] == sum(self.rv_sizes)
         return result
+    # endregion
 
     """
     Utility static methods
     """
-
+    # region
     @staticmethod
     def combinatorial_cat(particles):
         """Helper static method that combinatorially concatenates the list of event particles specified by `particles`.
@@ -1253,6 +1261,7 @@ class KnowledgeServer:
             split_ptcl.append(exp_ptcl.view(exp_ptcl.shape[i], exp_ptcl.shape[-1]))
 
         return tuple(split_ptcl)
+    # endregion
 
     """
         Default methods that are distribution class independent
@@ -1260,6 +1269,7 @@ class KnowledgeServer:
                 Draw a single unique list of marginal particles given batch of distributions and calculate marginal log 
                 sampling densities .
     """
+    # region
     def _default_draw(self, batched_dist):
         """
         The process for drawing marginal particles and calculating corresponding sampling densities:
@@ -1328,6 +1338,7 @@ class KnowledgeServer:
         assert all(d.shape == torch.Size([self.s_shape[j]]) for j, d in enumerate(marg_log_dens))
 
         return tuple(marg_ptcl_narrow), tuple(marg_log_dens)
+    # endregion
 
     """
         Categorical distribution. Assumes all RV have size 1
@@ -1337,6 +1348,7 @@ class KnowledgeServer:
             - event translation from torch to pred:
                 Take volume modulo of the event values. Return a tuple a tensors
     """
+    # region
     def _categorical_var_span(self):
         # Helper function to determine the value range of each rv
         assert all(isinstance(c, integer_interval) for c in self.rv_constraints)
@@ -1400,3 +1412,4 @@ class KnowledgeServer:
         log_densities = tuple(torch.log(torch.ones(span) / span) for span in var_span)
 
         return particles, log_densities
+    # endregion
