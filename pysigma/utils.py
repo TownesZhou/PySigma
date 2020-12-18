@@ -507,7 +507,7 @@ class DistributionServer:
     def _categorical_param2dist(params, dist_info):
         """
             For Categorical distribution, `params` are assumed the natural parameters, unless `param_type=regular` is
-            declared in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
+            specified in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
             Categorical distribution.
 
             Translation from natural parameter to regular parameter (corresponding to the `probs` argument)::
@@ -542,7 +542,7 @@ class DistributionServer:
     def _categorical_dist2param(dist, dist_info):
         """
             For Categorical distribution, `params` are assumed the natural parameters, unless `param_type=regular` is
-            declared in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
+            specified in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
             Categorical distribution.
 
             Translation from regular parameter (corresponding to the `probs` argument) to natural parameter ::
@@ -577,9 +577,16 @@ class DistributionServer:
     @staticmethod
     def _normal_param2dist(params, dist_info):
         """
-            For Univariate Normal distributions, ``param_shape`` is ``[2]``. The first slice of the input parameter
+            For Univariate Normal distributions, ``param_shape`` is ``[2]``. If `param_type=regular` is specified in
+            `dist_info`, they will be interpreted as regular parameters. In this case, the first slice of the parameter
             tensor will be interpreted as the `loc` argument to the PyTorch Normal distribution, and the second slice
-            will be interpreted as the `scale` argument.
+            will be interpreted as the `scale` argument. Otherwise, they will be interpreted as the two natural
+            parameters of a normal distribution with unknown variance, denoted `n_1` and `n_2` respectively.
+
+            Translation from natural parameters to regular parameters for a normal distribution with unknown variance::
+
+               mu = - n_1 / 2 * n_2          (mean of a normal distribution)
+               std = sqrt(-1 / 2 * n_2)      (standard deviation of a normal distribution)
 
             Parameters
             ----------
@@ -601,7 +608,14 @@ class DistributionServer:
                                       "distribution, expect the last dimension of the parameter tensor has a size of " \
                                       "2. Instead, found size {}.".format(params.shape[-1])
         index = torch.tensor([0, 1], dtype=torch.long)
-        loc, scale = params.index_select(dim=-1, index=index[0]), params.index_select(dim=-1, index=index[1])
+        p1, p2 = params.index_select(dim=-1, index=index[0]), params.index_select(dim=-1, index=index[1])
+
+        if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
+            loc, scale = p1, p2
+        else:
+            loc = -p1 / (2 * p2)
+            scale = torch.sqrt(-1 / (2 * p2))
+
         # Squeeze out the last singleton dimension
         loc = loc.squeeze(dim=-1)
         scale = scale.squeeze(dim=-1)
@@ -613,9 +627,16 @@ class DistributionServer:
     @staticmethod
     def _normal_dist2param(dist, dist_info):
         """
-            For Univariate Normal distribution, the returned parameter tensor will be ``dist.loc`` and ``dist.scale``
-            stacked together along a new event dimension appended to as the last dimension. The first slice will be
-            ``dist.loc`` and the second slice be ``dist.scale``.
+            For Univariate Normal distributions, ``param_shape`` is ``[2]``. If `param_type=regular` is specified in
+            `dist_info`, they will be interpreted as regular parameters. In this case, the first slice of the parameter
+            tensor will be interpreted as the `loc` argument to the PyTorch Normal distribution, and the second slice
+            will be interpreted as the `scale` argument. Otherwise, they will be interpreted as the two natural
+            parameters of a normal distribution with unknown variance, denoted `n_1` and `n_2` respectively.
+
+            Translation from regular parameters to normal parameters for a normal distribution with unknown variance::
+
+               n_1 = mu / std ** 2
+               n_2 = -1 / 2 * (std ** 2)
 
             Parameters
             ----------
@@ -632,7 +653,12 @@ class DistributionServer:
             `torch.distributions.Normal <https://pytorch.org/docs/stable/distributions.html#normal>`_
         """
         assert isinstance(dist, torch.distributions.Normal)
-        params = torch.stack([dist.loc, dist.scale], dim=-1)
+        if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
+            params = torch.stack([dist.loc, dist.scale], dim=-1)
+        else:
+            p1 = dist.loc / torch.pow(dist.scale, 2)
+            p2 = -1 / (2 * torch.pow(dist.scale, 2))
+            params = torch.stack([p1, p2], dim=-1)
         return params
     # endregion
     """
