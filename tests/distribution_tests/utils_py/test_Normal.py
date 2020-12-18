@@ -180,5 +180,5 @@ class TestKnowledgeServer():
         expected_log_prob = expected_log_prob.permute(perm_order)
 
         # Here we relax the numerical precision to pass the test
-        precision = 1e-5
+        precision = 1e-4
         assert_equal_within_error(log_prob, expected_log_prob, precision=precision)

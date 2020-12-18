@@ -668,12 +668,21 @@ class DistributionServer:
     @staticmethod
     def _multivariate_normal_param2dist(params, dist_info):
         """
-            For Multivariate Normal distribution, parameters need to consist of a 1-dimensional mean vector and a
-            2-dimensional covariance matrix. To represent both within a 1-dimensional event dimension, we interpret
-            `params` as a mean vector stacked with a flattened covariance matrix.
+            For Multivariate Normal distribution, the parameter size should equal to `(n+1)n` where `n` is the event
+            size.
 
-            Therefore, assuming the event size is `n`, then `params`'s last dimension should have a size of `(n+1)n`,
-            with ``params[:n]`` being the mean vector, and ``params[n: (n+1)n]`` being the flattened covariance matrix.
+            By default, the first `n` slices, i.e. `params[:n]` will be taken as the first natural parameter `p1`, and
+            the rest `n*n` slices, i.e. `params[n:]` will be taken as the second natural parameter `p2`.
+
+            Conversion from natural parameters to regular parameters for MultivariateNormal distribution, assuming the
+            event size is `n`::
+
+               mu = -0.5 * matmul(inv(n2), n1)      (mean vector)
+               sigma = -0.5 * inv(n2)               (covariance_matrix)
+
+            If ``param_type=regular`` is specified in `dist_info`, then the first `n` slices of `params` will be taken
+            directly as the mean vector `mu`, whereas the rest of the `n*n` slices will be taken directly as the
+            covariance matrix.
 
             The value of `n` will be inferred from the given `params`. An ValueError will be thrown if it cannot be
             inferred.
@@ -707,8 +716,19 @@ class DistributionServer:
         n = int(np.floor(x))
 
         # Parse mean vector and covariance matrix
-        loc, flattened_cov = params.narrow(dim=-1, start=0, length=n), params.narrow(dim=-1, start=n, length=n**2)
-        cov = flattened_cov.view(params.shape[:-1] + torch.Size([n, n]))
+        p1, p2 = params.narrow(dim=-1, start=0, length=n), params.narrow(dim=-1, start=n, length=n ** 2)
+        if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
+            loc, flattened_cov = p1, p2
+            cov = flattened_cov.view(params.shape[:-1] + torch.Size([n, n]))
+        else:
+            # Append a singleton dimension to p1 vector
+            p1 = p1.unsqueeze(dim=-1)
+            # Reshape p2 into a square matrix
+            p2 = p2.view(params.shape[:-1] + torch.Size([n, n]))
+            # Conversion
+            loc = -0.5 * torch.matmul(torch.inverse(p2), p1)
+            loc = loc.squeeze(-1)  # Remove last singleton dimension
+            cov = -0.5 * torch.inverse(p2)
         dist = torch.distributions.MultivariateNormal(loc, cov)
 
         return dist
@@ -716,8 +736,18 @@ class DistributionServer:
     @staticmethod
     def _multivariate_normal_dist2param(dist, dist_info):
         """
-            For Multivariate Normal distribution, the returned parameter tensor will be ``dist.loc`` concatenated with a
-            flattened ``dist.covariance_matrix`` along the parameter dimension.
+            For Multivariate Normal distribution, unless ``param_type=regular`` is specified in `dist_info`, the
+            returned parameter tensor will be the concatenation of the distribution's first and (flattened) second
+            natural parameter. Otherwise, it will be ``dist.loc`` concatenated with a flattened
+            ``dist.covariance_matrix``.
+
+            Conversion from regular parameters to natural parameters for MultivariateNormal distribution, assuming the
+            event size is `n`::
+
+               p1 = matmul(inv(sigma), mu)
+               p2 = -0.5 inv(sigma)
+
+            where `mu` is the mean vector, `sigma` the covariance matrix.
 
             Parameters
             ----------
@@ -735,8 +765,20 @@ class DistributionServer:
         # Get mean vector and covariance matrix
         loc, cov = dist.loc, dist.covariance_matrix
         # Flatten cov and concatenate
-        flat_cov = cov.view(b_shape + torch.Size([-1]))
-        params = torch.cat([loc, flat_cov], dim=-1)
+        if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
+            flat_cov = cov.view(b_shape + torch.Size([-1]))
+            params = torch.cat([loc, flat_cov], dim=-1)
+        else:
+            # Append a singleton dimension to mean vector
+            loc = loc.unsqueeze(dim=-1)
+            # Conversion
+            p1 = torch.matmul(torch.inverse(cov), loc)
+            p2 = -0.5 * torch.inverse(cov)
+            # Squeeze and flatten dimensions
+            p1 = p1.squeeze(dim=-1)
+            p2 = p2.contiguous()        # Take contiguous() to rearrange stride
+            p2 = p2.view(b_shape + torch.Size([-1]))
+            params = torch.cat([p1, p2], dim=-1)
 
         return params
     # endregion
@@ -1098,7 +1140,7 @@ class KnowledgeServer:
         # Transform joint event values from Cognitive format to PyTorch format
         torch_ptcl = self.event2torch_event(cog_ptcl)
         # Instantiate the distribution instance
-        dist = DistributionServer.param2dist(self.dist_class, param, self.dist_info)
+        dist = DistributionServer.param2dist(self.dist_class, param, dist_info=self.dist_info)
         # Query DistributionServer
         log_prob = DistributionServer.log_prob(dist, torch_ptcl)
         # Marginalize over unreferenced dimensions if needed

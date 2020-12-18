@@ -50,7 +50,8 @@ class TestWMVN():
         rv_sizes = list(e_shape)
         rv_cstr = [C.real, ] * len(e_shape)
         rv_num_ptcl = list(s_shape)
-        ks = KS(dist_class, rv_sizes, rv_cstr, rv_num_ptcl)
+        dist_info = {'param_type': 'regular'}
+        ks = KS(dist_class, rv_sizes, rv_cstr, rv_num_ptcl, dist_info=dist_info)
 
         rel_var_list = [Variable("rel_" + str(i), VariableMetatype.Relational, b) for i, b in enumerate(b_shape)]
         param_var = Variable("param", VariableMetatype.Parameter, p_shape[0])
