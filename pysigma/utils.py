@@ -504,15 +504,51 @@ class DistributionServer:
     """
     # region
     @staticmethod
+    def _categorical_param_exp2reg(param):
+        """
+            Conversion from natural parameters to regular parameters for Categorical distribution::
+
+               [n_1, n_2, ..., n_k] -> [exp(n_1), exp(n_2), ..., exp(n_k)]
+
+            where `[p_1, p_2, ..., p_k]` corresponds to the `probs` attribute to a PyTorch Categorical distribution
+            instance.
+
+            Parameters
+            ----------
+            param : torch.Tensor
+
+            Returns
+            -------
+            torch.Tensor
+        """
+        return torch.exp(param)
+
+    @staticmethod
+    def _categorical_param_reg2exp(param):
+        """
+            Conversion from regular parameters to natural parameters for Categorical distribution::
+
+               [p_1, p_2, ..., p_k] -> [log(p_1), log(p_2), ..., log(p_k)]
+
+            where `[p_1, p_2, ..., p_k]` corresponds to the `probs` attribute to a PyTorch Categorical distribution
+            instance.
+
+            Parameters
+            ----------
+            param : torch.Tensor
+
+            Returns
+            -------
+            torch.Tensor
+        """
+        return torch.log(param)
+
+    @staticmethod
     def _categorical_param2dist(params, dist_info):
         """
             For Categorical distribution, `params` are assumed the natural parameters, unless `param_type=regular` is
             specified in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
             Categorical distribution.
-
-            Translation from natural parameter to regular parameter (corresponding to the `probs` argument)::
-
-               [n_1, n_2, ..., n_k] -> [exp(n_1), exp(n_2), ..., exp(n_k)]
 
             Parameters
             ----------
@@ -534,7 +570,7 @@ class DistributionServer:
         if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
             probs = params
         else:
-            probs = torch.exp(params)
+            probs = DistributionServer._categorical_param_exp2reg(params)
         dist = torch.distributions.Categorical(probs=probs)
         return dist
 
@@ -544,10 +580,6 @@ class DistributionServer:
             For Categorical distribution, `params` are assumed the natural parameters, unless `param_type=regular` is
             specified in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
             Categorical distribution.
-
-            Translation from regular parameter (corresponding to the `probs` argument) to natural parameter ::
-
-               [p_1, p_2, ..., p_k] -> [log(p_1), log(p_2), ..., log(p_k)]
 
             Parameters
             ----------
@@ -567,13 +599,69 @@ class DistributionServer:
         if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
             params = dist.probs
         else:
-            params = torch.log(dist.probs)
+            params = DistributionServer._categorical_param_reg2exp(dist.probs)
         return params
     # endregion
     """
         Univariate Normal Distribution
     """
     # region
+    @staticmethod
+    def _normal_param_exp2reg(params):
+        """
+            Conversion from natural parameters to regular parameters for a normal distribution with unknown variance::
+
+               mu = - n_1 / 2 * n_2          (mean of a normal distribution)
+               std = sqrt(-1 / 2 * n_2)      (standard deviation of a normal distribution)
+
+            Parameters
+            ----------
+            params : Iterable of torch.Tensor
+                length 2.
+
+            Returns
+            -------
+            Tuple of torch.Tensor
+                Length 2. Mean and standard deviation respectively.
+        """
+        assert isinstance(params, Iterable)
+        params = tuple(params)
+        assert len(params) == 2
+
+        p1, p2 = params
+        loc = -p1 / (2 * p2)
+        scale = torch.sqrt(-1 / (2 * p2))
+
+        return loc, scale
+
+    @staticmethod
+    def _normal_param_reg2exp(params):
+        """
+            Conversion from regular parameters to normal parameters for a normal distribution with unknown variance::
+
+               n_1 = mu / std ** 2
+               n_2 = -1 / 2 * (std ** 2)
+
+            Parameters
+            ----------
+            params : Iterable of torch.Tensor
+                length 2. Mean and standard deviation respectively.
+
+            Returns
+            -------
+            Iterable of torch.Tensor
+                length 2.
+        """
+        assert isinstance(params, Iterable)
+        params = tuple(params)
+        assert len(params) == 2
+
+        loc, scale = params
+        p1 = loc / torch.pow(scale, 2)
+        p2 = -1 / (2 * torch.pow(scale, 2))
+
+        return p1, p2
+
     @staticmethod
     def _normal_param2dist(params, dist_info):
         """
@@ -613,8 +701,7 @@ class DistributionServer:
         if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
             loc, scale = p1, p2
         else:
-            loc = -p1 / (2 * p2)
-            scale = torch.sqrt(-1 / (2 * p2))
+            loc, scale = DistributionServer._normal_param_exp2reg([p1, p2])
 
         # Squeeze out the last singleton dimension
         loc = loc.squeeze(dim=-1)
@@ -656,8 +743,7 @@ class DistributionServer:
         if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
             params = torch.stack([dist.loc, dist.scale], dim=-1)
         else:
-            p1 = dist.loc / torch.pow(dist.scale, 2)
-            p2 = -1 / (2 * torch.pow(dist.scale, 2))
+            p1, p2 = DistributionServer._normal_param_reg2exp([dist.loc, dist.scale])
             params = torch.stack([p1, p2], dim=-1)
         return params
     # endregion

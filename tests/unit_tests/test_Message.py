@@ -11,7 +11,7 @@ from pysigma.defs import Message, MessageType
 from tests.utils import cuda_only
 
 # Numerical accuracy
-EPS = 1e-6
+EPS = 1e-5
 
 
 class TestMessage:
@@ -575,7 +575,7 @@ class TestMessage:
         # Multiple relational and random variables
         b_s, s_s, e_s = Size([5, 6, 7]), Size([10, 12, 14]), Size([3, 2, 1])
         p1 = [torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])]
-        w1, w2 = torch.rand(5, 6, 7, 10, 12, 14), torch.rand(5, 6, 7, 10, 12, 14)
+        w1, w2 = torch.rand(5, 6, 7, 10, 12, 14) + EPS, torch.rand(5, 6, 7, 10, 12, 14) + EPS
         l1 = [-torch.rand(10), -torch.rand(12), -torch.rand(14)]
         msg1 = Message(MessageType.Particles, batch_shape=b_s, sample_shape=s_s, event_shape=e_s,
                       particles=p1, weight=w1, log_densities=l1)

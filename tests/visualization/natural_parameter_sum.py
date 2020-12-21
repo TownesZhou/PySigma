@@ -5,12 +5,9 @@
     Use univariate normal distribution as example.
 """
 import torch
-from torch import Size
 from torch.distributions import Normal
-import torch.distributions.constraints as C
 import numpy as np
 from matplotlib import pyplot as plt
-from pysigma.utils import KnowledgeServer as KS
 from pysigma.utils import DistributionServer as DS
 
 

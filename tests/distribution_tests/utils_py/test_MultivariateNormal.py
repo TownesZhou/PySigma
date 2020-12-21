@@ -100,7 +100,8 @@ class TestDistributionServer():
         val_1 = DS.param2dist(dist_class, param)
         val_2 = DS.dist2param(val_1)
 
-        assert_equal_within_error(val_2, param)
+        precision = 1e-5
+        assert_equal_within_error(val_2, param, precision=precision)
 
     def test_param_dist_conversion_invertible_natural_param_2(self):
         # Test 2: dist -> param -> dist

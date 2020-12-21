@@ -86,7 +86,8 @@ class TestDistributionServer():
         # Scenario 1: dist -> param -> dist
         b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([2]), Size([])
         dist_class = D.Normal
-        loc, scale = torch.randn(b_shape), torch.rand(b_shape)
+        # Scale up the magnitude to reduce numerical errors
+        loc, scale = torch.randn(b_shape) * 10, torch.rand(b_shape) * 10
         dist = D.Normal(loc, scale)
 
         dist_info = {'param_type': 'regular'}
@@ -97,9 +98,11 @@ class TestDistributionServer():
         assert equal_within_error(val_2.loc, loc) and equal_within_error(val_2.scale, scale)
 
     def test_param_dist_conversion_invertible_natural_param_1(self):
+        # Scenario 2: param -> dist -> param
         b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([2]), Size([])
         dist_class = D.Normal
-        loc, scale = torch.randn(b_shape), torch.rand(b_shape)
+        # Scale up the magnitude to reduce numerical errors
+        loc, scale = torch.randn(b_shape) * 10, torch.rand(b_shape) * 10
         p1 = loc / scale ** 2
         p2 = -1 / (2 * scale ** 2)
 
@@ -108,7 +111,7 @@ class TestDistributionServer():
         val_1 = DS.param2dist(dist_class, param, b_shape, e_shape)
         val_2 = DS.dist2param(val_1)
 
-        assert equal_within_error(param, val_2)
+        assert_equal_within_error(param, val_2)
 
 
 class TestKnowledgeServer():
@@ -145,7 +148,8 @@ class TestKnowledgeServer():
         avg_prob = prob.mean(dim=[1, 2, 3])
         expected_log_dens = torch.log(avg_prob)
 
-        assert equal_within_error(dens, expected_log_dens)
+        precision = 1e-5
+        assert_equal_within_error(dens, expected_log_dens, precision=precision)
 
     def test_surrogate_log_prob(self):
         # Note: Due to numerical precision issues, there is significant numerical error (up to 1e-5) between the
@@ -157,7 +161,7 @@ class TestKnowledgeServer():
         rv_cstr = (C.real,)
         ks = KS(dist_class, rv_sizes=list(e_shape), rv_constraints=rv_cstr, rv_num_particles=list(s_shape))
 
-        loc, scale = torch.randn(b_shape), torch.rand(b_shape) * 10     # larger std to cover extreme outliers
+        loc, scale = torch.randn(b_shape), torch.ones(b_shape)     # Fix std to 1
         p1 = loc / scale ** 2
         p2 = -1 / (2 * scale ** 2)
         param = torch.stack([p1, p2], dim=-1)
@@ -180,5 +184,5 @@ class TestKnowledgeServer():
         expected_log_prob = expected_log_prob.permute(perm_order)
 
         # Here we relax the numerical precision to pass the test
-        precision = 1e-4
+        precision = 1e-6
         assert_equal_within_error(log_prob, expected_log_prob, precision=precision)
