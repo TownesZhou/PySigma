@@ -752,6 +752,78 @@ class DistributionServer:
     """
     # region
     @staticmethod
+    def _multivariate_normal_param_exp2reg(params):
+        """
+            Conversion from natural parameters to regular parameters for MultivariateNormal distribution, assuming the
+            event size is `n`::
+
+               mu = -0.5 * matmul(inv(p2), p1)      (mean vector)
+               sigma = -0.5 * inv(p2)               (covariance_matrix)
+
+            Parameters
+            ----------
+            params : Iterable of torch.Tensor
+                length 2. Natural parameter `p1`, `p2` respectively. `p1` has param shape `[n]` as the last dimension,
+                `p2` has param shape `[n, n]` as the last two dimensions.
+
+            Returns
+            -------
+            Tuple of torch.Tensor
+                length 2. Regular paremeter `loc`, `covariance_matrix` respectively. `loc` has param shape `[n]` as the
+                last dimension, `covariance_matrix` has param shape `[n, n]` as the last two dimensions.
+        """
+        assert isinstance(params, Iterable)
+        params = tuple(params)
+        assert len(params) == 2
+
+        p1, p2 = params
+        # Append a singleton dimension to p1 vector
+        p1 = p1.unsqueeze(dim=-1)
+        # Conversion
+        loc = -0.5 * p2.inverse().matmul(p1)
+        loc = loc.squeeze(-1)  # Remove last singleton dimension
+        cov = -0.5 * torch.inverse(p2)
+
+        return loc, cov
+
+    @staticmethod
+    def _multivariate_normal_param_reg2exp(params):
+        """
+            Conversion from regular parameters to natural parameters for MultivariateNormal distribution, assuming the
+            event size is `n`::
+
+               p1 = matmul(inv(sigma), mu)
+               p2 = -0.5 inv(sigma)
+
+            Parameters
+            ----------
+            params : Iterable of torch.Tensor
+                length 2. Regular parameter `loc`, `covariance_matrix` respectively. `loc` has param shape `[n]` as the
+                last dimension, `covariance_matrix` has param shape `[n, n]` as the last two dimensions.
+
+            Returns
+            -------
+            Tuple of torch.Tensor
+                length 2. Natural parameter `p1`, `p2` respectively. `p1` has param shape `[n]` as the last dimension,
+                `p2` has param shape `[n, n]` as the last two dimensions.
+        """
+        assert isinstance(params, Iterable)
+        params = tuple(params)
+        assert len(params) == 2
+
+        loc, cov = params
+        # Append a singleton dimension to mean vector
+        loc = loc.unsqueeze(dim=-1)
+        # Conversion
+        p1 = cov.inverse().matmul(loc)
+        p2 = -0.5 * torch.inverse(cov)
+        # Squeeze and flatten dimensions
+        p1 = p1.squeeze(dim=-1)
+        p2 = p2.contiguous()  # Take contiguous() to rearrange stride
+
+        return p1, p2
+
+    @staticmethod
     def _multivariate_normal_param2dist(params, dist_info):
         """
             For Multivariate Normal distribution, the parameter size should equal to `(n+1)n` where `n` is the event
@@ -759,12 +831,6 @@ class DistributionServer:
 
             By default, the first `n` slices, i.e. `params[:n]` will be taken as the first natural parameter `p1`, and
             the rest `n*n` slices, i.e. `params[n:]` will be taken as the second natural parameter `p2`.
-
-            Conversion from natural parameters to regular parameters for MultivariateNormal distribution, assuming the
-            event size is `n`::
-
-               mu = -0.5 * matmul(inv(n2), n1)      (mean vector)
-               sigma = -0.5 * inv(n2)               (covariance_matrix)
 
             If ``param_type=regular`` is specified in `dist_info`, then the first `n` slices of `params` will be taken
             directly as the mean vector `mu`, whereas the rest of the `n*n` slices will be taken directly as the
@@ -802,19 +868,12 @@ class DistributionServer:
         n = int(np.floor(x))
 
         # Parse mean vector and covariance matrix
-        p1, p2 = params.narrow(dim=-1, start=0, length=n), params.narrow(dim=-1, start=n, length=n ** 2)
+        p1, p2_flat = params.narrow(dim=-1, start=0, length=n), params.narrow(dim=-1, start=n, length=n ** 2)
+        p2 = p2_flat.view(params.shape[:-1] + torch.Size([n, n]))
         if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
-            loc, flattened_cov = p1, p2
-            cov = flattened_cov.view(params.shape[:-1] + torch.Size([n, n]))
+            loc, cov = p1, p2
         else:
-            # Append a singleton dimension to p1 vector
-            p1 = p1.unsqueeze(dim=-1)
-            # Reshape p2 into a square matrix
-            p2 = p2.view(params.shape[:-1] + torch.Size([n, n]))
-            # Conversion
-            loc = -0.5 * torch.matmul(torch.inverse(p2), p1)
-            loc = loc.squeeze(-1)  # Remove last singleton dimension
-            cov = -0.5 * torch.inverse(p2)
+            loc, cov = DistributionServer._multivariate_normal_param_exp2reg([p1, p2])
         dist = torch.distributions.MultivariateNormal(loc, cov)
 
         return dist
@@ -855,14 +914,8 @@ class DistributionServer:
             flat_cov = cov.view(b_shape + torch.Size([-1]))
             params = torch.cat([loc, flat_cov], dim=-1)
         else:
-            # Append a singleton dimension to mean vector
-            loc = loc.unsqueeze(dim=-1)
-            # Conversion
-            p1 = torch.matmul(torch.inverse(cov), loc)
-            p2 = -0.5 * torch.inverse(cov)
-            # Squeeze and flatten dimensions
-            p1 = p1.squeeze(dim=-1)
-            p2 = p2.contiguous()        # Take contiguous() to rearrange stride
+            p1, p2 = DistributionServer._multivariate_normal_param_reg2exp([loc, cov])
+            # Flatten p2
             p2 = p2.view(b_shape + torch.Size([-1]))
             params = torch.cat([p1, p2], dim=-1)
 

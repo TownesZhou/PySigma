@@ -42,6 +42,27 @@ class TestLTMFN():
 
     def generate_ltmfn_2(self, b_shape=Size([4, 5]), p_shape=Size([42]), s_shape=Size([10, 15, 20]),
                          e_shape=Size([1, 2, 3])):
+        # Generate a ltmfn carrying a KS with actual distribution class - MultivariateNormal
+        name = "test_ltmfn"
+
+        dist_class = D.MultivariateNormal
+        rv_sizes = list(e_shape)
+        rv_cstr = [C.real, ] * len(e_shape)
+        rv_num_ptcl = list(s_shape)
+        ks = KS(dist_class, rv_sizes, rv_cstr, rv_num_ptcl)
+
+        rel_var_list = [Variable("rel_" + str(i), VariableMetatype.Relational, b) for i, b in enumerate(b_shape)]
+        param_var = Variable("param", VariableMetatype.Parameter, p_shape[0])
+        index_var_list = [Variable("index_" + str(i), VariableMetatype.Indexing, s) for i, s in enumerate(s_shape)]
+        ran_var_list = [Variable("ran_" + str(i), VariableMetatype.Random, e, [rv_cstr[i]])
+                        for i, e in enumerate(e_shape)]
+
+        ltmfn = LTMFN(name, ks, rel_var_list, param_var, index_var_list, ran_var_list)
+
+        return ltmfn
+
+    def generate_ltmfn_2(self, b_shape=Size([4, 5]), p_shape=Size([42]), s_shape=Size([10, 15, 20]),
+                         e_shape=Size([1, 2, 3])):
         name = "test_ltmfn"
 
         dist_class = D.MultivariateNormal
@@ -261,7 +282,36 @@ class TestLTMFN():
         assert ltmfn.msg_cache == combined_msg
 
     def test_modify_correct_particles_with_draw(self):
+        # # Use MultivariateNormal distribution as example
+        # # With natural parameters
+        # num_param_lds = 3
+        # msg_shape = (Size([4, 5]), Size([42]), Size([10, 15, 20]), Size([1, 2, 3]))
+        # ltmfn = self.generate_ltmfn_2(*msg_shape)
+        #
+        # param_lds = []
+        # for i in range(num_param_lds):
+        #     mock_vn = MagicMock(VariableNode)
+        #     mock_vn.name = "test_variable_node_{}".format(i)
+        #     ld = LinkData(mock_vn, ltmfn, True, msg_shape)
+        #     ld.attr = {'type': 'param'}
+        #     param_lds.append(ld)
+        #
+        # msgs = []
+        # for i in range(num_param_lds):
+        #     loc = torch.randn(Size([4, 5]) + Size([6]))
+        #     cov = generate_positive_definite(Size([4, 5]), 6)
+        #     param = torch.cat([loc, cov.view(Size([4, 5]) + Size([-1]))], dim=-1)
+        #     msgs.append(Message(MessageType.Parameter,
+        #                         batch_shape=Size([4, 5]), param_shape=Size([42]),
+        #                         parameter=param))
+        # combined_msg = sum(msgs, Message.identity())
+        #
+        # for param_ld, msg in zip(param_lds, msgs):
+        #     param_ld.write(msg)
+        #     ltmfn.add_link(param_ld)
+        #
+        # ltmfn.set_draw(True)  # Select no draw
+        # ltmfn.modify()
+        #
+        # assert ltmfn.msg_cache == combined_msg
         pass
-        # TODO: wait for changes to underlying KnowledgeServer/DistributionServer w.r.t. default distribution parameter
-        #   representation.
-
