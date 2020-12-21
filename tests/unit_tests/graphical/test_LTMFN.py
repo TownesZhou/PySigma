@@ -317,3 +317,52 @@ class TestLTMFN():
 
         assert Message.reduce_type(ltmfn.msg_cache, MessageType.Parameter) == combined_msg
 
+    def test_quiescence(self):
+        # Test that no message is sent when quiesced
+        ltmfn = self.generate_ltmfn_1()
+
+        # Set visited to True
+        ltmfn.visited = True
+
+        # Use mock ld
+        mock_out_ld = MagicMock(spec=LinkData)
+        mock_out_ld.name = "test_mock_out_ld"
+        ltmfn.out_linkdata.append(mock_out_ld)
+
+        ltmfn.compute()
+        mock_out_ld.write.assert_not_called()
+
+    def test_compute_correct_msg(self):
+        # Test that out ld receives correct message
+        ltmfn = self.generate_ltmfn_1()
+
+        mock_msg = MagicMock(spec_set=Message)
+        ltmfn.msg_cache = mock_msg
+
+        # Use mock ld
+        mock_out_ld = MagicMock(spec=LinkData)
+        mock_out_ld.name = "test_mock_out_ld"
+        ltmfn.out_linkdata.append(mock_out_ld)
+
+        ltmfn.compute()
+        mock_out_ld.write.assert_called_once_with(mock_msg)
+
+    def test_compute_once_then_quiesced(self):
+        # Test that compute() can only be called once and then will reach quiescence in one decision phase
+        ltmfn = self.generate_ltmfn_1()
+
+        mock_msg = MagicMock(spec_set=Message)
+        ltmfn.msg_cache = mock_msg
+
+        # Use mock ld
+        mock_out_ld = MagicMock(spec=LinkData)
+        mock_out_ld.name = "test_mock_out_ld"
+        ltmfn.out_linkdata.append(mock_out_ld)
+
+        # Call twice
+        ltmfn.compute()
+        ltmfn.compute()
+
+        assert ltmfn.quiescence
+        mock_out_ld.write.assert_called_once_with(mock_msg)
+

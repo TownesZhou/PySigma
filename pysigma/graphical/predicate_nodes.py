@@ -270,6 +270,8 @@ class LTMFN(FactorNode):
     sufficient for LTMFN to send messages only once. Therefore, it is simply defined that LTMFN reaches quiescence state
     if and only if it has sent a message during this decision phase.
 
+    Message cache is initialized to identity message.
+
     Parameters
     ----------
     name : str
@@ -332,7 +334,7 @@ class LTMFN(FactorNode):
         self.e_shape = torch.Size([v.size for v in self.ran_var_list])
 
         # Message cache
-        self.msg_cache = None
+        self.msg_cache = Message.identity()
 
     def add_link(self, linkdata):
         """Only admits one incoming and one outgoing event message link, the former should be connected from `WMVN_IN`
@@ -445,6 +447,7 @@ class LTMFN(FactorNode):
 
         self.msg_cache = new_msg
 
+    @property
     def quiescence(self):
         """Overrides default quiescence behavior. LTMFN reaches quiescence state if and only if it has been visited.
 
@@ -464,11 +467,7 @@ class LTMFN(FactorNode):
             If ``self.msg_cache`` is None. This means `init_msg()` were not called prior to the current decision phase
             which calls this method.
         """
-        super(LTMFN, self).compute()
         assert len(self.out_linkdata) > 0
-        assert self.msg_cache is not None, \
-            "At {}: No cached message at this LTMFN node to be send outward. modify() should first be called prior " \
-            "to calling this method."
         out_ld = self.out_linkdata[0]
         out_ld.write(self.msg_cache)
 
