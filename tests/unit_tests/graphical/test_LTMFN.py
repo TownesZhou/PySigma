@@ -12,6 +12,7 @@ from pysigma.defs import Message, MessageType, Variable, VariableMetatype
 from pysigma.graphical.basic_nodes import LinkData, FactorNode, VariableNode
 from pysigma.graphical.predicate_nodes import LTMFN, WMVN
 from pysigma.utils import KnowledgeServer as KS
+from pysigma.utils import DistributionServer as DS
 from ..test_Message import TestMessage
 
 from ...utils import generate_positive_definite
@@ -282,36 +283,37 @@ class TestLTMFN():
         assert ltmfn.msg_cache == combined_msg
 
     def test_modify_correct_particles_with_draw(self):
-        # # Use MultivariateNormal distribution as example
-        # # With natural parameters
-        # num_param_lds = 3
-        # msg_shape = (Size([4, 5]), Size([42]), Size([10, 15, 20]), Size([1, 2, 3]))
-        # ltmfn = self.generate_ltmfn_2(*msg_shape)
-        #
-        # param_lds = []
-        # for i in range(num_param_lds):
-        #     mock_vn = MagicMock(VariableNode)
-        #     mock_vn.name = "test_variable_node_{}".format(i)
-        #     ld = LinkData(mock_vn, ltmfn, True, msg_shape)
-        #     ld.attr = {'type': 'param'}
-        #     param_lds.append(ld)
-        #
-        # msgs = []
-        # for i in range(num_param_lds):
-        #     loc = torch.randn(Size([4, 5]) + Size([6]))
-        #     cov = generate_positive_definite(Size([4, 5]), 6)
-        #     param = torch.cat([loc, cov.view(Size([4, 5]) + Size([-1]))], dim=-1)
-        #     msgs.append(Message(MessageType.Parameter,
-        #                         batch_shape=Size([4, 5]), param_shape=Size([42]),
-        #                         parameter=param))
-        # combined_msg = sum(msgs, Message.identity())
-        #
-        # for param_ld, msg in zip(param_lds, msgs):
-        #     param_ld.write(msg)
-        #     ltmfn.add_link(param_ld)
-        #
-        # ltmfn.set_draw(True)  # Select no draw
-        # ltmfn.modify()
-        #
-        # assert ltmfn.msg_cache == combined_msg
-        pass
+        # Use MultivariateNormal distribution as example
+        # With natural parameters
+        num_param_lds = 3
+        msg_shape = (Size([4, 5]), Size([42]), Size([10, 15, 20]), Size([1, 2, 3]))
+        ltmfn = self.generate_ltmfn_2(*msg_shape)
+
+        param_lds = []
+        for i in range(num_param_lds):
+            mock_vn = MagicMock(VariableNode)
+            mock_vn.name = "test_variable_node_{}".format(i)
+            ld = LinkData(mock_vn, ltmfn, True, msg_shape)
+            ld.attr = {'type': 'param'}
+            param_lds.append(ld)
+
+        msgs = []
+        for i in range(num_param_lds):
+            loc = torch.randn(Size([4, 5]) + Size([6]))
+            cov = generate_positive_definite(Size([4, 5]), 6)
+            p1, p2 = DS._multivariate_normal_param_reg2exp([loc, cov])
+            param = torch.cat([p1, p2.view(Size([4, 5]) + Size([-1]))], dim=-1)
+            msgs.append(Message(MessageType.Parameter,
+                                batch_shape=Size([4, 5]), param_shape=Size([42]),
+                                parameter=param))
+        combined_msg = sum(msgs, Message.identity())
+
+        for param_ld, msg in zip(param_lds, msgs):
+            param_ld.write(msg)
+            ltmfn.add_link(param_ld)
+
+        ltmfn.set_draw(True)  # Select no draw
+        ltmfn.modify()
+
+        assert Message.reduce_type(ltmfn.msg_cache, MessageType.Parameter) == combined_msg
+
