@@ -316,6 +316,7 @@ particle values should be determined by the observation feed rather than be draw
 phase, but rather the internal computation during the modification phase at the last cognitive cycle, it is
 sufficient for LTMFN to send messages only once. Therefore, it is simply defined that LTMFN reaches quiescence state
 if and only if it has sent a message during this decision phase.</p>
+<p>Message cache is initialized to identity message.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -470,7 +471,7 @@ A new list of particles will then be drawn in the cognitive format by querying t
 
 <dl class="py method">
 <dt id="pysigma.graphical.predicate_nodes.LTMFN.quiescence">
-<code class="sig-name descname">quiescence</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#LTMFN.quiescence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.quiescence" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">quiescence</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.LTMFN.quiescence" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overrides default quiescence behavior. LTMFN reaches quiescence state if and only if it has been visited.</p>
 </dd></dl>
 
@@ -706,66 +707,118 @@ be sent to downstream nodes during the decision phase.</p>
 <h2>Working Memory Factor Node<a class="headerlink" href="#working-memory-factor-node" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.predicate_nodes.WMFN">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.predicate_nodes.</code><code class="sig-name descname">WMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">decay_rate</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN" title="Permalink to this definition">¶</a></dt>
-<dd><p>Working Memory Factor Node.</p>
-<p>Effectively a buffer node that contains a memory buffer, WMFN mixes the incoming message with its stored memory by
-taking a weight sum during the modification phase, updates its memory with the result, and sends this updated memory
-during the decision phase at the next cognitive cycle. The first two steps are performed by <cite>update_memory()</cite>,
-whereas sending the message is, as always, performed by <cite>compute()</cite>.</p>
-<p>The weighted sum mixture behavior can be described as follows:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">new_memory</span> <span class="o">=</span> <span class="n">new_msg</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay_rate</span><span class="p">)</span> <span class="o">*</span> <span class="n">old_memory</span>
-</pre></div>
-</div>
-<p>where <code class="docutils literal notranslate"><span class="pre">decay_rate</span></code> is a real number in range [0, 1]. The vector addition and scalar multiplication for messages
-of different types are mathematically defined by the Message class. See
-<a class="reference internal" href="data-structures.html#message-arithmetic-structures-notes"><span class="std std-ref">Message class notes on arithmetic structures</span></a> for more details.</p>
-<p>The incoming message will always be cloned before weighted sum update is performed. This is to prevent
-any components of the memory message from in-place change by some parts elsewhere in the graph.</p>
-<p>Admits only one incoming and one outgoing links. Note that WMFN does not check the message shape of messages and
-memory contents. These should be guaranteed compatible by linkdata and neighboring nodes.</p>
-<p>The <cite>check_quiesce()</cite> method is overridden so that PSFN’s quiescence state is determined by whether this node is
-visited during the decision phase, i.e., whether <cite>compute()</cite> is called.</p>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.predicate_nodes.</code><code class="sig-name descname">WMFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">index_var_list</span></em>, <em class="sig-param"><span class="n">ran_var_list</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Working Memory Factor Node implementing the message update step of the Markov Chain Monte Carlo (MCMC) inference
+procedure.</p>
+<p>Metropolis-Hastings algorithm is implemented herein for the MCMC procedure.</p>
+<p>Due to the nature of the M-H algorithm, the candidate particles generated by the random walk distribution needs to
+be evaluated against the target function. The evaluated values of the candidate particles are then compared to the
+values of the posterior particles from last cycle representing the previous posterior belief. A coin is then flipped
+with a probability equal to the ratio of the candidate particle’s weight to the posterior particle’s weight to
+determine if the posterior particle is to be replaced by the candidate particle. Otherwise, the current particle is
+retained. This process will yield a posterior particle list of this cycle representing the current belief. Then,
+a step of random walk is performed on the yielded posterior particles to generate the candidate particles to be
+evaluated in the next cycle.</p>
+<p>To accommodate to this procedure, in any particle-based MCMC predicate, the WMFN is connected to TWO groups of
+WMVN_IN and WMVN_OUT, named with suffix <cite>_EVAL</cite> and <cite>_POST</cite> respectively. The <cite>WMVN_IN_EVAL</cite> and <cite>WMVN_OUT_EVAL</cite>
+together is responsible for sending and receiving the candidate message (message that contains the randomly walked
+candidate particles) to and from the Gamma node to be evaluated by the target functions. On the other hand,
+<cite>WMVN_IN_POST</cite> and <cite>WMVN_OUT_POST</cite> together will send the true posterior belief messages, as well as receiving the
+marginal posterior from other part of the graph evaluated on the true posterior belief particles.</p>
+<p>Since the candidate particles and the posterior particles need to be evaluated against the same set of target
+functions, both groups of WMVN_IN and WMVN_OUT should always connect to the same set of Conditionals where this
+predicate appears as an action or condact pattern. However, since only <cite>WMVN_OUT_POST</cite> sends the true posterior
+belief messages, it is <cite>WMVN_OUT_POST</cite> rather than <cite>WMVN_OUT_EVAL</cite> that should connect to the condition subgraph in
+order to propagate the posterior belief to other parts of the graph.</p>
+<p>In the condition subgraph, both <cite>WMVN_OUT_POST</cite> and <cite>WMVN_OUT_EVAL</cite> should be associated with the same set of
+pattern random variables to ensure message exclusion.</p>
+<p>To be more specific:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the predicate appears only as a condition pattern, then <cite>WMVN_OUT_POST</cite> serves as the only message source
+and it is the only node that is connected to the corresponding conditional alpha subgraph.</p></li>
+<li><p>If the predicate appears only as an action pattern, then both <cite>WMVN_IN_POST</cite> and <cite>WMVN_IN_EVAL</cite> should be
+connected from the action subgraphs <em>with the same random variables</em>. <cite>WMVN_OUT_POST</cite> and <cite>WMVN_OUT_EVAL</cite>
+should skip-connect to the action beta subgraph to directly provide particles for evaluation purpose.</p></li>
+<li><p>If the predicate appears as a condact pattern, then it is the combination of the above two. In other words,
+<cite>WMVN_OUT_POST</cite> will both connect to the condition alpha subgraph as well as to the action beta subgraph.</p></li>
+</ul>
+</div></blockquote>
+<p>By default, the MultivariateNormal distribution with identity covariance matrix is chosen as the random walk
+distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<em>str</em>) – The name of this node</p></li>
-<li><p><strong>decay_rate</strong> (<em>float</em>) – The decay rate of the memory contents.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of this factor node</p></li>
+<li><p><strong>index_var_list</strong> (<em>Iterable of Variable</em>) – Iterable of indexing variables. Corresponds to the sample dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">s_shape</span></code> attribute of
+incoming messages. Note that the indexing variables corresponds to the dimensions of the true posterior belief
+particle messages. It is expected that the sample dimension size of the messages from WMVN_IN and to
+WMVN_OUT_EVAL will be twice as large as the size of the indexing variables declared herein.</p></li>
+<li><p><strong>ran_var_list</strong> (<em>Iterable of Variable</em>) – Iterable of random variables. Corresponds to the event dimensions. Used to check <code class="docutils literal notranslate"><span class="pre">e_shape</span></code> attribute of
+incoming messages.</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt id="pysigma.graphical.predicate_nodes.WMFN.decay_rate">
-<code class="sig-name descname">decay_rate</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.decay_rate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="pysigma.graphical.predicate_nodes.WMFN.eval_msg_cache">
+<code class="sig-name descname">eval_msg_cache</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.eval_msg_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>The message cache containing the message for evaluation, which contains the candidate particles. It is updated
+during modification phases, and used during decision phases.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="data-structures.html#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py attribute">
-<dt id="pysigma.graphical.predicate_nodes.WMFN.memory">
-<code class="sig-name descname">memory</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.memory" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="pysigma.graphical.predicate_nodes.WMFN.post_msg_cache">
+<code class="sig-name descname">post_msg_cache</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.post_msg_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>The message cache containing the true posterior belief particles. It is updated during modification phases,
+and used during decision phases.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="data-structures.html#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical.predicate_nodes.WMFN.add_link">
 <code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linkdata</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.add_link" title="Permalink to this definition">¶</a></dt>
-<dd><p>WMFN only admits one incoming link and one outgoing link.</p>
+<dd><p>WMFN admits two groups of WMVN_IN and WMVN_OUT, for posterior messages and evaluation messages respectively.</p>
+<p><cite>linkdata</cite> must specify a special attribute, either <cite>type=posterior</cite> or <cite>type=evaluation</cite>, in <cite>linkdata.attr</cite>
+dictionary.</p>
+<p>Will check if the message shape declared in <cite>linkdata</cite> is compatible with what is declared for this node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>linkdata</strong> (<a class="reference internal" href="data-structures.html#pysigma.graphical.basic_nodes.LinkData" title="pysigma.graphical.basic_nodes.LinkData"><em>LinkData</em></a>) – The linkdata to be registered.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.graphical.predicate_nodes.WMFN.update_memory">
-<code class="sig-name descname">update_memory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.update_memory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.update_memory" title="Permalink to this definition">¶</a></dt>
-<dd><p>Updates the content in memory using message from incoming link.</p>
-<p>This step should be called during the modification phase.</p>
+<dt id="pysigma.graphical.predicate_nodes.WMFN.modify">
+<code class="sig-name descname">modify</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.modify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.modify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Carries out the message update of the Metropolis-Hastings algorithm. Update eval_msg_cache and post_msg_cache.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.predicate_nodes.WMFN.quiescence">
+<em class="property">property </em><code class="sig-name descname">quiescence</code><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.quiescence" title="Permalink to this definition">¶</a></dt>
+<dd><p>For WMFN, quiescence is reached if messages stored in cache has been sent to the nearby node.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="pysigma.graphical.predicate_nodes.WMFN.compute">
-<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sends memory content toward outgoing link</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="pysigma.graphical.predicate_nodes.WMFN.check_quiesce">
-<code class="sig-name descname">check_quiesce</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/predicate_nodes.html#WMFN.check_quiesce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.check_quiesce" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overrides so that quiescence for WMFN is equivalent to visited</p>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pysigma.graphical.predicate_nodes.WMFN.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute method to be called to propagate messages during decision phases.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that in a subclass, when overriding this method, it must be decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;parent_class.compute_control</span></code> where <code class="docutils literal notranslate"><span class="pre">parent_class</span></code> is the parent class of said subclass so that
+the message propagation process can be controlled and relevant stats be set.</p>
+</div>
 </dd></dl>
 
 </dd></dl>

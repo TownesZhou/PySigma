@@ -6,6 +6,7 @@ import warnings
 from collections.abc import Iterable
 import torch
 from torch.nn import Parameter
+import torch.distributions as D
 from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
 from .basic_nodes import LinkData, VariableNode, FactorNode
 from ..utils import compatible_shape, KnowledgeServer
@@ -59,6 +60,7 @@ class WMVN(VariableNode):
 
 
     """
+
     def __init__(self, name, ks, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
         assert isinstance(ks, KnowledgeServer)
         super(WMVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list, **kwargs)
@@ -179,8 +181,8 @@ class WMVN(VariableNode):
                     assert all(MessageType.Parameter in msg.type or MessageType.Particles in msg.type
                                for msg in in_msgs), \
                         "At {}: Expect all incoming messages to contain either parameter or particles, or both, but " \
-                        "the types of the incoming messages are: {}"\
-                        .format(self.name, list(msg.type for msg in in_msgs))
+                        "the types of the incoming messages are: {}" \
+                            .format(self.name, list(msg.type for msg in in_msgs))
 
                     # Only if all incoming messages contain parameters should we combine the parameters
                     if all(MessageType.Parameter in msg.type for msg in in_msgs):
@@ -201,7 +203,7 @@ class WMVN(VariableNode):
                                 "Particle message's particles (particle value tensors and/or particle log sampling " \
                                 "density tensors) from  linkdata '{}' does not agree with that of incoming Particle " \
                                 "message from linkdata '{}'" \
-                                .format(self.name, in_ld, tmp_ld)
+                                    .format(self.name, in_ld, tmp_ld)
 
                         # 1.b Find message that only contains parameter. If they exist, use the particles from the above
                         # messages as surrogate particle list and query its log prob w.r.t. the parameter.
@@ -308,18 +310,19 @@ class LTMFN(FactorNode):
     msg_cache : Message
         The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.
     """
+
     def __init__(self, name, ks, rel_var_list, param_var, index_var_list, ran_var_list, to_draw=True, **kwargs):
         super(LTMFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Long-Term Memory Factor Node"
 
         assert isinstance(ks, KnowledgeServer)
         assert isinstance(rel_var_list, Iterable) and \
-            all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
+               all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
         assert isinstance(param_var, Variable) and param_var.metatype is VariableMetatype.Parameter
         assert isinstance(index_var_list, Iterable) and \
-            all(isinstance(v, Variable) and v.metatype is VariableMetatype.Indexing for v in index_var_list)
+               all(isinstance(v, Variable) and v.metatype is VariableMetatype.Indexing for v in index_var_list)
         assert isinstance(ran_var_list, Iterable) and \
-            all(isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_var_list)
+               all(isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_var_list)
 
         self.ks = ks
         self.rel_var_list = tuple(rel_var_list)
@@ -377,13 +380,13 @@ class LTMFN(FactorNode):
             assert 'type' in linkdata.attr.keys(), \
                 "At{}: Incoming link to a LTMFN must specify 'type' special attribute".format(self.name)
             assert linkdata.attr['type'] in ['event', 'param'], \
-                "At{}: Incoming link to a LTMFN must have 'type' special attribute with value 'event' or 'param'"\
-                .format(self.name)
+                "At{}: Incoming link to a LTMFN must have 'type' special attribute with value 'event' or 'param'" \
+                    .format(self.name)
             if linkdata.attr['type'] == 'event':
                 assert isinstance(linkdata.vn, WMVN), \
-                    "At {}: Attempting to register an event type incoming link that is not connected to a WMVN"\
-                    .format(self.name)
-                assert len(list(ld for ld in self.in_linkdata if ld.attr['type'] == 'event')) == 0,\
+                    "At {}: Attempting to register an event type incoming link that is not connected to a WMVN" \
+                        .format(self.name)
+                assert len(list(ld for ld in self.in_linkdata if ld.attr['type'] == 'event')) == 0, \
                     "At {}: Attempting to register more than one incoming event type linkdata".format(self.name)
         super(LTMFN, self).add_link(linkdata)
 
@@ -420,10 +423,11 @@ class LTMFN(FactorNode):
         param_msgs = tuple(ld.read() for ld in param_lds)
         assert all(MessageType.Parameter in msg.type for msg in param_msgs), \
             "At {}: Expect all messages from incoming param type linkdata to contain parameters, but instead found " \
-            "message types: {} from linkdata {}."\
-            .format(self.name,
-                    list(msg.type for msg in param_msgs if MessageType.Parameter not in msg.type),
-                    list(str(ld) for ld, msg in zip(param_lds, param_msgs) if MessageType.Parameter not in msg.type))
+            "message types: {} from linkdata {}." \
+                .format(self.name,
+                        list(msg.type for msg in param_msgs if MessageType.Parameter not in msg.type),
+                        list(
+                            str(ld) for ld, msg in zip(param_lds, param_msgs) if MessageType.Parameter not in msg.type))
 
         # Combine parameter messages and extract the parameter tensor
         param = sum(param_msgs, Message.identity()).parameter
@@ -507,11 +511,12 @@ class PSFN(FactorNode):
         The parameter buffer. Should be a tensor of shape ``(batch_shape + param_shape)``. Value defaults to a zero
         tensor, when `init_param` is None during initialization.
     """
+
     def __init__(self, name, batch_shape, param_shape, init_param=None, **kwargs):
         assert isinstance(batch_shape, torch.Size)
         assert isinstance(param_shape, torch.Size)
         assert init_param is None or \
-            (isinstance(init_param, torch.Tensor) and init_param.shape == batch_shape + param_shape)
+               (isinstance(init_param, torch.Tensor) and init_param.shape == batch_shape + param_shape)
         super(PSFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Parameter Store Factor Node"
 
@@ -598,6 +603,7 @@ class PBFN(FactorNode):
     e_shape : torch.Size
         Set by `event_shape`.
     """
+
     def __init__(self, name, batch_shape, event_shape, **kwargs):
         assert isinstance(batch_shape, torch.Size)
         assert isinstance(event_shape, torch.Size)
@@ -667,12 +673,12 @@ class PBFN(FactorNode):
         """
         assert mode in ['joint', 'marginal']
         assert obs is None or (mode == 'joint' and isinstance(obs, torch.Tensor) and obs.dim() == 2) or \
-            (mode == 'marginal' and isinstance(obs, Iterable) and
-             all(isinstance(o, torch.Tensor) and o.dim() == 2 for o in obs))
+               (mode == 'marginal' and isinstance(obs, Iterable) and
+                all(isinstance(o, torch.Tensor) and o.dim() == 2 for o in obs))
         assert weight is None or \
-            (mode == 'joint' and isinstance(weight, torch.Tensor) and weight.dim() == 1 and torch.all(weight > 0)) or \
-            (mode == 'marginal' and isinstance(weight, Iterable) and
-             all(isinstance(w, torch.Tensor) and w.dim() == 1 and torch.all(w > 0) for w in weight))
+               (mode == 'joint' and isinstance(weight, torch.Tensor) and weight.dim() == 1 and torch.all(weight > 0)) or \
+               (mode == 'marginal' and isinstance(weight, Iterable) and
+                all(isinstance(w, torch.Tensor) and w.dim() == 1 and torch.all(w > 0) for w in weight))
 
         # Set buffer to identity message and return directly if obs is None
         if obs is None:
@@ -685,31 +691,31 @@ class PBFN(FactorNode):
         if mode == 'joint':
             assert obs.shape[-1] == sum(self.e_shape), \
                 "At {}: in 'joint' perception mode, the size of the observation's event dimension must match the " \
-                "sum of random variable sizes. Expect {}, but encountered {}."\
-                .format(self.name, sum(self.e_shape), obs.shape[-1])
+                "sum of random variable sizes. Expect {}, but encountered {}." \
+                    .format(self.name, sum(self.e_shape), obs.shape[-1])
             assert weight is None or weight.shape[0] == obs.shape[0], \
                 "At {}: in 'joint' perception mode, when specified, the weight tensor must have same length as the " \
                 "observation tensor's first dimension. Found weight length {}, and observation tensor's first " \
-                "dimension size {}"\
-                .format(self.name, weight.shape[0], obs.shape[0])
+                "dimension size {}" \
+                    .format(self.name, weight.shape[0], obs.shape[0])
         else:
             assert len(obs) == len(self.e_shape), \
                 "At {}: in 'marginal' perception mode, the number of observations must match the number of random " \
                 "variables. Found {} entries in `obs` but {} entries in `self.e_shape`." \
-                .format(self.name, len(obs), len(self.e_shape))
+                    .format(self.name, len(obs), len(self.e_shape))
             assert len(obs) == len(weight), \
                 "At {}: in 'marginal' perception mode, the number of observations must match the number of weights. " \
                 "Found {} entries in `obs` but {} entries in `weight`." \
-                .format(self.name, len(obs), len(weight))
+                    .format(self.name, len(obs), len(weight))
             assert all(o.shape[-1] == self.e_shape[i] for i, o in enumerate(obs)), \
                 "At {}: in 'marginal' perception mode, the size of each marginal observation's event dimension must " \
-                "match the size of the corresponding random variable. Expect event sizes {}, but encountered {}."\
-                .format(self.name, list(self.e_shape), list(o.shape[-1] for o in obs))
+                "match the size of the corresponding random variable. Expect event sizes {}, but encountered {}." \
+                    .format(self.name, list(self.e_shape), list(o.shape[-1] for o in obs))
             assert all(o.shape[0] == w.shape[0] for o, w in zip(obs, weight)), \
                 "At {}: the first dimension size of each observation tensor in `obs` should match the length of the " \
                 "corresponding weight tensor in `weight`. Found observation first dimension sizes {}, and weight " \
-                "lengths {}."\
-                .format(self.name, list(o.shape[0] for o in obs), list(w.shape[0] for w in weight))
+                "lengths {}." \
+                    .format(self.name, list(o.shape[0] for o in obs), list(w.shape[0] for w in weight))
 
         # If mode is 'joint', split joint events and create sparse weight lattice
         if mode == 'joint':
@@ -731,7 +737,7 @@ class PBFN(FactorNode):
             ptcl_weight = ptcl_weight.view(torch.Size([1] * len(self.b_shape)) + s_shape).expand(self.b_shape + s_shape)
 
             # Uniform log densities
-            log_densities = tuple(torch.zeros(obs.shape[0], dtype=torch.float),) * len(self.e_shape)
+            log_densities = tuple(torch.zeros(obs.shape[0], dtype=torch.float), ) * len(self.e_shape)
 
             perceptual_msg = Message(MessageType.Particles,
                                      batch_shape=self.b_shape, sample_shape=s_shape, event_shape=self.e_shape,
@@ -791,89 +797,213 @@ class PBFN(FactorNode):
 
 
 class WMFN(FactorNode):
-    """Working Memory Factor Node.
+    """Working Memory Factor Node implementing the message update step of the Markov Chain Monte Carlo (MCMC) inference
+    procedure.
 
-    Effectively a buffer node that contains a memory buffer, WMFN mixes the incoming message with its stored memory by
-    taking a weight sum during the modification phase, updates its memory with the result, and sends this updated memory
-    during the decision phase at the next cognitive cycle. The first two steps are performed by `update_memory()`,
-    whereas sending the message is, as always, performed by `compute()`.
+    Metropolis-Hastings algorithm is implemented herein for the MCMC procedure.
 
-    The weighted sum mixture behavior can be described as follows::
+    Due to the nature of the M-H algorithm, the candidate particles generated by the random walk distribution needs to
+    be evaluated against the target function. The evaluated values of the candidate particles are then compared to the
+    values of the posterior particles from last cycle representing the previous posterior belief. A coin is then flipped
+    with a probability equal to the ratio of the candidate particle's weight to the posterior particle's weight to
+    determine if the posterior particle is to be replaced by the candidate particle. Otherwise, the current particle is
+    retained. This process will yield a posterior particle list of this cycle representing the current belief. Then,
+    a step of random walk is performed on the yielded posterior particles to generate the candidate particles to be
+    evaluated in the next cycle.
 
-        new_memory = new_msg + (1 - decay_rate) * old_memory
+    To accommodate to this procedure, in any particle-based MCMC predicate, the WMFN is connected to TWO groups of
+    WMVN_IN and WMVN_OUT, named with suffix `_EVAL` and `_POST` respectively. The `WMVN_IN_EVAL` and `WMVN_OUT_EVAL`
+    together is responsible for sending and receiving the candidate message (message that contains the randomly walked
+    candidate particles) to and from the Gamma node to be evaluated by the target functions. On the other hand,
+    `WMVN_IN_POST` and `WMVN_OUT_POST` together will send the true posterior belief messages, as well as receiving the
+    marginal posterior from other part of the graph evaluated on the true posterior belief particles.
 
-    where ``decay_rate`` is a real number in range [0, 1]. The vector addition and scalar multiplication for messages
-    of different types are mathematically defined by the Message class. See
-    :ref:`Message class notes on arithmetic structures<message-arithmetic-structures-notes>` for more details.
+    Since the candidate particles and the posterior particles need to be evaluated against the same set of target
+    functions, both groups of WMVN_IN and WMVN_OUT should always connect to the same set of Conditionals where this
+    predicate appears as an action or condact pattern. However, since only `WMVN_OUT_POST` sends the true posterior
+    belief messages, it is `WMVN_OUT_POST` rather than `WMVN_OUT_EVAL` that should connect to the condition subgraph in
+    order to propagate the posterior belief to other parts of the graph.
 
-    The incoming message will always be cloned before weighted sum update is performed. This is to prevent
-    any components of the memory message from in-place change by some parts elsewhere in the graph.
+    In the condition subgraph, both `WMVN_OUT_POST` and `WMVN_OUT_EVAL` should be associated with the same set of
+    pattern random variables to ensure message exclusion.
 
-    Admits only one incoming and one outgoing links. Note that WMFN does not check the message shape of messages and
-    memory contents. These should be guaranteed compatible by linkdata and neighboring nodes.
+    To be more specific:
 
-    The `check_quiesce()` method is overridden so that PSFN's quiescence state is determined by whether this node is
-    visited during the decision phase, i.e., whether `compute()` is called.
+        - If the predicate appears only as a condition pattern, then `WMVN_OUT_POST` serves as the only message source
+          and it is the only node that is connected to the corresponding conditional alpha subgraph.
+        - If the predicate appears only as an action pattern, then both `WMVN_IN_POST` and `WMVN_IN_EVAL` should be
+          connected from the action subgraphs *with the same random variables*. `WMVN_OUT_POST` and `WMVN_OUT_EVAL`
+          should skip-connect to the action beta subgraph to directly provide particles for evaluation purpose.
+        - If the predicate appears as a condact pattern, then it is the combination of the above two. In other words,
+          `WMVN_OUT_POST` will both connect to the condition alpha subgraph as well as to the action beta subgraph.
+
+    By default, the MultivariateNormal distribution with identity covariance matrix is chosen as the random walk
+    distribution.
 
     Parameters
     ----------
     name : str
-        The name of this node
-    decay_rate : float
-        The decay rate of the memory contents.
+        Name of this factor node
+    index_var_list : Iterable of Variable
+        Iterable of indexing variables. Corresponds to the sample dimensions. Used to check ``s_shape`` attribute of
+        incoming messages. Note that the indexing variables corresponds to the dimensions of the true posterior belief
+        particle messages. It is expected that the sample dimension size of the messages from WMVN_IN and to
+        WMVN_OUT_EVAL will be twice as large as the size of the indexing variables declared herein.
+    ran_var_list : Iterable of Variable
+        Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of
+        incoming messages.
 
     Attributes
     ----------
-    decay_rate
-    memory
-    """
-    def __init__(self, name, decay_rate=1, **kwargs):
-        assert isinstance(decay_rate, (float, int)) and 0 <= decay_rate <= 1
-        super(WMFN, self).__init__(name, **kwargs)
-        self.pretty_log["node type"] = "Working Memory Function Node"
+    eval_msg_cache : Message
+        The message cache containing the message for evaluation, which contains the candidate particles. It is updated
+        during modification phases, and used during decision phases.
+    post_msg_cache : Message
+        The message cache containing the true posterior belief particles. It is updated during modification phases,
+        and used during decision phases.
 
-        self.decay_rate = decay_rate
-        # memory buffer. Initialized to a universal identity message
-        self.memory = Message.identity()
+    """
+
+    def __init__(self, name, index_var_list, ran_var_list, **kwargs):
+        assert isinstance(index_var_list, Iterable) and \
+               (isinstance(v, Variable) and v.metatype is VariableMetatype.Indexing for v in index_var_list)
+        assert isinstance(ran_var_list, Iterable) and \
+               (isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_var_list)
+        super(WMFN, self).__init__(name, **kwargs)
+        self.pretty_log["node type"] = "Working Memory Factor Node"
+
+        self.index_vars = tuple(index_var_list)
+        self.ran_vars = tuple(ran_var_list)
+        self.s_shape = torch.Size([v.size for v in self.index_vars])
+        self.e_shape = torch.Size([v.size for v in self.ran_vars])
+
+        self.eval_msg_cache = Message.identity()  # Initialize to identity
+        self.post_msg_cache = Message.identity()  # Initialize to identity
+        self.ld_in_eval, self.ld_out_eval, self.ld_in_post, self.ld_out_post = None, None, None, None
+
+        # Default to using MultivariateNormal distributions with identity covariance matrix as the random walk
+        # distributions. One random walk distribution for one random variable.
+        self.walk_dist = [D.MultivariateNormal(
+            loc=torch.zeros(s_size, e_size, device=self.device),  # Default to 0. Will change each modification phase.
+            covariance_matrix=torch.eye(e_size, device=self.device).unsqueeze(dim=0).expand(s_size, -1, -1)
+        ) for s_size, e_size in zip(self.s_shape, self.e_shape)]
 
     def add_link(self, linkdata):
-        """WMFN only admits one incoming link and one outgoing link.
+        """WMFN admits two groups of WMVN_IN and WMVN_OUT, for posterior messages and evaluation messages respectively.
 
+        `linkdata` must specify a special attribute, either `type=posterior` or `type=evaluation`, in `linkdata.attr`
+        dictionary.
+
+        Will check if the message shape declared in `linkdata` is compatible with what is declared for this node.
+
+        Parameters
+        ----------
+        linkdata : LinkData
+            The linkdata to be registered.
         """
+        assert isinstance(linkdata.vn, WMVN), "In {}: WMFN can only be connected to WMVN.".format(self.name)
+        assert 'type' in linkdata.attr.keys() and linkdata.attr['type'] in ['evaluation', 'posterior'], \
+            "In {}: Linkdata must specify a special attribute `type` with value `posterior` or `evaluation`."\
+            .format(self.name)
         if linkdata.to_fn:
-            assert len(self.in_linkdata) == 0
+            if linkdata.attr['type'] == 'evaluation':
+                assert self.ld_in_eval is None, "In {}: Duplicate connection to WMVN_IN_EVAL.".format(self.name)
+                self.ld_in_eval = linkdata
+            else:
+                assert self.ld_in_post is None, "In {}: Duplicate connection to WMVN_IN_POST.".format(self.name)
+                self.ld_in_post = linkdata
         else:
-            assert len(self.out_linkdata) == 0
+            if linkdata.attr['type'] == 'evaluation':
+                assert self.ld_out_eval is None, "In {}: Duplicate connection to WMVN_OUT_EVAL.".format(self.name)
+                self.ld_out_eval = linkdata
+            else:
+                assert self.ld_out_post is None, "In {}: Duplicate connection to WMVN_OUT_POST.".format(self.name)
+                self.ld_out_post = linkdata
+
+        # Check shape
+        s_shape, e_shape = linkdata.msg_shape[2:]
+        assert s_shape == self.s_shape, \
+            "In {}: linkdata should have the same sample shape as what is declared for this node. Expect {}, but " \
+            "found {}." \
+            .format(self.name, self.s_shape, s_shape)
+        assert e_shape == self.e_shape, \
+            "In {}: linkdata should have the same event shape as what is declared for this node. Expect {}, but " \
+            "found {}." \
+            .format(self.name, self.e_shape, e_shape)
 
         super(WMFN, self).add_link(linkdata)
 
-    def update_memory(self):
-        """Updates the content in memory using message from incoming link.
-
-        This step should be called during the modification phase.
+    def modify(self):
         """
-        assert len(self.in_linkdata) > 0
-        in_ld = self.in_linkdata[0]
-        # Clone incoming message
-        new_msg = in_ld.read().clone()
-        assert compatible_shape(self.memory, new_msg), \
-            "At {}: found incompatible message shapes. The new message has shape {}, whereas the current working " \
-            "memory content has shape {}".format(self.name, new_msg.shape, self.memory.shape)
+        Carries out the message update of the Metropolis-Hastings algorithm. Update eval_msg_cache and post_msg_cache.
 
-        # perform weighted sum update
-        self.memory = new_msg + self.memory * (1 - self.decay_rate)
+        """
+        # Get message from incoming link and check shape compatibility
+        in_eval_msg, in_post_msg = self.ld_in_eval.read(), self.ld_in_post.read()
+        assert isinstance(in_eval_msg, Message) and isinstance(in_post_msg, Message)
+        # If either message is empty, then messages haven't propagated here yet. No modification and defer to next cycle
+        if in_eval_msg.isid or in_post_msg.isid:
+            return
+        # Not empty message, check type
+        assert MessageType.Particles in in_eval_msg.type and MessageType.Particles in in_post_msg.type, \
+            "In {}: Expect all incoming messages to be Particles type, but instead found type {}, {} for in_eval_msg " \
+            "and in_post_msg respectively.".format(self.name, in_eval_msg.type, in_post_msg.type)
 
+        # Step 1: Generate new posterior belief
+        # 1.1 Summarize (by multiplying) weights over batch dimensions
+        b_shape = in_eval_msg.b_shape
+        in_eval_weight_sum = in_eval_msg.weight.log().sum(dim=list(range(len(b_shape)))).exp()
+        in_post_weight_sum = in_post_msg.weight.log().sum(dim=list(range(len(b_shape)))).exp()
+        # 1.2 Marginalize (by summing) weight w.r.t. each random variable respectively
+        in_eval_var_weights, in_post_var_weights = [], []
+        for dim in range(len(self.s_shape)):
+            dims = list(range(len(self.s_shape)))
+            dims.remove(dim)
+            in_eval_var_weights.append(in_eval_weight_sum.sum(dim=dims))
+            in_post_var_weights.append(in_post_weight_sum.sum(dim=dims))
+        # 1.3 Compute ratio for each random variable's marginal particles
+        var_ratio = [(eval_val / post_val).clamp(0., 1.)    # Clamp values in range [0, 1]
+                     for eval_val, post_val in zip(in_eval_var_weights, in_post_var_weights)]
+        # 1.4 Instantiate Bernoulli distribution to flip coins for each random variable
+        update_dist = [D.Bernoulli(ratio) for ratio in var_ratio]
+        # 1.5 Flip coins to obtain binary mask for updating particle values
+        # Unsqueeze an event dimension for the mask so that it is broadcastable to the particles
+        update_mask = [dist.sample().unsqueeze(dim=-1) for dist in update_dist]
+        update_mask_inv = [mask * -1 + 1 for mask in update_mask]       # Inverse mask
+        # 1.6 Apply mask to obtain new posterior particles
+        new_post_ptcl = [eval_ptcl * mask + post_ptcl * inv_mask
+                         for eval_ptcl, post_ptcl, mask, inv_mask
+                         in zip(in_eval_msg.particles, in_post_msg.particles, update_mask, update_mask_inv)]
+        # 1.7 Instantiate new posterior belief message
+        # MCMC particles message will have uniform weight and log sampling densities
+        uniform_log_densities = [torch.zeros(s_size, device=self.device) for s_size in self.s_shape]
+        self.post_msg_cache = Message(MessageType.Particles,
+                                      batch_shape=b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                                      particles=new_post_ptcl, weight=1, log_densities=uniform_log_densities)
+
+        # Step 2. Take a random walk step to generate new evaluation (candidate) particles message based on the above
+        #   new posterior message
+        new_eval_ptcl = []
+        for post_ptcl, walk_dist in zip(new_post_ptcl, self.walk_dist):
+            walk_dist.loc = post_ptcl           # Set posterior particles as the mean
+            eval_ptcl = walk_dist.sample()      # Draw one sample
+            new_eval_ptcl.append(eval_ptcl)
+        self.eval_msg_cache = Message(MessageType.Particles,
+                                      batch_shape=b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                                      particles=new_eval_ptcl, weight=1, log_densities=uniform_log_densities)
+
+    @property
+    def quiescence(self):
+        """For WMFN, quiescence is reached if messages stored in cache has been sent to the nearby node.
+
+        """
+        return self.visited
+
+    @FactorNode.compute_control
     def compute(self):
-        """Sends memory content toward outgoing link
+        """Send contents in cache to WMVN_OUT_POST and WMVN_OUT_EVAL respectively.
 
         """
-        super(WMFN, self).compute()
-        assert len(self.out_linkdata) > 0
-        self.out_linkdata[0].write(self.memory)
-
-    def check_quiesce(self):
-        """Overrides so that quiescence for WMFN is equivalent to visited
-
-        """
-        self.quiescence = self.visited
-        return self.quiescence
+        assert self.ld_out_post is not None and self.ld_out_eval is not None
+        self.ld_out_post.write(self.post_msg_cache)
+        self.ld_out_eval.write(self.eval_msg_cache)

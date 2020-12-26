@@ -548,19 +548,55 @@ not be empty.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="pysigma.utils.DistributionServer._categorical_param2dist">
-<em class="property">static </em><code class="sig-name descname">_categorical_param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_param2dist" title="Permalink to this definition">¶</a></dt>
-<dd><div class="admonition-todo admonition" id="id3">
-<p class="admonition-title">Todo</p>
-<p>TODO: different parameter scheme and dist_info schema specification</p>
-</div>
-<p>For Categorical distribution, <cite>params</cite> are assumed the natural parameters, unless <cite>sparam_type=regulars</cite> is
-declared in <cite>dist_info</cite>, in which case <cite>params</cite> will be taken as the <cite>probs</cite> argument to the PyTorch
-Categorical distribution.</p>
-<p>Mapping from natural parameter to regular parameter (corresponding to the <cite>probs</cite> argument):</p>
+<dt id="pysigma.utils.DistributionServer._categorical_param_exp2reg">
+<em class="property">static </em><code class="sig-name descname">_categorical_param_exp2reg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_param_exp2reg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_param_exp2reg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion from natural parameters to regular parameters for Categorical distribution:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">n_1</span><span class="p">,</span> <span class="n">n_2</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">n_k</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="n">exp</span><span class="p">(</span><span class="n">n_1</span><span class="p">),</span> <span class="n">exp</span><span class="p">(</span><span class="n">n_2</span><span class="p">),</span> <span class="o">...</span><span class="p">,</span> <span class="n">exp</span><span class="p">(</span><span class="n">n_k</span><span class="p">)]</span>
 </pre></div>
 </div>
+<p>where <cite>[p_1, p_2, …, p_k]</cite> corresponds to the <cite>probs</cite> attribute to a PyTorch Categorical distribution
+instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>param</strong> (<em>torch.Tensor</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._categorical_param_reg2exp">
+<em class="property">static </em><code class="sig-name descname">_categorical_param_reg2exp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_param_reg2exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_param_reg2exp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion from regular parameters to natural parameters for Categorical distribution:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">p_1</span><span class="p">,</span> <span class="n">p_2</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">p_k</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="n">log</span><span class="p">(</span><span class="n">p_1</span><span class="p">),</span> <span class="n">log</span><span class="p">(</span><span class="n">p_2</span><span class="p">),</span> <span class="o">...</span><span class="p">,</span> <span class="n">log</span><span class="p">(</span><span class="n">p_k</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>where <cite>[p_1, p_2, …, p_k]</cite> corresponds to the <cite>probs</cite> attribute to a PyTorch Categorical distribution
+instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>param</strong> (<em>torch.Tensor</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._categorical_param2dist">
+<em class="property">static </em><code class="sig-name descname">_categorical_param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_param2dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>For Categorical distribution, <cite>params</cite> are assumed the natural parameters, unless <cite>param_type=regular</cite> is
+specified in <cite>dist_info</cite>, in which case <cite>params</cite> will be taken as the <cite>probs</cite> argument to the PyTorch
+Categorical distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -586,11 +622,9 @@ outcomes of the categorical random variable.</p></li>
 <dl class="py method">
 <dt id="pysigma.utils.DistributionServer._categorical_dist2param">
 <em class="property">static </em><code class="sig-name descname">_categorical_dist2param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._categorical_dist2param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._categorical_dist2param" title="Permalink to this definition">¶</a></dt>
-<dd><div class="admonition-todo admonition" id="id4">
-<p class="admonition-title">Todo</p>
-<p>TODO: different parameter scheme and dist_info schema specification</p>
-</div>
-<p>For Categorical distribution, params assumed by default to be the values of ‘probs’ attribute</p>
+<dd><p>For Categorical distribution, <cite>params</cite> are assumed the natural parameters, unless <cite>param_type=regular</cite> is
+specified in <cite>dist_info</cite>, in which case <cite>params</cite> will be taken as the <cite>probs</cite> argument to the PyTorch
+Categorical distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -612,11 +646,60 @@ outcomes of the categorical random variable.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt id="pysigma.utils.DistributionServer._normal_param_exp2reg">
+<em class="property">static </em><code class="sig-name descname">_normal_param_exp2reg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._normal_param_exp2reg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._normal_param_exp2reg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion from natural parameters to regular parameters for a normal distribution with unknown variance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mu</span> <span class="o">=</span> <span class="o">-</span> <span class="n">n_1</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_2</span>          <span class="p">(</span><span class="n">mean</span> <span class="n">of</span> <span class="n">a</span> <span class="n">normal</span> <span class="n">distribution</span><span class="p">)</span>
+<span class="n">std</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_2</span><span class="p">)</span>      <span class="p">(</span><span class="n">standard</span> <span class="n">deviation</span> <span class="n">of</span> <span class="n">a</span> <span class="n">normal</span> <span class="n">distribution</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>Iterable of torch.Tensor</em>) – length 2.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Length 2. Mean and standard deviation respectively.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple of torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._normal_param_reg2exp">
+<em class="property">static </em><code class="sig-name descname">_normal_param_reg2exp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._normal_param_reg2exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._normal_param_reg2exp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion from regular parameters to normal parameters for a normal distribution with unknown variance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n_1</span> <span class="o">=</span> <span class="n">mu</span> <span class="o">/</span> <span class="n">std</span> <span class="o">**</span> <span class="mi">2</span>
+<span class="n">n_2</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">std</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>Iterable of torch.Tensor</em>) – length 2. Mean and standard deviation respectively.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>length 2.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Iterable of torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pysigma.utils.DistributionServer._normal_param2dist">
 <em class="property">static </em><code class="sig-name descname">_normal_param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._normal_param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._normal_param2dist" title="Permalink to this definition">¶</a></dt>
-<dd><p>For Univariate Normal distributions, <code class="docutils literal notranslate"><span class="pre">param_shape</span></code> is <code class="docutils literal notranslate"><span class="pre">[2]</span></code>. The first slice of the input parameter
+<dd><p>For Univariate Normal distributions, <code class="docutils literal notranslate"><span class="pre">param_shape</span></code> is <code class="docutils literal notranslate"><span class="pre">[2]</span></code>. If <cite>param_type=regular</cite> is specified in
+<cite>dist_info</cite>, they will be interpreted as regular parameters. In this case, the first slice of the parameter
 tensor will be interpreted as the <cite>loc</cite> argument to the PyTorch Normal distribution, and the second slice
-will be interpreted as the <cite>scale</cite> argument.</p>
+will be interpreted as the <cite>scale</cite> argument. Otherwise, they will be interpreted as the two natural
+parameters of a normal distribution with unknown variance, denoted <cite>n_1</cite> and <cite>n_2</cite> respectively.</p>
+<p>Translation from natural parameters to regular parameters for a normal distribution with unknown variance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mu</span> <span class="o">=</span> <span class="o">-</span> <span class="n">n_1</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_2</span>          <span class="p">(</span><span class="n">mean</span> <span class="n">of</span> <span class="n">a</span> <span class="n">normal</span> <span class="n">distribution</span><span class="p">)</span>
+<span class="n">std</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_2</span><span class="p">)</span>      <span class="p">(</span><span class="n">standard</span> <span class="n">deviation</span> <span class="n">of</span> <span class="n">a</span> <span class="n">normal</span> <span class="n">distribution</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -640,9 +723,16 @@ will be interpreted as the <cite>scale</cite> argument.</p>
 <dl class="py method">
 <dt id="pysigma.utils.DistributionServer._normal_dist2param">
 <em class="property">static </em><code class="sig-name descname">_normal_dist2param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._normal_dist2param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._normal_dist2param" title="Permalink to this definition">¶</a></dt>
-<dd><p>For Univariate Normal distribution, the returned parameter tensor will be <code class="docutils literal notranslate"><span class="pre">dist.loc</span></code> and <code class="docutils literal notranslate"><span class="pre">dist.scale</span></code>
-stacked together along a new event dimension appended to as the last dimension. The first slice will be
-<code class="docutils literal notranslate"><span class="pre">dist.loc</span></code> and the second slice be <code class="docutils literal notranslate"><span class="pre">dist.scale</span></code>.</p>
+<dd><p>For Univariate Normal distributions, <code class="docutils literal notranslate"><span class="pre">param_shape</span></code> is <code class="docutils literal notranslate"><span class="pre">[2]</span></code>. If <cite>param_type=regular</cite> is specified in
+<cite>dist_info</cite>, they will be interpreted as regular parameters. In this case, the first slice of the parameter
+tensor will be interpreted as the <cite>loc</cite> argument to the PyTorch Normal distribution, and the second slice
+will be interpreted as the <cite>scale</cite> argument. Otherwise, they will be interpreted as the two natural
+parameters of a normal distribution with unknown variance, denoted <cite>n_1</cite> and <cite>n_2</cite> respectively.</p>
+<p>Translation from regular parameters to normal parameters for a normal distribution with unknown variance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n_1</span> <span class="o">=</span> <span class="n">mu</span> <span class="o">/</span> <span class="n">std</span> <span class="o">**</span> <span class="mi">2</span>
+<span class="n">n_2</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">std</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -664,13 +754,63 @@ stacked together along a new event dimension appended to as the last dimension. 
 </dd></dl>
 
 <dl class="py method">
+<dt id="pysigma.utils.DistributionServer._multivariate_normal_param_exp2reg">
+<em class="property">static </em><code class="sig-name descname">_multivariate_normal_param_exp2reg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._multivariate_normal_param_exp2reg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._multivariate_normal_param_exp2reg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion from natural parameters to regular parameters for MultivariateNormal distribution, assuming the
+event size is <cite>n</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mu</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">matmul</span><span class="p">(</span><span class="n">inv</span><span class="p">(</span><span class="n">p2</span><span class="p">),</span> <span class="n">p1</span><span class="p">)</span>      <span class="p">(</span><span class="n">mean</span> <span class="n">vector</span><span class="p">)</span>
+<span class="n">sigma</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">inv</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span>               <span class="p">(</span><span class="n">covariance_matrix</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>Iterable of torch.Tensor</em>) – length 2. Natural parameter <cite>p1</cite>, <cite>p2</cite> respectively. <cite>p1</cite> has param shape <cite>[n]</cite> as the last dimension,
+<cite>p2</cite> has param shape <cite>[n, n]</cite> as the last two dimensions.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>length 2. Regular paremeter <cite>loc</cite>, <cite>covariance_matrix</cite> respectively. <cite>loc</cite> has param shape <cite>[n]</cite> as the
+last dimension, <cite>covariance_matrix</cite> has param shape <cite>[n, n]</cite> as the last two dimensions.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple of torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.utils.DistributionServer._multivariate_normal_param_reg2exp">
+<em class="property">static </em><code class="sig-name descname">_multivariate_normal_param_reg2exp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._multivariate_normal_param_reg2exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._multivariate_normal_param_reg2exp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion from regular parameters to natural parameters for MultivariateNormal distribution, assuming the
+event size is <cite>n</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p1</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">inv</span><span class="p">(</span><span class="n">sigma</span><span class="p">),</span> <span class="n">mu</span><span class="p">)</span>
+<span class="n">p2</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="n">inv</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>Iterable of torch.Tensor</em>) – length 2. Regular parameter <cite>loc</cite>, <cite>covariance_matrix</cite> respectively. <cite>loc</cite> has param shape <cite>[n]</cite> as the
+last dimension, <cite>covariance_matrix</cite> has param shape <cite>[n, n]</cite> as the last two dimensions.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>length 2. Natural parameter <cite>p1</cite>, <cite>p2</cite> respectively. <cite>p1</cite> has param shape <cite>[n]</cite> as the last dimension,
+<cite>p2</cite> has param shape <cite>[n, n]</cite> as the last two dimensions.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple of torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pysigma.utils.DistributionServer._multivariate_normal_param2dist">
 <em class="property">static </em><code class="sig-name descname">_multivariate_normal_param2dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._multivariate_normal_param2dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._multivariate_normal_param2dist" title="Permalink to this definition">¶</a></dt>
-<dd><p>For Multivariate Normal distribution, parameters need to consist of a 1-dimensional mean vector and a
-2-dimensional covariance matrix. To represent both within a 1-dimensional event dimension, we interpret
-<cite>params</cite> as a mean vector stacked with a flattened covariance matrix.</p>
-<p>Therefore, assuming the event size is <cite>n</cite>, then <cite>params</cite>’s last dimension should have a size of <cite>(n+1)n</cite>,
-with <code class="docutils literal notranslate"><span class="pre">params[:n]</span></code> being the mean vector, and <code class="docutils literal notranslate"><span class="pre">params[n:</span> <span class="pre">(n+1)n]</span></code> being the flattened covariance matrix.</p>
+<dd><p>For Multivariate Normal distribution, the parameter size should equal to <cite>(n+1)n</cite> where <cite>n</cite> is the event
+size.</p>
+<p>By default, the first <cite>n</cite> slices, i.e. <cite>params[:n]</cite> will be taken as the first natural parameter <cite>p1</cite>, and
+the rest <cite>n*n</cite> slices, i.e. <cite>params[n:]</cite> will be taken as the second natural parameter <cite>p2</cite>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">param_type=regular</span></code> is specified in <cite>dist_info</cite>, then the first <cite>n</cite> slices of <cite>params</cite> will be taken
+directly as the mean vector <cite>mu</cite>, whereas the rest of the <cite>n*n</cite> slices will be taken directly as the
+covariance matrix.</p>
 <p>The value of <cite>n</cite> will be inferred from the given <cite>params</cite>. An ValueError will be thrown if it cannot be
 inferred.</p>
 <dl class="field-list simple">
@@ -699,8 +839,17 @@ inferred.</p>
 <dl class="py method">
 <dt id="pysigma.utils.DistributionServer._multivariate_normal_dist2param">
 <em class="property">static </em><code class="sig-name descname">_multivariate_normal_dist2param</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist</span></em>, <em class="sig-param"><span class="n">dist_info</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pysigma/utils.html#DistributionServer._multivariate_normal_dist2param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.utils.DistributionServer._multivariate_normal_dist2param" title="Permalink to this definition">¶</a></dt>
-<dd><p>For Multivariate Normal distribution, the returned parameter tensor will be <code class="docutils literal notranslate"><span class="pre">dist.loc</span></code> concatenated with a
-flattened <code class="docutils literal notranslate"><span class="pre">dist.covariance_matrix</span></code> along the parameter dimension.</p>
+<dd><p>For Multivariate Normal distribution, unless <code class="docutils literal notranslate"><span class="pre">param_type=regular</span></code> is specified in <cite>dist_info</cite>, the
+returned parameter tensor will be the concatenation of the distribution’s first and (flattened) second
+natural parameter. Otherwise, it will be <code class="docutils literal notranslate"><span class="pre">dist.loc</span></code> concatenated with a flattened
+<code class="docutils literal notranslate"><span class="pre">dist.covariance_matrix</span></code>.</p>
+<p>Conversion from regular parameters to natural parameters for MultivariateNormal distribution, assuming the
+event size is <cite>n</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p1</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">inv</span><span class="p">(</span><span class="n">sigma</span><span class="p">),</span> <span class="n">mu</span><span class="p">)</span>
+<span class="n">p2</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="n">inv</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <cite>mu</cite> is the mean vector, <cite>sigma</cite> the covariance matrix.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

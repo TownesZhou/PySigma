@@ -717,19 +717,52 @@
 <span class="sd">        Categorical distribution</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># region</span>
+<div class="viewcode-block" id="DistributionServer._categorical_param_exp2reg"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_param_exp2reg">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_categorical_param_exp2reg</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Conversion from natural parameters to regular parameters for Categorical distribution::</span>
+
+<span class="sd">               [n_1, n_2, ..., n_k] -&gt; [exp(n_1), exp(n_2), ..., exp(n_k)]</span>
+
+<span class="sd">            where `[p_1, p_2, ..., p_k]` corresponds to the `probs` attribute to a PyTorch Categorical distribution</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            param : torch.Tensor</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            torch.Tensor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">param</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DistributionServer._categorical_param_reg2exp"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_param_reg2exp">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_categorical_param_reg2exp</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Conversion from regular parameters to natural parameters for Categorical distribution::</span>
+
+<span class="sd">               [p_1, p_2, ..., p_k] -&gt; [log(p_1), log(p_2), ..., log(p_k)]</span>
+
+<span class="sd">            where `[p_1, p_2, ..., p_k]` corresponds to the `probs` attribute to a PyTorch Categorical distribution</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            param : torch.Tensor</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            torch.Tensor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">param</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="DistributionServer._categorical_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_categorical_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            .. todo::</span>
-<span class="sd">               TODO: different parameter scheme and dist_info schema specification</span>
-
-<span class="sd">            For Categorical distribution, `params` are assumed the natural parameters, unless `sparam_type=regulars` is</span>
-<span class="sd">            declared in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch</span>
+<span class="sd">            For Categorical distribution, `params` are assumed the natural parameters, unless `param_type=regular` is</span>
+<span class="sd">            specified in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch</span>
 <span class="sd">            Categorical distribution.</span>
-
-<span class="sd">            Mapping from natural parameter to regular parameter (corresponding to the `probs` argument)::</span>
-
-<span class="sd">               [n_1, n_2, ..., n_k] -&gt; [exp(n_1), exp(n_2), ..., exp(n_k)]</span>
 
 <span class="sd">            Parameters</span>
 <span class="sd">            ----------</span>
@@ -748,16 +781,19 @@
 <span class="sd">            --------</span>
 <span class="sd">            `torch.distributions.Categorical &lt;https://pytorch.org/docs/stable/distributions.html#categorical&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">probs</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;param_type&#39;</span> <span class="ow">in</span> <span class="n">dist_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">dist_info</span><span class="p">[</span><span class="s1">&#39;param_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;regular&#39;</span><span class="p">:</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">_categorical_param_exp2reg</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">probs</span><span class="o">=</span><span class="n">probs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dist</span></div>
 
 <div class="viewcode-block" id="DistributionServer._categorical_dist2param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._categorical_dist2param">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_categorical_dist2param</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            .. todo::</span>
-<span class="sd">               TODO: different parameter scheme and dist_info schema specification</span>
-
-<span class="sd">            For Categorical distribution, params assumed by default to be the values of &#39;probs&#39; attribute</span>
+<span class="sd">            For Categorical distribution, `params` are assumed the natural parameters, unless `param_type=regular` is</span>
+<span class="sd">            specified in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch</span>
+<span class="sd">            Categorical distribution.</span>
 
 <span class="sd">            Parameters</span>
 <span class="sd">            ----------</span>
@@ -774,18 +810,85 @@
 <span class="sd">            `torch.distributions.Categorical &lt;https://pytorch.org/docs/stable/distributions.html#categorical&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Categorical</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span></div>
+        <span class="k">if</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;param_type&#39;</span> <span class="ow">in</span> <span class="n">dist_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">dist_info</span><span class="p">[</span><span class="s1">&#39;param_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;regular&#39;</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">probs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">_categorical_param_reg2exp</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">probs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">params</span></div>
     <span class="c1"># endregion</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Univariate Normal Distribution</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># region</span>
+<div class="viewcode-block" id="DistributionServer._normal_param_exp2reg"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._normal_param_exp2reg">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_normal_param_exp2reg</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Conversion from natural parameters to regular parameters for a normal distribution with unknown variance::</span>
+
+<span class="sd">               mu = - n_1 / 2 * n_2          (mean of a normal distribution)</span>
+<span class="sd">               std = sqrt(-1 / 2 * n_2)      (standard deviation of a normal distribution)</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            params : Iterable of torch.Tensor</span>
+<span class="sd">                length 2.</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            Tuple of torch.Tensor</span>
+<span class="sd">                Length 2. Mean and standard deviation respectively.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="o">-</span><span class="n">p1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">p2</span><span class="p">)</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">p2</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span></div>
+
+<div class="viewcode-block" id="DistributionServer._normal_param_reg2exp"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._normal_param_reg2exp">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_normal_param_reg2exp</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Conversion from regular parameters to normal parameters for a normal distribution with unknown variance::</span>
+
+<span class="sd">               n_1 = mu / std ** 2</span>
+<span class="sd">               n_2 = -1 / 2 * (std ** 2)</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            params : Iterable of torch.Tensor</span>
+<span class="sd">                length 2. Mean and standard deviation respectively.</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            Iterable of torch.Tensor</span>
+<span class="sd">                length 2.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">loc</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span></div>
+
 <div class="viewcode-block" id="DistributionServer._normal_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._normal_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_normal_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            For Univariate Normal distributions, ``param_shape`` is ``[2]``. The first slice of the input parameter</span>
+<span class="sd">            For Univariate Normal distributions, ``param_shape`` is ``[2]``. If `param_type=regular` is specified in</span>
+<span class="sd">            `dist_info`, they will be interpreted as regular parameters. In this case, the first slice of the parameter</span>
 <span class="sd">            tensor will be interpreted as the `loc` argument to the PyTorch Normal distribution, and the second slice</span>
-<span class="sd">            will be interpreted as the `scale` argument.</span>
+<span class="sd">            will be interpreted as the `scale` argument. Otherwise, they will be interpreted as the two natural</span>
+<span class="sd">            parameters of a normal distribution with unknown variance, denoted `n_1` and `n_2` respectively.</span>
+
+<span class="sd">            Translation from natural parameters to regular parameters for a normal distribution with unknown variance::</span>
+
+<span class="sd">               mu = - n_1 / 2 * n_2          (mean of a normal distribution)</span>
+<span class="sd">               std = sqrt(-1 / 2 * n_2)      (standard deviation of a normal distribution)</span>
 
 <span class="sd">            Parameters</span>
 <span class="sd">            ----------</span>
@@ -807,7 +910,13 @@
                                       <span class="s2">&quot;distribution, expect the last dimension of the parameter tensor has a size of &quot;</span> \
                                       <span class="s2">&quot;2. Instead, found size </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
-        <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">params</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">params</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;param_type&#39;</span> <span class="ow">in</span> <span class="n">dist_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">dist_info</span><span class="p">[</span><span class="s1">&#39;param_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;regular&#39;</span><span class="p">:</span>
+            <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">_normal_param_exp2reg</span><span class="p">([</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">])</span>
+
         <span class="c1"># Squeeze out the last singleton dimension</span>
         <span class="n">loc</span> <span class="o">=</span> <span class="n">loc</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
@@ -819,9 +928,16 @@
 <div class="viewcode-block" id="DistributionServer._normal_dist2param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._normal_dist2param">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_normal_dist2param</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            For Univariate Normal distribution, the returned parameter tensor will be ``dist.loc`` and ``dist.scale``</span>
-<span class="sd">            stacked together along a new event dimension appended to as the last dimension. The first slice will be</span>
-<span class="sd">            ``dist.loc`` and the second slice be ``dist.scale``.</span>
+<span class="sd">            For Univariate Normal distributions, ``param_shape`` is ``[2]``. If `param_type=regular` is specified in</span>
+<span class="sd">            `dist_info`, they will be interpreted as regular parameters. In this case, the first slice of the parameter</span>
+<span class="sd">            tensor will be interpreted as the `loc` argument to the PyTorch Normal distribution, and the second slice</span>
+<span class="sd">            will be interpreted as the `scale` argument. Otherwise, they will be interpreted as the two natural</span>
+<span class="sd">            parameters of a normal distribution with unknown variance, denoted `n_1` and `n_2` respectively.</span>
+
+<span class="sd">            Translation from regular parameters to normal parameters for a normal distribution with unknown variance::</span>
+
+<span class="sd">               n_1 = mu / std ** 2</span>
+<span class="sd">               n_2 = -1 / 2 * (std ** 2)</span>
 
 <span class="sd">            Parameters</span>
 <span class="sd">            ----------</span>
@@ -838,22 +954,101 @@
 <span class="sd">            `torch.distributions.Normal &lt;https://pytorch.org/docs/stable/distributions.html#normal&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">)</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">scale</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;param_type&#39;</span> <span class="ow">in</span> <span class="n">dist_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">dist_info</span><span class="p">[</span><span class="s1">&#39;param_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;regular&#39;</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">scale</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">_normal_param_reg2exp</span><span class="p">([</span><span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">scale</span><span class="p">])</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">params</span></div>
     <span class="c1"># endregion</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Multivariate Normal Distribution</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># region</span>
+<div class="viewcode-block" id="DistributionServer._multivariate_normal_param_exp2reg"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._multivariate_normal_param_exp2reg">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_multivariate_normal_param_exp2reg</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Conversion from natural parameters to regular parameters for MultivariateNormal distribution, assuming the</span>
+<span class="sd">            event size is `n`::</span>
+
+<span class="sd">               mu = -0.5 * matmul(inv(p2), p1)      (mean vector)</span>
+<span class="sd">               sigma = -0.5 * inv(p2)               (covariance_matrix)</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            params : Iterable of torch.Tensor</span>
+<span class="sd">                length 2. Natural parameter `p1`, `p2` respectively. `p1` has param shape `[n]` as the last dimension,</span>
+<span class="sd">                `p2` has param shape `[n, n]` as the last two dimensions.</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            Tuple of torch.Tensor</span>
+<span class="sd">                length 2. Regular paremeter `loc`, `covariance_matrix` respectively. `loc` has param shape `[n]` as the</span>
+<span class="sd">                last dimension, `covariance_matrix` has param shape `[n, n]` as the last two dimensions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="c1"># Append a singleton dimension to p1 vector</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">p1</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Conversion</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">p2</span><span class="o">.</span><span class="n">inverse</span><span class="p">()</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="n">loc</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Remove last singleton dimension</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">loc</span><span class="p">,</span> <span class="n">cov</span></div>
+
+<div class="viewcode-block" id="DistributionServer._multivariate_normal_param_reg2exp"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._multivariate_normal_param_reg2exp">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_multivariate_normal_param_reg2exp</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Conversion from regular parameters to natural parameters for MultivariateNormal distribution, assuming the</span>
+<span class="sd">            event size is `n`::</span>
+
+<span class="sd">               p1 = matmul(inv(sigma), mu)</span>
+<span class="sd">               p2 = -0.5 inv(sigma)</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            params : Iterable of torch.Tensor</span>
+<span class="sd">                length 2. Regular parameter `loc`, `covariance_matrix` respectively. `loc` has param shape `[n]` as the</span>
+<span class="sd">                last dimension, `covariance_matrix` has param shape `[n, n]` as the last two dimensions.</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            Tuple of torch.Tensor</span>
+<span class="sd">                length 2. Natural parameter `p1`, `p2` respectively. `p1` has param shape `[n]` as the last dimension,</span>
+<span class="sd">                `p2` has param shape `[n, n]` as the last two dimensions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="n">loc</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="c1"># Append a singleton dimension to mean vector</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="n">loc</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Conversion</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">cov</span><span class="o">.</span><span class="n">inverse</span><span class="p">()</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span>
+        <span class="c1"># Squeeze and flatten dimensions</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">p1</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">p2</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>  <span class="c1"># Take contiguous() to rearrange stride</span>
+
+        <span class="k">return</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span></div>
+
 <div class="viewcode-block" id="DistributionServer._multivariate_normal_param2dist"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._multivariate_normal_param2dist">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_multivariate_normal_param2dist</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            For Multivariate Normal distribution, parameters need to consist of a 1-dimensional mean vector and a</span>
-<span class="sd">            2-dimensional covariance matrix. To represent both within a 1-dimensional event dimension, we interpret</span>
-<span class="sd">            `params` as a mean vector stacked with a flattened covariance matrix.</span>
+<span class="sd">            For Multivariate Normal distribution, the parameter size should equal to `(n+1)n` where `n` is the event</span>
+<span class="sd">            size.</span>
 
-<span class="sd">            Therefore, assuming the event size is `n`, then `params`&#39;s last dimension should have a size of `(n+1)n`,</span>
-<span class="sd">            with ``params[:n]`` being the mean vector, and ``params[n: (n+1)n]`` being the flattened covariance matrix.</span>
+<span class="sd">            By default, the first `n` slices, i.e. `params[:n]` will be taken as the first natural parameter `p1`, and</span>
+<span class="sd">            the rest `n*n` slices, i.e. `params[n:]` will be taken as the second natural parameter `p2`.</span>
+
+<span class="sd">            If ``param_type=regular`` is specified in `dist_info`, then the first `n` slices of `params` will be taken</span>
+<span class="sd">            directly as the mean vector `mu`, whereas the rest of the `n*n` slices will be taken directly as the</span>
+<span class="sd">            covariance matrix.</span>
 
 <span class="sd">            The value of `n` will be inferred from the given `params`. An ValueError will be thrown if it cannot be</span>
 <span class="sd">            inferred.</span>
@@ -887,8 +1082,12 @@
         <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
 
         <span class="c1"># Parse mean vector and covariance matrix</span>
-        <span class="n">loc</span><span class="p">,</span> <span class="n">flattened_cov</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="p">),</span> <span class="n">params</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">cov</span> <span class="o">=</span> <span class="n">flattened_cov</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">]))</span>
+        <span class="n">p1</span><span class="p">,</span> <span class="n">p2_flat</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="p">),</span> <span class="n">params</span><span class="o">.</span><span class="n">narrow</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">p2_flat</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;param_type&#39;</span> <span class="ow">in</span> <span class="n">dist_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">dist_info</span><span class="p">[</span><span class="s1">&#39;param_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;regular&#39;</span><span class="p">:</span>
+            <span class="n">loc</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">_multivariate_normal_param_exp2reg</span><span class="p">([</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">])</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">MultivariateNormal</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">cov</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dist</span></div>
@@ -896,8 +1095,18 @@
 <div class="viewcode-block" id="DistributionServer._multivariate_normal_dist2param"><a class="viewcode-back" href="../../references/utils.html#pysigma.utils.DistributionServer._multivariate_normal_dist2param">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_multivariate_normal_dist2param</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dist_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            For Multivariate Normal distribution, the returned parameter tensor will be ``dist.loc`` concatenated with a</span>
-<span class="sd">            flattened ``dist.covariance_matrix`` along the parameter dimension.</span>
+<span class="sd">            For Multivariate Normal distribution, unless ``param_type=regular`` is specified in `dist_info`, the</span>
+<span class="sd">            returned parameter tensor will be the concatenation of the distribution&#39;s first and (flattened) second</span>
+<span class="sd">            natural parameter. Otherwise, it will be ``dist.loc`` concatenated with a flattened</span>
+<span class="sd">            ``dist.covariance_matrix``.</span>
+
+<span class="sd">            Conversion from regular parameters to natural parameters for MultivariateNormal distribution, assuming the</span>
+<span class="sd">            event size is `n`::</span>
+
+<span class="sd">               p1 = matmul(inv(sigma), mu)</span>
+<span class="sd">               p2 = -0.5 inv(sigma)</span>
+
+<span class="sd">            where `mu` is the mean vector, `sigma` the covariance matrix.</span>
 
 <span class="sd">            Parameters</span>
 <span class="sd">            ----------</span>
@@ -915,8 +1124,14 @@
         <span class="c1"># Get mean vector and covariance matrix</span>
         <span class="n">loc</span><span class="p">,</span> <span class="n">cov</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">covariance_matrix</span>
         <span class="c1"># Flatten cov and concatenate</span>
-        <span class="n">flat_cov</span> <span class="o">=</span> <span class="n">cov</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">b_shape</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">loc</span><span class="p">,</span> <span class="n">flat_cov</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;param_type&#39;</span> <span class="ow">in</span> <span class="n">dist_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">dist_info</span><span class="p">[</span><span class="s1">&#39;param_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;regular&#39;</span><span class="p">:</span>
+            <span class="n">flat_cov</span> <span class="o">=</span> <span class="n">cov</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">b_shape</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">loc</span><span class="p">,</span> <span class="n">flat_cov</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">_multivariate_normal_param_reg2exp</span><span class="p">([</span><span class="n">loc</span><span class="p">,</span> <span class="n">cov</span><span class="p">])</span>
+            <span class="c1"># Flatten p2</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">p2</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">b_shape</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">params</span></div>
     <span class="c1"># endregion</span>
@@ -1278,7 +1493,7 @@
         <span class="c1"># Transform joint event values from Cognitive format to PyTorch format</span>
         <span class="n">torch_ptcl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event2torch_event</span><span class="p">(</span><span class="n">cog_ptcl</span><span class="p">)</span>
         <span class="c1"># Instantiate the distribution instance</span>
-        <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">param2dist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_class</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">dist_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dist_info</span><span class="p">)</span>
         <span class="c1"># Query DistributionServer</span>
         <span class="n">log_prob</span> <span class="o">=</span> <span class="n">DistributionServer</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">torch_ptcl</span><span class="p">)</span>
         <span class="c1"># Marginalize over unreferenced dimensions if needed</span>
