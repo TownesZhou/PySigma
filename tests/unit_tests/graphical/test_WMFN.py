@@ -238,6 +238,48 @@ class TestWMFN:
 
         assert wmfn.ld_out_eval is ld
 
+    def test_init_particles_wrong_msg_type(self):
+        b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([1]), Size([10, 15, 20]), Size([2, 3, 4])
+        msg_shape = (b_shape, p_shape, s_shape, e_shape)
+        index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
+        ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
+        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+
+        test_msg = TestMessage.random_message(MessageType.Parameter, *msg_shape)
+
+        with pytest.raises(AssertionError):
+            wmfn.init_particles(test_msg)
+
+    def test_init_particles_wrong_msg_shape(self):
+        b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
+        msg_shape = (b_shape, p_shape, s_shape, e_shape)
+        index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
+        ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
+        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+
+        wrong_shape = (b_shape, p_shape, Size([10, 15, 21]), e_shape)
+        test_msg = TestMessage.random_message(MessageType.Particles, *wrong_shape)
+
+        with pytest.raises(ValueError) as excinfo:
+            wmfn.init_particles(test_msg)
+            assert excinfo.value == "In test_wmfn: `init_ptcl_msg`'s sample shape and event shape are incompatible. " \
+                                    "Expecting sample shape {} and event shape {}, but found {} and {}."\
+                .format(s_shape, e_shape, Size([10, 15, 21]), e_shape)
+
+    def test_init_particles_correct_execution(self):
+        b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
+        msg_shape = (b_shape, p_shape, s_shape, e_shape)
+        index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
+        ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
+        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+
+        test_msg = TestMessage.random_message(MessageType.Particles, *msg_shape)
+
+        wmfn.init_particles(test_msg)
+
+        assert wmfn.post_msg_cache == test_msg
+        assert isinstance(wmfn.eval_msg_cache, Message) and MessageType.Particles in wmfn.eval_msg_cache.type
+
     def test_modify_empty_in_msg(self):
         # Test that no computation is carried out and msg cache remain as is if one of the two incoming messages is
         #   empty

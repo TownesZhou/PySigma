@@ -933,10 +933,51 @@ class WMFN(FactorNode):
 
         super(WMFN, self).add_link(linkdata)
 
+    def _random_walk(self):
+        """
+        Private subroutine. Take particles from `self.post_msg_cache` and use `self.walk_dist` to perform a random walk
+        to generate new particles. The new particles will be encapsulated in a new message saved in
+        `self.eval_msg_cache`. The new message will have uniform weight and uniform log densities.
+        """
+        new_eval_ptcl = []
+        for post_ptcl, walk_dist in zip(self.post_msg_cache.particles, self.walk_dist):
+            walk_dist.loc = post_ptcl  # Set posterior particles as the mean
+            eval_ptcl = walk_dist.sample()  # Draw one sample
+            new_eval_ptcl.append(eval_ptcl)
+        uniform_log_densities = [torch.zeros(s_size, device=self.device) for s_size in self.s_shape]
+        self.eval_msg_cache = Message(MessageType.Particles,
+                                      sample_shape=self.s_shape, event_shape=self.e_shape,
+                                      particles=new_eval_ptcl, weight=1, log_densities=uniform_log_densities)
+
+    def init_particles(self, init_ptcl_msg):
+        """
+        Initialize the WMFN with an initial particles message to start the random walk procedure.
+
+        Parameters
+        ----------
+        init_ptcl_msg: Message
+            The initial particles message to start with.
+
+        Raises
+        ------
+        ValueError
+            If `init_ptcl_msg` has incompatible sample shape and event shape.
+        """
+        assert isinstance(init_ptcl_msg, Message) and MessageType.Particles in init_ptcl_msg.type
+        if init_ptcl_msg.s_shape != self.s_shape or init_ptcl_msg.e_shape != self.e_shape:
+            raise ValueError("In {}: `init_ptcl_msg`'s sample shape and event shape are incompatible. Expecting sample "
+                             "shape {} and event shape {}, but found {} and {}."
+                             .format(self.name, init_ptcl_msg.s_shape, init_ptcl_msg.e_shape, self.s_shape, self.e_shape))
+        # Set message cache
+        self.post_msg_cache = init_ptcl_msg
+        # Take one random walk to generate the initial candidate particles message
+        self._random_walk()
+
     def modify(self):
         """
         Carries out the message update of the Metropolis-Hastings algorithm. Update eval_msg_cache and post_msg_cache.
 
+        Note that the generated messages are identity messages, and they have empty batch shape.
         """
         # Get message from incoming link and check shape compatibility
         in_eval_msg, in_post_msg = self.ld_in_eval.read(), self.ld_in_post.read()
@@ -978,19 +1019,12 @@ class WMFN(FactorNode):
         # MCMC particles message will have uniform weight and log sampling densities
         uniform_log_densities = [torch.zeros(s_size, device=self.device) for s_size in self.s_shape]
         self.post_msg_cache = Message(MessageType.Particles,
-                                      batch_shape=b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                                      sample_shape=self.s_shape, event_shape=self.e_shape,
                                       particles=new_post_ptcl, weight=1, log_densities=uniform_log_densities)
 
         # Step 2. Take a random walk step to generate new evaluation (candidate) particles message based on the above
         #   new posterior message
-        new_eval_ptcl = []
-        for post_ptcl, walk_dist in zip(new_post_ptcl, self.walk_dist):
-            walk_dist.loc = post_ptcl           # Set posterior particles as the mean
-            eval_ptcl = walk_dist.sample()      # Draw one sample
-            new_eval_ptcl.append(eval_ptcl)
-        self.eval_msg_cache = Message(MessageType.Particles,
-                                      batch_shape=b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
-                                      particles=new_eval_ptcl, weight=1, log_densities=uniform_log_densities)
+        self._random_walk()
 
     @property
     def quiescence(self):
