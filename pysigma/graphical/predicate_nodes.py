@@ -876,6 +876,7 @@ class WMFN(FactorNode):
         self.ran_vars = tuple(ran_var_list)
         self.s_shape = torch.Size([v.size for v in self.index_vars])
         self.e_shape = torch.Size([v.size for v in self.ran_vars])
+        self.b_shape = torch.Size([])       # This will be inferred during runtime from incoming messages
 
         self.eval_msg_cache = Message.identity()  # Initialize to identity
         self.post_msg_cache = Message.identity()  # Initialize to identity
@@ -944,10 +945,14 @@ class WMFN(FactorNode):
             walk_dist.loc = post_ptcl  # Set posterior particles as the mean
             eval_ptcl = walk_dist.sample()  # Draw one sample
             new_eval_ptcl.append(eval_ptcl)
+        # Instantiate a uniform weight tensor here instead of using integer 1 because the latter will render the message
+        #   an identity message, which may halt message propagation.
         uniform_log_densities = [torch.zeros(s_size, device=self.device) for s_size in self.s_shape]
+        uniform_weight = torch.ones(self.b_shape + self.s_shape, device=self.device)
         self.eval_msg_cache = Message(MessageType.Particles,
-                                      sample_shape=self.s_shape, event_shape=self.e_shape,
-                                      particles=new_eval_ptcl, weight=1, log_densities=uniform_log_densities)
+                                      batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                                      particles=new_eval_ptcl, weight=uniform_weight,
+                                      log_densities=uniform_log_densities)
 
     def init_particles(self, init_ptcl_msg):
         """
@@ -968,6 +973,8 @@ class WMFN(FactorNode):
             raise ValueError("In {}: `init_ptcl_msg`'s sample shape and event shape are incompatible. Expecting sample "
                              "shape {} and event shape {}, but found {} and {}."
                              .format(self.name, init_ptcl_msg.s_shape, init_ptcl_msg.e_shape, self.s_shape, self.e_shape))
+        # Infer batch shape
+        self.b_shape = init_ptcl_msg.b_shape
         # Set message cache
         self.post_msg_cache = init_ptcl_msg
         # Take one random walk to generate the initial candidate particles message
@@ -976,8 +983,6 @@ class WMFN(FactorNode):
     def modify(self):
         """
         Carries out the message update of the Metropolis-Hastings algorithm. Update eval_msg_cache and post_msg_cache.
-
-        Note that the generated messages are identity messages, and they have empty batch shape.
         """
         # Get message from incoming link and check shape compatibility
         in_eval_msg, in_post_msg = self.ld_in_eval.read(), self.ld_in_post.read()
@@ -990,18 +995,25 @@ class WMFN(FactorNode):
             "In {}: Expect all incoming messages to be Particles type, but instead found type {}, {} for in_eval_msg " \
             "and in_post_msg respectively.".format(self.name, in_eval_msg.type, in_post_msg.type)
 
+        # infer the batch shape
+        assert in_eval_msg.b_shape == in_post_msg.b_shape, "In {}: Incoming posterior and evaluation messages have " \
+                                                           "different batch shape: found {} and {} respectively."\
+            .format(self.name, in_post_msg.b_shape, in_eval_msg.b_shape)
+        self.b_shape = in_eval_msg.b_shape
         # Step 1: Generate new posterior belief
         # 1.1 Summarize (by multiplying) weights over batch dimensions
-        b_shape = in_eval_msg.b_shape
-        in_eval_weight_sum = in_eval_msg.weight.log().sum(dim=list(range(len(b_shape)))).exp()
-        in_post_weight_sum = in_post_msg.weight.log().sum(dim=list(range(len(b_shape)))).exp()
+        in_eval_weight_sum = in_eval_msg.weight.log().sum(dim=list(range(len(self.b_shape)))).exp()
+        in_post_weight_sum = in_post_msg.weight.log().sum(dim=list(range(len(self.b_shape)))).exp()
         # 1.2 Marginalize (by summing) weight w.r.t. each random variable respectively
         in_eval_var_weights, in_post_var_weights = [], []
-        for dim in range(len(self.s_shape)):
-            dims = list(range(len(self.s_shape)))
-            dims.remove(dim)
-            in_eval_var_weights.append(in_eval_weight_sum.sum(dim=dims))
-            in_post_var_weights.append(in_post_weight_sum.sum(dim=dims))
+        if len(self.s_shape) > 1:
+            for dim in range(len(self.s_shape)):
+                dims = list(range(len(self.s_shape)))
+                dims.remove(dim)
+                in_eval_var_weights.append(in_eval_weight_sum.sum(dim=dims))
+                in_post_var_weights.append(in_post_weight_sum.sum(dim=dims))
+        else:
+            in_eval_var_weights, in_post_var_weights = [in_eval_weight_sum], [in_post_weight_sum]
         # 1.3 Compute ratio for each random variable's marginal particles
         var_ratio = [(eval_val / post_val).clamp(0., 1.)    # Clamp values in range [0, 1]
                      for eval_val, post_val in zip(in_eval_var_weights, in_post_var_weights)]
@@ -1016,11 +1028,15 @@ class WMFN(FactorNode):
                          for eval_ptcl, post_ptcl, mask, inv_mask
                          in zip(in_eval_msg.particles, in_post_msg.particles, update_mask, update_mask_inv)]
         # 1.7 Instantiate new posterior belief message
-        # MCMC particles message will have uniform weight and log sampling densities
+        # MCMC particles message will have uniform weights and log sampling densities
+        # Instantiate a uniform weight tensor here instead of using integer 1 because the latter will render the message
+        #   an identity message, which may halt message propagation.
         uniform_log_densities = [torch.zeros(s_size, device=self.device) for s_size in self.s_shape]
+        uniform_weight = torch.ones(self.b_shape + self.s_shape, device=self.device)
         self.post_msg_cache = Message(MessageType.Particles,
-                                      sample_shape=self.s_shape, event_shape=self.e_shape,
-                                      particles=new_post_ptcl, weight=1, log_densities=uniform_log_densities)
+                                      batch_shape=self.b_shape, sample_shape=self.s_shape, event_shape=self.e_shape,
+                                      particles=new_post_ptcl, weight=uniform_weight,
+                                      log_densities=uniform_log_densities)
 
         # Step 2. Take a random walk step to generate new evaluation (candidate) particles message based on the above
         #   new posterior message

@@ -882,8 +882,8 @@ class Message:
     #     return self.size() == other.size()
 
     def same_particles_as(self, other):
-        """Check if `self` has the same particles as the other message. This include checking the list of particle value
-        tensors as well as checking the list of particle log sampling density tensors.
+        """Check if `self` has the same particles as the other message. This includes checking the list of particle
+        value tensors as well as checking the list of particle log sampling density tensors.
 
         .. note::
 
@@ -908,9 +908,15 @@ class Message:
         # Return False is message is not event Particles message
         if MessageType.Particles not in self.type or MessageType.Particles not in other.type:
             return False
-        # Return True if one is the identity
-        if self.isid or other.isid:
+        # # Return True if one is the identity
+        # if self.isid or other.isid:
+        #     return True
+        # Return True if BOTH are identity
+        if self.isid and other.isid:
             return True
+        # Otherwise, return False if either is identity but not the other one
+        elif self.isid or other.isid:
+            return False
         # Otherwise, if number of random variables are different, return False directly
         if self.num_rvs != other.num_rvs:
             return False
@@ -1014,7 +1020,9 @@ class Message:
         assert MessageType.Particles in self.type and MessageType.Particles in other.type
         assert self.isid or other.isid or \
                (self.b_shape, self.s_shape, self.e_shape) == (other.b_shape, other.s_shape, other.e_shape)
-        assert self.same_particles_as(other)
+        # NOTE: semantic change: now a non-identity message will NOT have same particles as an identity message, but
+        #   we still need to proceed in this case, so only test same_particles_as() when both messages are not identity.
+        assert self.isid or other.isid or self.same_particles_as(other)
 
         # Returns 0 if both are identity
         if self.isid and other.isid:

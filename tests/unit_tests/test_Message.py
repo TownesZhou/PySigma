@@ -1060,14 +1060,15 @@ class TestMessage:
         assert not msg2.same_particles_as(msg1)
 
     def test_same_particle_as_identity(self):
+        # NOTE: semantic change: now a non-identity message will NOT have same particles as an identity message.
         msg1 = Message(MessageType.Particles, batch_shape=Size([5, 6, 7]), sample_shape=Size([10, 12, 14]),
                        event_shape=Size([3, 2, 1]),
                        particles=[torch.randn(10, 3), torch.randn([12, 2]), torch.randn([14, 1])],
                        weight=torch.rand([5, 6, 7, 10, 12, 14]),
                        log_densities=[-torch.rand(10), -torch.rand(12), -torch.rand(14)])
         msg2 = Message.identity(MessageType.Particles)
-        assert msg1.same_particles_as(msg2)
-        assert msg2.same_particles_as(msg1)
+        assert not msg1.same_particles_as(msg2)
+        assert not msg2.same_particles_as(msg1)
 
     @cuda_only
     def test_diff_param_different_devices(self):

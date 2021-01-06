@@ -86,7 +86,7 @@ class TestLTMFN():
         ltmfn = self.generate_ltmfn_1()
 
         assert ltmfn.to_draw
-        assert ltmfn.msg_cache is None
+        assert ltmfn.msg_cache.isid
 
     def test_add_link_correct_outgoing_link(self):
         msg_shape = (Size([4, 5]), Size([2]), Size([10, 15, 20]), Size([1, 2, 3]))
