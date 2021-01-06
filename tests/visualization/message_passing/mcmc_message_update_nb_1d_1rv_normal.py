@@ -23,7 +23,7 @@ from pysigma.graphical.basic_nodes import LinkData
 from pysigma.graphical.predicate_nodes import WMFN, WMVN
 
 # Visualization parameters
-n_batches = 4
+n_batches = 3
 num_ptcl = 100
 num_iter = 100
 x_lim = [-20, 20]
@@ -109,6 +109,7 @@ if __name__ == "__main__":
     axs[0].title.set_text("Log Density Sum")
 
     # Particles concentration
+    axs[1].title.set_text("Particles Concentration vs. Target Pdf")
     axs[1].set_xlim(left=x_lim[0], right=x_lim[1])
     x_plot = torch.arange(start=x_lim[0], end=x_lim[1], step=(x_lim[1] - x_lim[0]) / x_plot_num)
     x_plot_np = np.asarray(x_plot)
@@ -117,14 +118,24 @@ if __name__ == "__main__":
     dist_plot_probs = dist_plot_log_prob.exp().split(1, dim=1)
     for prob in dist_plot_probs:
         prob_np = np.asarray(prob)
-        axs[1].plot(x_plot_np, prob_np)
+        axs[1].plot(x_plot_np, prob_np, 'b')
     # Particles concentration
     # Scatter plot: scatter on the x axis
     post_ptcl_np = np.asarray(post_ptcl.squeeze())
     post_ptcl_y_val = np.zeros(num_ptcl)
     axs[1].scatter(post_ptcl_np, post_ptcl_y_val)
+    # Batch-wise weight curve
+    # post_weight_ls = post_msg.weight.split(1, dim=0)    # Split across batch dimension
+    post_weight_ls = ld_in_post.read().weight.split(1, dim=0)
+    for weight in post_weight_ls:
+        post_ptcl_sorted, sort_indices = torch.sort(post_ptcl.squeeze())
+        weight_sorted = weight.squeeze()[sort_indices]
+        post_ptcl_sorted_np = np.asarray(post_ptcl_sorted)
+        weight_sorted_np = np.asarray(weight_sorted)
+        axs[1].plot(post_ptcl_sorted_np, weight_sorted_np, linestyle='--')
 
     # Histogram
+    axs[2].title.set_text("Particles Concentration in histogram")
     axs[2].set_xlim(left=x_lim[0], right=x_lim[1])
     axs[2].hist(post_ptcl_np, range=x_lim, bins=histogram_n_bins)
 
