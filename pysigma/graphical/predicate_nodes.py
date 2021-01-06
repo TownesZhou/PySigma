@@ -1002,8 +1002,10 @@ class WMFN(FactorNode):
         self.b_shape = in_eval_msg.b_shape
         # Step 1: Generate new posterior belief
         # 1.1 Summarize (by multiplying) weights over batch dimensions
-        in_eval_weight_sum = in_eval_msg.weight.log().sum(dim=list(range(len(self.b_shape)))).exp()
-        in_post_weight_sum = in_post_msg.weight.log().sum(dim=list(range(len(self.b_shape)))).exp()
+        # in_eval_weight_sum = in_eval_msg.weight.log().sum(dim=list(range(len(self.b_shape)))).exp()
+        # in_post_weight_sum = in_post_msg.weight.log().sum(dim=list(range(len(self.b_shape)))).exp()
+        in_eval_weight_sum = in_eval_msg.weight.sum(dim=list(range(len(self.b_shape))))
+        in_post_weight_sum = in_post_msg.weight.sum(dim=list(range(len(self.b_shape))))
         # 1.2 Marginalize (by summing) weight w.r.t. each random variable respectively
         in_eval_var_weights, in_post_var_weights = [], []
         if len(self.s_shape) > 1:
