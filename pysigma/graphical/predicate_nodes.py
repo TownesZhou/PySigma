@@ -1017,6 +1017,10 @@ class WMFN(FactorNode):
         # 1.3 Compute ratio for each random variable's marginal particles
         var_ratio = [(eval_val / post_val).clamp(0., 1.)    # Clamp values in range [0, 1]
                      for eval_val, post_val in zip(in_eval_var_weights, in_post_var_weights)]
+        # Extra step: in extreme cases var_ratio will contain NaN elements. In such we replace NaN with value 1 so that
+        #   the sampled mask will keep replacing the particles
+        for ratio in var_ratio:
+            ratio[torch.isnan(ratio)] = 1
         # 1.4 Instantiate Bernoulli distribution to flip coins for each random variable
         update_dist = [D.Bernoulli(ratio) for ratio in var_ratio]
         # 1.5 Flip coins to obtain binary mask for updating particle values
