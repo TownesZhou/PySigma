@@ -6,7 +6,7 @@
     linkdata and node connections are stubbed out for unit testing purpose.
 
     This script demonstrates the process with:
-        - 1 batch
+        - Multiple batches
         - 1-dimensional for each random variable
         - 2 random variables, so the joint distribution is 2-dimensional
         - multivariate normal distribution
@@ -25,6 +25,7 @@ from pysigma.graphical.predicate_nodes import WMFN, WMVN
 from tests.utils import generate_positive_definite
 
 # Visualization parameters
+n_batches = 3
 num_ptcl = 30       # number of particles for EACH random variable
 num_iter = 200
 x_lim = [-20, 20]  # y_lim same as x_lim
@@ -35,7 +36,7 @@ histogram_n_bins = 20
 
 if __name__ == "__main__":
     # Initialize WMFN and initial message
-    b_shape, p_shape, s_shape, e_shape = Size([1]), Size([]), Size([num_ptcl, num_ptcl]), Size([1, 1])
+    b_shape, p_shape, s_shape, e_shape = Size([n_batches]), Size([]), Size([num_ptcl, num_ptcl]), Size([1, 1])
     msg_shape = (b_shape, p_shape, s_shape, e_shape)
     index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
     ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
@@ -51,8 +52,8 @@ if __name__ == "__main__":
 
     # Initialize the target function
     x_half_lim = [x / 2 for x in x_lim]
-    loc = torch.rand(2) * (x_half_lim[1] - x_half_lim[0]) + x_half_lim[0]
-    cov = generate_positive_definite(Size([]), 2) * normal_cov_scale
+    loc = torch.rand(n_batches, 2) * (x_half_lim[1] - x_half_lim[0]) + x_half_lim[0]
+    cov = generate_positive_definite(b_shape, 2) * normal_cov_scale
     target_dist = D.MultivariateNormal(loc, cov)
 
     # Initialize mocked linkdata
@@ -82,11 +83,13 @@ if __name__ == "__main__":
         post_ptcl_meshgrid, eval_ptcl_meshgrid = torch.meshgrid(post_ptcl_array), torch.meshgrid(eval_ptcl_array)
         post_ptcl_stacked, eval_ptcl_stacked = torch.stack(post_ptcl_meshgrid, dim=-1), torch.stack(eval_ptcl_meshgrid, dim=-1)
         post_ptcl_flattened, eval_ptcl_flattened = post_ptcl_stacked.reshape(-1, 2), eval_ptcl_stacked.reshape(-1, 2)
-        # Insert batch shape between sample shape and event shape
-        post_log_prob, eval_log_prob = \
-            target_dist.log_prob(post_ptcl_flattened), target_dist.log_prob(eval_ptcl_flattened)
-        # Massage log density tensor shape: reshape to square matrix and prepend a singleton batch dimension
-        post_log_prob, eval_log_prob = post_log_prob.reshape(s_shape).unsqueeze(dim=0), eval_log_prob.reshape(s_shape).unsqueeze(dim=0)
+        # Insert a singleton batch dimension between the sample and event dimension
+        post_ptcl, eval_ptcl = post_ptcl_flattened.unsqueeze(dim=1), eval_ptcl_flattened.unsqueeze(dim=1)
+        # Get densities
+        post_log_prob, eval_log_prob = target_dist.log_prob(post_ptcl), target_dist.log_prob(eval_ptcl)
+        # Massage log density tensor shape: reshape to square matrix and permute batch dimension to the front
+        post_log_prob, eval_log_prob = post_log_prob.reshape(s_shape + Size([-1])).permute(2, 0, 1).contiguous(), \
+                                       eval_log_prob.reshape(s_shape + Size([-1])).permute(2, 0, 1).contiguous()
         # Generate re-weighted messages and send back
         post_reweighted_msg, eval_reweighted_msg = \
             post_msg.event_reweight(post_log_prob), eval_msg.event_reweight(eval_log_prob)
