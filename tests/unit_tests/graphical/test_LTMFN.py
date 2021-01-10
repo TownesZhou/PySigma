@@ -13,7 +13,7 @@ from pysigma.graphical.basic_nodes import LinkData, FactorNode, VariableNode
 from pysigma.graphical.predicate_nodes import LTMFN, WMVN
 from pysigma.utils import KnowledgeServer as KS
 from pysigma.utils import DistributionServer as DS
-from ..test_Message import TestMessage
+from ...utils import random_message
 
 from ...utils import generate_positive_definite
 
@@ -244,9 +244,9 @@ class TestLTMFN():
             ld.attr = {'type': 'param'}
             param_lds.append(ld)
 
-        param_lds[0].write(TestMessage.random_message(MessageType.Parameter, *msg_shape))
-        param_lds[1].write(TestMessage.random_message(MessageType.Both, *msg_shape))
-        param_lds[2].write(TestMessage.random_message(MessageType.Particles, *msg_shape))
+        param_lds[0].write(random_message(MessageType.Parameter, *msg_shape))
+        param_lds[1].write(random_message(MessageType.Both, *msg_shape))
+        param_lds[2].write(random_message(MessageType.Particles, *msg_shape))
 
         for param_ld in param_lds:
             ltmfn.add_link(param_ld)
@@ -270,7 +270,7 @@ class TestLTMFN():
             ld.attr = {'type': 'param'}
             param_lds.append(ld)
 
-        msgs = [TestMessage.random_message(MessageType.Parameter, *msg_shape) for i in range(num_param_lds)]
+        msgs = [random_message(MessageType.Parameter, *msg_shape) for i in range(num_param_lds)]
         combined_msg = sum(msgs, Message.identity())
 
         for param_ld, msg in zip(param_lds, msgs):

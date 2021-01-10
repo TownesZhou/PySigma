@@ -2,20 +2,15 @@
     Unit tests for WMFN class
 """
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock
 import torch
-import torch.distributions as D
 import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
-from pysigma.graphical.basic_nodes import LinkData, FactorNode, VariableNode
+from pysigma.graphical.basic_nodes import LinkData, VariableNode
 from pysigma.graphical.predicate_nodes import WMFN, WMVN
-from pysigma.utils import KnowledgeServer as KS
-from pysigma.utils import DistributionServer as DS
-from ..test_Message import TestMessage
-
-from ...utils import generate_positive_definite
+from ...utils import random_message
 
 
 class TestWMFN:
@@ -245,7 +240,7 @@ class TestWMFN:
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
         wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
 
-        test_msg = TestMessage.random_message(MessageType.Parameter, *msg_shape)
+        test_msg = random_message(MessageType.Parameter, *msg_shape)
 
         with pytest.raises(AssertionError):
             wmfn.init_particles(test_msg)
@@ -258,7 +253,7 @@ class TestWMFN:
         wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
 
         wrong_shape = (b_shape, p_shape, Size([10, 15, 21]), e_shape)
-        test_msg = TestMessage.random_message(MessageType.Particles, *wrong_shape)
+        test_msg = random_message(MessageType.Particles, *wrong_shape)
 
         with pytest.raises(ValueError) as excinfo:
             wmfn.init_particles(test_msg)
@@ -273,7 +268,7 @@ class TestWMFN:
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
         wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
 
-        test_msg = TestMessage.random_message(MessageType.Particles, *msg_shape)
+        test_msg = random_message(MessageType.Particles, *msg_shape)
 
         wmfn.init_particles(test_msg)
 
@@ -313,8 +308,8 @@ class TestWMFN:
         in_ld_post = MagicMock(spec_set=LinkData)
         wmfn.ld_in_eval, wmfn.ld_in_post = in_ld_eval, in_ld_post
 
-        in_ld_eval.read.return_value = TestMessage.random_message(MessageType.Parameter, *msg_shape)
-        in_ld_post.read.return_value = TestMessage.random_message(MessageType.Parameter, *msg_shape)
+        in_ld_eval.read.return_value = random_message(MessageType.Parameter, *msg_shape)
+        in_ld_post.read.return_value = random_message(MessageType.Parameter, *msg_shape)
 
         with pytest.raises(AssertionError, match="In test_wmfn: Expect all incoming messages to be Particles type, but "
                                                  "instead found type {}, {} for in_eval_msg and in_post_msg "
@@ -334,8 +329,8 @@ class TestWMFN:
         in_ld_post = MagicMock(spec_set=LinkData)
         wmfn.ld_in_eval, wmfn.ld_in_post = in_ld_eval, in_ld_post
 
-        in_ld_eval.read.return_value = TestMessage.random_message(MessageType.Particles, *msg_shape)
-        in_ld_post.read.return_value = TestMessage.random_message(MessageType.Particles, *msg_shape)
+        in_ld_eval.read.return_value = random_message(MessageType.Particles, *msg_shape)
+        in_ld_post.read.return_value = random_message(MessageType.Particles, *msg_shape)
 
         wmfn.modify()
 
@@ -392,8 +387,8 @@ class TestWMFN:
         out_ld_post = MagicMock(spec_set=LinkData)
         wmfn.ld_out_eval, wmfn.ld_out_post = out_ld_eval, out_ld_post
 
-        test_msg_1, test_msg_2 = TestMessage.random_message(MessageType.Particles, *msg_shape), \
-                                 TestMessage.random_message(MessageType.Particles, *msg_shape)
+        test_msg_1, test_msg_2 = random_message(MessageType.Particles, *msg_shape), \
+                                 random_message(MessageType.Particles, *msg_shape)
         wmfn.eval_msg_cache, wmfn.post_msg_cache = test_msg_1, test_msg_2
 
         wmfn.compute()

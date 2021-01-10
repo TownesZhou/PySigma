@@ -4,6 +4,7 @@
 import pytest
 import torch
 from torch import Size
+from pysigma.defs import Message, MessageType
 
 # Pytest skipping decorators
 # Skip a test if cuda is not enabled on the host system
@@ -85,4 +86,16 @@ def generate_positive_definite(b_shape: Size, e_size: int):
     D = S_D + I
 
     return D
+
+
+# Generate a random message of given type
+def random_message(msg_type, b_shape, p_shape, s_shape, e_shape):
+    param = torch.randn(b_shape + p_shape) if MessageType.Parameter in msg_type else 0
+    weight = torch.rand(b_shape + s_shape) if MessageType.Particles in msg_type else 1
+    ptcl = [torch.randn([s, e]) for s, e in zip(list(s_shape), list(e_shape))] \
+        if MessageType.Particles in msg_type else None
+    dens = [torch.randn(s) for s in zip(list(s_shape))] \
+        if MessageType.Particles in msg_type else None
+    return Message(msg_type, b_shape, p_shape, s_shape, e_shape,
+                   param, ptcl, weight, dens)
 
