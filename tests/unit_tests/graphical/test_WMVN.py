@@ -341,7 +341,7 @@ class TestWMVN():
         in_msg_list = [Message(MessageType.Parameter,
                                batch_shape=b_shape, param_shape=p_shape,
                                parameter=param),
-                       Message(MessageType.Both,
+                       Message(MessageType.Dual,
                                batch_shape=b_shape, param_shape=p_shape, sample_shape=s_shape, event_shape=e_shape,
                                parameter=param,
                                weight=weight, particles=ptcl, log_densities=dens)]
@@ -364,7 +364,7 @@ class TestWMVN():
         mock_oud_ld.write.assert_called_once()
         # Check message type
         received_msg = mock_oud_ld.write.call_args[0][0]
-        assert received_msg.type is MessageType.Both
+        assert received_msg.type is MessageType.Dual
 
     def test_compute_combination_particles_both_mock_ld(self):
         # Test message combination with Particles and Both type messages using mocked linkdata
@@ -385,7 +385,7 @@ class TestWMVN():
         in_msg_list = [Message(MessageType.Particles,
                                batch_shape=b_shape, sample_shape=s_shape, event_shape=e_shape,
                                weight=torch.rand(b_shape + s_shape), particles=ptcl, log_densities=dens),
-                       Message(MessageType.Both,
+                       Message(MessageType.Dual,
                                batch_shape=b_shape, param_shape=p_shape, sample_shape=s_shape, event_shape=e_shape,
                                parameter=param,
                                weight=torch.rand(b_shape + s_shape), particles=ptcl, log_densities=dens)]
@@ -432,7 +432,7 @@ class TestWMVN():
                        Message(MessageType.Particles,
                                batch_shape=b_shape, sample_shape=s_shape, event_shape=e_shape,
                                weight=torch.rand(b_shape + s_shape), particles=ptcl, log_densities=dens),
-                       Message(MessageType.Both,
+                       Message(MessageType.Dual,
                                batch_shape=b_shape, param_shape=p_shape, sample_shape=s_shape, event_shape=e_shape,
                                parameter=param,
                                weight=torch.rand(b_shape + s_shape), particles=ptcl, log_densities=dens)]

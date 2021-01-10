@@ -217,14 +217,14 @@ class TestLinkData:
         dens = [torch.randn([3]), torch.randn([4])]
         old_weight = torch.rand([10, 3, 4])
         old_param = torch.randn([10, 2])
-        old_msg = Message(MessageType.Both,
+        old_msg = Message(MessageType.Dual,
                           Size([10]), Size([2]), Size([3, 4]), Size([5, 6]),
                           parameter=old_param,
                           particles=ptcl, log_densities=dens, weight=old_weight)
         # Slight perturbation to parameter, but totally different new weight
         new_weight = torch.rand([10, 3, 4])
         new_param = old_param + 1e-8
-        new_msg = Message(MessageType.Both,
+        new_msg = Message(MessageType.Dual,
                           Size([10]), Size([2]), Size([3, 4]), Size([5, 6]),
                           parameter=new_param,
                           particles=ptcl, log_densities=dens, weight=new_weight)
@@ -363,11 +363,11 @@ class TestLinkData:
         ptcl = [torch.randn([3, 5]), torch.randn([4, 6])]
         dens = [torch.randn([3]), torch.randn([4])]
         weight = torch.rand([10, 3, 4])
-        old_msg = Message(MessageType.Both,
+        old_msg = Message(MessageType.Dual,
                           Size([10]), Size([2]), Size([3, 4]), Size([5, 6]),
                           parameter=torch.randn([10, 2]),
                           particles=ptcl, weight=weight, log_densities=dens)
-        new_msg = Message(MessageType.Both,
+        new_msg = Message(MessageType.Dual,
                           Size([10]), Size([2]), Size([3, 4]), Size([5, 6]),
                           parameter=torch.randn([10, 2]),
                           particles=ptcl, weight=weight, log_densities=dens)
@@ -378,13 +378,13 @@ class TestLinkData:
         assert ld.new
 
         # Scenario 2: same particle values, but both parameter and weight different
-        old_msg = Message(MessageType.Both,
+        old_msg = Message(MessageType.Dual,
                           Size([10]), Size([2]), Size([3, 4]), Size([5, 6]),
                           parameter=torch.randn([10, 2]),
                           particles=ptcl,
                           weight=torch.rand([10, 3, 4]),
                           log_densities=dens)
-        new_msg = Message(MessageType.Both,
+        new_msg = Message(MessageType.Dual,
                           Size([10]), Size([2]), Size([3, 4]), Size([5, 6]),
                           parameter=torch.randn([10, 2]),
                           particles=ptcl,

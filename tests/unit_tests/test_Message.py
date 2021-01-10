@@ -100,7 +100,7 @@ class TestMessage:
         part1 = [torch.randn(10, 3)]
         w1 = torch.rand(5, 10)
         l1 = [-torch.rand(10)]
-        msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg = Message(MessageType.Dual, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                       parameter=param1, particles=part1, weight=w1, log_densities=l1)
         assert torch.equal(msg.parameter, param1)
         assert all(torch.equal(t1, t2) for t1, t2 in zip(msg.particles, part1))
@@ -129,7 +129,7 @@ class TestMessage:
         l1 = [-torch.rand(10)]
         Message(MessageType.Particles, sample_shape=s_s, event_shape=e_s, particles=p1, weight=1, log_densities=l1)
 
-        Message(MessageType.Both, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        Message(MessageType.Dual, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                 parameter=0, particles=p1, weight=1, log_densities=l1)
 
         # Identity with batch shape specified
@@ -142,7 +142,7 @@ class TestMessage:
         Message(MessageType.Particles, batch_shape=Size([5, 6]), sample_shape=s_s, event_shape=e_s,
                 particles=p1, weight=1, log_densities=l1)
 
-        Message(MessageType.Both, batch_shape=Size([5, 6]), param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        Message(MessageType.Dual, batch_shape=Size([5, 6]), param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                 parameter=0, particles=p1, weight=1, log_densities=l1)
 
         # Test init with auxiliary arguments.
@@ -350,7 +350,7 @@ class TestMessage:
 
         # Both
         # weight and parameter both uniform
-        msg = Message(MessageType.Both, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg = Message(MessageType.Dual, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                       parameter=0, particles=part, weight=1, log_densities=l)
         assert msg.isid
 
@@ -366,17 +366,17 @@ class TestMessage:
 
         # Both
         # weight and parameter both not uniform
-        msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg = Message(MessageType.Dual, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                       parameter=param, particles=part, weight=w, log_densities=l)
         assert not msg.isid
 
         # weight is uniform but parameter not uniform
-        msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg = Message(MessageType.Dual, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                       parameter=param, particles=part, weight=1, log_densities=l)
         assert not msg.isid
 
         # parameter is uniform but weight not uniform
-        msg = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg = Message(MessageType.Dual, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                       parameter=0, particles=part, weight=w, log_densities=l)
         assert not msg.isid
 
@@ -561,9 +561,9 @@ class TestMessage:
         part1 = [torch.randn(10, 3)]
         w1, w2 = torch.rand(5, 10), torch.rand(5, 10)
         l1 = [-torch.rand(10)]
-        msg1 = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg1 = Message(MessageType.Dual, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                        parameter=param1, particles=part1, weight=w1, log_densities=l1)
-        msg2 = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg2 = Message(MessageType.Dual, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                        parameter=param2, particles=part1, weight=w2, log_densities=l1)
         msg = msg1 + msg2
         assert torch.equal(msg.parameter, param1 + param2)
@@ -643,7 +643,7 @@ class TestMessage:
         # Both message
         b_s, p_s, s_s, e_s = Size([5]), Size([4]), Size([10]), Size([3])
         ptcl, dens = [torch.randn(10, 3)], [-torch.rand(10)]
-        msg_list = [Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg_list = [Message(MessageType.Dual, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                             parameter=torch.randn([5, 4]), particles=ptcl, weight=torch.rand(5, 10), log_densities=dens)
                     for i in range(3)]
 
@@ -807,7 +807,7 @@ class TestMessage:
         part = [torch.randn(10, 3)]
         weight = torch.rand(5, 10)
         l1 = [-torch.rand(10)]
-        msg1 = Message(MessageType.Both, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
+        msg1 = Message(MessageType.Dual, batch_shape=b_s, param_shape=p_s, sample_shape=s_s, event_shape=e_s,
                        parameter=param, particles=part, weight=weight, log_densities=l1)
         # With single scalar
         result1 = msg1 * 2
@@ -838,7 +838,7 @@ class TestMessage:
         assert msg2 == result2
 
         # Both
-        msg3 = Message(MessageType.Both,
+        msg3 = Message(MessageType.Dual,
                        batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                        parameter=0, particles=[torch.randn(10, 3)], weight=1,
                        log_densities=[-torch.rand(10)])
@@ -870,11 +870,11 @@ class TestMessage:
             Message.compose(msg1, msg2)
 
         # Test 3: both are Both type message
-        msg1 = Message(MessageType.Both,
+        msg1 = Message(MessageType.Dual,
                        batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                        parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
                        log_densities=[-torch.rand(10)])
-        msg2 = Message(MessageType.Both,
+        msg2 = Message(MessageType.Dual,
                        batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                        parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
                        log_densities=[-torch.rand(10)])
@@ -885,7 +885,7 @@ class TestMessage:
         # Test 4: Parameter with Both
         msg1 = Message(MessageType.Parameter, batch_shape=Size([5]), param_shape=Size([3]),
                        parameter=torch.randn([5, 3]))
-        msg2 = Message(MessageType.Both,
+        msg2 = Message(MessageType.Dual,
                        batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                        parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
                        log_densities=[-torch.rand(10)])
@@ -895,7 +895,7 @@ class TestMessage:
         # Test 5: Particles with Both
         msg1 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
                       particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
-        msg2 = Message(MessageType.Both,
+        msg2 = Message(MessageType.Dual,
                        batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                        parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
                        log_densities=[-torch.rand(10)])
@@ -932,7 +932,7 @@ class TestMessage:
         msg2 = Message(MessageType.Particles, batch_shape=Size([5]), sample_shape=Size([10]), event_shape=Size([3]),
                        particles=[torch.randn(10, 3)], weight=torch.rand(5, 10), log_densities=[-torch.rand(10)])
         msg = Message.compose(msg1, msg2)
-        assert msg.type is MessageType.Both
+        assert msg.type is MessageType.Dual
         assert torch.equal(msg.parameter, msg1.parameter)
         assert torch.equal(msg.weight, msg2.weight)
 
@@ -966,8 +966,8 @@ class TestMessage:
         assert id_msg.attr == {}
 
         # Test particles type
-        id_msg = Message.identity(MessageType.Both)
-        assert id_msg.type is MessageType.Both
+        id_msg = Message.identity(MessageType.Dual)
+        assert id_msg.type is MessageType.Dual
         assert id_msg.isid
         assert id_msg.b_shape == Size([]) and id_msg.p_shape == Size([]) and id_msg.s_shape == Size([]) and \
                id_msg.e_shape == Size([])
@@ -988,7 +988,7 @@ class TestMessage:
         assert msg.size() == (Size([5, 6, 7]), Size([]), Size([10, 12, 14]), Size([3, 2, 1]))
 
         # Test Both type
-        msg = Message(MessageType.Both,
+        msg = Message(MessageType.Dual,
                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                       parameter=torch.randn([5, 4]), particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]),
                       log_densities=[-torch.rand(10)])
@@ -1287,8 +1287,8 @@ class TestMessage:
 
     def test_reduce_type_wrong_target_type(self):
         # Test Both target type
-        target_type = MessageType.Both
-        msg = Message(MessageType.Both,
+        target_type = MessageType.Dual
+        msg = Message(MessageType.Dual,
                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                       parameter=torch.randn([5, 4]),
                       particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)])
@@ -1334,7 +1334,7 @@ class TestMessage:
         assert msg == reduced_msg
 
         # Test Both reduce to particles
-        msg = Message(MessageType.Both,
+        msg = Message(MessageType.Dual,
                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                       parameter=torch.randn([5, 4]),
                       particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)],
@@ -1356,7 +1356,7 @@ class TestMessage:
         assert msg == reduced_msg
 
         # Test Both reduce to parameter
-        msg = Message(MessageType.Both,
+        msg = Message(MessageType.Dual,
                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                       parameter=torch.randn([5, 4]),
                       particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)],
@@ -1395,7 +1395,7 @@ class TestMessage:
 
         # Test both
         test_attr = {"a": 1, "b": 2, "c": 3}
-        msg = Message(MessageType.Both,
+        msg = Message(MessageType.Dual,
                       batch_shape=Size([5]), param_shape=Size([4]), sample_shape=Size([10]), event_shape=Size([3]),
                       parameter=torch.randn([5, 4]),
                       particles=[torch.randn(10, 3)], weight=torch.rand([5, 10]), log_densities=[-torch.rand(10)],
@@ -1409,7 +1409,7 @@ class TestMessage:
 
     def test_batch_permute(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: Positive dim
         perm_order = [2, 0, 1]
@@ -1438,7 +1438,7 @@ class TestMessage:
 
     def test_batch_unsqueeze(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         dim = 2
@@ -1466,7 +1466,7 @@ class TestMessage:
 
     def test_batch_index_select(self):
         b_shape, p_shape, s_shape, e_shape = Size([11, 22, 33]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         dim = 2
@@ -1496,7 +1496,7 @@ class TestMessage:
 
     def test_batch_index_put(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         dim = 0
@@ -1530,7 +1530,7 @@ class TestMessage:
 
     def test_batch_diagonal(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         dim1, dim2 = 0, 2
@@ -1559,7 +1559,7 @@ class TestMessage:
 
     def test_batch_diag_embed(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         diag_dim, target_dim1, target_dim2 = 1, 1, 3
@@ -1587,7 +1587,7 @@ class TestMessage:
 
     def test_batch_narrow(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         dim, length = 2, 3
@@ -1615,7 +1615,7 @@ class TestMessage:
 
     def test_batch_broaden(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         dim, length = 0, 6
@@ -1647,7 +1647,7 @@ class TestMessage:
 
     def test_batch_summarize(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         dim = 0
@@ -1683,7 +1683,7 @@ class TestMessage:
 
     def test_batch_flatten(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         dims = [0, 1]
@@ -1711,7 +1711,7 @@ class TestMessage:
 
     def test_batch_flatten_default(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         result = msg.batch_flatten()
 
@@ -1725,7 +1725,7 @@ class TestMessage:
 
     def test_batch_reshape(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         new_batch_shape = Size([2, 3, 10])
         result = msg.batch_reshape(new_batch_shape)
@@ -1740,7 +1740,7 @@ class TestMessage:
 
     def test_batch_expand(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 4, 1]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         new_batch_shape = Size([3, -1, 5])
         result = msg.batch_expand(new_batch_shape)
@@ -1830,7 +1830,7 @@ class TestMessage:
 
     def test_event_reweight(self):
         b_shape, p_shape, s_shape, e_shape = Size([4]), Size([1]), Size([4, 5, 6]), Size([1, 2, 3])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         target_log_prob = torch.randn([4, 4, 5, 6])
         result = msg.event_reweight(target_log_prob)
@@ -1851,7 +1851,7 @@ class TestMessage:
 
     def test_event_marginalize(self):
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6]), Size([1, 2, 3])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # Test 1: positive dim
         event_dim = 1
@@ -1900,7 +1900,7 @@ class TestMessage:
     def test_event_concatenate_shape_1(self):
         # Test 2: flatten 2 out of 4 RVs into 3 RVs
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6, 7]), Size([1, 2, 3, 4])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # scenario 1: positive dims
         result = msg.event_concatenate([0, 2], 1)
@@ -1931,7 +1931,7 @@ class TestMessage:
     def test_event_concatenate_shape_2(self):
         # Test 2: flatten 2 out of 5 RVs into 4 RVs
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6, 7, 8]), Size([1, 2, 3, 4, 5])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # scenario 1: positive dims
         result = msg.event_concatenate([0, 3], 1)
@@ -1966,7 +1966,7 @@ class TestMessage:
     def test_event_concatenate_shape_3(self):
         # Test 2: flatten 3 out of 5 RVs into 3 RVs
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6, 7, 8]), Size([1, 2, 3, 4, 5])
-        msg = self.random_message(MessageType.Both, b_shape, p_shape, s_shape, e_shape)
+        msg = self.random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
         # scenario 1: positive dims
         result = msg.event_concatenate([0, 1, 3], 0)

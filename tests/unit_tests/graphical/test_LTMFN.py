@@ -245,7 +245,7 @@ class TestLTMFN():
             param_lds.append(ld)
 
         param_lds[0].write(random_message(MessageType.Parameter, *msg_shape))
-        param_lds[1].write(random_message(MessageType.Both, *msg_shape))
+        param_lds[1].write(random_message(MessageType.Dual, *msg_shape))
         param_lds[2].write(random_message(MessageType.Particles, *msg_shape))
 
         for param_ld in param_lds:

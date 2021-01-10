@@ -391,7 +391,7 @@ class LTMFN(FactorNode):
         super(LTMFN, self).add_link(linkdata)
 
     def set_draw(self, to_draw):
-        """Sets whether this LTMFN should draw particles in `init_msg()` and send `MessageType.Both` type message, or
+        """Sets whether this LTMFN should draw particles in `init_msg()` and send `MessageType.Dual` type message, or
         not draw particles and send `MessageType.Parameter` message
 
         Parameters
@@ -438,7 +438,7 @@ class LTMFN(FactorNode):
             log_prob = self.ks.surrogate_log_prob(param)
 
             # Instantiate a temporary message with uniform weight and use Message method to obtain re-weighted message
-            tmp_msg = Message(MessageType.Both,
+            tmp_msg = Message(MessageType.Dual,
                               batch_shape=self.b_shape, param_shape=self.p_shape,
                               sample_shape=self.s_shape, event_shape=self.e_shape,
                               parameter=param, particles=particles, weight=1, log_densities=log_densities)
@@ -574,13 +574,11 @@ class PBFN(FactorNode):
 
     Does not admit any incoming link. Only admits one outgoing link connecting to a WMVN.
 
-    Perception is buffered, and will be latched to next cycle if no new observation is specified. To cancel out the
-    previously buffered observation, a ``None`` observation needs to be perceived.
+    Perception is buffered, and will be latched to next cycle if no new observation is specified. An identity message
+    can be used to flush the buffer without introducing actual perceptions.
 
     PBFN quiescence state:
         A PBFN reaches quiescence state if and only if it has been visited.
-
-    The `quiescence` property is therefore overridden to conform to this definition.
 
     Parameters
     ----------
@@ -596,8 +594,7 @@ class PBFN(FactorNode):
     Attributes
     ----------
     buffer : torch.Tensor
-        The perceptual buffer. It is a 2D tensor whose last dimension is the event dimension with size equal to
-        ``self.e_shape``.
+        The perceptual buffer.
     b_shape : torch.Size
         Set by `batch_shape`.
     e_shape : torch.Size
@@ -613,16 +610,31 @@ class PBFN(FactorNode):
         self.b_shape = batch_shape
         self.e_shape = event_shape
         # Perceptual buffer. Initialize to identity message
-        self.buffer = Message(MessageType.Both, batch_shape=self.b_shape, parameter=0, weight=1)
+        self.buffer = Message.identity(MessageType.Dual)
 
         self.pretty_log["node type"] = "Perceptual Buffer Factor Node"
+
+    def add_link(self, linkdata):
+        """For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.
+
+        """
+        # Ensure that no incoming link and only one outgoing link connecting to a WMVN
+        assert isinstance(linkdata, LinkData)
+        assert not linkdata.to_fn
+        assert len(self.out_linkdata) == 0
+        assert isinstance(linkdata.vn, WMVN)
+        assert linkdata.msg_shape[0] == self.b_shape and linkdata.msg_shape[3] == self.e_shape, \
+            "In {}: Attempting to add a linkdata with incompatible message shapes. Expect batch shape {} and event " \
+            "shape {}, but found {} and {} in the given linkdata respectively."\
+            .format(self.name, self.b_shape, self.e_shape, linkdata.msg_shape[0], linkdata.msg_shape[3])
+        super(PBFN, self).add_link(linkdata)
 
     def perceive(self, obs=None, weight=None, mode='joint'):
         """Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight
         specified by `weight`. instantiate the perception message to be sent by `compute()` and store it in the
         perceptual buffer.
 
-        If `obs` is ``None``, a ``MessageType.Both`` type identity message will be instantiated. Otherwise, it is a
+        If `obs` is ``None``, a ``MessageType.Dual`` type identity message will be instantiated. Otherwise, it is a
         ``MessageType.Particles`` message with particle values from `obs`, particles weight reflecting `weight` (uniform
         if `weight` is ``None``), and uniform log sampling densities.
 
@@ -682,7 +694,7 @@ class PBFN(FactorNode):
 
         # Set buffer to identity message and return directly if obs is None
         if obs is None:
-            self.buffer = Message(MessageType.Both, batch_shape=self.b_shape, parameter=0, weight=1)
+            self.buffer = Message(MessageType.Dual, batch_shape=self.b_shape, parameter=0, weight=1)
             return
 
         obs = tuple(obs) if isinstance(obs, Iterable) else obs
@@ -766,17 +778,6 @@ class PBFN(FactorNode):
 
         # set buffer
         self.buffer = perceptual_msg
-
-    def add_link(self, linkdata):
-        """For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.
-
-        """
-        # Ensure that no incoming link and only one outgoing link connecting to a WMVN
-        assert isinstance(linkdata, LinkData)
-        assert not linkdata.to_fn
-        assert len(self.out_linkdata) == 0
-        assert isinstance(linkdata.vn, WMVN)
-        super(PBFN, self).add_link(linkdata)
 
     def compute(self):
         """Sends the contents in perceptual buffer to the connected WMVN.

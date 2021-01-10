@@ -130,7 +130,7 @@ class MessageType(Flag):
     Undefined = 0
     Parameter = auto()
     Particles = auto()
-    Both = Parameter | Particles
+    Dual = Parameter | Particles
 
 
 class Message:
@@ -141,7 +141,7 @@ class Message:
 
     Parameters
     ----------
-    msg_type : {``MessageType.Undefined``, ``MessageType.Parameter``, ``MessageType.Particles``, ``MessageType.Both``}
+    msg_type : {``MessageType.Undefined``, ``MessageType.Parameter``, ``MessageType.Particles``, ``MessageType.Dual``}
         The type of this message.
     batch_shape : torch.Size, optional
         The size of the batch dimensions. Must specify and be a shape of **at least** length 1, unless the message is
@@ -191,7 +191,7 @@ class Message:
 
     Attributes
     ----------
-    type : {``MessageType.Undefined``, ``MessageType.Parameter``, ``MessageType.Particles``, ``MessageType.Both``}
+    type : {``MessageType.Undefined``, ``MessageType.Parameter``, ``MessageType.Particles``, ``MessageType.Dual``}
         Message type.
     b_shape : torch.Size
         Batch shape.
@@ -261,7 +261,7 @@ class Message:
        To support the above semantics and computations, all of the arguments `particles`, `weight`, and `log_densities`
        must be specified in the constructor.
 
-    A message can encode both type of contents, in which case the message type is ``MessageType.Both``.
+    A message can encode both type of contents, in which case the message type is ``MessageType.Dual``.
 
     .. _message-arithmetic-structures-notes:
 
@@ -294,8 +294,8 @@ class Message:
     * The ``MessageType.Parameter`` type identity message is one whose ``parameter`` field is 0.
     * The ``MessageType.Particles`` type identity message is one whose ``weight`` field is 1, **regardless of its
       particle values ``particles`` or sampling log densities ``log_densities``.
-    * The ``MessageType.Both`` type identity message is the composition of the above two identity messages. In other
-      words, a ``MessageType.Both`` type message is identity if and only if both ``parameter`` field is 0 and
+    * The ``MessageType.Dual`` type identity message is the composition of the above two identity messages. In other
+      words, a ``MessageType.Dual`` type message is identity if and only if both ``parameter`` field is 0 and
       ``weight`` field is 1.
 
     Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
@@ -425,7 +425,7 @@ class Message:
         if self.type is MessageType.Particles:
             return not isinstance(self.weight, torch.Tensor)
 
-        if self.type is MessageType.Both:
+        if self.type is MessageType.Dual:
             return not isinstance(self.parameter, torch.Tensor) and not isinstance(self.weight, torch.Tensor)
 
     @property
@@ -514,9 +514,9 @@ class Message:
         for more details.
 
         Only messages with compatible types can be added. This means a ``MessageType.Parameter`` type message can only
-        be added with one of type ``MessageType.Parameter`` or ``MessageType.Both``, and similarly a
+        be added with one of type ``MessageType.Parameter`` or ``MessageType.Dual``, and similarly a
         ``MessageType.Particles`` type message can only be added with one of type ``MessageType.Particles`` or
-        ``MessageType.Both``. ``MessageType.Both`` type message can be added with any other type except
+        ``MessageType.Dual``. ``MessageType.Dual`` type message can be added with any other type except
         ``MessageType.Undefined``, and in any case a ``MessageType.Undefined`` type message cannot be added.
 
         There are more restrictions for ``MessageType.Particles`` type messages. Messages of such type can only be
@@ -525,9 +525,9 @@ class Message:
 
         If two messages with compatible but not identical types are added together, the resulting message will have the
         smaller type, meaning only the common components will be added. For example, the result of adding a
-        ``MessageType.Parameter`` type message with a ``MessageType.Both`` type message is a ``MessageType.Parameter``
-        type message. But if two ``MessageType.Both`` type messages are added, the resulting message will also have
-        type ``MessageType.Both``, containing both parameter and particles components.
+        ``MessageType.Parameter`` type message with a ``MessageType.Dual`` type message is a ``MessageType.Parameter``
+        type message. But if two ``MessageType.Dual`` type messages are added, the resulting message will also have
+        type ``MessageType.Dual``, containing both parameter and particles components.
 
         Note that the identity messages (Parameter message with ``parameter == 0``, Particles message with
         ``weight == 1``, or Both message with both conditions) are assumed universal, i.e., they can be added with
@@ -785,7 +785,7 @@ class Message:
     @staticmethod
     def compose(msg1, msg2):
         """Composes a ``MessageType.Particles`` message with a ``MessageType.Parameters`` message to return a
-        ``MessageType.Both`` message that contain all components from both messages.
+        ``MessageType.Dual`` message that contain all components from both messages.
 
         Both `msg1` and `msg2` cannot be identity messages.
 
@@ -801,7 +801,7 @@ class Message:
         Returns
         -------
         Message
-            A message with type ``MessageType.Both`` that contains all components from both `msg1` and `msg2`.
+            A message with type ``MessageType.Dual`` that contains all components from both `msg1` and `msg2`.
 
         Raises
         ------
@@ -828,7 +828,7 @@ class Message:
             "Attempting to compose a parameter message with a particles message, but found conflicting batch shapes: " \
             "{}".format([msg1.b_shape, msg2.b_shape])
 
-        new_msg = Message(MessageType.Both,
+        new_msg = Message(MessageType.Dual,
                           batch_shape=param_msg.b_shape, param_shape=param_msg.p_shape,
                           sample_shape=ptcl_msg.s_shape, event_shape=ptcl_msg.e_shape,
                           parameter=param_msg.parameter,
@@ -837,13 +837,13 @@ class Message:
         return new_msg
 
     @staticmethod
-    def identity(msg_type=MessageType.Both):
+    def identity(msg_type=MessageType.Dual):
         """Returns a minimum identity message (without declaration of shapes) of the specified type.
 
         Parameters
         ----------
         msg_type : MessageType
-            Target message type. Defaults to ``MessageType.Both``.
+            Target message type. Defaults to ``MessageType.Dual``.
 
         Returns
         -------
@@ -851,8 +851,8 @@ class Message:
             The identity message.
         """
         assert MessageType.Parameter in msg_type or MessageType.Particles in msg_type
-        if msg_type is MessageType.Both:
-            return Message(MessageType.Both, parameter=0, weight=1)
+        if msg_type is MessageType.Dual:
+            return Message(MessageType.Dual, parameter=0, weight=1)
         if msg_type is MessageType.Parameter:
             return Message(MessageType.Parameter, parameter=0)
         return Message(MessageType.Particles, weight=1)
@@ -1934,7 +1934,7 @@ class Message:
         as `self`, but a different weight tensor, derived from importance weighting `target_log_prob` against stored
         log sampling density tensors in ``self.log_densities``.
 
-        `self` 's type must be either ``MessageType.Particles`` or ``MessageType.Both`` to support this method.
+        `self` 's type must be either ``MessageType.Particles`` or ``MessageType.Dual`` to support this method.
 
         Parameters
         ----------
@@ -1951,7 +1951,7 @@ class Message:
         Raises
         ------
         AssertionError
-            If `self` has neither type `MessageType.Particles`` nor type ``MessageType.Both``.
+            If `self` has neither type `MessageType.Particles`` nor type ``MessageType.Dual``.
 
         Notes
         -----
@@ -2000,7 +2000,7 @@ class Message:
         """Returns a message from `self` where the event dimension specified bv `event_dim` is marginalized,
         corresponding to marginalizing the corresponding random variable.
 
-        Only messages with particles support this operation. If `self`'s message type is ``MessageType.Both``, a
+        Only messages with particles support this operation. If `self`'s message type is ``MessageType.Dual``, a
         ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
 
         Parameters
@@ -2100,7 +2100,7 @@ class Message:
 
         Note that the event dimensions will be concatenated in the order given by `cat_event_dims`.
 
-        Only messages with particles support this operation. If `self`'s message type is ``MessageType.Both``, a
+        Only messages with particles support this operation. If `self`'s message type is ``MessageType.Dual``, a
         ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.
 
         ``.contiguous()`` will be called on the tensors to make sure the resulting particle, log density, and weight

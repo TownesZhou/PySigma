@@ -161,7 +161,7 @@ class LinkData:
 
         .. note::
 
-            When `self` and `other` have type ``MessageType.Both``, the parameters will be chosen over the particles to
+            When `self` and `other` have type ``MessageType.Dual``, the parameters will be chosen over the particles to
             compare message difference.
 
         .. note::
