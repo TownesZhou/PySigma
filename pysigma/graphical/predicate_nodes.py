@@ -828,8 +828,6 @@ class PBFN(FactorNode):
         """Sends the contents in perceptual buffer to the connected WMVN.
 
         """
-        super(PBFN, self).compute()
-
         assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
         out_ld.write(self.buffer)

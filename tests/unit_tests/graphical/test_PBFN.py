@@ -678,3 +678,67 @@ class TestPBFN:
         # Check densities
         assert_equal_within_error(pbfn.buffer.log_densities[0], torch.zeros(num_ptcl) / num_ptcl)
 
+    def test_quiescence_no_compute(self):
+        # Test that no message is sent when quiesced
+        b_shape, e_shape = Size([2, 3, 4]), Size([1, 2, 3])
+        rel_var_list = [Variable("test_rel_var", VariableMetatype.Relational, b_size) for b_size in b_shape]
+        ran_var_list = [Variable("test_ran_var", VariableMetatype.Random, e_size, [C.real]) for e_size in e_shape]
+        pbfn = PBFN("test_pbfn", rel_var_list, ran_var_list)
+
+        # Mock linkdata and buffer message
+        out_ld = MagicMock(spec_set=LinkData)
+        test_msg = MagicMock(spec_set=Message)
+        pbfn.out_linkdata.append(out_ld)
+        pbfn.buffer = test_msg
+
+        # Set quiescence state
+        pbfn.visited = True
+
+        # Execute compute() and check no message sent
+        pbfn.compute()
+        out_ld.write.assert_not_called()
+
+    def test_no_quiescence_do_compute(self):
+        # Test that when not quiesced, the buffer messag is sent
+        b_shape, e_shape = Size([2, 3, 4]), Size([1, 2, 3])
+        rel_var_list = [Variable("test_rel_var", VariableMetatype.Relational, b_size) for b_size in b_shape]
+        ran_var_list = [Variable("test_ran_var", VariableMetatype.Random, e_size, [C.real]) for e_size in e_shape]
+        pbfn = PBFN("test_pbfn", rel_var_list, ran_var_list)
+
+        # Mock linkdata and buffer message
+        out_ld = MagicMock(spec_set=LinkData)
+        test_msg = MagicMock(spec_set=Message)
+        pbfn.out_linkdata.append(out_ld)
+        pbfn.buffer = test_msg
+
+        # Set quiescence state
+        pbfn.visited = False
+
+        # Execute compute() and check the correct message is sent
+        pbfn.compute()
+        out_ld.write.assert_called_once_with(test_msg)
+
+    def test_quiescence_after_compute(self):
+        # Test that when a compute is taken place, the node reaches quiescence
+        b_shape, e_shape = Size([2, 3, 4]), Size([1, 2, 3])
+        rel_var_list = [Variable("test_rel_var", VariableMetatype.Relational, b_size) for b_size in b_shape]
+        ran_var_list = [Variable("test_ran_var", VariableMetatype.Random, e_size, [C.real]) for e_size in e_shape]
+        pbfn = PBFN("test_pbfn", rel_var_list, ran_var_list)
+
+        # Mock linkdata and buffer message
+        out_ld = MagicMock(spec_set=LinkData)
+        test_msg = MagicMock(spec_set=Message)
+        pbfn.out_linkdata.append(out_ld)
+        pbfn.buffer = test_msg
+
+        # Set quiescence state
+        pbfn.visited = False
+
+        # Execute compute() twice and check message only sent once
+        pbfn.compute()
+        pbfn.compute()
+        out_ld.write.assert_called_once_with(test_msg)
+
+
+
+
