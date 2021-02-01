@@ -253,9 +253,10 @@ class TestLTMFN():
 
         with pytest.raises(AssertionError) as excinfo:
             ltmfn.modify()
-            assert excinfo.value == "At {}: Expect all messages from incoming param type linkdata to contain " \
-                                    "parameters, but instead found message types: {} from linkdata {}." \
-                                    .format(ltmfn.name, [MessageType.Particles], [str(param_lds[2])])
+
+        assert str(excinfo.value) == "At {}: Expect all messages from incoming param type linkdata to contain " \
+                                     "parameters, but instead found message types: {} from linkdata {}." \
+                                     .format(ltmfn.name, [MessageType.Particles], [str(param_lds[2])])
 
     def test_modify_correct_param_no_draw(self):
         num_param_lds = 3

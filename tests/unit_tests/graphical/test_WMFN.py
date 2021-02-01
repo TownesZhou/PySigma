@@ -155,8 +155,9 @@ class TestWMFN:
 
         with pytest.raises(AssertionError) as excinfo:
             wmfn.add_link(ld)
-            assert excinfo.value == "In test_wmfn: linkdata should have the same sample shape as what is declared for" \
-                                    " this node. Expect {}, but found {}.".format(s_shape, Size([10, 15, 25]))
+
+        assert str(excinfo.value) == "In test_wmfn: linkdata should have the same sample shape as what is declared for" \
+                                     " this node. Expect {}, but found {}.".format(s_shape, Size([10, 15, 25]))
 
     def test_add_link_wrong_msg_shape_2(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
@@ -170,8 +171,9 @@ class TestWMFN:
 
         with pytest.raises(AssertionError) as excinfo:
             wmfn.add_link(ld)
-            assert excinfo.value == "In test_wmfn: linkdata should have the same sample shape as what is declared for" \
-                                    " this node. Expect {}, but found {}.".format(e_shape, Size([2, 3, 5]))
+
+        assert str(excinfo.value) == "In test_wmfn: linkdata should have the same event shape as what is declared " \
+                                     "for this node. Expect {}, but found {}.".format(e_shape, Size([2, 3, 5]))
 
     def test_add_link_correct_1(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
@@ -257,9 +259,10 @@ class TestWMFN:
 
         with pytest.raises(ValueError) as excinfo:
             wmfn.init_particles(test_msg)
-            assert excinfo.value == "In test_wmfn: `init_ptcl_msg`'s sample shape and event shape are incompatible. " \
-                                    "Expecting sample shape {} and event shape {}, but found {} and {}."\
-                .format(s_shape, e_shape, Size([10, 15, 21]), e_shape)
+
+        assert str(excinfo.value) == "In test_wmfn: `init_ptcl_msg`'s sample shape and event shape are incompatible. " \
+                                     "Expecting sample shape {} and event shape {}, but found {} and {}."\
+                                     .format(s_shape, e_shape, Size([10, 15, 21]), e_shape)
 
     def test_init_particles_correct_execution(self):
         b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])

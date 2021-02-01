@@ -584,12 +584,13 @@ class PBFN(FactorNode):
     ----------
     name : str
         Name of this node
-    batch_shape : torch.Size
-        The batch shape of the Predicate's knowledge. In a PBFN this is solely used to align the particle weight tensor
-        in the outgoing message to the correct shape.
-    event_shape : torch.Size
-        The event shape of any observation / evidence event particles, except for ``None`` observation. Its length
-        should match the number of predicate random arguments. See more details in following `perceive()` method.
+    rel_var_list : iterable of Variable
+        Used to infer the batch shape of the Predicate's knowledge. In a PBFN this is solely used to align the particle
+        weight tensor in the outgoing message to the correct shape.
+    event_shape : iterable of Variable
+        Used to infer the event shape of any observation / evidence event particles, except for ``None`` observation.
+        Its length should match the number of predicate random arguments. See more details in following `perceive()`
+        method.
 
     Attributes
     ----------
@@ -601,14 +602,16 @@ class PBFN(FactorNode):
         Set by `event_shape`.
     """
 
-    def __init__(self, name, batch_shape, event_shape, **kwargs):
-        assert isinstance(batch_shape, torch.Size)
-        assert isinstance(event_shape, torch.Size)
+    def __init__(self, name, rel_var_list, ran_var_list, **kwargs):
+        assert isinstance(rel_var_list, Iterable) and \
+               all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
+        assert isinstance(ran_var_list, Iterable) and \
+               all(isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_var_list)
         super(PBFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Perceptual Buffer Function Node"
 
-        self.b_shape = batch_shape
-        self.e_shape = event_shape
+        self.b_shape = torch.Size([v.size for v in rel_var_list])
+        self.e_shape = torch.Size([v.size for v in ran_var_list])
         # Perceptual buffer. Initialize to identity message
         self.buffer = Message.identity(MessageType.Dual)
 
@@ -620,9 +623,15 @@ class PBFN(FactorNode):
         """
         # Ensure that no incoming link and only one outgoing link connecting to a WMVN
         assert isinstance(linkdata, LinkData)
-        assert not linkdata.to_fn
-        assert len(self.out_linkdata) == 0
-        assert isinstance(linkdata.vn, WMVN)
+        assert not linkdata.to_fn, \
+            "In {}: PBFN can only admit outgoing linkdata that connects to a WMVN. The given linkdata {} is incoming."\
+            .format(self.name, linkdata)
+        assert len(self.out_linkdata) == 0, \
+            "In {}: PBFN only accepts one linkdata. Linkdata {} is already registered."\
+            .format(self.name, self.out_linkdata[0])
+        assert isinstance(linkdata.vn, WMVN), \
+            "In {}: PBFN only admits linkdata that connects to a WMVN. The given linkdata {} connects to a {}."\
+            .format(self.name, linkdata, type(linkdata.vn))
         assert linkdata.msg_shape[0] == self.b_shape and linkdata.msg_shape[3] == self.e_shape, \
             "In {}: Attempting to add a linkdata with incompatible message shapes. Expect batch shape {} and event " \
             "shape {}, but found {} and {} in the given linkdata respectively."\
@@ -631,8 +640,8 @@ class PBFN(FactorNode):
 
     def perceive(self, obs=None, weight=None, mode='joint'):
         """Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight
-        specified by `weight`. instantiate the perception message to be sent by `compute()` and store it in the
-        perceptual buffer.
+        specified by `weight`. instantiate and store the perception message in the perceptual buffer and send by
+        `compute()`.
 
         If `obs` is ``None``, a ``MessageType.Dual`` type identity message will be instantiated. Otherwise, it is a
         ``MessageType.Particles`` message with particle values from `obs`, particles weight reflecting `weight` (uniform
@@ -641,14 +650,14 @@ class PBFN(FactorNode):
         The particle weight tensor will be copied and expanded to include full batch dimension shape ``self.b_shape``.
 
         There are two perception mode: `joint` or `marginal`, specified by `mode`. This distinction makes a difference
-        mostly for predicates with multiple random arguments:
+        only for predicates with multiple random arguments:
 
         * When in `joint` mode, the observations should be list of joint particle events. Accordingly, `obs` must be a
           2D tensor with the last dimension being the joint event dimension having a size equal to the sum of all random
           variables' sizes (sum of ``self.e_shape``), and the first dimension being the sample (indexing) dimension.
           'weight' must a 1D tensor with its length equal to the size of `obs` 's first dimension.
 
-          Internally, in order to conform to standard message format, this joint event tensor `obs` will be broken up
+          Internally, in order to conform to standard message format, this joint event tensor `obs` will be split
           into chunks along the event dimension according to the sizes of the random variables. Each chunk thus
           represents a list of marginal event values, corresponding to one of the random variables, on an axis of a
           high-dimensional event lattice in the joint event space. A weight tensor of the same dimensional shape will be
@@ -656,8 +665,8 @@ class PBFN(FactorNode):
           corresponds to those joint events in `obs`, and other entries set to NP_EPSILON (representing numerically
           stable 0 weight).
 
-        * When in `marginal` mode, the observations are tuple of marginal events for each random variable, and the
-          assumption is taken that these marginal events for each random variable are mutually independent. Accordingly,
+        * When in `marginal` mode, the observations are tuple of marginal events for each random variable, and it is
+          assumed that these marginal events for each random variable are mutually independent. Accordingly,
           `obs` must be an ITERABLE of 2D tensors, with the last dimension size of each entry equal to the size of the
           corresponding random variable, in the order specified by ``self.e_shape``. Similarly, `weight` must also be
           an ITERABLE with the same length as `obs`, containing 1D tensors.
@@ -684,55 +693,73 @@ class PBFN(FactorNode):
             The perception mode. Defaults to ``"joint"``.
         """
         assert mode in ['joint', 'marginal']
-        assert obs is None or (mode == 'joint' and isinstance(obs, torch.Tensor) and obs.dim() == 2) or \
-               (mode == 'marginal' and isinstance(obs, Iterable) and
-                all(isinstance(o, torch.Tensor) and o.dim() == 2 for o in obs))
-        assert weight is None or \
-               (mode == 'joint' and isinstance(weight, torch.Tensor) and weight.dim() == 1 and torch.all(weight > 0)) or \
-               (mode == 'marginal' and isinstance(weight, Iterable) and
-                all(isinstance(w, torch.Tensor) and w.dim() == 1 and torch.all(w > 0) for w in weight))
+        if mode == 'joint':
+            assert obs is None or (isinstance(obs, torch.Tensor) and obs.dim() == 2), \
+                "In {}: when perceiving 'joint' observations, if specified, `obs` should be a 2-dimensional tensor."\
+                .format(self.name)
+            assert obs is None or obs.shape[-1] == sum(self.e_shape), \
+                "In {}: in 'joint' perception mode, the size of the observation's event dimension must match the " \
+                "sum of random variable sizes. Expect size {}, but found size {}." \
+                .format(self.name, sum(self.e_shape), obs.shape[-1])
+
+            assert weight is None or (isinstance(weight, torch.Tensor) and weight.dim() == 1), \
+                "In {}: when perceiving 'joint' observations, if specified, `weight` should be a 1-dimensional tensor."\
+                .format(self.name)
+            assert weight is None or obs is None or weight.shape[0] == obs.shape[0], \
+                "In {}: in 'joint' perception mode, when specified, the weight tensor must have same length as the " \
+                "observation tensor's first dimension. Found weight length {}, and observation tensor's first " \
+                "dimension size {}." \
+                .format(self.name, weight.shape[0], obs.shape[0])
+            assert weight is None or torch.all(weight > 0), \
+                "In {}: in 'joint' perception mode, if specified, 'weight' must be a positive tensor. " \
+                "Found minimum value {}."\
+                .format(self.name, weight.min())
+
+        else:
+            assert obs is None or \
+                (isinstance(obs, Iterable) and all(isinstance(o, torch.Tensor) and o.dim() == 2 for o in obs)), \
+                "In {}: when perceiving 'marginal' observations, if specified, `obs` should be an iterable of " \
+                "2-dimensional tensors.".format(self.name)
+            assert obs is None or len(obs) == len(self.e_shape), \
+                "In {}: in 'marginal' perception mode, the number of observations must match the number of random " \
+                "variables. Found {} entries in `obs` but the predicate has {} random variables." \
+                .format(self.name, len(obs), len(self.e_shape))
+            assert obs is None or all(o.shape[-1] == self.e_shape[i] for i, o in enumerate(obs)), \
+                "In {}: in 'marginal' perception mode, the size of each marginal observation's event dimension must " \
+                "match the size of the corresponding random variable. Expect event sizes {}, but found sizes {}." \
+                .format(self.name, list(self.e_shape), list(o.shape[-1] for o in obs))
+
+            assert weight is None or \
+                (isinstance(weight, Iterable) and all(isinstance(w, torch.Tensor) and w.dim() == 1 for w in weight)), \
+                "In {}: when perceiving 'mariginal' observations, if specified, `weight` should be an iterable of " \
+                "1-dimensional tensors.".format(self.name)
+            assert weight is None or len(weight) == len(self.e_shape), \
+                "In {}: in 'marginal' perception mode, the number of weights must match the number of random " \
+                "variables. Found {} entries in `weight` but the predicate has {} random variables." \
+                .format(self.name, len(weight), len(self.e_shape))
+            assert obs is None or weight is None or all(o.shape[0] == w.shape[0] for o, w in zip(obs, weight)), \
+                "In {}: the first dimension size of each observation tensor in `obs` should match the length of the " \
+                "corresponding weight tensor in `weight`. Found observation first dimension sizes {}, and weight " \
+                "lengths {}." \
+                    .format(self.name, list(o.shape[0] for o in obs), list(w.shape[0] for w in weight))
+            assert weight is None or all(torch.all(w > 0) for w in weight), \
+                "In {}: in 'marginal' observation mode, if specified, all entries in the `weight` must be positive " \
+                "tensors. Found the minimum values for each of the entry in `weight`: {}." \
+                .format(self.name, list(w.min() for w in weight))
 
         # Set buffer to identity message and return directly if obs is None
         if obs is None:
             self.buffer = Message(MessageType.Dual, batch_shape=self.b_shape, parameter=0, weight=1)
             return
 
+        num_rvs = len(self.e_shape)
         obs = tuple(obs) if isinstance(obs, Iterable) else obs
         weight = tuple(weight) if isinstance(weight, Iterable) else weight
-        # Check event size
-        if mode == 'joint':
-            assert obs.shape[-1] == sum(self.e_shape), \
-                "At {}: in 'joint' perception mode, the size of the observation's event dimension must match the " \
-                "sum of random variable sizes. Expect {}, but encountered {}." \
-                    .format(self.name, sum(self.e_shape), obs.shape[-1])
-            assert weight is None or weight.shape[0] == obs.shape[0], \
-                "At {}: in 'joint' perception mode, when specified, the weight tensor must have same length as the " \
-                "observation tensor's first dimension. Found weight length {}, and observation tensor's first " \
-                "dimension size {}" \
-                    .format(self.name, weight.shape[0], obs.shape[0])
-        else:
-            assert len(obs) == len(self.e_shape), \
-                "At {}: in 'marginal' perception mode, the number of observations must match the number of random " \
-                "variables. Found {} entries in `obs` but {} entries in `self.e_shape`." \
-                    .format(self.name, len(obs), len(self.e_shape))
-            assert len(obs) == len(weight), \
-                "At {}: in 'marginal' perception mode, the number of observations must match the number of weights. " \
-                "Found {} entries in `obs` but {} entries in `weight`." \
-                    .format(self.name, len(obs), len(weight))
-            assert all(o.shape[-1] == self.e_shape[i] for i, o in enumerate(obs)), \
-                "At {}: in 'marginal' perception mode, the size of each marginal observation's event dimension must " \
-                "match the size of the corresponding random variable. Expect event sizes {}, but encountered {}." \
-                    .format(self.name, list(self.e_shape), list(o.shape[-1] for o in obs))
-            assert all(o.shape[0] == w.shape[0] for o, w in zip(obs, weight)), \
-                "At {}: the first dimension size of each observation tensor in `obs` should match the length of the " \
-                "corresponding weight tensor in `weight`. Found observation first dimension sizes {}, and weight " \
-                "lengths {}." \
-                    .format(self.name, list(o.shape[0] for o in obs), list(w.shape[0] for w in weight))
 
         # If mode is 'joint', split joint events and create sparse weight lattice
         if mode == 'joint':
-            s_shape = torch.Size([obs.shape[0]] * len(self.e_shape))
-            # split and find unique marginal event values
+            s_shape = torch.Size([obs.shape[0]] * num_rvs)
+            # split and find unique marginal event values (to get rid of duplicate event values)
             split_ptcl = torch.split(obs, self.e_shape, dim=-1)
             unique_ptcl, inverse_ids = zip(*tuple(torch.unique(p, return_inverse=True, dim=0) for p in split_ptcl))
 
@@ -779,6 +806,14 @@ class PBFN(FactorNode):
         # set buffer
         self.buffer = perceptual_msg
 
+    @property
+    def quiescence(self):
+        """Overrides default behavior so now PBFN's quiescence is determined by whether `compute()` has been called.
+
+        """
+        return self.visited
+
+    @FactorNode.compute_control
     def compute(self):
         """Sends the contents in perceptual buffer to the connected WMVN.
 
@@ -788,13 +823,6 @@ class PBFN(FactorNode):
         assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
         out_ld.write(self.buffer)
-
-    @property
-    def quiescence(self):
-        """Overrides default behavior so now PBFN's quiescence is determined by whether `compute()` has been called.
-
-        """
-        return self.visited
 
 
 class WMFN(FactorNode):
@@ -973,7 +1001,7 @@ class WMFN(FactorNode):
         if init_ptcl_msg.s_shape != self.s_shape or init_ptcl_msg.e_shape != self.e_shape:
             raise ValueError("In {}: `init_ptcl_msg`'s sample shape and event shape are incompatible. Expecting sample "
                              "shape {} and event shape {}, but found {} and {}."
-                             .format(self.name, init_ptcl_msg.s_shape, init_ptcl_msg.e_shape, self.s_shape, self.e_shape))
+                             .format(self.name, self.s_shape, self.e_shape, init_ptcl_msg.s_shape, init_ptcl_msg.e_shape))
         # Infer batch shape
         self.b_shape = init_ptcl_msg.b_shape
         # Set message cache
