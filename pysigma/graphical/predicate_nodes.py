@@ -731,7 +731,7 @@ class PBFN(FactorNode):
 
             assert weight is None or \
                 (isinstance(weight, Iterable) and all(isinstance(w, torch.Tensor) and w.dim() == 1 for w in weight)), \
-                "In {}: when perceiving 'mariginal' observations, if specified, `weight` should be an iterable of " \
+                "In {}: when perceiving 'marginal' observations, if specified, `weight` should be an iterable of " \
                 "1-dimensional tensors.".format(self.name)
             assert weight is None or len(weight) == len(self.e_shape), \
                 "In {}: in 'marginal' perception mode, the number of weights must match the number of random " \
@@ -741,7 +741,7 @@ class PBFN(FactorNode):
                 "In {}: the first dimension size of each observation tensor in `obs` should match the length of the " \
                 "corresponding weight tensor in `weight`. Found observation first dimension sizes {}, and weight " \
                 "lengths {}." \
-                    .format(self.name, list(o.shape[0] for o in obs), list(w.shape[0] for w in weight))
+                .format(self.name, list(o.shape[0] for o in obs), list(w.shape[0] for w in weight))
             assert weight is None or all(torch.all(w > 0) for w in weight), \
                 "In {}: in 'marginal' observation mode, if specified, all entries in the `weight` must be positive " \
                 "tensors. Found the minimum values for each of the entry in `weight`: {}." \
@@ -753,30 +753,36 @@ class PBFN(FactorNode):
             return
 
         num_rvs = len(self.e_shape)
-        obs = tuple(obs) if isinstance(obs, Iterable) else obs
-        weight = tuple(weight) if isinstance(weight, Iterable) else weight
+        obs = tuple(obs) if mode == 'marginal' else obs
+        weight = tuple(weight) if mode == 'marginal' and weight is not None else weight
 
         # If mode is 'joint', split joint events and create sparse weight lattice
         if mode == 'joint':
-            s_shape = torch.Size([obs.shape[0]] * num_rvs)
             # split and find unique marginal event values (to get rid of duplicate event values)
             split_ptcl = torch.split(obs, self.e_shape, dim=-1)
             unique_ptcl, inverse_ids = zip(*tuple(torch.unique(p, return_inverse=True, dim=0) for p in split_ptcl))
+            # Infer actual sample shape from unique particles
+            s_shape = torch.Size([ptcl.shape[0] for ptcl in unique_ptcl])
 
             # Create lattice weight, sample shape only.
             # If weight is None, create a uniform weight list
-            weight = torch.ones(obs.shape[0], dtype=torch.float) if weight is None else weight
+            weight = torch.ones(obs.shape[0], dtype=torch.float, device=self.device) if weight is None else weight
             stacked_ids = torch.stack(inverse_ids, dim=1)
             ptcl_ids = tuple(torch.squeeze(i) for i in torch.split(stacked_ids, 1, dim=0))
-            ptcl_weight = torch.ones(s_shape) * NP_EPSILON
+            ptcl_weight = torch.ones(s_shape, device=self.device) * NP_EPSILON      # Init to zeros, with Eps for numerical stability
             for i, ptcl_id in enumerate(ptcl_ids):
-                ptcl_weight[ptcl_id] = weight[i]
+                # If the index is a multi-dimensional index (if multiple rv), then cast the index tensor to a tuple
+                #   in order to actually index a tensor
+                ptcl_id = tuple(ptcl_id) if ptcl_id.numel() > 1 else ptcl_id
+                ptcl_weight[ptcl_id] += weight[i]
 
             # Expand weight to include full batch dims
             ptcl_weight = ptcl_weight.view(torch.Size([1] * len(self.b_shape)) + s_shape).expand(self.b_shape + s_shape)
+            # Clone the weight to itself to ensure every element of the tensor refers to a distinct memory location.
+            ptcl_weight = ptcl_weight.clone()
 
             # Uniform log densities
-            log_densities = tuple(torch.zeros(obs.shape[0], dtype=torch.float), ) * len(self.e_shape)
+            log_densities = tuple(torch.zeros(s_size, dtype=torch.float, device=self.device) for s_size in s_shape)
 
             perceptual_msg = Message(MessageType.Particles,
                                      batch_shape=self.b_shape, sample_shape=s_shape, event_shape=self.e_shape,
@@ -786,7 +792,7 @@ class PBFN(FactorNode):
         else:
             s_shape = torch.Size([o.shape[0] for o in obs])
             if weight is None:
-                ptcl_weight = 1
+                ptcl_weight = torch.ones(self.b_shape + s_shape, dtype=torch.float, device=self.device)
             else:
                 expanded_log_weight = []
                 for i in range(len(self.e_shape)):
@@ -795,9 +801,13 @@ class PBFN(FactorNode):
                     expanded_log_weight.append(torch.log(weight[i].view(view_dim)))
                 sum_log_weight = sum(expanded_log_weight)
                 ptcl_weight = torch.exp(sum_log_weight)
+                # Prepend batch dimensions
+                ptcl_weight = ptcl_weight.view(torch.Size([1] * len(self.b_shape)) + s_shape)\
+                    .expand(self.b_shape + s_shape)
+                ptcl_weight = ptcl_weight.contiguous()
 
             # Uniform log densities
-            log_densities = tuple(torch.zeros(obs.shape[0], dtype=torch.float), ) * len(self.e_shape)
+            log_densities = tuple(torch.zeros(s_size, dtype=torch.float) for s_size in s_shape)
 
             perceptual_msg = Message(MessageType.Particles,
                                      batch_shape=self.b_shape, sample_shape=s_shape, event_shape=self.e_shape,
