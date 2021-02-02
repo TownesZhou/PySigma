@@ -40,7 +40,7 @@ class TestWMFN_MCMC:
         mock_vn = MagicMock(spec_set=VariableNode)
         ld = LinkData(mock_vn, wmfn, True, msg_shape)
 
-        with pytest.raises(AssertionError, match="In test_wmfn: WMFN can only be connected to WMVN."):
+        with pytest.raises(AssertionError, match="In test_wmfn: WMFN_MCMC can only be connected to WMVN."):
             wmfn.add_link(ld)
 
     def test_add_link_missing_special_attribute(self):
