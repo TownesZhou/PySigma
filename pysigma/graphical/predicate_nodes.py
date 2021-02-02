@@ -3,6 +3,7 @@
 """
 
 import warnings
+from abc import ABC
 from collections.abc import Iterable
 import torch
 from torch.nn import Parameter
@@ -833,9 +834,23 @@ class PBFN(FactorNode):
         out_ld.write(self.buffer)
 
 
-class WMFN(FactorNode):
-    """Working Memory Factor Node implementing the message update step of the Markov Chain Monte Carlo (MCMC) inference
-    procedure.
+class WMFN(FactorNode, ABC):
+    """The abstract base class for all types of Working Memory Factor Nodes
+
+    """
+    def __init__(self, name, **kwargs):
+        super(WMFN, self).__init__(name, **kwargs)
+
+    @property
+    def quiescence(self):
+        """For WMFN, quiescence is reached if messages stored in cache has been sent to the nearby node.
+
+        """
+        return self.visited
+
+
+class WMFN_MCMC(WMFN):
+    """WMFN-MCMC implementing the message update step of the Markov Chain Monte Carlo (MCMC) inference procedure.
 
     Metropolis-Hastings algorithm is implemented herein for the MCMC procedure.
 
@@ -906,8 +921,7 @@ class WMFN(FactorNode):
                (isinstance(v, Variable) and v.metatype is VariableMetatype.Indexing for v in index_var_list)
         assert isinstance(ran_var_list, Iterable) and \
                (isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_var_list)
-        super(WMFN, self).__init__(name, **kwargs)
-        self.pretty_log["node type"] = "Working Memory Factor Node"
+        super(WMFN_MCMC, self).__init__(name, **kwargs)
 
         self.index_vars = tuple(index_var_list)
         self.ran_vars = tuple(ran_var_list)
@@ -969,7 +983,7 @@ class WMFN(FactorNode):
             "found {}." \
             .format(self.name, self.e_shape, e_shape)
 
-        super(WMFN, self).add_link(linkdata)
+        super(WMFN_MCMC, self).add_link(linkdata)
 
     def _random_walk(self):
         """
@@ -1085,14 +1099,7 @@ class WMFN(FactorNode):
         #   new posterior message
         self._random_walk()
 
-    @property
-    def quiescence(self):
-        """For WMFN, quiescence is reached if messages stored in cache has been sent to the nearby node.
-
-        """
-        return self.visited
-
-    @FactorNode.compute_control
+    @WMFN.compute_control
     def compute(self):
         """Send contents in cache to WMVN_OUT_POST and WMVN_OUT_EVAL respectively.
 

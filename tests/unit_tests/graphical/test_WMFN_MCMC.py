@@ -9,17 +9,17 @@ from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
 from pysigma.graphical.basic_nodes import LinkData, VariableNode
-from pysigma.graphical.predicate_nodes import WMFN, WMVN
+from pysigma.graphical.predicate_nodes import WMFN_MCMC, WMVN
 from ...utils import random_message
 
 
-class TestWMFN:
+class TestWMFN_MCMC:
 
     def test_init(self):
         s_shape, e_shape = Size([10, 15, 20]), Size([2, 3, 4])
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         assert wmfn.eval_msg_cache.isid and wmfn.post_msg_cache.isid
 
@@ -35,7 +35,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         mock_vn = MagicMock(spec_set=VariableNode)
         ld = LinkData(mock_vn, wmfn, True, msg_shape)
@@ -49,7 +49,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, True, msg_shape)
@@ -65,7 +65,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, True, msg_shape)
@@ -81,7 +81,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=True, msg_shape=msg_shape)
@@ -98,7 +98,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=True, msg_shape=msg_shape)
@@ -115,7 +115,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=False, msg_shape=msg_shape)
@@ -132,7 +132,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=False, msg_shape=msg_shape)
@@ -147,7 +147,7 @@ class TestWMFN:
         b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=False, msg_shape=(b_shape, p_shape, Size([10, 15, 25]), Size([2, 3, 4])))
@@ -163,7 +163,7 @@ class TestWMFN:
         b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=False, msg_shape=(b_shape, p_shape, Size([10, 15, 20]), Size([2, 3, 5])))
@@ -180,7 +180,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=True, msg_shape=msg_shape)
@@ -195,7 +195,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=True, msg_shape=msg_shape)
@@ -210,7 +210,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=False, msg_shape=msg_shape)
@@ -225,7 +225,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wmvn = MagicMock(spec_set=WMVN)
         ld = LinkData(wmvn, wmfn, to_fn=False, msg_shape=msg_shape)
@@ -240,7 +240,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         test_msg = random_message(MessageType.Parameter, *msg_shape)
 
@@ -252,7 +252,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         wrong_shape = (b_shape, p_shape, Size([10, 15, 21]), e_shape)
         test_msg = random_message(MessageType.Particles, *wrong_shape)
@@ -269,7 +269,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         test_msg = random_message(MessageType.Particles, *msg_shape)
 
@@ -284,7 +284,7 @@ class TestWMFN:
         b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
         in_ld_eval = MagicMock(spec_set=LinkData)
@@ -304,7 +304,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
         in_ld_eval = MagicMock(spec_set=LinkData)
@@ -325,7 +325,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
         in_ld_eval = MagicMock(spec_set=LinkData)
@@ -345,7 +345,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
         out_ld_eval = MagicMock(spec_set=LinkData)
@@ -366,7 +366,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
         out_ld_eval = MagicMock(spec_set=LinkData)
@@ -383,7 +383,7 @@ class TestWMFN:
         msg_shape = (b_shape, p_shape, s_shape, e_shape)
         index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
         ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-        wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
         out_ld_eval = MagicMock(spec_set=LinkData)
