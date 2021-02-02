@@ -2,14 +2,14 @@
     Unit tests for WMFN_VI class
 """
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock
 import torch
 import torch.distributions as D
 import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
-from pysigma.graphical.basic_nodes import LinkData, FactorNode, VariableNode
+from pysigma.graphical.basic_nodes import LinkData, VariableNode
 from pysigma.graphical.predicate_nodes import WMFN_VI, WMVN
 from pysigma.utils import KnowledgeServer as KS
 from pysigma.utils import DistributionServer as DS

@@ -20,16 +20,16 @@ class AlphaFactorNode(FactorNode, ABC):
     * **Topology**: an alpha node accepts up to two pairs of incoming and outgoing linkdata, with one pair propagating
       messages inward toward the Gamma Factor Node, and the other pair propagating messages outward toward the predicate
       Working Memory Variable Node.
-    * **Admissible variable nodes**: an alpha node treats the relational variables and manipulates messages' batch
-      dimensions only, and leaves untouched the random variables and corresponding event dimensions. Therefore,
+    * **Admissible variable nodes**: an alpha node works on the relational variables and manipulates messages' batch
+      dimensions only. It does not tamper with the random variables and corresponding event dimensions. Therefore,
       incident variable nodes should have the same tuple of random variables.
     * **Compute pattern**: an alpha node computes outgoing messages for each pair of linkdata individually. In other
       words, for instance, the outgoing message to an inward outgoing link is solely dependent on the message received
-      from the inward incoming link. Accordingly, the `compute()` method is subdivided into an `inward_compute()` and an
-      `outward_compute()` method.
+      from the inward incoming link. Accordingly, the `compute()` method is divided into an `inward_compute()` and an
+      `outward_compute()` subroutine.
     * **Quiescence state**: an alpha node as a whole reaches quiescence if and only if **all** incoming linkdata do not
-      contain new message. However, for the two subdivided method `inward_compute()` and `outward_compute()`, each of
-      them should only be carried out if its incoming linkdata of interest contains new message.
+      contain new message. However, for the two subroutines `inward_compute()` and `outward_compute()`, either one
+      should be carried out only if its incoming linkdata contains new message.
     """
 
     def __init__(self, name, **kwargs):
@@ -53,20 +53,29 @@ class AlphaFactorNode(FactorNode, ABC):
             ``linkdata.attr``.
         """
         assert isinstance(linkdata, LinkData)
+        assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward'], \
+            "In {}: For an Alpha Factor Node, the linkdata {} should specify a special attribute named 'direction', " \
+            "with value either 'inward' or 'outward'.".format(self.name, linkdata)
+
         # Check random variables
         if self.ran_vars is None:
             self.ran_vars = linkdata.vn.ran_vars
         else:
-            assert self.ran_vars == linkdata.vn.ran_vars
-
-        assert 'direction' in linkdata.attr and linkdata.attr['direction'] in ['inward', 'outward']
+            assert self.ran_vars == linkdata.vn.ran_vars, \
+                "In {}: linkdata {} has conflicting random variables. This Alpha Factor Node infers random variables " \
+                "{} from other previously registered linkdata, but found different random variables {} in this linkdata."\
+                .format(self.name, linkdata, self.ran_vars, linkdata.vn.ran_vars)
 
         if linkdata.to_fn:
-            assert len(self.in_linkdata) == 0 or linkdata.attr['direction'] != self.in_linkdata[0].attr['direction']
-            assert len(self.in_linkdata) <= 1
+            assert len(self.in_linkdata) == 0 or linkdata.attr['direction'] != self.in_linkdata[0].attr['direction'], \
+                "In {}: Attempting to register an incoming linkdata {} with {} conditional message propagation " \
+                "direction, while already having another incoming linkdata {} with the same direction."\
+                .format(self.name, linkdata, linkdata.attr['direction'], self.in_linkdata[0])
         else:
-            assert len(self.out_linkdata) == 0 or linkdata.attr['direction'] != self.out_linkdata[0].attr['direction']
-            assert len(self.out_linkdata) <= 1
+            assert len(self.out_linkdata) == 0 or linkdata.attr['direction'] != self.out_linkdata[0].attr['direction'],\
+                "In {}: Attempting to register an outgoing linkdata {} with {} conditional message propagation " \
+                "direction, while already having another outgoing linkdata {} with the same direction."\
+                .format(self.name, linkdata, linkdata.attr['direction'], self.out_linkdata[0])
         super(AlphaFactorNode, self).add_link(linkdata)
 
         # If the other ld of this ld pair has not been added, then temporarily register this ld instance directly
