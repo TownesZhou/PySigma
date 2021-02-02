@@ -19,14 +19,14 @@ class NodeForTest(Node):
         pass
 
 
-class TestNode():
+class TestNode:
 
     def test_init(self):
         name = "test_name"
         node = NodeForTest(name)
 
         assert node.name == name
-        assert node.device == 'cpu'
+        assert node.device == torch.device('cpu')
         assert not node.visited
         assert isinstance(node.in_linkdata, list) and len(node.in_linkdata) == 0
         assert isinstance(node.out_linkdata, list) and len(node.out_linkdata) == 0

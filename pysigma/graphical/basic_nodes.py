@@ -261,7 +261,7 @@ class Node(ABC):
         Pretty log for beautiful front-end visualization.
     """
 
-    def __init__(self, name, device='cpu'):
+    def __init__(self, name: str, device: torch.device = torch.device('cpu')):
         self.name = name
         self.device = device
         # Flag indicating whether this node has been visited (compute() method called) during a decision cycle
@@ -281,7 +281,7 @@ class Node(ABC):
         return self.name
 
     @property
-    def quiescence(self):
+    def quiescence(self) -> bool:
         """Indicates whether this node has reached quiescence state, and no further message update computations, i.e.,
         `compute()`, is necessary at the decision phase of the current cognitive cycle. This property thus plays an
         important role in deciding the node traversing schedule of the graphical architecture.
@@ -298,7 +298,7 @@ class Node(ABC):
         return all(not in_ld.new for in_ld in self.in_linkdata)
 
     @abstractmethod
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Adding linkdata connecting to this node.
 
         """
