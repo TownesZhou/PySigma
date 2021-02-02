@@ -1,6 +1,9 @@
 """
     Utility functions
 """
+from __future__ import annotations      # For postponed evaluation of typing annotations
+from typing import Union, Optional, List, Tuple, Dict, Type
+from typing import Iterable as IterableType
 from collections.abc import Iterable
 import numpy as np
 import torch
@@ -9,8 +12,11 @@ from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint, integer_interval
 from torch.distributions.kl import kl_divergence
 
+# Define typing aliases
+MessageShape = Tuple[torch.Size, torch.Size, torch.Size, torch.Size]
 
-def intern_name(name: str, struct_type: str):
+
+def intern_name(name: str, struct_type: str) -> str:
     """
         Add prefix and brackets to transform user provided structure name to internal name
     :param name:    Structure name
@@ -28,7 +34,7 @@ def intern_name(name: str, struct_type: str):
         return "COND_[" + name + "]"
 
 
-def extern_name(name: str, struct_type: str):
+def extern_name(name: str, struct_type: str) -> str:
     """
         Inverse operation of intern_name
     """
@@ -44,7 +50,7 @@ def extern_name(name: str, struct_type: str):
     return name[6:-1]
 
 
-def compatible_shape(msg_shape1, msg_shape2):
+def compatible_shape(msg_shape1: MessageShape, msg_shape2: MessageShape) -> bool:
     """Checks whether the two given message shapes are compatible.
 
     Both `msg_shape1` and `msg_shape2` should be an iterable of `torch.Size` and have the contents
@@ -118,7 +124,12 @@ class DistributionServer:
     """
     # region
     @classmethod
-    def param2dist(cls, dist_class, param, b_shape=None, e_shape=None, dist_info=None):
+    def param2dist(cls,
+                   dist_class: Type[Distribution],
+                   param: torch.Tensor,
+                   b_shape: Optional[torch.Size] = None,
+                   e_shape: Optional[torch.Size] = None,
+                   dist_info: Optional[dict] = None) -> Distribution:
         """Converts distribution parameter to a distribution instance.
 
         Depending on the context and Predicate knowledge format, the parameter `param` may belong to different
@@ -194,7 +205,7 @@ class DistributionServer:
         return dist
 
     @classmethod
-    def dist2param(cls, dist, dist_info=None):
+    def dist2param(cls, dist: Distribution, dist_info: Optional[dict] = None) -> torch.Tensor:
         """Extract the parameter tensor from a given distribution instance.
 
         Depending on the context and Predicate knowledge format, the desired parameter may belong to different
@@ -241,7 +252,7 @@ class DistributionServer:
         return cls.dict_dist2param[dist_class].__func__(dist, dist_info)
 
     @classmethod
-    def get_moments(cls, dist, n_moments=1):
+    def get_moments(cls, dist: Distribution, n_moments: int = 1) -> torch.Tensor:
         """Get vector of moments from a given distribution instance
 
         .. todo::
@@ -257,7 +268,7 @@ class DistributionServer:
         return cls.dict_get_moments[dist_class].__func__(dist, n_moments)
 
     @classmethod
-    def draw_particles(cls, dist, num_particles, dist_info=None):
+    def draw_particles(cls, dist: Distribution, num_particles: int, dist_info: Optional[dict] = None) -> torch.Tensor:
         """Draw a list of `num_particles` event particles from the given distribution specified by `dist`. The event
         particles drawn will be in the format compatible with DistributionServer and PyTorch.
 
@@ -360,7 +371,7 @@ class DistributionServer:
         return particles
 
     @classmethod
-    def log_prob(cls, dist, values):
+    def log_prob(cls, dist: Distribution, values: torch.Tensor) -> torch.Tensor:
         """Get the log probability mass/density of the given particle values w.r.t. the given batched distribution
         instance.
 
@@ -441,7 +452,7 @@ class DistributionServer:
         return log_prob
 
     @classmethod
-    def kl_norm(cls, dist1, dist2):
+    def kl_norm(cls, dist1: Distribution, dist2: Distribution) -> torch.Tensor:
         """
             Get the norm of the KL divergence of two given batched distributions
         """
@@ -453,6 +464,7 @@ class DistributionServer:
 
     @classmethod
     def transform_param(cls, param, dist_info, trans):
+        # TODO: implement
         """
             .. todo::
                To implement
@@ -1012,7 +1024,12 @@ class KnowledgeServer:
     * PyTorch to Cognitive event format translation method: ``2cognitive_event(particles) --> particles``
     * Special marginal particle list sampling method: ``special_draw(batched_dist) --> particles, log_densities``
     """
-    def __init__(self, dist_class, rv_sizes, rv_constraints, rv_num_particles=[], dist_info=None):
+    def __init__(self,
+                 dist_class: Type[Distribution],
+                 rv_sizes: IterableType[int],
+                 rv_constraints: IterableType[Constraint],
+                 rv_num_particles: Optional[IterableType[int]] = (),
+                 dist_info: Optional[dict] = None):
         assert issubclass(dist_class, Distribution)
         assert isinstance(rv_sizes, Iterable) and all(isinstance(s, int) and s > 0 for s in rv_sizes)
         assert isinstance(rv_constraints, Iterable) and all(isinstance(c, Constraint) for c in rv_constraints)
@@ -1055,7 +1072,10 @@ class KnowledgeServer:
     Public API
     """
     # region
-    def draw_particles(self, batched_param, batch_shape, update_cache=True):
+    def draw_particles(self,
+                       batched_param: torch.Tensor,
+                       batch_shape: torch.Size,
+                       update_cache: bool = True) -> Tuple[Tuple[torch.Tensor, ...], Tuple[torch.Tensor, ...]]:
         """Draws new particles for the associated predicate w.r.t. the given `batched_param`. Returns necessary
         components to instantiate a particles message.
 
@@ -1125,7 +1145,10 @@ class KnowledgeServer:
 
         return particles, log_densities
 
-    def surrogate_log_prob(self, param, alt_particles=None, index_map=None):
+    def surrogate_log_prob(self,
+                           param: torch.Tensor,
+                           alt_particles: IterableType[Optional[torch.Tensor]] = None,
+                           index_map: Dict[int, Union[int, List[int]]] = None) -> torch.Tensor:
         """Query the log pdf of the surrogate particles specified by `alt_particles` w.r.t. the cached distribution
         instance.
 
@@ -1157,7 +1180,7 @@ class KnowledgeServer:
 
         Parameters
         ----------
-        param : torch.Tensor, optional
+        param : torch.Tensor
             The alternative parameter from which a surrogate distribution instance is to be instantiated and log prob
             being queried.
         alt_particles : Iterable of (torch.Tensor or None), or None
@@ -1295,7 +1318,7 @@ class KnowledgeServer:
 
         return log_prob
 
-    def event2torch_event(self, cat_particles):
+    def event2torch_event(self, cat_particles: torch.Tensor) -> torch.Tensor:
         """Translates joint particle event values from the Cognitive format to a format understandable by PyTorch
         distribution class.
 
@@ -1333,7 +1356,7 @@ class KnowledgeServer:
         assert result.shape[:-1] == cat_particles.shape[:-1]
         return result
 
-    def event2cognitive_event(self, particles):
+    def event2cognitive_event(self, particles: torch.Tensor) -> torch.Tensor:
         """Translates joint particle event values from the PyTorch distribution class format to Cognitive format.
 
         Parameters
@@ -1375,7 +1398,7 @@ class KnowledgeServer:
     """
     # region
     @staticmethod
-    def combinatorial_cat(particles):
+    def combinatorial_cat(particles: IterableType[torch.Tensor]) -> torch.Tensor:
         """Helper static method that combinatorially concatenates the list of event particles specified by `particles`.
 
         Returns the contained tensor directly if there is only one entry in `particles`.
@@ -1427,7 +1450,7 @@ class KnowledgeServer:
         return comb_cat
 
     @staticmethod
-    def combinatorial_decat(cat_particles, split_sizes):
+    def combinatorial_decat(cat_particles: torch.Tensor, split_sizes: List[int]) -> Tuple[torch.Tensor, ...]:
         """Helper static method that combinatorially de-concatenate the joint particles specified by `cat_particles`,
         with the event size of the particle tensors in each de-concatenated list given by `split_sizes`. This method
         implements the exact opposite operation of `combinatorial_cat`.

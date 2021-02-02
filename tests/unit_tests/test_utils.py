@@ -1168,7 +1168,7 @@ class TestKnowledgeServer:
         return_val = KS.combinatorial_cat(particles)
         assert equal_within_error(return_val, expected_val)
 
-    def test_combinatorial_cat_content_ad_hoc_1(self):
+    def test_combinatorial_cat_content_ad_hoc_2(self):
         # Test correctness of contents using ad hoc values
         s_shape, e_shape = Size([2, 3]), Size([2, 1])
         particles = [
