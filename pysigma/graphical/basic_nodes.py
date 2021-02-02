@@ -1,19 +1,21 @@
 """
-    All kinds of nodes in the graphical architecture
-"""
-from abc import ABC, abstractmethod
-from collections.abc import Iterable
-import torch
-from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
-from ..utils import compatible_shape
-
-"""
     Basic data structures and abstract node classes
         - LinkData
         - Node
         - FactorNode
         - VariableNode
 """
+from __future__ import annotations      # For postponed evaluation of typing annotations
+from typing import Union, Optional, List, Tuple
+from typing import Iterable as IterableType
+from abc import ABC, abstractmethod
+from collections.abc import Iterable
+import torch
+from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
+from ..utils import compatible_shape
+
+# Define typing aliases
+MessageShape = Tuple[torch.Size, torch.Size, torch.Size, torch.Size]
 
 
 class LinkData:
@@ -62,7 +64,13 @@ class LinkData:
     pretty_log : dict
         Pretty logging for front-end visualization.
     """
-    def __init__(self, vn, fn, to_fn, msg_shape, epsilon=NP_EPSILON, **kwargs):
+    def __init__(self,
+                 vn: VariableNode,
+                 fn: FactorNode,
+                 to_fn: bool,
+                 msg_shape: MessageShape,
+                 epsilon: float = NP_EPSILON,
+                 **kwargs):
         assert isinstance(vn, VariableNode)
         assert isinstance(fn, FactorNode)
         assert isinstance(msg_shape, tuple) and len(msg_shape) == 4 and \
@@ -98,7 +106,7 @@ class LinkData:
     def __repr__(self):
         return str(self)
 
-    def reset_shape(self, msg_shape):
+    def reset_shape(self, msg_shape: MessageShape):
         """Reset shape for the Message
 
         Parameters
@@ -118,7 +126,7 @@ class LinkData:
         self.memory = Message.identity()
         self.new = False
 
-    def write(self, new_msg, check_diff=True, clone=False):
+    def write(self, new_msg: Message, check_diff: bool = True, clone: bool = False):
         """Writes to the link message memory with the new message specified via `new_msg`. Once a new message is
         written, ``self.new`` will be set to ``True``.
 
@@ -204,7 +212,7 @@ class LinkData:
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
 
-    def read(self, clone=False):
+    def read(self, clone: bool = False) -> Message:
         """Returns the current content stored in memory. Set ``self.new`` to ``False`` to indicate this link message
         has been read in the current decision phase.
 

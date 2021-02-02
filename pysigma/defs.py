@@ -311,9 +311,9 @@ class Message:
                  sample_shape: torch.Size = torch.Size([]),
                  event_shape: torch.Size = torch.Size([]),
                  parameter: Union[int, torch.Tensor] = 0,
-                 particles: Optional[torch.Tensor] = None,
+                 particles: IterableType[torch.Tensor] = None,
                  weight: Union[int, torch.Tensor] = 1,
-                 log_densities: Optional[torch.Tensor] = None,
+                 log_densities: IterableType[torch.Tensor] = None,
                  device: torch.device = torch.device('cpu'),
                  **kwargs):
         assert isinstance(msg_type, MessageType)

@@ -237,7 +237,7 @@ class TestLinkData:
         assert ld.memory is old_msg
         assert not ld.new
 
-    def test_write_check_diff_on_accept_differnt_type(self):
+    def test_write_check_diff_on_accept_different_type(self):
         # Test that new message of different type would be accepted even if its contents are identical
         # Use a typed identity message to test against the initial default type identity message
         mock_vn = MagicMock(spec=VariableNode)
@@ -350,7 +350,7 @@ class TestLinkData:
         assert ld.memory is new_msg
         assert ld.new
 
-    def test_write_check_diff_on_accept_different_content_3(self):
+    def test_write_check_diff_on_accept_different_content_4(self):
         # Test 4: test Both type messages
         mock_vn = MagicMock(spec=VariableNode)
         mock_vn.name = "test_variable_node"
@@ -448,7 +448,7 @@ class TestLinkData:
 
         # Use parameter message as testing example
         msg = Message(MessageType.Parameter,
-                          batch_shape=Size([10]), param_shape=Size([2]), parameter=torch.randn([10, 2]))
+                      batch_shape=Size([10]), param_shape=Size([2]), parameter=torch.randn([10, 2]))
         ld.write(msg, check_diff=True)
 
         read_msg = ld.read()
