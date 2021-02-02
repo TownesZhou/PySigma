@@ -1,7 +1,9 @@
 """
     Basic structures in the graphical architecture
 """
-
+from __future__ import annotations      # For postponed evaluation of typing annotations
+from typing import Union, Optional, List, Tuple
+from typing import Iterable as IterableType
 from copy import deepcopy
 from enum import Enum, Flag, auto
 from collections.abc import Iterable
@@ -17,6 +19,9 @@ from .utils import KnowledgeServer
 """
 # Global numerical precision
 NP_EPSILON = 1e-6
+
+# Typing aliases
+ValueConstraints = IterableType[Constraint]
 
 
 # Variable Metatypes and Variable for general inference
@@ -68,7 +73,7 @@ class Variable:
         The set of value constraints that determine the value range (support) of this variable.
     """
 
-    def __init__(self, name, metatype, size, value_constraints=None):
+    def __init__(self, name: str, metatype: VariableMetatype, size: int, value_constraints: ValueConstraints = None):
         assert isinstance(name, str)
         assert isinstance(metatype, VariableMetatype)
         assert isinstance(size, int)
@@ -300,10 +305,17 @@ class Message:
 
     Accordingly, the '+' and '*' operator are overloaded according the to the specifications above.
     """
-    def __init__(self, msg_type,
-                 batch_shape=torch.Size([]),
-                 param_shape=torch.Size([]), sample_shape=torch.Size([]), event_shape=torch.Size([]),
-                 parameter=0, particles=None, weight=1, log_densities=None, device='cpu', **kwargs):
+    def __init__(self, msg_type: MessageType,
+                 batch_shape: torch.Size = torch.Size([]),
+                 param_shape: torch.Size = torch.Size([]),
+                 sample_shape: torch.Size = torch.Size([]),
+                 event_shape: torch.Size = torch.Size([]),
+                 parameter: Union[int, torch.Tensor] = 0,
+                 particles: Optional[torch.Tensor] = None,
+                 weight: Union[int, torch.Tensor] = 1,
+                 log_densities: Optional[torch.Tensor] = None,
+                 device: torch.device = torch.device('cpu'),
+                 **kwargs):
         assert isinstance(msg_type, MessageType)
         assert isinstance(batch_shape, torch.Size) and \
                ((MessageType.Parameter in msg_type and not isinstance(parameter, torch.Tensor)) or
@@ -412,11 +424,11 @@ class Message:
         Member properties
     """
     @property
-    def isid(self):
+    def isid(self) -> bool:
         """Whether `self` is an identity message.
 
         """
-        if not MessageType.Parameter in self.type and not MessageType.Particles in self.type:
+        if MessageType.Parameter not in self.type and MessageType.Particles not in self.type:
             return False
 
         if self.type is MessageType.Parameter:
@@ -429,7 +441,7 @@ class Message:
             return not isinstance(self.parameter, torch.Tensor) and not isinstance(self.weight, torch.Tensor)
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[torch.Size, torch.Size, torch.Size, torch.Size]:
         """Shape of the message. Equivalent to calling size()
 
         """
@@ -438,7 +450,7 @@ class Message:
     """
         Overload arithmetic operators
     """
-    def __eq__(self, other):
+    def __eq__(self, other: Message) -> bool:
         """Overrides equality testing operation ``==``
 
         Two messages are equal if and only if all of its contents are equal, including contents in the auxiliary
@@ -496,7 +508,7 @@ class Message:
 
         return True
 
-    def __ne__(self, other):
+    def __ne__(self, other: Message) -> bool:
         """Overrides inequality testing operation ``!=``
 
         See Also
@@ -505,7 +517,7 @@ class Message:
         """
         return not self == other
 
-    def __add__(self, other):
+    def __add__(self, other: Message) -> Message:
         """Overrides the addition operation ``+``.
 
         Implements the semantics of addition operation as in vector spaces. The computational operations used to
@@ -641,7 +653,7 @@ class Message:
 
         return new_msg
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: Message) -> Message:
         """Overrides self-addition operator ``+=``.
 
         See Also
@@ -650,7 +662,7 @@ class Message:
         """
         return self.__add__(other)
 
-    def __mul__(self, other):
+    def __mul__(self, other: Union[int, float, torch.Tensor]) -> Message:
         """Overrides multiplication operator ``*``.
 
         Implements the semantics of scalar multiplication operation as in vector spaces. The computational operations
@@ -748,7 +760,7 @@ class Message:
 
         return new_msg
 
-    def __imul__(self, other):
+    def __imul__(self, other: Union[int, float, torch.Tensor]) -> Message:
         """Overrides self-multiplication operator ``*=``.
 
         See Also
@@ -757,7 +769,7 @@ class Message:
         """
         return self.__mul__(other)
 
-    def __str__(self):
+    def __str__(self) -> str:
         # if self.type == MessageType.Parameter:
         #     b_shape_str = str(list(self.b_shape))
         #     p_shape_str = str(list(self.p_shape))
@@ -783,7 +795,7 @@ class Message:
         Message class static utility methods 
     """
     @staticmethod
-    def compose(msg1, msg2):
+    def compose(msg1: Message, msg2: Message) -> Message:
         """Composes a ``MessageType.Particles`` message with a ``MessageType.Parameters`` message to return a
         ``MessageType.Dual`` message that contain all components from both messages.
 
@@ -837,7 +849,7 @@ class Message:
         return new_msg
 
     @staticmethod
-    def identity(msg_type=MessageType.Dual):
+    def identity(msg_type: MessageType = MessageType.Dual) -> Message:
         """Returns a minimum identity message (without declaration of shapes) of the specified type.
 
         Parameters
@@ -860,7 +872,7 @@ class Message:
     """
         General utility member methods
     """
-    def size(self):
+    def size(self) -> Tuple[torch.Size, torch.Size, torch.Size, torch.Size]:
         """Returns a tuple of the message's shapes: ``(batch_shape, param_shape, sample_shape, event_shape)``
 
         Returns
@@ -881,7 +893,7 @@ class Message:
     #     assert isinstance(other, Message)
     #     return self.size() == other.size()
 
-    def same_particles_as(self, other):
+    def same_particles_as(self, other: Message) -> bool:
         """Check if `self` has the same particles as the other message. This includes checking the list of particle
         value tensors as well as checking the list of particle log sampling density tensors.
 
@@ -933,7 +945,7 @@ class Message:
 
         return same
 
-    def diff_param(self, other):
+    def diff_param(self, other: Message) -> Union[int, torch.Tensor]:
         """Compute the difference between the parameters of `self` and `other`.
 
         Returns a batch average L2 distance between the two parameters. Since parameters have shape
@@ -979,7 +991,7 @@ class Message:
         val = diff.norm(dim=-1).mean()
         return val
 
-    def diff_weight(self, other):
+    def diff_weight(self, other: Message) -> Union[int, torch.Tensor]:
         """Compute the difference between the weight of `self` and `other`.
 
         Returns a mean element-wise absolute value difference between the two weight tensors.
@@ -1034,7 +1046,7 @@ class Message:
         val = l1_loss(x1, x2, reduction='mean')
         return val
 
-    def reduce_type(self, msg_type):
+    def reduce_type(self, msg_type: MessageType) -> Message:
         """Returns a reduced `msg_type` type message from `self`, where irrelevant components w.r.t. 'msg_type' in
         `self` is removed, and only relevant components are retained and cloned.
 
@@ -1075,7 +1087,7 @@ class Message:
                               device=self.device, **cloned_msg.attr)
         return new_msg
 
-    def clone(self):
+    def clone(self) -> Message:
         """Return a cloned message from self.
 
         Guarantees that every content is deep-copied. Tensors will be cloned and dictionaries will be deep-copied.
@@ -1107,7 +1119,7 @@ class Message:
                           parameters, particles, weight, log_densities, device=self.device, **attr)
         return new_msg
 
-    def to_device(self, device):
+    def to_device(self, device: torch.device) -> Message:
         """Returns a version of `self` where the tensor components are hosted on the specified `device`.
 
         Per PyTorch design, the original tensors will be returned without copying if target `device` is the current
@@ -1144,7 +1156,7 @@ class Message:
         Methods for batch dimension manipulations. 
     """
 
-    def batch_permute(self, target_dims):
+    def batch_permute(self, target_dims: List[int]) -> Message:
         """Returns a permuted message whose tensor contents that include batch dimensions (e.g. parameters and particle
         values) are permuted w.r.t. `target_dims`.
 
@@ -1202,7 +1214,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_unsqueeze(self, dim):
+    def batch_unsqueeze(self, dim: int) -> Message:
         """Returns a new message with a dimension of size one inserted at the target batch dimension specified by `dim`.
 
         The target dimension is relative to the batch dimensions only. It should be in range
@@ -1249,7 +1261,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_index_select(self, dim, index):
+    def batch_index_select(self, dim: int, index: torch.LongTensor) -> Message:
         """Returns a message that is a concatenation of the slices from `self` along the `dim` batch dimension and
         indexed by `index`.
 
@@ -1304,7 +1316,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_index_put(self, dim, index):
+    def batch_index_put(self, dim: int, index: torch.LongTensor) -> Message:
         """Returns a message whose entries along the dimension `dim` are slices from self message and are put into
         the positions along the axis specified by indices in `index`.
 
@@ -1380,7 +1392,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_diagonal(self, dim1=0, dim2=1):
+    def batch_diagonal(self, dim1: int = 0, dim2: int = 1) -> Message:
         """Returns a partial view of self with the its diagonal elements with respect to `dim1` and `dim2` appended as
         a dimension at the end of the shape. Note that the number of dimensions of the returned message is 1 minus
         that of the original message, because `dim1` and `dim2` are reduced to the new diagonal dimension.
@@ -1449,7 +1461,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_diag_embed(self, diag_dim=-1, target_dim1=-2, target_dim2=-1):
+    def batch_diag_embed(self, diag_dim: int = -1, target_dim1: int = -2, target_dim2: int = -1) -> Message:
         """Returns a message whose diagonals of certain 2D planes (dimensions specified by `target_dim1` and
         `target_dim2`) are filled by slices of self along the dimension `diag_dim` of the self message).
 
@@ -1542,7 +1554,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_narrow(self, dim, length):
+    def batch_narrow(self, dim: int, length: int) -> Message:
         """Returns a message that is a narrowed version of `self` along the dimension specified by `dim`.
 
         Effectively, this method selects the chunk spanning ``[:length]`` along the dimension `dim` of `self`. The
@@ -1598,7 +1610,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_broaden(self, dim, length):
+    def batch_broaden(self, dim: int, length: int) -> Message:
         """Returns a message that is a broadened version of `self` along the dimension specified by `dim`, with identity
         values filled in ``[dim_size + 1: length]`` along the dimension `dim` in the returned message.
 
@@ -1663,7 +1675,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_summarize(self, dim):
+    def batch_summarize(self, dim: int) -> Message:
         """Implements the default Sum-Product summarization semantics. Summarizes over the batch dimension specified by
         `dim`. Returns a message with one less dimension.
 
@@ -1711,7 +1723,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_flatten(self, dims=None):
+    def batch_flatten(self, dims: Optional[IterableType[int]] = None) -> Message:
         """Flattens the set of batch dimensions specified by `dims` and append the flattened dimension as the last
         batch dimension. If `dims` is ``None``, will flatten all batch dimensions.
 
@@ -1764,7 +1776,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_reshape(self, new_batch_shape):
+    def batch_reshape(self, new_batch_shape: Union[IterableType[int], torch.Size]) -> Message:
         """Returns a message with the same underlying data as self, but with the specified `new_batch_shape`.
 
         Parameters
@@ -1806,7 +1818,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def batch_expand(self, new_batch_shape):
+    def batch_expand(self, new_batch_shape: Union[IterableType[int], torch.Size]) -> Message:
         """Returns a new view of `self` with singleton batch dimensions expanded to a larger size.
 
         Passing a -1 as the size for a batch dimension means not changing the size of that batch dimension.
@@ -1867,7 +1879,7 @@ class Message:
     """
         Methods for Operations on Message Events 
     """
-    def event_transform(self, trans):
+    def event_transform(self, trans: Transform) -> Message:
         """Applies a transformation on the `self`'s event values. Returns the transformed message.
 
         `self` contents will be cloned before being passed to the transformed message.
@@ -1929,7 +1941,7 @@ class Message:
                           device=self.device, **cloned_msg.attr)
         return new_msg
 
-    def event_reweight(self, target_log_prob):
+    def event_reweight(self, target_log_prob: torch.Tensor) -> Message:
         """Returns a new message with the same type of `self` with the same particle values and log sampling densities
         as `self`, but a different weight tensor, derived from importance weighting `target_log_prob` against stored
         log sampling density tensors in ``self.log_densities``.
@@ -1996,7 +2008,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def event_marginalize(self, event_dim):
+    def event_marginalize(self, event_dim: int) -> Message:
         """Returns a message from `self` where the event dimension specified bv `event_dim` is marginalized,
         corresponding to marginalizing the corresponding random variable.
 
@@ -2088,7 +2100,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def event_concatenate(self, cat_event_dims, target_event_dim=-1):
+    def event_concatenate(self, cat_event_dims: IterableType[int], target_event_dim: int = -1) -> Message:
         """Concatenate the particle events corresponding to the event dimensions specified by `cat_event_dims`. The new
         concatenated events will be placed at `target_event_dim` dimension.
 
@@ -2205,7 +2217,6 @@ class Message:
                           device=self.device, **self.attr)
 
         return new_msg
-
 
 
 # TODO: Enum class of all the inference method
