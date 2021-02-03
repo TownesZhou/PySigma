@@ -362,7 +362,7 @@ class FactorNode(Node, ABC):
 
     Guarantees that all incident nodes are variable nodes.
     """
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Add a linkdata connecting to a variable node
 
         Parameters
@@ -423,7 +423,13 @@ class VariableNode(Node, ABC):
     e_shape : torch.Size
         Event dimension sizes. Inferred from `ran_vars`. Defaults to ``torch.Size([])``.
     """
-    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
+    def __init__(self,
+                 name: str,
+                 rel_var_list: IterableType[Variable],
+                 param_var: Variable = None,
+                 index_var_list: IterableType[Variable] = None,
+                 ran_var_list: IterableType[Variable] = None,
+                 **kwargs):
         super(VariableNode, self).__init__(name, **kwargs)
         assert isinstance(rel_var_list, Iterable) and \
             all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
@@ -431,10 +437,10 @@ class VariableNode(Node, ABC):
             (isinstance(param_var, Variable) and param_var.metatype == VariableMetatype.Parameter)
         assert index_var_list is None or \
             (isinstance(index_var_list, Iterable) and
-             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Indexing) for v in index_var_list)
+             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Indexing for v in index_var_list))
         assert ran_var_list is None or \
             (isinstance(ran_var_list, Iterable) and
-             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Random) for v in ran_var_list)
+             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Random for v in ran_var_list))
         assert (index_var_list is None) is (ran_var_list is None)
 
         self.rel_vars = tuple(rel_var_list)
@@ -447,7 +453,7 @@ class VariableNode(Node, ABC):
         self.s_shape = torch.Size([v.size for v in self.index_vars]) if self.index_vars is not None else torch.Size([])
         self.e_shape = torch.Size([v.size for v in self.ran_vars]) if self.ran_vars is not None else torch.Size([])
 
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Register the LinkData connecting a factor node to this variable node.
 
         Checks that the preset message shape specified in `linkdata` agrees with the inferred message shape at this

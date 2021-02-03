@@ -16,7 +16,7 @@ class VariableNodeForTest(VariableNode):
         super(VariableNodeForTest, self).compute()
 
 
-class TestVariableNode():
+class TestVariableNode:
 
     def test_init_correct_batch_shape(self):
         rel_var_list = [Variable("rel1", VariableMetatype.Relational, 3),

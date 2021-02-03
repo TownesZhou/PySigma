@@ -14,7 +14,7 @@ class FactorNodeForTest(FactorNode):
         super(FactorNodeForTest, self).compute()
 
 
-class TestFactorNode():
+class TestFactorNode:
 
     def test_add_link_not_connected_to_self(self):
         # Test add a link where the factor node is not self
