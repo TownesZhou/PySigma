@@ -798,22 +798,24 @@ class PBFN(FactorNode):
         Set by `event_shape`.
     """
 
-    def __init__(self, name, rel_var_list, ran_var_list, **kwargs):
+    def __init__(self,
+                 name: str,
+                 rel_var_list: IterableType[Variable],
+                 ran_var_list: IterableType[Variable],
+                 **kwargs):
         assert isinstance(rel_var_list, Iterable) and \
                all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
         assert isinstance(ran_var_list, Iterable) and \
                all(isinstance(v, Variable) and v.metatype is VariableMetatype.Random for v in ran_var_list)
         super(PBFN, self).__init__(name, **kwargs)
-        self.pretty_log["node type"] = "Perceptual Buffer Function Node"
+        self.pretty_log["node type"] = "Perceptual Buffer Factor Node"
 
-        self.b_shape = torch.Size([v.size for v in rel_var_list])
-        self.e_shape = torch.Size([v.size for v in ran_var_list])
+        self.b_shape: torch.Size = torch.Size([v.size for v in rel_var_list])
+        self.e_shape: torch.Size = torch.Size([v.size for v in ran_var_list])
         # Perceptual buffer. Initialize to identity message
         self.buffer = Message.identity(MessageType.Dual)
 
-        self.pretty_log["node type"] = "Perceptual Buffer Factor Node"
-
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """For PBFN, only one linkdata can be admitted, and it should be an outgoing linkdata connecting a WMVN node.
 
         """
@@ -834,7 +836,10 @@ class PBFN(FactorNode):
             .format(self.name, self.b_shape, self.e_shape, linkdata.msg_shape[0], linkdata.msg_shape[3])
         super(PBFN, self).add_link(linkdata)
 
-    def perceive(self, obs=None, weight=None, mode='joint'):
+    def perceive(self,
+                 obs: Union[torch.Tensor, IterableType[torch.Tensor], None] = None,
+                 weight: Union[torch.Tensor, IterableType[torch.Tensor], None] = None,
+                 mode: str = 'joint'):
         """Perceives a new piece of observation / evidence particle events, specified by `obs`, with optional weight
         specified by `weight`. instantiate and store the perception message in the perceptual buffer and send by
         `compute()`.
@@ -948,7 +953,6 @@ class PBFN(FactorNode):
             self.buffer = Message(MessageType.Dual, batch_shape=self.b_shape, parameter=0, weight=1)
             return
 
-        num_rvs = len(self.e_shape)
         obs = tuple(obs) if mode == 'marginal' else obs
         weight = tuple(weight) if mode == 'marginal' and weight is not None else weight
 
@@ -1013,7 +1017,7 @@ class PBFN(FactorNode):
         self.buffer = perceptual_msg
 
     @property
-    def quiescence(self):
+    def quiescence(self) -> bool:
         """Overrides default behavior so now PBFN's quiescence is determined by whether `compute()` has been called.
 
         """

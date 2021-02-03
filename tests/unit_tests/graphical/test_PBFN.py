@@ -2,18 +2,14 @@
     Unit tests for PBFN class
 """
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock
 import torch
-import torch.distributions as D
 import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
-from pysigma.graphical.basic_nodes import LinkData, FactorNode, VariableNode, Node
+from pysigma.graphical.basic_nodes import LinkData, VariableNode
 from pysigma.graphical.predicate_nodes import PBFN, WMVN
-from pysigma.utils import KnowledgeServer as KS
-from pysigma.utils import DistributionServer as DS
-from ..test_Message import TestMessage
 
 from ...utils import assert_equal_within_error, EPS
 
@@ -699,7 +695,7 @@ class TestPBFN:
         out_ld.write.assert_not_called()
 
     def test_no_quiescence_do_compute(self):
-        # Test that when not quiesced, the buffer messag is sent
+        # Test that when not quiesced, the buffer message is sent
         b_shape, e_shape = Size([2, 3, 4]), Size([1, 2, 3])
         rel_var_list = [Variable("test_rel_var", VariableMetatype.Relational, b_size) for b_size in b_shape]
         ran_var_list = [Variable("test_ran_var", VariableMetatype.Random, e_size, [C.real]) for e_size in e_shape]
