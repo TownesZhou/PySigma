@@ -8,7 +8,7 @@ import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
-from pysigma.graphical.basic_nodes import LinkData, VariableNode
+from pysigma.graphical.basic_nodes import LinkData, VariableNode, NodeConfigurationError
 from pysigma.graphical.predicate_nodes import PBFN, WMVN
 
 from ...utils import assert_equal_within_error, EPS
@@ -673,6 +673,19 @@ class TestPBFN:
         assert_equal_within_error(pbfn.buffer.weight, expected_weight)
         # Check densities
         assert_equal_within_error(pbfn.buffer.log_densities[0], torch.zeros(num_ptcl) / num_ptcl)
+
+    def test_ill_configuration(self):
+        # Test NodeConfigurationError is raised if no outgoing linkdata is registered
+        b_shape, e_shape = Size([2, 3, 4]), Size([1, 2, 3])
+        rel_var_list = [Variable("test_rel_var", VariableMetatype.Relational, b_size) for b_size in b_shape]
+        ran_var_list = [Variable("test_ran_var", VariableMetatype.Random, e_size, [C.real]) for e_size in e_shape]
+        pbfn = PBFN("test_pbfn", rel_var_list, ran_var_list)
+
+        with pytest.raises(NodeConfigurationError) as excinfo:
+            pbfn.compute()
+
+        assert str(excinfo.value) == "Wrong configuration for node test_pbfn: a PBFN expects at least one one " \
+                                     "outgoing linkdata to be computable. Found no registered outgoing linkdata."
 
     def test_quiescence_no_compute(self):
         # Test that no message is sent when quiesced

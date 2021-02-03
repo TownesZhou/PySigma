@@ -1051,12 +1051,19 @@ class PBFN(FactorNode):
         """
         return self.visited
 
+    def precompute_check(self):
+        """The computable condition for a Perceptual Buffer Factor Node is that there is at least one outgoing linkdata.
+        """
+        if len(self.out_linkdata) == 0:
+            raise NodeConfigurationError("Wrong configuration for node {}: a PBFN expects at least one one outgoing "
+                                         "linkdata to be computable. Found no registered outgoing linkdata."
+                                         .format(self.name))
+
     @FactorNode.compute_control
     def compute(self):
         """Sends the contents in perceptual buffer to the connected WMVN.
 
         """
-        assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
         out_ld.write(self.buffer)
 
