@@ -601,6 +601,16 @@ class DFN(FactorNode):
 
         super(DFN, self).add_link(linkdata)
 
+    def precompute_check(self):
+        """The computable condition for a Default Factor Node is that there are at least one incoming linkdata and one
+        outgoing linkdata.
+        """
+        if len(self.in_linkdata) == 0 or len(self.out_linkdata) == 0:
+            raise NodeConfigurationError("Wrong configuration for node {}: a DFN expects at least one incoming "
+                                         "linkdata and one outgoing linkdata to be computable. Found {} registered "
+                                         "incoming linkdata and {} registered outgoing linkdata"
+                                         .format(self.name, len(self.in_linkdata), len(self.out_linkdata)))
+
     @FactorNode.compute_control
     def compute(self):
         """Relay untempered message to downstream variable nodes.
@@ -663,6 +673,16 @@ class DVN(VariableNode):
         assert linkdata.to_fn or len(self.in_linkdata) == 0
 
         super(DVN, self).add_link(linkdata)
+
+    def precompute_check(self):
+        """The computable condition for a Default Factor Node is that there are at least one incoming linkdata and one
+        outgoing linkdata.
+        """
+        if len(self.in_linkdata) == 0 or len(self.out_linkdata) == 0:
+            raise NodeConfigurationError("Wrong configuration for node {}: a DVN expects at least one incoming "
+                                         "linkdata and one outgoing linkdata to be computable. Found {} registered "
+                                         "incoming linkdata and {} registered outgoing linkdata"
+                                         .format(self.name, len(self.in_linkdata), len(self.out_linkdata)))
 
     @VariableNode.compute_control
     def compute(self):

@@ -12,6 +12,9 @@ from pysigma.defs import Variable, VariableMetatype
 
 # Subclassing abstract base VariableNode class for testing
 class VariableNodeForTest(VariableNode):
+    def precompute_check(self):
+        pass
+
     def compute(self):
         super(VariableNodeForTest, self).compute()
 

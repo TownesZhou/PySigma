@@ -7,7 +7,7 @@ from torch import Size
 from torch.distributions.constraints import real
 
 from pysigma.defs import Message
-from pysigma.graphical.basic_nodes import DFN, LinkData
+from pysigma.graphical.basic_nodes import DFN, LinkData, NodeConfigurationError
 from pysigma.defs import Variable, VariableMetatype
 from .test_VariableNode import VariableNodeForTest
 
@@ -64,6 +64,36 @@ class TestDFN:
 
         fn.add_link(ld_1)
         fn.add_link(ld_2)
+
+    def test_ill_configuration_1(self):
+        # Test that NodeConfigurationError is raised if missing incoming linkdata.
+        # Mock only one outgoing linkdata
+        mock_out_ld = MagicMock(spec_set=LinkData)
+
+        fn = DFN("test_dfn")
+        fn.out_linkdata.append(mock_out_ld)
+
+        with pytest.raises(NodeConfigurationError) as excinfo:
+            fn.compute()
+
+        assert str(excinfo.value) == "Wrong configuration for node test_dfn: a DFN expects at least one incoming " \
+                                     "linkdata and one outgoing linkdata to be computable. Found 0 registered " \
+                                     "incoming linkdata and 1 registered outgoing linkdata"
+
+    def test_ill_configuration_2(self):
+        # Test that NodeConfigurationError is raised if missing outgoing linkdata.
+        # Mock only one incoming linkdata
+        mock_in_ld = MagicMock(spec_set=LinkData)
+
+        fn = DFN("test_dfn")
+        fn.in_linkdata.append(mock_in_ld)
+
+        with pytest.raises(NodeConfigurationError) as excinfo:
+            fn.compute()
+
+        assert str(excinfo.value) == "Wrong configuration for node test_dfn: a DFN expects at least one incoming " \
+                                     "linkdata and one outgoing linkdata to be computable. Found 1 registered " \
+                                     "incoming linkdata and 0 registered outgoing linkdata"
 
     def test_compute_quiescence(self):
         # Test no message is sent when quiesced

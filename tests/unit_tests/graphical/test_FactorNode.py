@@ -10,6 +10,9 @@ from pysigma.graphical.basic_nodes import FactorNode, VariableNode, LinkData
 
 # Subclass abstract base FactorNode to carry out tests
 class FactorNodeForTest(FactorNode):
+    def precompute_check(self):
+        pass
+
     def compute(self):
         super(FactorNodeForTest, self).compute()
 

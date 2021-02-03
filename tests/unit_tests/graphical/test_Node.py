@@ -70,7 +70,7 @@ class TestNode:
         node.in_linkdata = [MagicMock(new=False)] * 3 + [MagicMock(new=True)]
         assert not node.quiescence
 
-    def test_configuration_error(self):
+    def test_ill_configuration(self):
         # Test that correct exception is thrown if node is ill-configured
         with patch("pysigma.graphical.basic_nodes.Node.quiescence", new_callable=PropertyMock) as mock_quiescence:
             mock_quiescence.return_value = True        # Exception should be raised even if node is quiesced
