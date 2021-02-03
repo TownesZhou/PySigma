@@ -2,7 +2,7 @@
     Basic structures in the graphical architecture
 """
 from __future__ import annotations      # For postponed evaluation of typing annotations
-from typing import Union, Optional, List, Tuple
+from typing import Union, Optional, List, Tuple, Set
 from typing import Iterable as IterableType
 from copy import deepcopy
 from enum import Enum, Flag, auto
@@ -82,14 +82,30 @@ class Variable:
         assert (value_constraints is not None) is (metatype is VariableMetatype.Random)
 
         # Variable name, its identity. Used for variable matching. Of type str
-        self.name = name
+        self._name = name
         # Variable meta-type, of type VariableMetatype
-        self.metatype = metatype
+        self._metatype = metatype
         # Variable size. Size of the dimension that the variable corresponds to. Of type int
-        self.size = size
+        self._size = size
         # List of value constraints if the Variable is of Random metatype.
         #   Useful at Beta-join to select globally valid particle values
-        self.constraints = set(value_constraints) if value_constraints is not None else None
+        self._constraints = set(value_constraints) if value_constraints is not None else None
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def metatype(self) -> VariableMetatype:
+        return self._metatype
+
+    @property
+    def size(self) -> int:
+        return self._size
+
+    @property
+    def constraints(self) -> Set[Constraint]:
+        return self._constraints
 
     def __eq__(self, other):
         # override so '==' operator test variable equality
