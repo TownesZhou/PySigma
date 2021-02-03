@@ -340,7 +340,6 @@ class TestWMFN_VI:
                                      "linkdata and one outgoing linkdata to be computable. Found 1 registered " \
                                      "incoming linkdata and 0 registered outgoing linkdata".format(wmfn_vi.name)
 
-
     def test_quiescence(self):
         # Test that no message is sent when quiesced
         wmfn_vi = self.generate_wmfn_vi_1()

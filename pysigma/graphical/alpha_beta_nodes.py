@@ -10,7 +10,7 @@ import torch
 from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
-from .basic_nodes import LinkData, VariableNode, FactorNode
+from .basic_nodes import LinkData, VariableNode, FactorNode, NodeConfigurationError
 from ..utils import KnowledgeServer
 from ..structures import VariableMap, Summarization
 
@@ -84,26 +84,38 @@ class AlphaFactorNode(FactorNode, ABC):
         # If the other ld of this ld pair has not been added, then temporarily register this ld instance directly
         direction = linkdata.attr['direction']
         if direction not in self.labeled_ld_pair.keys():
-            self.labeled_ld_pair[direction] = linkdata
+            self.labeled_ld_pair[direction] = (linkdata,)
         # Otherwise, take out the other ld of this ld pair from the dict and replace entry with a tuple
         #   Make sure that incoming ld is the first element of the tuple and outgoing ld the second element
         else:
-            other_ld = self.labeled_ld_pair[direction]
+            other_ld = self.labeled_ld_pair[direction][0]
             self.labeled_ld_pair[direction] = (linkdata, other_ld) if linkdata.to_fn else (other_ld, linkdata)
 
+    def precompute_check(self):
+        """The computable condition for a AlphaFactorNode is that there is at least pair of incoming and outgoing
+        linkdata of the same message propagation direction
+        """
+        if len(list(self.labeled_ld_pair.keys())) == 0:
+            raise NodeConfigurationError("Wrong configuration for node {}: no registered linkdata.".format(self.name))
+        if not all(len(pair) == 2 for pair in self.labeled_ld_pair.values()):
+            raise NodeConfigurationError("Wrong configuration for node {}: incomplete pair of linkdata. Found {} "
+                                         "inward linkdata and {} outward linkdata."
+                                         .format(self.name,
+                                                 len(self.labeled_ld_pair['inward']),
+                                                 len(self.labeled_ld_pair['outward'])))
+
+    @FactorNode.compute_control
     def compute(self):
         """Carries out `inward_compute()` and `outward_compute()` individually if their corresponding incoming linkdata
         contains new message.
         """
-        super(AlphaFactorNode, self).compute()
-        assert len(self.in_linkdata) == len(self.out_linkdata) and len(self.in_linkdata) > 0
-
         # Carry out directional computation
         for direction, (in_ld, out_ld) in self.labeled_ld_pair.items():
-            if direction == 'inward' and in_ld.new:
-                self.inward_compute(in_ld, out_ld)
-            if direction == 'outward' and out_ld.new:
-                self.outward_compute(in_ld, out_ld)
+            if in_ld.new:
+                if direction == 'inward':
+                    self.inward_compute(in_ld, out_ld)
+                else:
+                    self.outward_compute(in_ld, out_ld)
 
     @abstractmethod
     def inward_compute(self, in_ld: LinkData, out_ld: LinkData):
