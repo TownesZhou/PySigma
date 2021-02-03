@@ -230,6 +230,13 @@ class LinkData:
         return msg
 
 
+class NodeConfigurationError(Exception):
+    """Custom Exception class for indicating that the node is ill-configured to execute the compute() method. Should be
+    used in the concrete Node subclass's implementation of precompute() method.
+    """
+    pass
+
+
 class Node(ABC):
     """The base class for all nodes in PySigma graphical architecture.
 
@@ -313,6 +320,17 @@ class Node(ABC):
         pass
 
     @abstractmethod
+    def precompute_check(self):
+        """The precompute check to be carried out each time before compute() is called during each cognitive cycle.
+        Usually, this is meant for checking node topology -- whether the correct number and/or types of linkdata have
+        been registered. It can also be used to check other necessary conditions for a node to be correctly executed.
+
+        If every conditions are met, this method should return silently. Otherwise, throw a NodeConfigurationError with
+        customized error message to inform the user what is going wrong.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def compute(self):
         """Compute method to be called to propagate messages during decision phases.
 
@@ -337,6 +355,9 @@ class Node(ABC):
         assert callable(compute_func)
 
         def wrapper(self):
+            # Execute the precompute check. If should pass if every condition is met, otherwise a NodeConfigurationError
+            #   is thrown.
+            self.precompute_check()
             # Return directly if quiesced. avoid any computation
             if self.quiescence:
                 return

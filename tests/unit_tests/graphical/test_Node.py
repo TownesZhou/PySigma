@@ -1,18 +1,28 @@
 """
     Unit tests for abstract base Node class
 """
-
+import pytest
 import torch
 from unittest.mock import MagicMock, PropertyMock, patch
-from pysigma.graphical.basic_nodes import Node
+from pysigma.graphical.basic_nodes import Node, NodeConfigurationError
 from tests.utils import cuda_only
 
 
 # Since Node class is an abstract base class, we need a make a concrete subclass of it and test the subclass
 class NodeForTest(Node):
     
+    def __init__(self, *args, **kwargs):
+        super(NodeForTest, self).__init__(*args, **kwargs)
+
+        # Ad-hoc switch to indicate if node is correctly configured for testing the precompute_check() method
+        self.computable = True
+    
     def add_link(self, linkdata):
         super(NodeForTest, self).add_link(linkdata)
+
+    def precompute_check(self):
+        if not self.computable:
+            raise NodeConfigurationError("Test NodeConfigurationError")
 
     @Node.compute_control
     def compute(self):
@@ -59,6 +69,21 @@ class TestNode:
         # Test 2: some incoming LinkData contains new message
         node.in_linkdata = [MagicMock(new=False)] * 3 + [MagicMock(new=True)]
         assert not node.quiescence
+
+    def test_configuration_error(self):
+        # Test that correct exception is thrown if node is ill-configured
+        with patch("pysigma.graphical.basic_nodes.Node.quiescence", new_callable=PropertyMock) as mock_quiescence:
+            mock_quiescence.return_value = True        # Exception should be raised even if node is quiesced
+            node = NodeForTest("test_node")
+            node.computable = False     # Set the flag. This should trigger NodeForTest instance to fail the check
+
+            with pytest.raises(NodeConfigurationError) as excinfo:
+                node.compute()
+
+            # Check exception value
+            assert str(excinfo.value) == "Test NodeConfigurationError"
+            # Check that node state is not changed
+            assert not node.visited
 
     def test_compute(self):
         # Test 1: quiescence
