@@ -16,7 +16,7 @@ from pysigma.utils import KnowledgeServer as KS
 from ...utils import generate_positive_definite
 
 
-class TestWMVN():
+class TestWMVN:
 
     # Utility method
     def generate_wmvn_1(self, b_shape=Size([4, 5]), p_shape=Size([2]), s_shape=Size([10, 15, 20]),

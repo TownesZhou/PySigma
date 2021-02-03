@@ -6,7 +6,7 @@
         - VariableNode
 """
 from __future__ import annotations      # For postponed evaluation of typing annotations
-from typing import Union, Optional, List, Tuple
+from typing import List, Tuple
 from typing import Iterable as IterableType
 from abc import ABC, abstractmethod
 from collections.abc import Iterable

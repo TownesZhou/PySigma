@@ -1,7 +1,9 @@
 """
     All nodes related to a predicate subgraph
 """
-
+from __future__ import annotations      # For postponed evaluation of typing annotations
+from typing import Union, Optional, List, Tuple, Dict
+from typing import Iterable as IterableType
 import warnings
 from abc import ABC
 from collections.abc import Iterable
@@ -62,7 +64,14 @@ class WMVN(VariableNode):
 
     """
 
-    def __init__(self, name, ks, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
+    def __init__(self,
+                 name: str,
+                 ks: KnowledgeServer,
+                 rel_var_list: IterableType[Variable],
+                 param_var: Variable = None,
+                 index_var_list: IterableType[Variable] = None,
+                 ran_var_list: IterableType[Variable] = None,
+                 **kwargs):
         assert isinstance(ks, KnowledgeServer)
         super(WMVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list, **kwargs)
         self.pretty_log["node type"] = "Working Memory Variable Node"
@@ -70,7 +79,7 @@ class WMVN(VariableNode):
         # Distribution class the Predicate self belongs to is assuming
         self.ks = ks
         # Cache for temporarily saving computation result for combination
-        self._cache = {}
+        self._cache: Dict[Tuple[LinkData, ...], Message] = {}
 
     @VariableNode.compute_control
     def compute(self):
