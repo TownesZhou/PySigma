@@ -269,8 +269,8 @@ class Node(ABC):
 
         # List of LinkData of those link connecting to this node, incoming and outgoing ones respectively, from
         #   which we retrieve messages
-        self.in_linkdata = []
-        self.out_linkdata = []
+        self.in_linkdata: List[LinkData] = []
+        self.out_linkdata: List[LinkData] = []
 
         # Global logging info
         self.log = {}
@@ -443,10 +443,10 @@ class VariableNode(Node, ABC):
              all(isinstance(v, Variable) and v.metatype == VariableMetatype.Random for v in ran_var_list))
         assert (index_var_list is None) is (ran_var_list is None)
 
-        self.rel_vars = tuple(rel_var_list)
-        self.param_var = param_var
-        self.index_vars = tuple(index_var_list) if index_var_list is not None else None
-        self.ran_vars = tuple(ran_var_list) if ran_var_list is not None else None
+        self.rel_vars: Tuple[Variable, ...] = tuple(rel_var_list)
+        self.param_var: Variable = param_var
+        self.index_vars: Tuple[Variable, ...] = tuple(index_var_list) if index_var_list is not None else None
+        self.ran_vars: Tuple[Variable, ...] = tuple(ran_var_list) if ran_var_list is not None else None
 
         self.b_shape = torch.Size([v.size for v in self.rel_vars])
         self.p_shape = torch.Size([self.param_var.size]) if self.param_var is not None else torch.Size([])
@@ -518,7 +518,7 @@ class DFN(FactorNode):
     ran_vars : tuple of Variable
         Tuple of random variables.
     """
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str, **kwargs):
         super(DFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Default Factor Node"
 
@@ -533,7 +533,7 @@ class DFN(FactorNode):
         self.s_shape = torch.Size([])
         self.e_shape = torch.Size([])
 
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Checks that all variable nodes on the other side of the linkdata share the same set of variables. Infer
         attribute values from the connected variable nodes' variables.
 
@@ -614,11 +614,17 @@ class DVN(VariableNode):
         Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of
         incoming messages. Must specify if `index_var_list` is specified.
     """
-    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
+    def __init__(self,
+                 name: str,
+                 rel_var_list: IterableType[Variable],
+                 param_var: Variable = None,
+                 index_var_list: IterableType[Variable] = None,
+                 ran_var_list: IterableType[Variable] = None,
+                 **kwargs):
         super(DVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list, **kwargs)
         self.pretty_log["node type"] = "Default Variable Node"
 
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Guarantees that no more than on incoming link is registered.
 
         Parameters

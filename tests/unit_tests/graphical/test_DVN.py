@@ -10,7 +10,7 @@ from pysigma.graphical.basic_nodes import DVN, FactorNode, LinkData
 from pysigma.defs import Variable, VariableMetatype
 
 
-class TestDVN():
+class TestDVN:
 
     def test_add_link_more_than_one_incoming(self):
         # Test add more than one incoming linkdata

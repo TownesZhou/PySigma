@@ -12,7 +12,7 @@ from pysigma.defs import Variable, VariableMetatype
 from .test_VariableNode import VariableNodeForTest
 
 
-class TestDFN():
+class TestDFN:
 
     def test_add_link_more_than_one_incoming_link(self):
         fn = DFN("test_dfn")
