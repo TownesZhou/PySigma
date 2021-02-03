@@ -112,9 +112,6 @@ class Variable:
     def __repr__(self):
         return str(self)
 
-    def __repr__(self):
-        return self.name
-
     def __hash__(self):
         # override so that hash value of the string representation of the variable is used
         return hash(self.name + str(self.metatype) + str(self.size) + str(self.constraints))
