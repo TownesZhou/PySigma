@@ -527,6 +527,19 @@ class WMFN_MCMC(WMFN):
         #   new posterior message
         self._random_walk()
 
+    def precompute_check(self):
+        if self.ld_in_post is None or \
+           self.ld_in_eval is None or\
+           self.ld_out_post is None or \
+           self.ld_out_eval is None:
+            raise NodeConfigurationError("Wrong configuration for node {}: All four of the linkdata must be specified "
+                                         "for a WMFN-MCMC node. Only {} of them are specified."
+                                         .format(self.name,
+                                                 (self.ld_in_post is not None) +
+                                                 (self.ld_in_eval is not None) +
+                                                 (self.ld_out_post is not None) +
+                                                 (self.ld_out_eval is not None)))
+
     @WMFN.compute_control
     def compute(self):
         """Send contents in cache to WMVN_OUT_POST and WMVN_OUT_EVAL respectively.

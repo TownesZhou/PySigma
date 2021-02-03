@@ -8,7 +8,7 @@ import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
-from pysigma.graphical.basic_nodes import LinkData, VariableNode
+from pysigma.graphical.basic_nodes import LinkData, VariableNode, NodeConfigurationError
 from pysigma.graphical.predicate_nodes import WMFN_MCMC, WMVN
 from ...utils import random_message
 
@@ -339,6 +339,26 @@ class TestWMFN_MCMC:
 
         assert MessageType.Particles in wmfn.post_msg_cache.type and MessageType.Particles in wmfn.eval_msg_cache.type
 
+    def test_ill_configuration(self):
+        # Test NodeConfigurationError is raised if the 4 linkdata are not all registered
+        b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
+        msg_shape = (b_shape, p_shape, s_shape, e_shape)
+        index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
+        ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
+        wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
+
+        # Mock only two linkdata
+        in_ld_eval = MagicMock(spec_set=LinkData)
+        out_ld_post = MagicMock(spec_set=LinkData)
+        wmfn.ld_in_eval, wmfn.ld_out_post = in_ld_eval, out_ld_post
+
+        with pytest.raises(NodeConfigurationError) as excinfo:
+            wmfn.compute()
+
+        assert str(excinfo.value) == "Wrong configuration for node test_wmfn: All four of the linkdata must be " \
+                                     "specified for a WMFN-MCMC node. Only 2 of them are specified."
+
+
     def test_quiescence_no_compute(self):
         # Test that no message is sent when quiesced
         b_shape, p_shape, s_shape, e_shape = Size([1, 2]), Size([]), Size([10, 15, 20]), Size([2, 3, 4])
@@ -348,8 +368,9 @@ class TestWMFN_MCMC:
         wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
-        out_ld_eval = MagicMock(spec_set=LinkData)
-        out_ld_post = MagicMock(spec_set=LinkData)
+        in_ld_eval, in_ld_post = MagicMock(spec_set=LinkData), MagicMock(spec_set=LinkData)
+        out_ld_eval, out_ld_post = MagicMock(spec_set=LinkData), MagicMock(spec_set=LinkData)
+        wmfn.ld_in_eval, wmfn.ld_in_post = in_ld_eval, in_ld_post
         wmfn.ld_out_eval, wmfn.ld_out_post = out_ld_eval, out_ld_post
 
         # Set to visited
@@ -369,8 +390,9 @@ class TestWMFN_MCMC:
         wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
-        out_ld_eval = MagicMock(spec_set=LinkData)
-        out_ld_post = MagicMock(spec_set=LinkData)
+        in_ld_eval, in_ld_post = MagicMock(spec_set=LinkData), MagicMock(spec_set=LinkData)
+        out_ld_eval, out_ld_post = MagicMock(spec_set=LinkData), MagicMock(spec_set=LinkData)
+        wmfn.ld_in_eval, wmfn.ld_in_post = in_ld_eval, in_ld_post
         wmfn.ld_out_eval, wmfn.ld_out_post = out_ld_eval, out_ld_post
 
         wmfn.compute()
@@ -386,8 +408,9 @@ class TestWMFN_MCMC:
         wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
         # Mock linkdata
-        out_ld_eval = MagicMock(spec_set=LinkData)
-        out_ld_post = MagicMock(spec_set=LinkData)
+        in_ld_eval, in_ld_post = MagicMock(spec_set=LinkData), MagicMock(spec_set=LinkData)
+        out_ld_eval, out_ld_post = MagicMock(spec_set=LinkData), MagicMock(spec_set=LinkData)
+        wmfn.ld_in_eval, wmfn.ld_in_post = in_ld_eval, in_ld_post
         wmfn.ld_out_eval, wmfn.ld_out_post = out_ld_eval, out_ld_post
 
         test_msg_1, test_msg_2 = random_message(MessageType.Particles, *msg_shape), \
