@@ -9,7 +9,7 @@ import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
-from pysigma.graphical.basic_nodes import LinkData, VariableNode
+from pysigma.graphical.basic_nodes import LinkData, VariableNode, NodeConfigurationError
 from pysigma.graphical.predicate_nodes import WMFN_VI, WMVN
 from pysigma.utils import KnowledgeServer as KS
 from pysigma.utils import DistributionServer as DS
@@ -18,7 +18,7 @@ from ...utils import random_message
 from ...utils import generate_positive_definite
 
 
-class TestWMFN_VI():
+class TestWMFN_VI:
 
     # Utility methods
     def generate_wmfn_vi_1(self, b_shape=Size([4, 5]), p_shape=Size([2]), s_shape=Size([10, 15, 20]),
@@ -224,14 +224,6 @@ class TestWMFN_VI():
         assert [ld for ld in wmfn_vi.in_linkdata if ld.attr['type'] == 'event'][0] is event_ld
         assert set([ld for ld in wmfn_vi.in_linkdata if ld.attr['type'] == 'param']) == set(param_lds)
 
-    def test_modify_no_param_type_incoming_links(self):
-        msg_shape = (Size([4, 5]), Size([2]), Size([10, 15, 20]), Size([1, 2, 3]))
-        wmfn_vi = self.generate_wmfn_vi_1(*msg_shape)
-
-        with pytest.raises(AssertionError, match="At {}: Attempting to gather parameters, but no incoming param type "
-                                                 "linkdata found.".format(wmfn_vi.name)):
-            wmfn_vi.modify()
-
     def test_modify_wrong_message_type(self):
         msg_shape = (Size([4, 5]), Size([2]), Size([10, 15, 20]), Size([1, 2, 3]))
         wmfn_vi = self.generate_wmfn_vi_1(*msg_shape)
@@ -318,6 +310,37 @@ class TestWMFN_VI():
 
         assert Message.reduce_type(wmfn_vi.msg_cache, MessageType.Parameter) == combined_msg
 
+    def test_ill_configuration_1(self):
+        # Test that NodeConfigurationError is raised if missing incoming linkdata.
+        # Mock only one outgoing linkdata
+        mock_out_ld = MagicMock(spec_set=LinkData)
+
+        wmfn_vi = self.generate_wmfn_vi_1()
+        wmfn_vi.out_linkdata.append(mock_out_ld)
+
+        with pytest.raises(NodeConfigurationError) as excinfo:
+            wmfn_vi.compute()
+
+        assert str(excinfo.value) == "Wrong configuration for node {}: a WMFN_VI expects at least one incoming " \
+                                     "linkdata and one outgoing linkdata to be computable. Found 0 registered " \
+                                     "incoming linkdata and 1 registered outgoing linkdata".format(wmfn_vi.name)
+
+    def test_ill_configuration_2(self):
+        # Test that NodeConfigurationError is raised if missing outgoing linkdata.
+        # Mock only one incoming linkdata
+        mock_in_ld = MagicMock(spec_set=LinkData)
+
+        wmfn_vi = self.generate_wmfn_vi_1()
+        wmfn_vi.in_linkdata.append(mock_in_ld)
+
+        with pytest.raises(NodeConfigurationError) as excinfo:
+            wmfn_vi.compute()
+
+        assert str(excinfo.value) == "Wrong configuration for node {}: a WMFN_VI expects at least one incoming " \
+                                     "linkdata and one outgoing linkdata to be computable. Found 1 registered " \
+                                     "incoming linkdata and 0 registered outgoing linkdata".format(wmfn_vi.name)
+
+
     def test_quiescence(self):
         # Test that no message is sent when quiesced
         wmfn_vi = self.generate_wmfn_vi_1()
@@ -326,8 +349,8 @@ class TestWMFN_VI():
         wmfn_vi.visited = True
 
         # Use mock ld
-        mock_out_ld = MagicMock(spec=LinkData)
-        mock_out_ld.name = "test_mock_out_ld"
+        mock_in_ld, mock_out_ld = MagicMock(spec=LinkData), MagicMock(spec=LinkData)
+        wmfn_vi.in_linkdata.append(mock_in_ld)
         wmfn_vi.out_linkdata.append(mock_out_ld)
 
         wmfn_vi.compute()
@@ -341,8 +364,8 @@ class TestWMFN_VI():
         wmfn_vi.msg_cache = mock_msg
 
         # Use mock ld
-        mock_out_ld = MagicMock(spec=LinkData)
-        mock_out_ld.name = "test_mock_out_ld"
+        mock_in_ld, mock_out_ld = MagicMock(spec=LinkData), MagicMock(spec=LinkData)
+        wmfn_vi.in_linkdata.append(mock_in_ld)
         wmfn_vi.out_linkdata.append(mock_out_ld)
 
         wmfn_vi.compute()
@@ -356,8 +379,8 @@ class TestWMFN_VI():
         wmfn_vi.msg_cache = mock_msg
 
         # Use mock ld
-        mock_out_ld = MagicMock(spec=LinkData)
-        mock_out_ld.name = "test_mock_out_ld"
+        mock_in_ld, mock_out_ld = MagicMock(spec=LinkData), MagicMock(spec=LinkData)
+        wmfn_vi.in_linkdata.append(mock_in_ld)
         wmfn_vi.out_linkdata.append(mock_out_ld)
 
         # Call twice

@@ -731,8 +731,6 @@ class WMFN_VI(WMFN):
         """
         # Obtain parameters from incoming 'param' link.
         param_lds = list(ld for ld in self.in_linkdata if ld.attr['type'] == 'param')
-        assert len(param_lds) > 0, \
-            "At {}: Attempting to gather parameters, but no incoming param type linkdata found.".format(self.name)
 
         param_msgs = tuple(ld.read() for ld in param_lds)
         assert all(MessageType.Parameter in msg.type for msg in param_msgs), \
@@ -765,6 +763,17 @@ class WMFN_VI(WMFN):
 
         self.msg_cache = new_msg
 
+    def precompute_check(self):
+        """The computable condition for a WMFN_VI is that there are at least one incoming linkdata and one outgoing
+        linkdata.
+
+        """
+        if len(self.in_linkdata) == 0 or len(self.out_linkdata) == 0:
+            raise NodeConfigurationError("Wrong configuration for node {}: a WMFN_VI expects at least one incoming "
+                                         "linkdata and one outgoing linkdata to be computable. Found {} registered "
+                                         "incoming linkdata and {} registered outgoing linkdata"
+                                         .format(self.name, len(self.in_linkdata), len(self.out_linkdata)))
+
     @WMFN.compute_control
     def compute(self):
         """
@@ -778,7 +787,6 @@ class WMFN_VI(WMFN):
             If ``self.msg_cache`` is None. This means `init_msg()` were not called prior to the current decision phase
             which calls this method.
         """
-        assert len(self.out_linkdata) > 0
         out_ld = self.out_linkdata[0]
         out_ld.write(self.msg_cache)
 
