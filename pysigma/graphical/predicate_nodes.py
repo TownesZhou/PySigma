@@ -11,7 +11,7 @@ import torch
 from torch.nn import Parameter
 import torch.distributions as D
 from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
-from .basic_nodes import LinkData, VariableNode, FactorNode
+from .basic_nodes import LinkData, VariableNode, FactorNode, NodeConfigurationError
 from ..utils import compatible_shape, KnowledgeServer
 
 
@@ -80,6 +80,15 @@ class WMVN(VariableNode):
         self.ks = ks
         # Cache for temporarily saving computation result for combination
         self._cache: Dict[Tuple[LinkData, ...], Message] = {}
+
+    def precompute_check(self):
+        """The computable condition for a WMVN is that there is at least one incoming link. Not having an outgoing link
+        would not cause trouble in compute(), although in this case no WMVN's internal state is changed and no outgoing
+        message is propagated
+        """
+        if len(self.in_linkdata) == 0:
+            raise NodeConfigurationError("Wrong configuration for node {}: a WMVN expects at least one incoming "
+                                         "linkdata. Found no registered incoming linkdata.".format(self.name))
 
     @VariableNode.compute_control
     def compute(self):
@@ -161,7 +170,6 @@ class WMVN(VariableNode):
         if len(self.in_linkdata) == 1:
             in_ld = self.in_linkdata[0]
             msg = in_ld.read()
-            assert isinstance(msg, Message)
             for out_ld in self.out_linkdata:
                 # Throw a warning if the outgoing link is connected to the same factor node that the only incoming
                 #   link is connected to, since in such case no message would be sent to that factor node
@@ -206,7 +214,6 @@ class WMVN(VariableNode):
                                               if MessageType.Particles in msg.type)
                         particle_lds = tuple(ld for ld in in_lds if MessageType.Particles in ld.read().type)
                         tmp_msg, tmp_ld = particle_msgs[0], particle_lds[0]
-                        assert isinstance(tmp_msg, Message)
                         for msg, in_ld in zip(particle_msgs, particle_lds):
                             assert tmp_msg.same_particles_as(msg), \
                                 "At WMVN '{}': When attempting to combine incoming messages, found that incoming " \

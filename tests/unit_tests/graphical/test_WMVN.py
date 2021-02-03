@@ -9,7 +9,7 @@ import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
-from pysigma.graphical.basic_nodes import LinkData, FactorNode
+from pysigma.graphical.basic_nodes import LinkData, FactorNode, NodeConfigurationError
 from pysigma.graphical.predicate_nodes import WMVN
 from pysigma.utils import KnowledgeServer as KS
 
@@ -84,6 +84,16 @@ class TestWMVN:
 
         assert wmvn.ks is ks
         assert wmvn._cache == {}
+
+    def test_ill_configuration(self):
+        # Test NodeConfigurationError is raised if there are no incoming linkdata
+        wmvn = self.generate_wmvn_1()
+
+        with pytest.raises(NodeConfigurationError) as excinfo:
+            wmvn.compute()
+
+        assert str(excinfo.value) == "Wrong configuration for node {}: a WMVN expects at least one incoming linkdata. " \
+                                     "Found no registered incoming linkdata.".format(wmvn.name)
 
     def test_compute_quiescence_mock_ld(self):
         # Test WMVN quiescence behavior using mocked linkdata
