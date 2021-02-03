@@ -251,11 +251,11 @@ class WMFN(FactorNode, ABC):
     """The abstract base class for all types of Working Memory Factor Nodes
 
     """
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str, **kwargs):
         super(WMFN, self).__init__(name, **kwargs)
 
     @property
-    def quiescence(self):
+    def quiescence(self) -> bool:
         """For WMFN, quiescence is reached if messages stored in cache has been sent to the nearby node.
 
         """
@@ -329,7 +329,11 @@ class WMFN_MCMC(WMFN):
 
     """
 
-    def __init__(self, name, index_var_list, ran_var_list, **kwargs):
+    def __init__(self,
+                 name: str,
+                 index_var_list: IterableType[Variable],
+                 ran_var_list: IterableType[Variable],
+                 **kwargs):
         assert isinstance(index_var_list, Iterable) and \
                (isinstance(v, Variable) and v.metatype is VariableMetatype.Indexing for v in index_var_list)
         assert isinstance(ran_var_list, Iterable) and \
@@ -339,13 +343,16 @@ class WMFN_MCMC(WMFN):
 
         self.index_vars = tuple(index_var_list)
         self.ran_vars = tuple(ran_var_list)
-        self.s_shape = torch.Size([v.size for v in self.index_vars])
-        self.e_shape = torch.Size([v.size for v in self.ran_vars])
-        self.b_shape = torch.Size([])       # This will be inferred during runtime from incoming messages
+        self.s_shape: torch.Size = torch.Size([v.size for v in self.index_vars])
+        self.e_shape: torch.Size = torch.Size([v.size for v in self.ran_vars])
+        self.b_shape: torch.Size = torch.Size([])       # This will be inferred during runtime from incoming messages
 
         self.eval_msg_cache = Message.identity()  # Initialize to identity
         self.post_msg_cache = Message.identity()  # Initialize to identity
-        self.ld_in_eval, self.ld_out_eval, self.ld_in_post, self.ld_out_post = None, None, None, None
+        self.ld_in_eval: Optional[LinkData] = None
+        self.ld_out_eval: Optional[LinkData] = None
+        self.ld_in_post: Optional[LinkData] = None
+        self.ld_out_post: Optional[LinkData] = None
 
         # Default to using MultivariateNormal distributions with identity covariance matrix as the random walk
         # distributions. One random walk distribution for one random variable.
@@ -354,7 +361,7 @@ class WMFN_MCMC(WMFN):
             covariance_matrix=torch.eye(e_size, device=self.device).unsqueeze(dim=0).expand(s_size, -1, -1)
         ) for s_size, e_size in zip(self.s_shape, self.e_shape)]
 
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """WMFN admits two groups of WMVN_IN and WMVN_OUT, for posterior messages and evaluation messages respectively.
 
         `linkdata` must specify a special attribute, either `type=posterior` or `type=evaluation`, in `linkdata.attr`
@@ -387,7 +394,7 @@ class WMFN_MCMC(WMFN):
                 self.ld_out_post = linkdata
 
         # Check shape
-        s_shape, e_shape = linkdata.msg_shape[2:]
+        _, _, s_shape, e_shape = linkdata.msg_shape
         assert s_shape == self.s_shape, \
             "In {}: linkdata should have the same sample shape as what is declared for this node. Expect {}, but " \
             "found {}." \
@@ -419,7 +426,7 @@ class WMFN_MCMC(WMFN):
                                       particles=new_eval_ptcl, weight=uniform_weight,
                                       log_densities=uniform_log_densities)
 
-    def init_particles(self, init_ptcl_msg):
+    def init_particles(self, init_ptcl_msg: Message):
         """
         Initialize the WMFN with an initial particles message to start the random walk procedure.
 
@@ -590,7 +597,15 @@ class WMFN_VI(WMFN):
         The message cache. Set during modification phase, and sent during decision phase of the next cognitive cycle.
     """
 
-    def __init__(self, name, ks, rel_var_list, param_var, index_var_list, ran_var_list, to_draw=True, **kwargs):
+    def __init__(self,
+                 name: str,
+                 ks: KnowledgeServer,
+                 rel_var_list: IterableType[Variable],
+                 param_var: Variable,
+                 index_var_list: IterableType[Variable],
+                 ran_var_list: IterableType[Variable],
+                 to_draw: bool = True,
+                 **kwargs):
         super(WMFN_VI, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Variational Inference Working Memory Factor Node Node"
 
@@ -610,15 +625,15 @@ class WMFN_VI(WMFN):
         self.ran_var_list = tuple(ran_var_list)
         self.to_draw = to_draw
 
-        self.b_shape = torch.Size([v.size for v in self.rel_var_list])
-        self.p_shape = torch.Size([self.param_var.size])
-        self.s_shape = torch.Size([v.size for v in self.index_var_list])
-        self.e_shape = torch.Size([v.size for v in self.ran_var_list])
+        self.b_shape: torch.Size = torch.Size([v.size for v in self.rel_var_list])
+        self.p_shape: torch.Size = torch.Size([self.param_var.size])
+        self.s_shape: torch.Size = torch.Size([v.size for v in self.index_var_list])
+        self.e_shape: torch.Size = torch.Size([v.size for v in self.ran_var_list])
 
         # Message cache
         self.msg_cache = Message.identity()
 
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Only admits one incoming and one outgoing event message link, the former should be connected from `WMVN_IN`
         and the later from `WMVN_OUT` (can be the same WMVN instance). However can admit multiple incoming
         parameter message link.
@@ -669,7 +684,7 @@ class WMFN_VI(WMFN):
                     "At {}: Attempting to register more than one incoming event type linkdata".format(self.name)
         super(WMFN_VI, self).add_link(linkdata)
 
-    def set_draw(self, to_draw):
+    def set_draw(self, to_draw: bool):
         """Sets whether this LTMFN should draw particles in `init_msg()` and send `MessageType.Dual` type message, or
         not draw particles and send `MessageType.Parameter` message
 

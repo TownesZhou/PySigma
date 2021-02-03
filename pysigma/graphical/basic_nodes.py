@@ -85,7 +85,7 @@ class LinkData:
         # Incident nodes and their variable list
         self.vn = vn                # Of type VariableNode
         self.fn = fn                # Of type FactorNode
-        self.msg_shape = msg_shape
+        self.msg_shape: MessageShape = msg_shape
         # Link direction. Whether pointing toward a factor node. Of type bool
         self.to_fn = to_fn
         # Threshold of KL-divergence metric to measure whether a candidate message is different from the existing one
