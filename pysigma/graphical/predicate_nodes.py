@@ -2,7 +2,7 @@
     All nodes related to a predicate subgraph
 """
 from __future__ import annotations      # For postponed evaluation of typing annotations
-from typing import Union, Optional, List, Tuple, Dict
+from typing import Union, Optional, Tuple, Dict
 from typing import Iterable as IterableType
 import warnings
 from abc import ABC

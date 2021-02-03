@@ -1,6 +1,9 @@
 """
     All nodes related to a conditional subgraph
 """
+from __future__ import annotations      # For postponed evaluation of typing annotations
+from typing import Union, Optional, List, Tuple, Dict
+from typing import Iterable as IterableType
 import copy
 from abc import ABC, abstractmethod
 import torch
@@ -32,12 +35,12 @@ class AlphaFactorNode(FactorNode, ABC):
       should be carried out only if its incoming linkdata contains new message.
     """
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str, **kwargs):
         super(AlphaFactorNode, self).__init__(name, **kwargs)
 
         # Pairs of incoming and outgoing linkdata labeled with their directionality w.r.t. the alpha structure
-        self.labeled_ld_pair = {}
-        self.ran_vars = None
+        self.labeled_ld_pair: Dict[str, Tuple[LinkData, LinkData]] = {}
+        self.ran_vars: Optional[List[Variable]] = None
 
     def add_link(self, linkdata):
         """An alpha factor node admits at least one but no more than two pairs of incoming and outgoing linkdata. The
@@ -103,14 +106,14 @@ class AlphaFactorNode(FactorNode, ABC):
                 self.outward_compute(in_ld, out_ld)
 
     @abstractmethod
-    def inward_compute(self, in_ld, out_ld):
+    def inward_compute(self, in_ld: LinkData, out_ld: LinkData):
         """Inward message computation. To be implemented by child class.
 
         """
         raise NotImplementedError
 
     @abstractmethod
-    def outward_compute(self, in_ld, out_ld):
+    def outward_compute(self, in_ld: LinkData, out_ld: LinkData):
         """Outward message computation. To be implemented by child class.
 
         """
