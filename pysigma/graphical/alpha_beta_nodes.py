@@ -137,18 +137,19 @@ class ESFN(AlphaFactorNode):
     """Expansion / Summarization Factor Node
 
     This node should be connected to two DVNs that share the same set of random variables but perhaps different
-    relational variables, with the DVN on the outward propagation side having a set of relational variables that is a
-    subset of the set of relational variables of the DVN on the inward propagation side. The task of this node is to
-    manipulate the incoming message's batch dimensions so that they align with the relational variable dimensions of the
-    target DVN. Specifically:
+    relational variables。The set of relational variables of the DVN on the outward message propagation side should be a
+    subset of the relational variables of the inward-side DVN.
+
+    The task of this node is to manipulate the incoming message's batch dimensions so that they align with the
+    relational variable dimensions of the target DVN. Specifically:
 
     * For the inward propagation, since the target DVN may include relational variables that do not present in the
-      source DVN, this procedure consists of **expansion** of the message's batch dimensions to make space for these
-      missing relational variables, as well as **permutation** of the expanded dimensions so that they are in the same
-      order as demanded by the target DVN.
-    * For the outward propagation, it's the exact opposite. **Summarization** across the message batch dimensions
-      associated with those un-referenced relational variables is first carried out, followed by the same
-      **permutation** procedure.
+      source DVN, this procedure may **expand/un-squeeze** the incoming messages' batch dimensions to make space for
+      these missing relational variables, and then **permute** the expanded dimensions so that they are in the
+      correct order as demanded by the target DVN.
+    * For the outward propagation, the inverse procedure is carried out. Specifically, it may **summarize** across the
+      message batch dimensions associated with those un-referenced relational variables, and then, same as the
+      inward direction, **permute** the summarized dimensions so they are correctly aligned.
 
     The summarization step can be thought of as a search or optimization problem, for which one finds a single
     distribution instance that best "summarizes" the behaviors of an entire (finite) space of distribution instances,
