@@ -228,7 +228,7 @@ class _Summarization:
         """
         # Sort out input data
         assert isinstance(msg, Message)
-        assert len(msg.b_shape) == 2 and len(msg.e_shape) == 1
+        assert len(msg.b_shape) == 2 and len(msg.e_shape) <= 1      # Sample and event shape could be empty
         assert MessageType.Parameter in msg.type or MessageType.Particles in msg.type
 
         # Target batch shape
@@ -257,6 +257,7 @@ class _Summarization:
             )
 
         # Only check existence of distribution-related special attribute if needed
+        dist_info, dist_class = None, None
         if self._repr_type in ['distribution', 'dual'] and MessageType.Parameter in msg.type:
             assert 'dist_info' in msg.attr.keys() and 'dist_class' in msg.attr.keys(), \
                 "In summarization routine '{}': incoming message containing distribution parameters does not specify " \
@@ -264,7 +265,7 @@ class _Summarization:
                 "message was generated with these special attributes, or if the attribute dictionary was corrupted " \
                 "during message propagation."\
                 .format(self._sum_func.__name__)
-        dist_info, dist_class = msg.attr['dist_info'], msg.attr['dist_class']
+            dist_info, dist_class = msg.attr['dist_info'], msg.attr['dist_class']
 
         # Initialize arguments to pass
         dist_content = None

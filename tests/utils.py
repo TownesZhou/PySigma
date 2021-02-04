@@ -48,7 +48,7 @@ def assert_constant_difference_within_error(tensor_1: torch.Tensor, tensor_2: to
 
 # Test that two tensors are proportional to each other along the given dims with the ratio variance smaller than
 #   the given precision
-def proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims:list, precision=EPS):
+def proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims: list, precision=EPS):
     ratio = tensor_1 / tensor_2
     ratio_max, ratio_min = ratio, ratio
     for dim in dims:
@@ -59,7 +59,7 @@ def proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, di
 
 
 # Self-assertion version of the above method.
-def assert_proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims:list, precision=EPS):
+def assert_proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims: list, precision=EPS):
     ratio = tensor_1 / tensor_2
     ratio_max, ratio_min = ratio, ratio
     for dim in dims:
