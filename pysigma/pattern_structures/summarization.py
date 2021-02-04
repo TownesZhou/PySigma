@@ -5,16 +5,11 @@
 from typing import Union, Optional, Tuple, Callable
 import inspect
 from inspect import Signature, Parameter
-from collections.abc import Iterable
-from itertools import chain
 import functools
-import numpy as np
 import torch
-from torch import Size
 from torch.distributions import Distribution
-from torch.distributions.constraints import Constraint
-from ..utils import intern_name, extern_name, DistributionServer, KnowledgeServer
-from ..defs import Variable, VariableMetatype, Message, MessageType
+from ..utils import DistributionServer
+from ..defs import Message, MessageType
 
 
 # Typing Annotations for the Summarization Callback routine
