@@ -12,7 +12,8 @@ from torch.distributions.constraints import Constraint
 from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
 from .basic_nodes import LinkData, VariableNode, FactorNode, NodeConfigurationError
 from ..utils import KnowledgeServer
-from ..structures import VariableMap, Summarization
+from ..structures import VariableMap
+from ..pattern_structures import Summarization
 
 
 class AlphaFactorNode(FactorNode, ABC):
