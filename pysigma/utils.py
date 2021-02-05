@@ -119,6 +119,9 @@ class DistributionServer:
     Note that input and output will conform to the format understandable by PyTorch's distribution class. To
     translate to and from formats compatible to PySigma's predicate knowledge, use KnowledgeServer class
     """
+    # Utility constants
+    CONVERSION_EPS = 1e-7      # Epsilon factor for stabling natural and regular parameter conversion
+
     """
     Public class method API
     """
@@ -510,6 +513,106 @@ class DistributionServer:
     # def _default_log_pdf(cls, dist, particles):
     #     log_pdf = dist.log_prob(value=particles)
     #     return log_pdf
+
+    """
+        Bernoulli distribution
+    """
+    # region
+    @staticmethod
+    def _bernoulli_param_exp2reg(param):
+        """
+            Conversion from natural parameters to regular parameters for Bernoulli distribution::
+
+                n -> exp(n) / (1 + exp(n)) =: p
+
+            where `p` is the probability that 1 is sampled and corresponds to to the `probs` argument of the PyTorch
+            Bernoulli distribution.
+
+            Parameters
+            ----------
+            param : torch.Tensor
+
+            Returns
+            -------
+            torch.Tensor
+        """
+        exp_param = param.exp()
+        return exp_param / (1 + exp_param)
+
+    @staticmethod
+    def _bernoulli_param_reg2exp(param):
+        """
+            Conversion from regular parameters to natural parameters for Bernoulli distribution::
+
+                p -> log(p / (1 - p)) =: n
+
+            where `p` is the probability that 1 is sampled and corresponds to to the `probs` argument of the PyTorch
+            Bernoulli distribution.
+
+            In practice, an epsilon value is added to the denominator to ensure numerical stability
+        """
+        return torch.log(param / (1 - param + DistributionServer.CONVERSION_EPS))
+
+    @staticmethod
+    def _bernoulli_param2dist(params, dist_info):
+        """
+            For Bernoulli distribution, `params` are assumed the natural parameters, unless `param_type=regular` is
+            specified in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
+            Bernoulli distribution class.
+
+            Parameters
+            ----------
+            params : torch.Tensor
+                By default, of shape ``batch_shape + [1]``. The parameter size of a Bernoulli parameter is 1.
+            dist_info : dict
+
+            Returns
+            -------
+            torch.distribution.Bernoulli
+                Returns a Bernoulli distribution instance, with ``batch_shape`` the same as the batch shape of the
+                input `param`, and ``event_shape == torch.Size([])``.
+
+            See Also
+            --------
+            `torch.distributions.Bernoulli <https://pytorch.org/docs/stable/distributions.html#torch.distributions.bernoulli.Bernoulli>`_
+        """
+        # Unsqueeze the last singleton parameter dimension of params, otherwise it would be included into batch shape
+        #   of the resulting dist
+        params = params.squeeze(dim=-1)
+        if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
+            probs = params
+        else:
+            probs = DistributionServer._bernoulli_param_exp2reg(params)
+        dist = torch.distributions.Bernoulli(probs=probs)
+        return dist
+
+    @staticmethod
+    def _bernoulli_dist2param(dist, dist_info):
+        """
+            For Bernoulli distributions, `param` are assumed the natural parameters, unless `param_type=regular` is
+            specified in `dist_info`, in which case `params` will be taken as the `probs` argument to the PyTorch
+            Bernoulli distribution.
+
+            Parameters
+            ----------
+            dist : torch.distribution.Bernoulli
+            dist_info : dict
+
+            Returns
+            -------
+            torch.Tensor
+                By default, returns the natural parameter, unless specified to return regular parameter. The returned
+                tensor has shape ``dist.batch_shape + [1]``.
+        """
+        assert isinstance(dist, torch.distributions.Bernoulli)
+        # Append a singleton dimension to the dist parameter as the parameter dimension
+        dist_param = dist.probs.unsqueeze(dim=-1)
+        if dist_info is not None and 'param_type' in dist_info.keys() and dist_info['param_type'] == 'regular':
+            params = dist_param
+        else:
+            params = DistributionServer._bernoulli_param_reg2exp(dist_param)
+        return params
+    # endregion
 
     """
         Categorical distribution
@@ -943,11 +1046,13 @@ class DistributionServer:
 
     }
     dict_param2dist = {
+        torch.distributions.Bernoulli: _bernoulli_param2dist,
         torch.distributions.Categorical: _categorical_param2dist,
         torch.distributions.Normal: _normal_param2dist,
         torch.distributions.MultivariateNormal: _multivariate_normal_param2dist,
     }
     dict_dist2param = {
+        torch.distributions.Bernoulli: _bernoulli_dist2param,
         torch.distributions.Categorical: _categorical_dist2param,
         torch.distributions.Normal: _normal_dist2param,
         torch.distributions.MultivariateNormal: _multivariate_normal_dist2param,
@@ -1585,6 +1690,23 @@ class KnowledgeServer:
 
         return tuple(marg_ptcl_narrow), tuple(marg_log_dens)
     # endregion
+
+    """
+       Bernoulli distribution. Accepts only 1 RV with size 1.
+           - Enforced sample shape and special drawing method::
+               A Bernoulli message enforce a particle sample shape of 2: the first sample is the event 0, and the 
+               second sample is the event 1. 
+    """
+    def _bernoulli_enforced_sample_shape(self):
+        # Enforce sample shape of [2]
+        return torch.Size([2])
+
+    def _bernoulli_draw(self):
+        # Return a particle list tensor consists of only two size-1 event: 0, and 1. Both particles have equal sampling
+        #   density.
+        particles = (torch.tensor([[0.], [1.]], dtype=torch.float), )
+        log_densities = (torch.tensor([0., 0.], dtype=torch.float), )
+        return particles, log_densities
 
     """
         Categorical distribution. Assumes all RV have size 1
