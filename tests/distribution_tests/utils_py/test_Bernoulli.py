@@ -114,3 +114,25 @@ class TestDistributionServer():
 
         assert isinstance(return_dist, D.Bernoulli)
         assert_equal_within_error(return_dist.probs, dist.probs)
+
+
+class TestKnowledgeServer:
+
+    def test_bernoulli_draw_particles(self):
+        b_shape, p_shape, s_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([2]), Size([1])
+        dist_class = D.Bernoulli
+        rv_sizes = [1]
+        rv_constraints = [C.boolean]
+        dist_info = {'param_type': 'regular'}
+        regular_param = torch.rand(b_shape + p_shape)
+
+        ks = KS(dist_class, rv_sizes, rv_constraints, dist_info=dist_info)
+        ptcl, dens = ks.draw_particles(regular_param, b_shape)
+
+        assert len(ptcl) == len(dens) == 1
+        assert ptcl[0].shape == s_shape + e_shape
+        assert dens[0].shape == s_shape
+
+        expected_ptcl = torch.tensor([[0.], [1.]])
+        assert_equal_within_error(ptcl[0], expected_ptcl)
+

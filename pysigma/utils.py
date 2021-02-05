@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.distributions
 from torch.distributions import Distribution
-from torch.distributions.constraints import Constraint, integer_interval
+from torch.distributions.constraints import Constraint, integer_interval, _Boolean
 from torch.distributions.kl import kl_divergence
 
 # Define typing aliases
@@ -1143,6 +1143,7 @@ class KnowledgeServer:
 
         # distribution-dependent translation method pointer. Indexed by distribution class
         self.dict_2enforced_sample_shape = {
+            torch.distributions.Bernoulli: self._bernoulli_enforced_sample_shape,
             torch.distributions.Categorical: self._categorical_enforced_sample_shape
         }
         self.dict_2torch_event = {
@@ -1152,6 +1153,7 @@ class KnowledgeServer:
             torch.distributions.Categorical: self._categorical_2cognitive_event
         }
         self.dict_2special_draw = {
+            tuple([_Boolean]): self._bernoulli_draw,
             tuple([integer_interval]): self._categorical_draw
         }
 
@@ -1701,7 +1703,7 @@ class KnowledgeServer:
         # Enforce sample shape of [2]
         return torch.Size([2])
 
-    def _bernoulli_draw(self):
+    def _bernoulli_draw(self, *args):
         # Return a particle list tensor consists of only two size-1 event: 0, and 1. Both particles have equal sampling
         #   density.
         particles = (torch.tensor([[0.], [1.]], dtype=torch.float), )
