@@ -10,7 +10,7 @@ import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import MessageType, Message
-from pysigma.pattern_structures.summarization import Summarization, _Summarization
+from pysigma.pattern_structures.summarization import Summarization, SummarizationClass
 from pysigma.pattern_structures.summarization import ContentFlagTyping as CFT
 from pysigma.pattern_structures.summarization import DistributionTyping as DT
 from pysigma.pattern_structures.summarization import ParticleTyping as PT
@@ -20,7 +20,7 @@ from pysigma.pattern_structures.summarization import ReturnValueTyping as RVT
 from pysigma.pattern_structures.summarization import SummarizationCallbackAnnotationError, \
     SummarizationContentTypeError, SummarizationValueError
 
-from ...utils import random_message, assert_equal_within_error, equal_within_error
+from ...utils import random_message, assert_equal_within_error, equal_within_error, assert_proportional_within_error
 
 
 class TestSummarization:
@@ -88,7 +88,7 @@ class TestSummarization:
         def test_callback(a: CFT, b: DT, c: PT, d: WT, e: LDT) -> RVT:
             return None, None
 
-        assert isinstance(test_callback, _Summarization)
+        assert isinstance(test_callback, SummarizationClass)
         assert callable(test_callback._sum_func)
         assert test_callback._repr_type == 'dual' and test_callback._dist_repr_type == 'distribution'
 
@@ -117,7 +117,7 @@ class TestSummarization:
         def test_callback(a: CFT, b: DT, c: PT, d: WT, e: LDT) -> RVT:
             return None, None
 
-        assert isinstance(test_callback, _Summarization)
+        assert isinstance(test_callback, SummarizationClass)
         assert callable(test_callback._sum_func)
         assert test_callback._repr_type == 'particle' and test_callback._dist_repr_type == 'parameter'
 
@@ -650,4 +650,54 @@ class TestSummarization:
         assert_equal_within_error(return_msg.weight, mock_weight)
         assert all(equal_within_error(p1, p2) for p1, p2 in zip(return_msg.particles, test_msg.particles))
         assert all(equal_within_error(d1, d2) for d1, d2 in zip(return_msg.log_densities, test_msg.log_densities))
+
+    def test_call_correct_return_message_multiple_rvs_1(self):
+        # Test correctness of returning message when the original message has multiple random variables
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4]), Size([10]), Size([20, 30, 40]), Size([5, 6, 7])
+        test_msg = random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
+        test_msg.attr = {'dist_class': D, 'dist_info': {'test_key', 'test_val'}}
+
+        mock_dist_param = torch.rand([4, 10])
+        mock_weight = torch.rand([4, 24000])
+
+        @Summarization(repr_type='dual', dist_repr_type='parameter')
+        def callback(a: CFT, b: DT, c: PT, d: WT, e: LDT) -> RVT:
+            return mock_dist_param, mock_weight
+
+        return_msg = callback(test_msg)
+
+        assert isinstance(return_msg, Message)
+        assert return_msg.s_shape == s_shape and return_msg.e_shape == e_shape
+        assert return_msg.weight.shape == b_shape[1:] + s_shape
+
+    def test_call_correct_return_message_multiple_rvs_2(self):
+        # Test correctness of returning message when the original message has multiple random variables
+        # Test returned weight tensor's content
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4]), Size([10]), Size([20, 30, 40]), Size([5, 6, 7])
+        test_msg = random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
+        test_msg.attr = {'dist_class': D, 'dist_info': {'test_key', 'test_val'}}
+
+        expected_param = torch.randn(b_shape[1:] + p_shape)
+        expected_weight = torch.rand(b_shape[1:] + s_shape)
+        test_input_param = expected_param.unsqueeze(0).expand(b_shape + p_shape)
+        test_input_weight = expected_weight.unsqueeze(0).expand(b_shape + s_shape)
+        # Replace message parameter and weight
+        test_msg.parameter = test_input_param
+        test_msg.weight = test_input_weight
+        # Clone the message to make sure everything fits
+        test_msg = test_msg.clone()
+
+        @Summarization(repr_type='dual', dist_repr_type='parameter')
+        def callback(a: CFT, b: DT, c: PT, d: WT, e: LDT) -> RVT:
+            return b[0], d[0]       # Only return the first slice
+
+        return_msg = callback(test_msg)
+
+        assert isinstance(return_msg, Message)
+        assert return_msg.s_shape == s_shape and return_msg.e_shape == e_shape
+        # Check content
+        assert_equal_within_error(return_msg.parameter, expected_param)
+        assert_proportional_within_error(return_msg.weight, expected_weight, dims=[-1, -2, -3])
+
+
 

@@ -537,7 +537,7 @@ class TestPBFN:
                         assert_equal_within_error(buffer_weight_slice[i, j, k], torch.tensor(EPS))
         expected_weight_slice = weight / weight.sum()
         for i in range(3):
-            assert_equal_within_error(buffer_weight_slice[i, i, i], expected_weight_slice[i], 1e-5)
+            assert_equal_within_error(buffer_weight_slice[i, i, i], expected_weight_slice[i], 1e-4)
         # Check densities
         assert_equal_within_error(pbfn.buffer.log_densities[0], torch.zeros(num_ptcl) / num_ptcl)
 

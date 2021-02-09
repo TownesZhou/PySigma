@@ -11,7 +11,7 @@ from torch.distributions import Distribution
 from ..utils import DistributionServer
 from ..defs import Message, MessageType
 from .summarization import Summarization
-from .summarization import Summarization, _Summarization
+from .summarization import Summarization, SummarizationClass
 from .summarization import ContentFlagTyping as CFT
 from .summarization import DistributionTyping as DT
 from .summarization import ParticleTyping as PT

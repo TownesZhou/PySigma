@@ -6,6 +6,7 @@ from typing import Union, Optional, Tuple, Callable
 import inspect
 from inspect import Signature, Parameter
 import functools
+import numpy as np
 import torch
 from torch.distributions import Distribution
 from ..utils import DistributionServer
@@ -34,19 +35,26 @@ _NUM_CALLBACK_PARAM = 5
 
 
 # Custom Exception classes
-class SummarizationCallbackAnnotationError(Exception):
+class SummarizationError(Exception):
+    """
+    The master exception parent class for all types of Summarization errors.
+    """
     pass
 
 
-class SummarizationContentTypeError(Exception):
+class SummarizationCallbackAnnotationError(SummarizationError):
     pass
 
 
-class SummarizationValueError(Exception):
+class SummarizationContentTypeError(SummarizationError):
     pass
 
 
-class _Summarization:
+class SummarizationValueError(SummarizationError):
+    pass
+
+
+class SummarizationClass:
     """The class wrapping the custom summarization callback routine which will be called during the outward
     summarization step in the Expansion / Summarization Factor Node (ESFN).
 
@@ -215,8 +223,9 @@ class _Summarization:
             The incoming message.
             Batch shape should be of length 2, with the first batch dimension being the one to be summarized over, and
             the second dimension being the one to be left untouched.
-            All particle contents should already be concatenated so that the particle values represent joint events,
-            and that sample shape and event shape should be of length 1.
+            If the message contains multiple random variables, then the events are first concatenated then passed to the
+            summarization routine. The returning message will still have the same number of random variables and same
+            list of marginal particle and densities.
             The message's special attribute dict should contain `'dist_class'` and `'dist_info'` keyed entries,
             otherwise an AssertionError will be raised.
 
@@ -228,7 +237,7 @@ class _Summarization:
         """
         # Sort out input data
         assert isinstance(msg, Message)
-        assert len(msg.b_shape) == 2 and len(msg.e_shape) <= 1      # Sample and event shape could be empty
+        assert len(msg.b_shape) == 2
         assert MessageType.Parameter in msg.type or MessageType.Particles in msg.type
 
         # Target batch shape
@@ -281,9 +290,11 @@ class _Summarization:
             else:
                 dist_content = DistributionServer.param2dist(dist_class, msg.parameter, dist_info=dist_info)
         if self._repr_type in ['particle', 'dual'] and MessageType.Particles in msg.type:
-            particle = msg.particles[0]
-            weight = msg.weight
-            log_density = msg.log_densities[0]
+            # If there are multiple rvs, pass to the routine the concatenated particle, weight, and density tensor
+            concat_msg = msg.event_concatenate(list(range(len(msg.e_shape)))) if len(msg.s_shape) > 1 else msg
+            particle = concat_msg.particles[0]
+            weight = concat_msg.weight
+            log_density = concat_msg.log_densities[0]
         if dist_content is not None and particle is not None:
             content_flag = 'dual'
         elif dist_content is not None:
@@ -295,6 +306,10 @@ class _Summarization:
         return_val = self._sum_func(content_flag, dist_content, particle, weight, log_density)
 
         # Check return value
+        expected_dist_batch_shape = msg.b_shape[1:]
+        expected_param_shape = msg.b_shape[1:] + msg.p_shape
+        expected_weight_shape = msg.b_shape[1:] + (torch.Size([np.prod(msg.s_shape)]) if len(msg.s_shape) > 1 else
+                                                   msg.s_shape)
         if not isinstance(return_val, tuple) or not len(return_val) == 2:
             raise SummarizationValueError(
                 "In summarization routine '{}': the value returned by the summarization callback routine should be a "
@@ -342,19 +357,20 @@ class _Summarization:
                 .format(self._sum_func.__name__)
             )
         # Check returned content shape
-        if isinstance(summed_dist_content, Distribution) and summed_dist_content.batch_shape != summed_b_shape:
+        if isinstance(summed_dist_content, Distribution) and \
+                summed_dist_content.batch_shape != expected_dist_batch_shape:
             raise SummarizationValueError(
                 "In summarization routine '{}': expect the returned distribution instance (first return value) to have "
                 "batch shape {}. However, found batch shape {}."
                 .format(self._sum_func.__name__, summed_b_shape, summed_dist_content.batch_shape)
             )
-        if isinstance(summed_dist_content, torch.Tensor) and summed_dist_content.shape != summed_b_shape + msg.p_shape:
+        if isinstance(summed_dist_content, torch.Tensor) and summed_dist_content.shape != expected_param_shape:
             raise SummarizationValueError(
                 "In summarization routine '{}': expect the returned distribution parameter (first return value) to "
                 "have shape {}. However, found shape {}."
                 .format(self._sum_func.__name__, summed_b_shape + msg.p_shape, summed_dist_content.shape)
             )
-        if isinstance(summed_weight, torch.Tensor) and summed_weight.shape != summed_b_shape + msg.s_shape:
+        if isinstance(summed_weight, torch.Tensor) and summed_weight.shape != expected_weight_shape:
             raise SummarizationValueError(
                 "In summarization routine '{}': expect the returned particle weight (second return value) to have "
                 "shape {}. However, found shape {}."
@@ -364,6 +380,9 @@ class _Summarization:
         # Translate distribution instance to distribution parameter, if present
         if isinstance(summed_dist_content, Distribution):
             summed_dist_content = DistributionServer.dist2param(summed_dist_content, dist_info)
+        # Reshape the weight into original multi-event shape, if there were multiple rvs in the original message
+        if summed_weight is not None and len(msg.s_shape) > 1:
+            summed_weight = summed_weight.reshape(summed_b_shape + msg.s_shape)
 
         if content_flag == 'dual':
             return_msg = Message(MessageType.Dual,
@@ -401,8 +420,8 @@ def Summarization(sum_func: _Callable_Signature = None,
     Note that this means the decorator ``@Summarization`` can only accept keyword arguments.
     """
     if sum_func:
-        return _Summarization(sum_func)
+        return SummarizationClass(sum_func)
     else:
         def wrapper(function):
-            return _Summarization(function, repr_type, dist_repr_type)
+            return SummarizationClass(function, repr_type, dist_repr_type)
         return wrapper
