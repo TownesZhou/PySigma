@@ -5,6 +5,7 @@ from __future__ import annotations      # For postponed evaluation of typing ann
 from typing import Union, Optional, List, Tuple, Dict
 from typing import Iterable as IterableType
 import copy
+import sys
 from abc import ABC, abstractmethod
 import torch
 from torch.distributions import Transform
@@ -13,7 +14,7 @@ from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
 from .basic_nodes import LinkData, VariableNode, FactorNode, NodeConfigurationError
 from ..utils import KnowledgeServer
 from ..structures import VariableMap
-from ..pattern_structures import Summarization
+from ..pattern_structures.summarization import SummarizationClass, SummarizationError
 
 
 class AlphaFactorNode(FactorNode, ABC):
@@ -93,8 +94,10 @@ class AlphaFactorNode(FactorNode, ABC):
             self.labeled_ld_pair[direction] = (linkdata, other_ld) if linkdata.to_fn else (other_ld, linkdata)
 
     def precompute_check(self):
-        """The computable condition for a AlphaFactorNode is that there is at least pair of incoming and outgoing
-        linkdata of the same message propagation direction
+        """The basic computable condition for a AlphaFactorNode is that there is at least pair of incoming and outgoing
+        linkdata of the same message propagation direction.
+
+        This method shall be extended by an AlphaNode subclass if it has specific computable conditions.
         """
         if len(list(self.labeled_ld_pair.keys())) == 0:
             raise NodeConfigurationError("Wrong configuration for node {}: no registered linkdata.".format(self.name))
@@ -174,7 +177,7 @@ class ESFN(AlphaFactorNode):
     sum_op
     """
 
-    def __init__(self, name, sum_op=None, **kwargs):
+    def __init__(self, name: str, sum_op: SummarizationClass, **kwargs):
         """
             Necessary data structure:
 
@@ -183,13 +186,31 @@ class ESFN(AlphaFactorNode):
         super(ESFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Expansion / Summarization Factor Node"
 
-        assert sum_op is None or isinstance(sum_op, Summarization)
-        if sum_op is not None:
-            raise NotImplementedError("Summarization operation using Summarization instance is not yet implemented.")
-
+        assert isinstance(sum_op, SummarizationClass)
         self.sum_op = sum_op
 
-        self.pretty_log["node type"] = "Expansion / Summarization Factor Node"
+    def precompute_check(self):
+        """For ESFN, check that the outward DVN's relational variable set is a subset of the inward DVN's relational
+        variable set, and that these two DVNs have identical random variables.
+        """
+        super(ESFN, self).precompute_check()
+
+        # If there's an inward message pathway, then incoming ld's vn is the Outward-side node, and outgoing ld's vn
+        #   is the Inward-side node
+        # If an outward message pathway, the vice versa.
+        if 'inward' in self.labeled_ld_pair.keys():
+            in_ld, out_ld = self.labeled_ld_pair['inward']
+            out_dvn, in_dvn = in_ld.vn, out_ld.vn
+        else:
+            in_ld, out_ld = self.labeled_ld_pair['outward']
+            in_dvn, out_dvn = in_ld.vn, out_ld.vn
+
+        in_rel_vars, out_rel_vars = in_dvn.rel_vars, out_dvn.rel_vars
+
+        assert set(out_rel_vars).issubset(set(in_rel_vars)), \
+            "In {}: The outward DVN's relational variable set should be an subset of the inward DVN's relational " \
+            "variable set. Instead, found inward DVN random variables: {}, and outward DVN random variables: {}"\
+            .format(self.name, list(in_rel_vars), list(out_rel_vars))
 
     def inward_compute(self, in_ld, out_ld):
         """Expands and permutes the incoming message's relational variable dimensions to match the target outgoing
@@ -202,14 +223,7 @@ class ESFN(AlphaFactorNode):
             variables.
         """
         msg = in_ld.read()
-        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
-        assert isinstance(msg, Message)
         in_rel_vars, out_rel_vars = in_ld.vn.rel_vars, out_ld.vn.rel_vars
-        # Check that the set of relational variables of incoming message is a subset of that of outgoing message
-        assert set(in_rel_vars).issubset(set(out_rel_vars)), \
-            "At {}: during inward propagation, expect the set of source DVN's relational variables being a subset of " \
-            "the set of target DVN's relational variables. Found variables {} from incoming linkdata, but variables " \
-            "{} from outgoing linkdata.".format(self.name, in_rel_vars, out_rel_vars)
 
         # Keep a running list of variables
         mapped_var_list = list(in_rel_vars)
@@ -240,55 +254,37 @@ class ESFN(AlphaFactorNode):
         """Summarizes over incoming message's un-referenced relational variable dimensions and permute to match the
         target outgoing relational variable dimensions.
 
-        The summarization semantic is defined by the sum_op specified during initialization. If sum_op is None,
-        uses default summarization semantic defined at the Message level.
-
-        Raises
-        ------
-        AssertionError
-            If the set of source DVN's relational variables is not a subset of the set of target DVN's relational
-            variables.
+        The summarization semantic is defined by the sum_op specified during initialization.
         """
         msg = in_ld.read()
-        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
-        assert isinstance(msg, Message)
         in_rel_vars, out_rel_vars = in_ld.vn.rel_vars, out_ld.vn.rel_vars
-        # Check that the set of relational variables of outgoing message is a subset of that of incoming message
-        assert set(in_rel_vars).issubset(set(out_rel_vars))
 
-        # Keep a running list of variables
-        mapped_var_list = list(in_rel_vars)
+        # Skip summarization if identical set of relational variables
+        rest_vars = in_rel_vars
+        if not set(in_rel_vars) == set(out_rel_vars):
 
-        # Summarize using custom sum_op
-        if self.sum_op is not None:
             # Flatten both the group of dimensions to be summarized over and the group of other dimensions. Put the
             #   former as the first dimension and the latter as the last batch dimension
             sum_dims = list(dim for dim, v in enumerate(in_rel_vars) if v not in out_rel_vars)
             other_dims = list(dim for dim, v in enumerate(in_rel_vars) if v in out_rel_vars)
-            if len(sum_dims) > 0:
-                # First flatten sum_dims, then other_dims, so that flattened sum_dims will be the first dim
-                msg = msg.batch_flatten(sum_dims)
-                msg = msg.batch_flatten(other_dims)
-                # Process using the sum_op
-                msg = self.sum_op(msg, self.ran_vars)
-                # Reshape
-                msg = msg.batch_reshape(other_dims)
+            # First flatten sum_dims, then other_dims, so that flattened sum_dims will be the first dim
+            msg = msg.batch_flatten(sum_dims)
+            msg = msg.batch_flatten(other_dims)
+            # Process using the provided sum op
+            try:
+                msg = self.sum_op(msg)
+            except SummarizationError as err:
+                # Append node name to the exception message
+                raise type(err)('In {}: '.format(self.name) + str(err)).with_traceback(sys.exc_info()[2])
+            # Reshape
+            rest_vars = [in_rel_vars[dim] for dim in other_dims]
+            rest_shape = [v.size for v in rest_vars]
+            msg = msg.batch_reshape(rest_shape)
 
-        # Otherwise if sum_op is None, carry out default summarization
-        else:
-            # Iterate over all relational variables not referenced by out_rel_var_list
-            for pt_var in in_rel_vars:
-                if pt_var not in out_rel_vars:
-                    dim = mapped_var_list.index(pt_var)
-                    # Summarize over the message batch dimension
-                    msg = msg.batch_summarize(dim)
-                    # Remove the variable from the running list
-                    mapped_var_list.remove(pt_var)
-
-        assert set(mapped_var_list) == set(out_rel_vars)
+            assert set(rest_vars) == set(out_rel_vars)
 
         # Permute message dimension so that it matches the outgoing relational variable order
-        perm_order = list(mapped_var_list.index(v) for v in out_rel_vars)
+        perm_order = list(rest_vars.index(v) for v in out_rel_vars)
         msg = msg.batch_permute(perm_order)
 
         # Send message

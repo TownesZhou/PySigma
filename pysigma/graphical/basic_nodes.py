@@ -68,7 +68,7 @@ class LinkData:
                  vn: VariableNode,
                  fn: FactorNode,
                  to_fn: bool,
-                 msg_shape: MessageShape,
+                 msg_shape: MessageShape = (torch.Size([]),) * 4,
                  epsilon: float = NP_EPSILON,
                  **kwargs):
         assert isinstance(vn, VariableNode)
