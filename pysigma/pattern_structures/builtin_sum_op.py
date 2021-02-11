@@ -47,6 +47,7 @@ def sum_op_combination(content_flag: CFT,
         # Multiply across the first batch dimension
         log_weight = weight.log()
         sum_log_weight = log_weight.sum(dim=0)
+        sum_log_weight -= sum_log_weight.max()      # Numerical stability: prevent NaN
         return_weight = sum_log_weight.exp()
 
     return return_param, return_weight
