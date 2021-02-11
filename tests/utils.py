@@ -66,7 +66,7 @@ def assert_proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Ten
         ratio_max = torch.max(ratio_max, dim=dim, keepdim=True)[0]
         ratio_min = torch.min(ratio_min, dim=dim, keepdim=True)[0]
     ratio_diff = torch.max(torch.abs(ratio_max - ratio_min))
-    assert ratio_diff < precision, "Maximum ratio difference: {}".format(ratio_max - ratio_min)
+    assert ratio_diff < precision, "Maximum ratio difference: {}".format(ratio_diff)
 
 
 # Generate a positive definite batched matrix
