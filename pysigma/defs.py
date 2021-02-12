@@ -1728,6 +1728,9 @@ class Message:
             # The normalization of resulting weights will be taken care of by message initialization
             log_weight = torch.log(new_weight)
             log_weight = torch.sum(log_weight, dim=dim)
+            # Normalize for numerical stability so that the max value is 0. This is to prevent that all values vanish
+            #   if they together are generally too small, or all values explode to NaN if they are generally too large.
+            log_weight -= log_weight.max()
             new_weight = torch.exp(log_weight)
 
         new_msg = Message(self.type,

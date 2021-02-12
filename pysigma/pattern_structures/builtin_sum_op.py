@@ -40,8 +40,8 @@ def sum_op_combination(content_flag: CFT,
     return_weight = weight
 
     if dist_content is not None:
-        # Sum across the first batch dimension
-        return_param = dist_content.sum(dim=0)
+        # Take mean across the first batch dimension
+        return_param = dist_content.mean(dim=0)
 
     if weight is not None:
         # Multiply across the first batch dimension

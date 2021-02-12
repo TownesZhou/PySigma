@@ -371,7 +371,7 @@ class TestESFN:
         assert received_msg.b_shape == Size([4, 3, 5])
 
         # Check message content
-        expected_param = test_msg.parameter.sum(dim=[3, 4]).permute([1, 0, 2, 3])
+        expected_param = test_msg.parameter.mean(dim=[3, 4]).permute([1, 0, 2, 3])
         assert_equal_within_error(received_msg.parameter, expected_param)
         # expected_weight = test_msg.weight.log().sum(dim=[3, 4]).permute([1, 0, 2, 3, 4]).exp()
         expected_weight = test_msg.weight.log().sum(dim=[3, 4])

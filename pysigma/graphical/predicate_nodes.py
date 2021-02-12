@@ -480,9 +480,7 @@ class WMFN_MCMC(WMFN):
             .format(self.name, in_post_msg.b_shape, in_eval_msg.b_shape)
         self.b_shape = in_eval_msg.b_shape
         # Step 1: Generate new posterior belief
-        # 1.1 Summarize (by multiplying) weights over batch dimensions
-        # in_eval_weight_sum = in_eval_msg.weight.log().sum(dim=list(range(len(self.b_shape)))).exp()
-        # in_post_weight_sum = in_post_msg.weight.log().sum(dim=list(range(len(self.b_shape)))).exp()
+        # 1.1 Summarize (by summing) weights over batch dimensions
         in_eval_weight_sum = in_eval_msg.weight.sum(dim=list(range(len(self.b_shape))))
         in_post_weight_sum = in_post_msg.weight.sum(dim=list(range(len(self.b_shape))))
         # 1.2 Marginalize (by summing) weight w.r.t. each random variable respectively
@@ -1028,6 +1026,7 @@ class PBFN(FactorNode):
                     view_dim.insert(i, -1)
                     expanded_log_weight.append(torch.log(weight[i].view(view_dim)))
                 sum_log_weight = sum(expanded_log_weight)
+                sum_log_weight -= sum_log_weight.max()      # Normalize for numerical stability
                 ptcl_weight = torch.exp(sum_log_weight)
                 # Prepend batch dimensions
                 ptcl_weight = ptcl_weight.view(torch.Size([1] * len(self.b_shape)) + s_shape)\

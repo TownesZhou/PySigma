@@ -29,7 +29,7 @@ class TestSumOpCombination:
         return_msg = sum_op_combination(test_msg)
 
         expected_param = torch.tensor(
-            [[0.9], [1.1], [1.3]]
+            [[0.45], [0.55], [0.65]]
         )
         assert isinstance(return_msg, Message) and return_msg.type is MessageType.Parameter
         assert_equal_within_error(return_msg.parameter, expected_param)
