@@ -271,50 +271,37 @@ class VariableMapCallable:
             output_val: torch.LongTensor = self.mapping_func(input_val)
         except Exception as exc:
             # Chain the exception
-            raise VariableMapRuntimeError("In VariableMap mapping pattern variable {} to predicate argument {} with "
-                                          "callback {}: unable to proceed. An exception internal to the callback "
-                                          "occurred."
+            raise VariableMapRuntimeError("In VariableMap mapping pattern variable '{}' to predicate argument '{}' "
+                                          "with callback '{}': unable to proceed. An exception internal to the "
+                                          "callback occurred."
                                           .format(self.pat_var, self.pred_arg, self.mapping_func.__name__)) from exc
 
         # Check return value type
         if not isinstance(output_val, torch.LongTensor):
-            raise VariableMapValueError("In VariableMap mapping pattern variable {} to predicate argument {} with "
-                                        "callback {}: the return value from the custom callback must be a LongTensor. "
-                                        "Found return value type: {}"
+            raise VariableMapValueError("In VariableMap mapping pattern variable '{}' to predicate argument '{}' with "
+                                        "callback '{}': the return value from the custom callback must be a "
+                                        "LongTensor. Found return value type: '{}'"
                                         .format(self.pat_var, self.pred_arg, self.mapping_func.__name__,
                                                 type(output_val)))
-        # Check return LongTensor dimension shape
-        if output_val.dim() != 1:
-            raise VariableMapValueError("In VariableMap mapping pattern variable {} to predicate argument {} with "
-                                        "callback {}: the return value must be a 1-dimensional LongTensor. Found a "
-                                        "LongTensor with {} dimensions."
-                                        .format(self.pat_var, self.pred_arg, self.mapping_func.__name__,
-                                                output_val.dim()))
         # Check return LongTensor shape
         if output_val.shape != input_val.shape:
-            raise VariableMapValueError("In VariableMap mapping pattern variable {} to predicate argument {} with "
-                                        "callback {}: the returned LongTensor must have the same shape as the input "
+            raise VariableMapValueError("In VariableMap mapping pattern variable '{}' to predicate argument '{}' with "
+                                        "callback '{}': the returned LongTensor must have the same shape as the input "
                                         "LongTensor. Expect shape {}, but found shape {}."
                                         .format(self.pat_var, self.pred_arg, self.mapping_func.__name__,
                                                 input_val.shape, output_val.shape))
-        # Check that return values are all non-negative
-        if not torch.all(output_val > 0):
-            raise VariableMapValueError("In VariableMap mapping pattern variable {} to predicate argument {} with "
-                                        "callback {}: expect the returned LongTensor to be non-negative. Found minimum "
-                                        "value {}"
-                                        .format(self.pat_var, self.pred_arg, self.mapping_func.__name__,
-                                                output_val.min()))
 
         # Check if return values are out of range w.r.t. the predicate argument's domain
         # Raise exception if strict, otherwise remove corresponding values from input and output
-        valid_mask = output_val < self.pred_arg.size
+        valid_mask = torch.bitwise_and(0 <= output_val, output_val < self.pred_arg.size)
         if not torch.all(valid_mask):
             if self.strict:
-                raise VariableMapValueError("In VariableMap mapping pattern variable {} to predicate argument {} with "
-                                            "callback {}: returned LongTensor value out of range. Expect values in "
-                                            "range [0, {}], but found maximum value {}."
+                raise VariableMapValueError("In VariableMap mapping pattern variable '{}' to predicate argument '{}' "
+                                            "with callback '{}': returned LongTensor value out of range. Expect values "
+                                            "in range [0, {}], but found maximum value {} and minimum value {}."
                                             .format(self.pat_var, self.pred_arg, self.mapping_func.__name__,
-                                                    self.pred_arg.size - 1, output_val.max()))
+                                                    self.pred_arg.size - 1,
+                                                    output_val.max().item(), output_val.min().item()))
             else:
                 # Exclude exceptional values from input and output tensor
                 input_val = input_val.masked_select(valid_mask)
