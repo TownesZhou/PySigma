@@ -7,10 +7,12 @@ from typing import Iterable as IterableType
 import copy
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 import torch
 from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
+from ..pattern_structures.variable_map import VariableMapCallable
 from .basic_nodes import LinkData, VariableNode, FactorNode, NodeConfigurationError
 from ..utils import KnowledgeServer
 from ..structures import VariableMap
@@ -298,269 +300,188 @@ class RMFN(AlphaFactorNode):
     specified) by manipulating message batch dimensions. This node can thus implements the semantic of inner-pattern
     relational variable matching.
 
-    Mappings between the source relational arguments and target relational variables as well as that from source
-    relational arguments to `VariableMap` instances need to be provided.
+    Caller must provide one `VariableMapCallable` for each of the pattern element, i.e. the binding of a predicate
+    argument and pattern variable, of this predicate pattern.
 
     Parameters
     ----------
     name : str
-        Name of this node
-    arg2var : dict
-        Dictionary mapping predicate relational argument `Variable` instance to pattern relational variable `Variable`
-        instance.
-    var2arg : dict
-        Dictionary mapping pattern relational variable `Variable` instance to LIST of predicate relational argument
-        `Variable` instances. The list length would be longer than 1 if the relational variable is being referenced
-        by multiple arguments.
-    arg2var_map : dict
-        Dictionary mapping predicate relational argument `Variable` instance to a `VariableMap` instance if one is
-        specified for this argument. If an argument is not associated with a `VariableMap`, it should not appear in this
-        dictionary.
+    variable_maps : Iterable of VariableMapCallable
+        The VariableMapCallable instances specifying the bindings and mappings between the predicate arguments and
+        pattern variables. There should be one VariableMapCallable for each of the pattern element.
 
     Attributes
     ----------
-    arg2var
-    var2arg
-    arg2var_map
-    arg_set : set
-        The set of predicate argument `Variable` instances. Obtained from the keys of `arg2var`.
-    var_set : set
-        The set of pattern variable `Variable` instances. Obtained from the keys of `var2arg`.
-    arg2var_map_tuple : dict
-        Obtained from `arg2var_map`. Mapping from predicate argument to the mapping dictionary (if a `VariableMap` is
-        specified).
-    arg2var_map_inv_tuple : dict
-        Obtained from `arg2var_map`. Mapping from predicate argument to the INVERSE mapping dictionary (if a
-        `VariableMap` is specified).
+    variable_maps
+    vm_pred_args
+    vm_pat_vars
+    pred_args2var_map
+    pat_var2pred_args
     """
-
-    def __init__(self, name, arg2var, var2arg, arg2var_map, **kwargs):
+    def __init__(self, name: str, variable_maps: IterableType[VariableMapCallable], **kwargs):
         super(RMFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Relation Variable Mapping Node"
-        assert isinstance(name, str)
-        assert isinstance(arg2var, dict) and all(isinstance(k, Variable) for k in arg2var.keys()) and \
-               all(isinstance(v, Variable) for v in arg2var.values())
-        assert isinstance(var2arg, dict) and all(isinstance(k, Variable) for k in var2arg.keys()) and \
-               all(isinstance(v, list) and all(isinstance(arg, Variable) for arg in v) for v in var2arg.values())
-        assert isinstance(arg2var_map, dict) and all(isinstance(k, Variable) for k in arg2var_map.keys()) and \
-               all(isinstance(v, VariableMap) for v in arg2var_map.values())
 
-        self.arg2var = arg2var
-        self.var2arg = var2arg
-        self.arg2var_map = arg2var_map
+        assert isinstance(variable_maps, Iterable) and all(isinstance(vm, VariableMapCallable) for vm in variable_maps)
 
-        self.arg_set = set(self.arg2var.keys())
-        self.var_set = set(self.var2arg.keys())
+        self.variable_maps = variable_maps
+        # Infer the set of predicate arguments and pattern variables from the variable maps
+        self.vm_pred_args = set(vm.pred_arg for vm in self.variable_maps)
+        self.vm_pat_vars = set(vm.pat_var for vm in self.variable_maps)
+        # Dictionary mapping predicate arguments to their associated variable maps
+        self.pred_arg2var_map = {vm.pred_arg: vm for vm in self.variable_maps}
+        # Dictionary mapping pattern variables to the list of associated (mapped) predicate arguments
+        self.pat_var2pred_args = {pat_var: [vm.pred_arg for vm in self.variable_maps if vm.pat_var == pat_var]
+                                  for pat_var in self.vm_pat_vars}
 
-        # Sanity check whether the variables given in the three dicts are compatible.
-        assert set(self.arg2var.values()) == self.var_set
-        arg_set = set()
-        for arg_list in self.var2arg.values():
-            arg_set.union(set(arg_list))
-        assert arg_set == self.arg_set
-        assert set(self.arg2var_map.keys()).issubset(self.arg_set)
+        self.pretty_log['node type'] = "Relation Variable Mapping Node"
 
-        # Obtain mapping dictionary and inverse mapping dictionary
-        self.arg2var_map_tuple = {arg: var_map.get_map() for arg, var_map in self.arg2var_map.items()}
-        self.arg2var_map_inv_tuple = {arg: var_map.get_inverse_map() for arg, var_map in self.arg2var_map.items()}
+    def add_link(self, linkdata: LinkData):
+        """
+            Check if `linkdata`'s relational variables are compatible with the predicate arguments or pattern variables
+            we inferred from the variable mappings during init.
+        """
+        super(RMFN, self).add_link(linkdata)
 
-        self.pretty_log["node type"] = "Relation Variable Mapping Node"
+        # Check if the relational variables indicated by the linkdata is consistent with the predicate arguments and
+        #   pattern variables inferred from the given variable mappings.
+        ld_rel_vars = set(linkdata.vn.rel_vars)
+        if (linkdata.attr['direction'] == 'inward' and linkdata.to_fn) or \
+                (linkdata.attr['direction'] == 'outward' and not linkdata.to_fn):
+            assert ld_rel_vars == self.vm_pred_args, \
+                "In {}: the linkdata {} to add has incompatible predicate arguments. Expect set of predicate " \
+                "arguments {} (inferred from the given variable mappings), but found {} in the linkdata." \
+                .format(self.name, linkdata, self.vm_pred_args, ld_rel_vars)
+        else:
+            assert ld_rel_vars == self.vm_pat_vars, \
+                "In {}: the linkdata {} to add has incompatible pattern variables. Expect set of pattern " \
+                "variables {} (inferred from the given variable mappings), but found {} in the linkdata." \
+                .format(self.name, linkdata, self.vm_pat_vars, ld_rel_vars)
 
     def inward_compute(self, in_ld, out_ld):
         """Inward computation. Converts predicate relational arguments to pattern relational variables. Applies mappings
         to relational variable's values, if specified.
 
-        For inward direction, we are assuming this is used in condition or condact patterns. Accordingly, the inverse
-        mapping should be used to map predicate arguments to pattern variables.
-
-        Will check anyway if domain and image of the inverse map agree with the size range of the predicate argument
-        and pattern variable respectively. However to be user friendly this should be checked beforehand by compiler.
-
-        Note that domain should be a subset of predicate argument size range, but image should be exactly equal to
-        the pattern variable size range
+        For inward direction, we are assuming this is used in condition or condact patterns.
 
         The computations to be carried out can be summarized in three steps: map/broaden, diagonalize, & permute
         """
-        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         msg = in_ld.read()
-        assert isinstance(msg, Message)
-        in_rel_vars, out_rel_vars = in_ld.vn.rel_vars, out_ld.vn.rel_vars
+        pred_args, pat_vars = list(in_ld.vn.rel_vars), list(out_ld.vn.rel_vars)
 
-        # Check that given data structures agree with variable lists of the incident variable node
-        assert set(in_rel_vars) == self.arg_set
-        assert set(out_rel_vars) == self.var_set
-        # Check that mapping's domain and image agree with variables' sizes
-        #   Note that for inward computation we are using the inverse map
-        for arg, var_map_tuple in self.arg2var_map_inv_tuple.items():
-            pat_var = self.arg2var[arg]
-            _, domain, image = var_map_tuple
-            assert domain.issubset(set(range(arg.size))), \
-                "At {}: The VariableMap declared on the predicate argument {} would induce an image that exceeds the " \
-                "argument's value range. The argument's value range is {}, but found image {}." \
-                    .format(self.name, arg.name, set(range(arg.size)), domain)
-            assert image == set(range(pat_var.size)), \
-                "At {}: The VariableMap declared on the predicate argument {} should have a domain equal to the value " \
-                "range of the associated pattern variable {}. The pattern variable's value range is {}, but found " \
-                "VariableMap domain {}" \
-                    .format(self.name, arg.name, pat_var.name, set(range(pat_var.size)), image)
-
-        # 1. First, translate predicate arguments to pattern variables. This step involves broadening the variable
-        #    dimension if predicate argument size is smaller than pattern variable size, or map predicate argument
-        #    values to pattern variable values if a VariableMap is specified for the given predicate argument.
+        # 1. First, translate predicate arguments to pattern variables.
         #
-        #    For the mapping we should use original forward mapping in combination with batch_index_select(), because we
-        #    are selecting "image" to place in "domain", in the order mandated by domain.
+        #    For each predicate argument, we consults with its variable mapping to obtain the index map tuple. The
+        #    tuple should indicate the index mapping pat_var_index -> pred_arg_index. Therefore, we first use
+        #    batch_index_select() with pred_arg_index to select those referenced message slices, then use
+        #    batch_index_put() with pat_var_index to put those slices at the appropriate places with identity message
+        #    slices filled in those unreferenced pattern variable indices.
+        for dim, pred_arg in enumerate(pred_args):
+            varmap: VariableMapCallable = self.pred_arg2var_map[pred_arg]
+            pat_var_ids, pred_arg_ids = varmap()
+            tmp_msg = msg.batch_index_select(dim=dim, index=pred_arg_ids)
+            msg = tmp_msg.batch_index_put(dim=dim, index=pat_var_ids)
+
+            # Broaden the message dimension so that it matches with the target pattern variable size. This is in case
+            #   pat_var_ids does not include the largest possible index, so the last line above would return a message
+            #   with a smaller dimension size than desired. 
+            if msg.b_shape[dim] < varmap.pat_var.size:
+                msg = msg.batch_broaden(dim=dim, length=varmap.pat_var.size)
+
+        # 2. The step above translate each predicate argument to its mapped pattern variable. Now, we need to collapse
+        #    the dimensions that are mapped to the same pattern variables, by using batch_diagonal() to select the
+        #    diagonal entries.
         #
-        #    For example, if the VariableMap is defined as  2 * var + 3 |-> arg , and `var` range is [0, 2], we will be
-        #    selecting from the incoming message, the slices with indices 3, 5, 8, to place onto indices 0, 1, 2 of the
-        #    outgoing message. To use batch_index_select(), we gather the indices [3, 5, 8] as the argument, which are
-        #    obtained from the forward mapping dictionary.
-        #
-        #    Note that we have guaranteed that forward mapping's domain is equal to pattern variable's size range
-        #    A running list of variables is maintained to keep track of variable dimensions
-        mapped_var_list = list(in_rel_vars)
-        for dim, pred_arg in enumerate(mapped_var_list):
-            pat_var = self.arg2var[pred_arg]
-            # Apply map if VariableMap is specified
-            if pred_arg in self.arg2var_map_tuple.keys():
-                map_dict, _, _ = self.arg2var_map_tuple[pred_arg]
-                indices = torch.tensor(list(map_dict[i] for i in range(pat_var.size)), dtype=torch.long,
-                                       device=self.device)
-                msg = msg.batch_index_select(dim, indices)
-            # Broaden the variable dimension size if currently it is smaller than the pattern variable's size
-            if msg.b_shape[dim] < pat_var.size:
-                msg = msg.batch_broaden(dim, pat_var.size)
-            # Change predicate argument to pattern variable Variable instance
-            mapped_var_list[dim] = pat_var
+        #    Since this step changes the dimension ordering, we use a running_vars to keep track of the dimensional
+        #    location of each variable (predicate arguments before translation, and pattern variables after).
+        running_vars = copy.deepcopy(pred_args)
+        for pat_var, mapped_pred_args in self.pat_var2pred_args.items():
+            # Before diagonalization, translate the first mapped pred arg in running_vars to its mapped pat var.
+            running_vars[running_vars.index(mapped_pred_args[0])] = pat_var
 
-        # 2. The step above guarantees that for any dimensions that share the same pattern variable, their axis values
-        #       are semantically identical to the pattern variable's value.
-        #    Now we should collapse the dimensions that share the same pattern variable, by selecting the diagonal
-        #       entries across these dimensions.
-        for pt_var in mapped_var_list:
-            # Current position of pt_var in the moving mapped_var_list. Using enumerate() iterator will not return
-            #   index of value w.r.t. a moving list
-            dim1 = mapped_var_list.index(pt_var)
-            # Find any repetition in later part of the list
-            if pt_var in mapped_var_list[dim1 + 1:]:
-                # Current index of the first repetition
-                dim2 = mapped_var_list[dim1 + 1:].index(pt_var) + dim1 + 1
-                # Remove these two entries from the list
-                mapped_var_list.remove(pt_var)
-                mapped_var_list.remove(pt_var)
-                # Append one to the end
-                mapped_var_list.append(pt_var)
-                # Selecting diagonal entries in message
-                msg = msg.batch_diagonal(dim1, dim2)
+            # Now, if mapped_pred_args has more than 1 elements, then we need to diagonalize
+            if len(mapped_pred_args) > 1:
+                for next_pred_arg in mapped_pred_args[1:]:      # Exclude the first pred arg in list
+                    # Find current and next variable's dimensional location
+                    cur_id, next_id = running_vars.index(pat_var), running_vars.index(next_pred_arg)
+                    # Diagonalize the message
+                    msg = msg.batch_diagonal(dim1=cur_id, dim2=next_id)
+                    # The new diagonalized dimension is appended to the end, so we remove the current variable and the
+                    #   next variable from the running list, and append the pat var to the end of it
+                    running_vars.remove(pat_var)
+                    running_vars.remove(next_pred_arg)
+                    running_vars.append(pat_var)
 
-        # Check that we have produced all the target relational variables, albeit with a different order perhaps
-        assert set(mapped_var_list) == set(out_rel_vars)
+        # Sanity Check: we should have produced all the target relational variables, albeit with a different order
+        assert set(running_vars) == set(pat_vars)
 
-        # 3. With all predicate argument dimension converted to pattern variable dimensions and all repetitions
-        #       diagonalized, we guarantee that all predicate variable appears in mapped_var_list.
+        # 3. With all predicate argument dimension translated to pattern variable dimensions and all repetitions
+        #       diagonalized, we guarantee that all predicate variable appears in running_vars.
         #    The last thing to do is to permute the batch dimensions so that the processed message's dimension match
         #       exactly with out_rel_var_list
-        perm_order = list(mapped_var_list.index(pt_var) for pt_var in out_rel_vars)
-        msg = msg.batch_permute(perm_order)
-        assert msg.b_shape == torch.Size([v.size for v in out_rel_vars])
+        perm_order = [running_vars.index(pat_var) for pat_var in pat_vars]
+        msg = msg.batch_permute(target_dims=perm_order)
 
         # Send message
         out_ld.write(msg)
 
-    def outward_compute(self, in_ld, out_ld):
+    def outward_compute(self, in_ld: LinkData, out_ld: LinkData):
         """Outward computation. Converts pattern relational variables to predicate relational arguments. Applies
         mappings to relational variable's values, if specified.
 
-        For outward direction, we are assuming this is used in action or condact patterns. Accordingly, the
-        original forward mapping should be used to map pattern variables to predicate arguments.
-
-        Will check anyway if domain and image of the forward map agree with the size range of the predicate argument
-        and pattern variable respectively. However to be user friendly this should be checked beforehand by
-        compiler.
-
-        Note that image of the map should be a subset of predicate argument size range, but its domain should be
-        exactly equal to the pattern variable size range.
+        For outward direction, we are assuming this is used in action or condact patterns.
 
         The computations to be carried out can be summarized in three steps: un-diagonalize, map/narrow, & permute
         """
-        assert isinstance(in_ld, LinkData) and isinstance(out_ld, LinkData)
         msg = in_ld.read()
-        assert isinstance(msg, Message)
-        in_rel_vars, out_rel_vars = in_ld.vn.rel_vars, out_ld.vn.rel_vars
+        pat_vars, pred_args = list(in_ld.vn.rel_vars), list(out_ld.vn.rel_vars)
 
-        # Check that given data structures agree with variable lists of the incident variable node
-        assert set(in_rel_vars) == self.var_set
-        assert set(out_rel_vars) == self.arg_set
-        # Check that mapping's domain and image agree with variables' sizes
-        #   For outward computation we are using the forward map
-        for arg, var_map_tuple in self.arg2var_map_tuple.items():
-            pat_var = self.arg2var[arg]
-            _, domain, image = var_map_tuple
-            assert image.issubset(set(range(arg.size))), \
-                "At {}: The VariableMap declared on the predicate argument {} would induce an image that exceeds the " \
-                "argument's value range. The argument's value range is {}, but found image {}." \
-                    .format(self.name, arg.name, set(range(arg.size)), image)
-            assert domain == set(range(pat_var.size)), \
-                "At {}: The VariableMap declared on the predicate argument {} should have a domain equal to the value " \
-                "range of the associated pattern variable {}. The pattern variable's value range is {}, but found " \
-                "VariableMap domain {}" \
-                    .format(self.name, arg.name, pat_var.name, set(range(pat_var.size)), domain)
+        # 1. First, unbind pattern variables. For each of the pattern variables that are mapped to multiple predicate
+        #    arguments, we unbind the dimension by using batch_diag_embed() to put the pattern variable dimension onto
+        #    the diagonal of the target 2D plane corresponding to two of the mapped predicate arguments.
+        #
+        #    Since this step changes the dimension ordering, we keep a running list of variables (pattern variables
+        #    before translation, and predicate arguments after).
+        running_vars = copy.deepcopy(pat_vars)
+        for pat_var, mapped_pred_args in self.pat_var2pred_args.items():
+            # if mapped_pred_args has more than 1 elements, perform diagonal embedding.
+            if len(mapped_pred_args) > 1:
+                for next_pred_arg in mapped_pred_args[1:]:       # Skip the first pred arg
+                    # Find the directional location of the pattern variable
+                    pat_var_dim = running_vars.index(pat_var)
+                    # Diagonally embed the pat var dimension into a 2D plane. Keep the pat var dimension as is, and make
+                    # the new message's last dimension as the second dimension of the 2D plane
+                    msg = msg.batch_diag_embed(diag_dim=pat_var_dim, target_dim1=pat_var_dim, target_dim2=-1)
+                    # Append the next predicate argument to the running variable list
+                    running_vars.append(next_pred_arg)
 
-        # 1. First, translate pattern variables to predicate arguments. This step involves unbinding the predicate
-        #       variables that are referenced by multiple predicate arguments.
-        #    Computationally, this is achieved by un-diagonalize, or embed entries along that predicate variables'
-        #       dimension into a 2D plane (higher dimensional space if there are more than 2 such predicate arguments).
-        #    A running list of variables is maintained to keep track of variable dimensions
-        mapped_var_list = copy.deepcopy(in_rel_vars)
-        for pt_var in mapped_var_list:
-            # Look up how many predicate arguments reference this single pattern variable. If only 1, simply change
-            #   variable. Otherwise, need to do more
-            # Use .index() to get the position of current variable, instead of from enumerate() iterator, because the
-            #   the latter does not keep up with a running list.
-            dim1 = mapped_var_list.index(pt_var)
-            args = self.var2arg[pt_var]
-            num_shared = len(args)
-            assert num_shared > 0
-            # Switch pattern variable to predicate argument in-place anyway. If the pattern variable is associated with
-            #   multiple predicate arguments, process further.
-            mapped_var_list[dim1] = args[0]
-            if num_shared > 1:
-                # Iterate over rest of the associated predicate arguments
-                for j, arg in enumerate(args):
-                    # Only arguments from the second one will be processed. First associated argument stays in-place.
-                    if j == 0:
-                        continue
-                    # Un-diagonalize the message by embedding the entries along the i-th dimension of the original
-                    #   message into a 2D plane specified by the i-th and the last dimension of the new message
-                    msg = msg.batch_diag_embed(diag_dim=dim1, target_dim1=dim1, target_dim2=-1)
-                    # This corresponds to append the other dimension to the end, so we append the currently referenced
-                    #   predicate argument Variable instance to the running variable list
-                    mapped_var_list.append(arg)
+            # Translate the pat var in running_vars to the first pred arg in mapped_pred_args
+            running_vars[running_vars.index(pat_var)] = mapped_pred_args[0]
 
-        assert set(mapped_var_list) == set(out_rel_vars)
+        # Sanity check: we should have translated all pattern variables to predicate arguments
+        assert set(running_vars) == self.vm_pred_args
 
-        # 2. The step above guarantees a symbolic one-to-one mapping between message dimensions and predicate arguments'
-        #       variable dimensions. We now need to narrow the variable dimension if the predicate argument's size is
-        #       smaller than the associated pattern variable's size, or to map pattern variable's value to predicate
-        #       argument's value if a VariableMap is specified.
-        for dim, pred_arg in enumerate(mapped_var_list):
-            pat_var = self.arg2var[pred_arg]
-            # Apply map if VariableMap is specified
-            if pred_arg in self.arg2var_map_tuple.keys():
-                map_dict, _, _ = self.arg2var_map_tuple[pred_arg]
-                indices = torch.tensor(list(map_dict[i] for i in range(pat_var.size)), dtype=torch.long,
-                                       device=self.device)
-                msg = msg.batch_index_put(dim, indices)
-            # Broaden the variable dimension size if currently it is smaller than the pattern variable's size
-            if msg.b_shape[dim] > pred_arg.size:
-                msg = msg.batch_narrow(dim, pred_arg.size)
+        # 2. The step above unbinds pattern variable dimensions and translate pattern variables to associated predicate
+        #    arguments. Now, apply mapping to each predicate argument dimension using the index mapping tuple
+        #    (pat_var_index, pred_arg_index) obtained from the variable maps
+        #
+        #    First, use batch_index_select() with pat_var_index to select the referenced slices, then use
+        #    batch_index_put() to put the slices to correct locations
+        for dim, pred_arg in enumerate(running_vars):
+            varmap: VariableMapCallable = self.pred_arg2var_map[pred_arg]
+            pat_var_ids, pred_arg_ids = varmap()
+            tmp_msg = msg.batch_index_select(dim=dim, index=pat_var_ids)
+            msg = tmp_msg.batch_index_put(dim=dim, index=pred_arg_ids)
 
-        # 3. Finally, with all pattern variables converted to predicate arguments and the values are now with respect to
-        #       the predicate arguments, the last thing to do is to permute the batch dimensions so that the processed
-        #       message's dimensions match exactly with out-_rel_var_list
-        perm_order = list(mapped_var_list.index(pred_arg) for pred_arg in out_rel_vars)
-        msg = msg.batch_permute(perm_order)
-        assert msg.b_shape == torch.Size([v.size for v in out_rel_vars])
+            # Broaden the message dimension so that it matches with the target predicate argument size. This is in case
+            #   pred_arg_ids does not include the largest possible index, so the last line above would return a message
+            #   with a smaller dimension size than desired.
+            if msg.b_shape[dim] < varmap.pred_arg.size:
+                msg = msg.batch_broaden(dim=dim, length=varmap.pred_arg.size)
+
+        # 3. Finally, permute the message dimensions so that it conforms to the correct predicate argument order
+        perm_order = [running_vars.index(pred_arg) for pred_arg in pred_args]
+        msg = msg.batch_permute(target_dims=perm_order)
 
         # Send message
         out_ld.write(msg)

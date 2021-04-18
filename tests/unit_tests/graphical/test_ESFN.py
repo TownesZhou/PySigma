@@ -3,21 +3,16 @@
 """
 import pytest
 from unittest.mock import MagicMock
-import torch
 import torch.distributions as D
 import torch.distributions.constraints as C
 from torch import Size
 
 from pysigma.defs import Message, MessageType, Variable, VariableMetatype
-from pysigma.graphical.basic_nodes import LinkData, VariableNode, NodeConfigurationError, DVN
-from pysigma.graphical.alpha_beta_nodes import ESFN
-from pysigma.utils import KnowledgeServer as KS
-from pysigma.utils import DistributionServer as DS
+from pysigma.graphical.basic_nodes import LinkData, DVN
+from pysigma.graphical.alpha_nodes import ESFN
 from pysigma.pattern_structures.summarization import SummarizationClass
 from pysigma.pattern_structures.builtin_sum_op import sum_op_combination
-from ...utils import random_message, assert_equal_within_error, assert_proportional_within_error
-
-from ...utils import generate_positive_definite
+from ...utils import random_message, assert_equal_within_error
 
 
 class TestESFN:

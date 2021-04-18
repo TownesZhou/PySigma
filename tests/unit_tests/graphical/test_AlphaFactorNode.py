@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 from pysigma.defs import Message, Variable
 from pysigma.graphical.basic_nodes import LinkData, VariableNode, NodeConfigurationError
-from pysigma.graphical.alpha_beta_nodes import AlphaFactorNode
+from pysigma.graphical.alpha_nodes import AlphaFactorNode
 
 
 # Concrete subclass for testing

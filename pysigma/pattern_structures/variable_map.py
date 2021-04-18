@@ -249,7 +249,8 @@ class VariableMapCallable:
             Returns
             -------
             (torch.LongTensor, torch.LongTensor)
-                The valid pattern variable input values, and the mapped predicate argument output values
+                The pattern variable index values and the mapped predicate argument index values:
+                `(pat_var_indices, pred_arg_indices)`.
         """
         # Call user callback if new call is needed
         if self.new_call:

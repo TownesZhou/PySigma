@@ -1578,12 +1578,12 @@ class TestMessage:
         result = msg.batch_diag_embed(diag_dim, target_dim1, target_dim2)
 
         # Check shape
-        assert result.parameter.shape == Size([3, 4, 5, 4, 1])
-        assert result.weight.shape == Size([3, 4, 5, 4, 4, 5, 6])
+        assert result.parameter.shape == Size([4, 3, 4, 5, 1])
+        assert result.weight.shape == Size([4, 3, 4, 5, 4, 5, 6])
 
         # Check contents
-        assert self.equal_within_error(result.parameter.diagonal(0, 1, 3).permute([0, 3, 1, 2]), msg.parameter)
-        assert self.equal_within_error(result.weight.diagonal(0, 1, 3).permute([0, 5, 1, 2, 3, 4]), msg.weight)
+        assert self.equal_within_error(result.parameter.diagonal(0, 0, 2).permute([0, 3, 1, 2]), msg.parameter)
+        assert self.equal_within_error(result.weight.diagonal(0, 0, 2).permute([0, 5, 1, 2, 3, 4]), msg.weight)
 
     def test_batch_narrow(self):
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([1]), Size([4, 5, 6]), Size([1, 1, 1])
