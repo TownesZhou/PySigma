@@ -2232,24 +2232,25 @@ class Message:
 
     def event_deconcatenate(self,
                             decat_event_dim: int,
-                            target_event_sizes: IterableType[int],
-                            target_event_dims: IterableType[int]):
+                            target_event_nums: IterableType[int],
+                            target_event_sizes: IterableType[int]):
         """
             Returns a new message that de-concatenates the particle events at event dimension `decat_event_dim` of the
-            self message into multiple marginal particle events, whose event sizes are specified by `target_event_sizes`
-            and whose event dimensional locations are specified by `target_event_dims`.
+            self message into multiple marginal particle events, whose event sizes are specified by
+            `target_event_sizes` and sample sizes (the number of particles) specified by `target_event_nums`. The
+            marginal de-concatenated particles will be appended at the last few event dimensions in the returning
+            message.
 
             To de-concatenate events means to:
             1. combinatorially de-concatenate the single particle value vector into multiple smaller vectors.
-            2. calculate the marginal particle sampling densities by reshaping the original particle density vector
+            2. recover the marginal particle sampling densities by reshaping the original particle density vector
                into a multi-dimensional tensor and taking the marginals.
-            3. reshape the weight tensor into correct multi-dimensional tensor.
+            3. permute and reshape the weight tensor into correct multi-dimensional tensor.
 
             The target particle events to be de-concatenated must already be the results of a previous concatenation.
-            Otherwise, they are not de-concatenatable and in this case an exception will be raised.
-
-            The resulting marginal particles will be placed at dimensional locations in the returning message in the
-            order given by the list `target_event_dims`.
+            Otherwise, they are not de-concatenatable and in this case an exception will be raised. This implies that
+            the product of all integers in `target_event_nums` must equal the sample size of the `decat_event_dim`
+            dimension particles in the self message.
 
             Only messages with particles support this operation. If `self`'s message type is ``MessageType.Dual``, a
             ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
@@ -2259,12 +2260,14 @@ class Message:
             decat_event_dim : int
                 the event dimension in the self message whose particles to be de-concatenated. Must be an integer in the
                 range ``[-len(event_shape), len(event_shape) - 1]``.
+            target_event_nums : Iterable of int
+                The resulting sample size of each of the marginal de-concatenated particles. The product of all numbers
+                herein must equal the sample size of the `decat_event_dim` dimension particles in `self`. Must have a
+                length greater than 2.
             target_event_sizes : Iterable of int
                 The dimension size of each de-concatenated marginal particle value vector. Its sum must equal the
-                size of the dimension `decat_event_dim` in the self message.
-            target_event_dims : Iterable of int
-                The dimensional location of the de-concatenated marginal particles in the returning message. Must have
-                the same length as `target_event_sizes`.
+                size of the dimension `decat_event_dim` in the self message. Must have the same length as
+                `target_event_nums`.
 
             Returns
             -------
@@ -2279,20 +2282,79 @@ class Message:
             ValueError
                 If `self` is not a de-concatenatable message.
         """
+        assert MessageType.Particles in self.type
         # Validate decat_event_dim
         assert isinstance(decat_event_dim, int)
         assert -self.num_rvs <= decat_event_dim <= self.num_rvs - 1
+        # Translate decat_event_dim to positive if negative
+        decat_event_dim = self.num_rvs + decat_event_dim if decat_event_dim < 0 else decat_event_dim
+        # Validate target_event_nums
+        assert isinstance(target_event_nums, Iterable) and all(isinstance(n, int) and n > 0 for n in target_event_nums)
+        assert np.prod(target_event_nums) == self.s_shape[decat_event_dim], \
+            "The product of all numbers in `target_event_nums` does not equal the sample size of the `decat_event_dim` " \
+            "dimension events in self. Expect size {}, found product value {}" \
+            .format(self.s_shape[decat_event_dim], np.prod(target_event_nums))
         # Validate target_event_sizes
         assert isinstance(target_event_sizes, Iterable) and \
                all(isinstance(s, int) and s > 0 for s in target_event_sizes)
-        assert sum(target_event_sizes) == self.e_shape[decat_event_dim]
-        # Validate target_event_dims
-        assert isinstance(target_event_dims, Iterable) and \
-               all(isinstance(d, int) and d >= 0 for d in target_event_dims)
-        new_num_rvs = self.num_rvs - 1 + len(list(target_event_dims))
-        assert set(range(self.num_rvs)).union(set(target_event_dims)) == \
-               set(range(self.num_rvs + len(list(target_event_dims))))  # Check that new dimensions are continuous
+        assert sum(target_event_sizes) == self.e_shape[decat_event_dim], \
+            "The sum of all numbers in `target_event_sizes` does not equal the event size of the `decat_event_dim` " \
+            "dimension events in self. Expect size {}, found sum value {}" \
+            .format(self.e_shape[decat_event_dim], sum(target_event_sizes))
+        # Cast as list
+        target_event_nums = list(target_event_nums)
+        target_event_sizes = list(target_event_sizes)
+        assert len(target_event_sizes) == len(target_event_nums)
 
+        # New shape
+        new_s_shape = torch.Size(list(s for i, s in enumerate(self.s_shape) if i != decat_event_dim) +
+                                 target_event_nums)
+        new_e_shape = torch.Size(list(e for i, e in enumerate(self.e_shape) if i != decat_event_dim) +
+                                 target_event_sizes)
+        # Quantity of interest
+        decat_ptcl: torch.Tensor = self.particles[decat_event_dim]
+        decat_dens: torch.Tensor = self.log_densities[decat_event_dim]
+        rest_ptcl = list(p for i, p in enumerate(self.particles) if i != decat_event_dim)
+        rest_dens = list(d for i, d in enumerate(self.log_densities) if i != decat_event_dim)
+
+        # De-concatenate particles.
+        # First, reshape particles into grid
+        decat_ptcl_reshape = decat_ptcl.reshape(target_event_nums + [self.e_shape[decat_event_dim]])
+        # This step may raise ValueError if particles are not de-concatenatable
+        target_ptcl_tuple = KnowledgeServer.combinatorial_decat(decat_ptcl_reshape, target_event_sizes)
+        # Form a new particle list. De-concatenated particles will be appended at the end
+        new_ptcl = rest_ptcl + list(target_ptcl_tuple)
+
+        # Permute and reshape particle weight
+        # First permute the decat dimension to the last dimension
+        weight_decat_dim = decat_event_dim + len(self.b_shape)
+        weight_perm_order = list(range(len(self.b_shape) + self.num_rvs))
+        weight_perm_order.remove(weight_decat_dim)
+        weight_perm_order.append(weight_decat_dim)
+        target_weight = self.weight.permute(weight_perm_order)
+        # Reshape this last dimension into multiple dimensions, each with target sample size
+        weight_target_shape = self.b_shape + new_s_shape
+        new_weight = target_weight.reshape(weight_target_shape)
+
+        # Recover marginal particle sampling densities
+        # First reshape into multiple dimensions, each with target sample size
+        decat_dens_reshape = decat_dens.reshape(target_event_nums)
+        # Compute the marginals by taking marginal sum on the exponentialized densities
+        decat_dens_exp = decat_dens_reshape.exp()
+        target_dens_list = []
+        for dim in range(len(target_event_nums)):
+            sum_dims = list(d for d in range(len(target_event_nums)) if d != dim)
+            target_dens = decat_dens_exp.sum(dim=sum_dims).log()
+            target_dens_list.append(target_dens)
+        # Append target densities to the end after the other densities
+        new_dens = rest_dens + target_dens_list
+
+        # New message
+        new_msg = Message(MessageType.Particles,
+                          batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
+                          particles=new_ptcl, weight=new_weight, log_densities=new_dens,
+                          device=self.device, **self.attr)
+        return new_msg
 
     def event_permute(self, event_dims_order: Iterable[int]):
         """

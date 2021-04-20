@@ -2325,6 +2325,88 @@ class TestMessageEventMethods:
         assert_equal_within_error(result.log_densities[0], expected_dens)
         assert_proportional_within_error(result.weight, expected_weight, dims=[-1])
 
+    def test_event_deconcatenate_full_decat_1(self):
+        # Original message has only 1 rv.
+        # Decat that random variable into 2 marginal rvs
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([]), Size([10, 20]), Size([6, 7])
+        msg = random_message(MessageType.Particles, b_shape, p_shape, s_shape, e_shape)
+
+        cat_msg = msg.event_concatenate([0, 1], 0)
+
+        return_msg = cat_msg.event_deconcatenate(0, s_shape, e_shape)
+
+        assert msg.type is MessageType.Particles
+        # The decat message shall equal to the pre-cat message
+        assert return_msg == msg
+
+    def test_event_deconcatenate_full_decat_2(self):
+        # Original message has only 1 rv.
+        # Decat that random variable into 4 marginal rvs
+        # Message has auxiliary attributes
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([]), Size([2, 3, 4, 5]), Size([6, 7, 8, 9])
+        msg = random_message(MessageType.Particles, b_shape, p_shape, s_shape, e_shape)
+        msg.attr = {'a': 1, 'b': 2, 'c': 3}
+
+        cat_msg = msg.event_concatenate([0, 1, 2, 3], 0)
+
+        return_msg = cat_msg.event_deconcatenate(0, s_shape, e_shape)
+
+        assert msg.type is MessageType.Particles
+        # The decat message shall equal to the pre-cat message
+        assert return_msg == msg
+
+    def test_event_deconcatenate_partial_decat_1(self):
+        # Original message has 2 rvs.
+        # Decat one of the many random variable into 2 marginal rvs
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([]), Size([10, 15, 20]), Size([6, 7, 8])
+        msg = random_message(MessageType.Particles, b_shape, p_shape, s_shape, e_shape)
+
+        # Concat the first and third rv, and put as the last rv
+        cat_msg = msg.event_concatenate([0, 2], -1)
+
+        return_msg = cat_msg.event_deconcatenate(-1, [10, 20], [6, 8])
+
+        assert msg.type is MessageType.Particles
+        # The decat message shall equal to the pre-cat message with events permuted
+        expected_msg = msg.event_permute([1, 0, 2])
+        assert return_msg == expected_msg
+
+    def test_event_deconcatenate_partial_decat_2(self):
+        # Original message has 3 rvs.
+        # Decat one of the many random variable into 3 marginal rvs
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([]), Size([2, 3, 4, 5, 6]), Size([7, 8, 9, 10, 11])
+        msg = random_message(MessageType.Particles, b_shape, p_shape, s_shape, e_shape)
+
+        # Concat the first and third rv, and put as the last rv
+        cat_msg = msg.event_concatenate([0, 2, 3], -1)
+
+        return_msg = cat_msg.event_deconcatenate(-1, [2, 4, 5], [7, 9, 10])
+
+        assert msg.type is MessageType.Particles
+        # The decat message shall equal to the pre-cat message with events permuted
+        expected_msg = msg.event_permute([1, 4, 0, 2, 3])
+        assert return_msg == expected_msg
+
+    def test_event_deconcatenate_value_error_1(self):
+        # Test that a value error is raised if the message can not be de-concatenated
+        # Test 1: make a random message
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([]), Size([200]), Size([13])
+        msg = random_message(MessageType.Particles, b_shape, p_shape, s_shape, e_shape)
+
+        with pytest.raises(ValueError):
+            return_msg = msg.event_deconcatenate(0, [10, 20], [6, 7])
+
+    def test_event_deconcatenate_value_error_2(self):
+        # Test that a value error is raised if the message can not be de-concatenated
+        # Test 2: decat a already concatenated message, but the event order is wrong
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([]), Size([10, 20]), Size([6, 7])
+        msg = random_message(MessageType.Particles, b_shape, p_shape, s_shape, e_shape)
+
+        cat_msg = msg.event_concatenate([0, 1], 0)
+
+        with pytest.raises(ValueError):
+            return_msg = cat_msg.event_deconcatenate(0, [20, 10], [7, 6])
+
     def test_event_permute_single_var(self):
         # Single random variable
         b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([]), Size([10]), Size([3])
