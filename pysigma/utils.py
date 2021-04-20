@@ -16,6 +16,10 @@ from torch.distributions.kl import kl_divergence
 MessageShape = Tuple[torch.Size, torch.Size, torch.Size, torch.Size]
 
 
+# Define architectural global constants
+NP_EPSILON = 1e-6      # Default numerical precision
+
+
 def intern_name(name: str, struct_type: str) -> str:
     """
         Add prefix and brackets to transform user provided structure name to internal name
@@ -74,6 +78,11 @@ def compatible_shape(msg_shape1: MessageShape, msg_shape2: MessageShape) -> bool
     assert isinstance(msg_shape2, tuple) and len(msg_shape2) == 4 and all(isinstance(s, torch.Size) for s in msg_shape2)
 
     return all(s1 == torch.Size([]) or s2 == torch.Size([]) or s1 == s2 for s1, s2 in zip(msg_shape1, msg_shape2))
+
+
+# Test the equality of two tensors within a given numerical precision
+def equal_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, precision=NP_EPSILON):
+    return torch.max(torch.abs(tensor_1 - tensor_2)) < precision
 
 
 # TODO: Global dictionary that designates which PyTorch's distribution class is finite discrete

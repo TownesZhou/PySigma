@@ -12,13 +12,7 @@ from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from torch.nn.functional import l1_loss
 import numpy as np
-from .utils import KnowledgeServer
-
-"""
-    All PySigma global variables / constants should be declared below.
-"""
-# Global numerical precision
-NP_EPSILON = 1e-6
+from .utils import NP_EPSILON, equal_within_error, KnowledgeServer
 
 # Typing aliases
 ValueConstraints = IterableType[Constraint]
@@ -327,7 +321,7 @@ class Message:
                  particles: IterableType[torch.Tensor] = None,
                  weight: Union[int, torch.Tensor] = 1,
                  log_densities: IterableType[torch.Tensor] = None,
-                 device: torch.device = torch.device('cpu'),
+                 device: Union[int, str, torch.device] = torch.device('cpu'),
                  **kwargs):
         assert isinstance(msg_type, MessageType)
         assert isinstance(batch_shape, torch.Size) and \
@@ -421,7 +415,8 @@ class Message:
                 .format(torch.min(self.weight))
             # Normalize the values so that weights sum to 1 across sample dimension
             sample_dims = list(range(len(self.b_shape), len(self.b_shape) + len(self.s_shape)))
-            self.weight /= self.weight.sum(dim=sample_dims, keepdim=True)
+            # self.weight /= self.weight.sum(dim=sample_dims, keepdim=True)
+            self.weight = self.weight / self.weight.sum(dim=sample_dims, keepdim=True)
         if self.log_densities is not None:
             # jth log density tensor vector should have shape (s_shape[j])
             assert len(self.log_densities) == self.num_rvs, \
@@ -432,6 +427,11 @@ class Message:
                 "When specified, the j-th log density tensor specified in the iterable `log_densities` should have " \
                 "shape (sample_shape[j]). Expect shapes {}, but instead found log density tensor shapes {}." \
                 .format(list(self.s_shape[j] for j in range(self.num_rvs)), list(d.shape for d in self.log_densities))
+            # Normalize the values so that the mean is 0
+            norm_log_dens = []
+            for i, log_dens in enumerate(self.log_densities):
+                norm_log_dens.append(log_dens - log_dens.sum() / log_dens.numel())
+            self.log_densities = tuple(norm_log_dens)
 
     """
         Member properties
@@ -637,9 +637,9 @@ class Message:
                 "type. Found first message with (batch_shape, sample_shape, event_shape) = '{}', and second message " \
                 "with (batch_shape, sample_shape, event_shape) = '{}'" \
                     .format((self.b_shape, self.s_shape, self.e_shape), (other.b_shape, other.s_shape, other.e_shape))
-            assert all(torch.equal(self_p, other_p) for self_p, other_p in zip(self.particles, other.particles)), \
+            assert all(equal_within_error(self_p, other_p) for self_p, other_p in zip(self.particles, other.particles)), \
                 "For particle messages, only ones with matching particle values can be added together. "
-            assert all(torch.equal(self_d, other_d) for self_d, other_d in
+            assert all(equal_within_error(self_d, other_d) for self_d, other_d in
                        zip(self.log_densities, other.log_densities)), \
                 "For particle messages, only ones with matching log sampling densities can be added together"
 
@@ -933,9 +933,6 @@ class Message:
         # Return False is message is not event Particles message
         if MessageType.Particles not in self.type or MessageType.Particles not in other.type:
             return False
-        # # Return True if one is the identity
-        # if self.isid or other.isid:
-        #     return True
         # Return True if BOTH are identity
         if self.isid and other.isid:
             return True
@@ -949,11 +946,15 @@ class Message:
         same = True
         # Check list of particle value tensors
         for s_p, o_p in zip(self.particles, other.particles):
-            if not torch.equal(s_p, o_p):
+            # if not torch.equal(s_p, o_p):
+            #     same = False
+            if not equal_within_error(s_p, o_p):
                 same = False
         # Check list of sampling log density tensors
         for s_d, o_d in zip(self.log_densities, other.log_densities):
-            if not torch.equal(s_d, o_d):
+            # if not torch.equal(s_d, o_d):
+            #     same = False
+            if not equal_within_error(s_d, o_d):
                 same = False
 
         return same
@@ -1132,7 +1133,7 @@ class Message:
                           parameters, particles, weight, log_densities, device=self.device, **attr)
         return new_msg
 
-    def to_device(self, device: torch.device) -> Message:
+    def to_device(self, device: Union[int, str, torch.device]) -> Message:
         """Returns a version of `self` where the tensor components are hosted on the specified `device`.
 
         Per PyTorch design, the original tensors will be returned without copying if target `device` is the current
@@ -2216,11 +2217,6 @@ class Message:
                          b_cat_event_dims
             new_weight = new_weight.permute(perm_order).contiguous()
 
-            # for dim in b_cat_event_dims:
-            #     perm_order = list(d for d in range(new_weight.dim()) if d != dim) + [dim]
-            #     new_weight = new_weight.permute(perm_order)
-            # assert new_weight.shape[-len(cat_event_dims):] == cat_s_shape
-
             new_weight = new_weight.view(new_weight.shape[:-len(cat_event_dims)] + torch.Size([-1]))     # flatten
 
             perm_order = list(range(new_weight.dim() - 1))
@@ -2233,6 +2229,27 @@ class Message:
                           device=self.device, **self.attr)
 
         return new_msg
+
+    def event_deconcatenate(self,
+                            decat_event_dim: int,
+                            target_event_sizes: IterableType[int],
+                            target_event_dims: IterableType[int]):
+        """
+            Returns a new message that de-concatenates the particle events at event dimension `decat_event_dim` of the
+            self message into multiple marginal particle events, whose event sizes are specified by `target_event_sizes`
+            and whose event dimensional locations are specified by `target_event_dims`.
+
+            To de-concatenate events means to:
+            1. combinatorially de-concatenate the one particle value vector into multiple smaller vectors.
+            2. calculate the marginal particle sampling densities  take the cross product of associated marginal sampling density tensors and flatten it,
+            3. reshape the weight tensor into correct flattened shape.
+
+            The target particle events to be de-concatenated must already be the results of a previous concatenation.
+            Otherwise, they are not de-concatenatable and in this case an exception will be raised.
+
+
+        """
+        pass
 
 
 # TODO: Enum class of all the inference method

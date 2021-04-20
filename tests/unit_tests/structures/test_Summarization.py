@@ -622,7 +622,7 @@ class TestSummarization:
         assert isinstance(return_msg, Message)
         assert return_msg.type is MessageType.Particles
         assert return_msg.b_shape == Size([4]) and return_msg.s_shape == Size([20]) and return_msg.e_shape == Size([5])
-        assert_equal_within_error(return_msg.weight, mock_weight)
+        assert_proportional_within_error(return_msg.weight, mock_weight, dims=[-1])
         assert all(equal_within_error(p1, p2) for p1, p2 in zip(return_msg.particles, test_msg.particles))
         assert all(equal_within_error(d1, d2) for d1, d2 in zip(return_msg.log_densities, test_msg.log_densities))
 
@@ -647,7 +647,8 @@ class TestSummarization:
         assert return_msg.b_shape == Size([4]) and return_msg.p_shape == Size([10]) and \
                return_msg.s_shape == Size([20]) and return_msg.e_shape == Size([5])
         assert_equal_within_error(return_msg.parameter, mock_dist_param)
-        assert_equal_within_error(return_msg.weight, mock_weight)
+        assert_proportional_within_error(return_msg.weight, mock_weight, dims=[-1])
+        # assert_equal_within_error(return_msg.weight, mock_weight)
         assert all(equal_within_error(p1, p2) for p1, p2 in zip(return_msg.particles, test_msg.particles))
         assert all(equal_within_error(d1, d2) for d1, d2 in zip(return_msg.log_densities, test_msg.log_densities))
 
