@@ -2117,6 +2117,81 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
+    def event_cross_product(self, other: Message):
+        """
+            Take a matrix-vector cross product of this message with the `other` message on the particle weights.
+            Returns a new message with particle events from both messages, with a new particle weight as the result
+            of the cross product.
+
+            Specifically, to take the event cross product means to:
+
+            1. Join together particle value and density lists from both message
+            2. Take the matrix-vector cross product of the two particle weights. We assume that the particle weight of
+               this message is the "matrix", and the particle weight of the `other` message is the "vector"
+
+            Some requirements on the `other` message:
+
+            1. It must be a univariate message, meaning that it has only one event dimension.
+            2. It must have the same batch shape as this message.
+
+            The returning message will have one more event dimension than this message, with the last one being the
+            event dimension from the `other` message.
+
+            Note that this method only works for Particles type messages. Any parameters will be discarded. Any
+            auxiliary attributes will be retained and joined together.
+
+            Parameters
+            ----------
+            other : Message
+                The vector message to be taken cross product with. It must have only one event dimension and same batch
+                shape as this message.
+
+            Returns
+            -------
+            Message
+                The returning cross product message. It has Particles type.
+
+            Raises
+            ------
+            AssertionError
+                If the argument does not meet the requirements.
+        """
+        assert MessageType.Particles in self.type and MessageType.Particles in other.type
+        # Validate other
+        # Other must have only one event dimension
+        assert other.num_rvs == 1, \
+            "The `other` message to be taken cross product with must have only one event dimension. Found {} " \
+            "dimensions.".format(other.num_rvs)
+        # Other must have the same batch shape as this message
+        assert other.b_shape == self.b_shape, \
+            "The `other` message must have the same batch shape as this message. Expect a batch shape {}, but found {}." \
+            .format(self.b_shape, other.b_shape)
+
+        # New shape
+        new_s_shape = self.s_shape + other.s_shape
+        new_e_shape = self.e_shape + other.e_shape
+
+        # New particles and densities
+        new_ptcl = list(self.particles) + list(other.particles)
+        new_dens = list(self.log_densities) + list(other.log_densities)
+
+        # Take cross product of the particle weights
+        # Append one singleton dimension to self weight
+        self_weight = self.weight.view(self.weight.shape + torch.Size([1]))
+        # Insert multiple singleton dimensions to other weight before its event dimension
+        #   The resulting tensor should have two more dimensions than self_weight
+        other_weight_shape = other.b_shape + torch.Size([1] * len(self.s_shape)) + other.s_shape
+        other_weight = other.weight.view(other_weight_shape)
+        # Take matrix multiplication`
+        new_weight = torch.matmul(self_weight, other_weight)
+
+        # New message
+        new_msg = Message(MessageType.Particles,
+                          batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
+                          particles=new_ptcl, weight=new_weight, log_densities=new_dens,
+                          device=self.device, **{**self.attr, **other.attr})
+        return new_msg
+
     def event_concatenate(self, cat_event_dims: IterableType[int], target_event_dim: int = -1) -> Message:
         """Concatenate the particle events corresponding to the event dimensions specified by `cat_event_dims`. The new
         concatenated events will be placed at `target_event_dim` dimension.
@@ -2281,6 +2356,10 @@ class Message:
                 If the given arguments do not meet the requirements.
             ValueError
                 If `self` is not a de-concatenatable message.
+
+            See Also
+            --------
+            This method is the inverse operation of event_concatenate().
         """
         assert MessageType.Particles in self.type
         # Validate decat_event_dim

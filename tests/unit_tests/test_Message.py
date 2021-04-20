@@ -2162,6 +2162,40 @@ class TestMessageEventMethods:
         # Check content
         assert_equal_within_error(result.weight, expected_weight)
 
+    def test_event_cross_product_1(self):
+        # Take the cross product of a uni-dimensional message with a uni-dimensional message
+        b_shape, p_shape = Size([3, 4, 5]), Size([])
+        s_shape_1, e_shape_1 = Size([10]), Size([6])
+        s_shape_2, e_shape_2 = Size([15]), Size([8])
+        msg1 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_1, e_shape_1)
+        msg2 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_2, e_shape_2)
+
+        return_msg = msg1.event_cross_product(msg2)
+
+        assert return_msg.type is MessageType.Particles
+        # Check content by checking the marginals of the returning message against the original messages
+        marg_msg_1 = return_msg.event_marginalize(1)
+        marg_msg_2 = return_msg.event_marginalize(0)
+        assert marg_msg_1 == msg1
+        assert marg_msg_2 == msg2
+
+    def test_event_cross_product_2(self):
+        # Take the cross product of a multi-dimensional message with a uni-dimensional message
+        b_shape, p_shape = Size([3, 4, 5]), Size([])
+        s_shape_1, e_shape_1 = Size([10, 11, 12]), Size([6, 7, 8])
+        s_shape_2, e_shape_2 = Size([15]), Size([8])
+        msg1 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_1, e_shape_1)
+        msg2 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_2, e_shape_2)
+
+        return_msg = msg1.event_cross_product(msg2)
+
+        assert return_msg.type is MessageType.Particles
+        # Check content by checking the marginals of the returning message against the original messages
+        marg_msg_1 = return_msg.event_marginalize(3)
+        marg_msg_2 = return_msg.event_marginalize(0).event_marginalize(0).event_marginalize(0)
+        assert marg_msg_1 == msg1
+        assert marg_msg_2 == msg2
+
     def test_event_concatenate_shape_1_positive_dims(self):
         # Test 2: flatten 2 out of 4 RVs into 3 RVs
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6, 7]), Size([1, 2, 3, 4])

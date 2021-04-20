@@ -1,5 +1,5 @@
 """
-    All nodes related to a conditional subgraph
+    All nodes related to the Conditional Alpha subgraph
 """
 from __future__ import annotations      # For postponed evaluation of typing annotations
 from typing import Optional, List, Tuple, Dict
