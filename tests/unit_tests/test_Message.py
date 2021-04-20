@@ -2324,3 +2324,47 @@ class TestMessageEventMethods:
         assert_equal_within_error(result.particles[0], expected_ptcl)
         assert_equal_within_error(result.log_densities[0], expected_dens)
         assert_proportional_within_error(result.weight, expected_weight, dims=[-1])
+
+    def test_event_permute_single_var(self):
+        # Single random variable
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4, 5]), Size([]), Size([10]), Size([3])
+        msg = random_message(MessageType.Particles, b_shape, p_shape, s_shape, e_shape)
+
+        return_msg = msg.event_permute([0])
+
+        # In this case, the return message should equal the original message
+        assert msg.type is MessageType.Particles
+        assert return_msg == msg
+
+    def test_event_permute_multiple_var(self):
+        # Multiple random variables
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4]), Size([]), Size([10, 15, 20]), Size([3, 6, 9])
+        msg = random_message(MessageType.Particles, b_shape, p_shape, s_shape, e_shape)
+
+        perm_order = [2, 0, 1]
+        return_msg = msg.event_permute(perm_order)
+
+        assert msg.type is MessageType.Particles
+        # Check particles
+        for i, pi in enumerate(perm_order):
+            assert_equal_within_error(msg.particles[pi], return_msg.particles[i])
+        # Check weight
+        expected_weight = msg.weight.permute([0, 1, 4, 2, 3])
+        assert_equal_within_error(return_msg.weight, expected_weight)
+        # Check densities
+        for i, pi in enumerate(perm_order):
+            assert_equal_within_error(msg.log_densities[pi], return_msg.log_densities[i])
+
+    def test_event_permute_identity(self):
+        # Test with identity message
+        b_shape, p_shape, s_shape, e_shape = Size([3, 4]), Size([]), Size([10, 15, 20]), Size([3, 6, 9])
+        msg = Message(MessageType.Particles,
+                      b_shape, p_shape, s_shape, e_shape,
+                      particles=[torch.randn([10, 3]), torch.randn([15, 6]), torch.randn([20, 9])],
+                      weight=1,
+                      log_densities=[torch.randn([10]), torch.randn([15]), torch.randn([20])])
+
+        return_msg = msg.event_permute([2, 0, 1])
+
+        assert msg == return_msg
+

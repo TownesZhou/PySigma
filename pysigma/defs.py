@@ -2130,7 +2130,7 @@ class Message:
         Note that the event dimensions will be concatenated in the order given by `cat_event_dims`.
 
         Only messages with particles support this operation. If `self`'s message type is ``MessageType.Dual``, a
-        ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.
+        ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
 
         ``.contiguous()`` will be called on the tensors to make sure the resulting particle, log density, and weight
         tensors are contiguous in memory.
@@ -2240,16 +2240,117 @@ class Message:
             and whose event dimensional locations are specified by `target_event_dims`.
 
             To de-concatenate events means to:
-            1. combinatorially de-concatenate the one particle value vector into multiple smaller vectors.
-            2. calculate the marginal particle sampling densities  take the cross product of associated marginal sampling density tensors and flatten it,
-            3. reshape the weight tensor into correct flattened shape.
+            1. combinatorially de-concatenate the single particle value vector into multiple smaller vectors.
+            2. calculate the marginal particle sampling densities by reshaping the original particle density vector
+               into a multi-dimensional tensor and taking the marginals.
+            3. reshape the weight tensor into correct multi-dimensional tensor.
 
             The target particle events to be de-concatenated must already be the results of a previous concatenation.
             Otherwise, they are not de-concatenatable and in this case an exception will be raised.
 
+            The resulting marginal particles will be placed at dimensional locations in the returning message in the
+            order given by the list `target_event_dims`.
 
+            Only messages with particles support this operation. If `self`'s message type is ``MessageType.Dual``, a
+            ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
+
+            Parameters
+            ----------
+            decat_event_dim : int
+                the event dimension in the self message whose particles to be de-concatenated. Must be an integer in the
+                range ``[-len(event_shape), len(event_shape) - 1]``.
+            target_event_sizes : Iterable of int
+                The dimension size of each de-concatenated marginal particle value vector. Its sum must equal the
+                size of the dimension `decat_event_dim` in the self message.
+            target_event_dims : Iterable of int
+                The dimensional location of the de-concatenated marginal particles in the returning message. Must have
+                the same length as `target_event_sizes`.
+
+            Returns
+            -------
+            Message
+                A ``Message.Particles`` type message where at the event dimensions ``target_event_dims`` are the
+                de-concatenated marginal particles.
+
+            Raises
+            ------
+            AssertionError
+                If the given arguments do not meet the requirements.
+            ValueError
+                If `self` is not a de-concatenatable message.
         """
-        pass
+        # Validate decat_event_dim
+        assert isinstance(decat_event_dim, int)
+        assert -self.num_rvs <= decat_event_dim <= self.num_rvs - 1
+        # Validate target_event_sizes
+        assert isinstance(target_event_sizes, Iterable) and \
+               all(isinstance(s, int) and s > 0 for s in target_event_sizes)
+        assert sum(target_event_sizes) == self.e_shape[decat_event_dim]
+        # Validate target_event_dims
+        assert isinstance(target_event_dims, Iterable) and \
+               all(isinstance(d, int) and d >= 0 for d in target_event_dims)
+        new_num_rvs = self.num_rvs - 1 + len(list(target_event_dims))
+        assert set(range(self.num_rvs)).union(set(target_event_dims)) == \
+               set(range(self.num_rvs + len(list(target_event_dims))))  # Check that new dimensions are continuous
+
+
+    def event_permute(self, event_dims_order: Iterable[int]):
+        """
+            Return a new message with its event order permuted from this message according to the order given by
+            `event_dims_order`.
+
+            Specifically, in the returning message, the ``i``th event dimension will be the ``event_dims_order[i]``th
+            dimension of this message.
+
+            For each of the particle contents, this means:
+                1. Permute the particle value vector list
+                2. Permute the dimensions of the weight tensor
+                3. Permute the particle log sampling densities list
+
+            Only messages with particles support this operation. If `self`'s message type is ``MessageType.Dual``, a
+            ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
+
+            ``.contiguous()`` would be called on the permuted weight tensor to ensure memory contiguity.
+
+            Parameters
+            ----------
+            event_dims_order: Iterable of int
+                The permutation order for the event dimensions. Must be positive integers and a permutation.
+
+            Returns
+            -------
+            Message
+                A new message where the event dimensions are permuted from this message.
+
+            Raises
+            ------
+            AssertionError
+                If the given argument do not meet the requirements.
+        """
+        assert MessageType.Particles in self.type
+        assert isinstance(event_dims_order, Iterable) and all(isinstance(d, int) and d >= 0 for d in event_dims_order)
+        assert set(event_dims_order) == set(range(self.num_rvs))    # Make sure it's a valid permutation
+
+        # Directly return if self is an identity
+        if self.isid:
+            return self
+
+        # Compute new shapes
+        new_s_shape = torch.Size(list(self.s_shape[d] for d in event_dims_order))
+        new_e_shape = torch.Size(list(self.e_shape[d] for d in event_dims_order))
+
+        # Get permuted particles and densities
+        new_particles = tuple(self.particles[d] for d in event_dims_order)
+        new_densities = tuple(self.log_densities[d] for d in event_dims_order)
+
+        # Permute weight tensor dimensions
+        weight_dim_order = list(range(len(self.b_shape))) + list(d + len(self.b_shape) for d in event_dims_order)
+        new_weight = self.weight.permute(dims=weight_dim_order)
+
+        new_msg = Message(MessageType.Particles,
+                          batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
+                          particles=new_particles, weight=new_weight, log_densities=new_densities)
+        return new_msg
 
 
 # TODO: Enum class of all the inference method
