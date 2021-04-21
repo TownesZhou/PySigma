@@ -24,6 +24,7 @@ class TestEventTransform:
         assert trans.pat_var is pat_var
         assert trans.transform is None
         assert trans.forward is True
+        assert trans.master is False
 
     def test_init_2(self):
         pred_arg = [
@@ -32,14 +33,16 @@ class TestEventTransform:
             Variable('pred_arg_3', VariableMetatype.Random, 3, (C.real,)),
         ]
         pat_var = Variable('pat_var_1', VariableMetatype.Random, 5, (C.real,))
+        transform = torch.distributions.transforms.ExpTransform()
 
-        trans = EventTransform(pred_arg, pat_var)
+        trans = EventTransform(pred_arg, pat_var, transform, False, True)
 
         for arg1, arg2 in zip(trans.pred_arg, pred_arg):
             assert arg1 is arg2
         assert trans.pat_var is pat_var
-        assert trans.transform is None
-        assert trans.forward is True
+        assert trans.transform is transform
+        assert trans.forward is False
+        assert trans.master is True
 
     def test_finalized_true_1(self):
         pred_arg = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))

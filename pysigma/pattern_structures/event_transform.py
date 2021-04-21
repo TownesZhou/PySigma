@@ -38,7 +38,12 @@ class EventTransform:
         transformation. In other words, if ``forward=True``, then it is assumed that ``transform(pred_arg) = pat_var``.
         Otherwise, it is assumed that ``pred_arg = transform(pat_var)``.
 
-        Note that it is always assumed that the transformation is invertible. 
+        Note that it is always assumed that the transformation is invertible.
+
+        In any group of inner-pattern or inter-pattern bindings, one and only one of the pattern element branch must be
+        declared as the "master" branch that sends its particle events to every other pattern element branch in this
+        group for them to carry out Importance reweighting. This shall be done by setting `master` argument to True to
+        signify that this pattern element is the master branch.
 
         Parameters
         ----------
@@ -53,6 +58,10 @@ class EventTransform:
             The optional transformation on the particle events. Defaults to None, meaning identity transformation.
         forward : bool, Optional
             The direction of the transformation. Defaults to True.
+        master : bool, Optional
+            Indicates whether this branch is the master branch in a variable binding that sends its particle events.
+            Only has an effect on the compiled graph if this pattern element indeed binds with other pattern element
+            on the pattern variable specified by `pat_var`.
 
         Raises
         ------
@@ -64,7 +73,8 @@ class EventTransform:
                  pred_arg: Union[IterableType[Variable], Variable, IterableType[str], str],
                  pat_var: Union[Variable, str],
                  transform: Transform = None,
-                 forward: bool = True):
+                 forward: bool = True,
+                 master: bool = False):
         # Validate arguments
         assert isinstance(pred_arg, Iterable) or isinstance(pred_arg, (Variable, str))
         if isinstance(pred_arg, Iterable):
@@ -72,11 +82,13 @@ class EventTransform:
         assert isinstance(pat_var, (Variable, str))
         assert transform is None or isinstance(transform, Transform)
         assert isinstance(forward, bool)
+        assert isinstance(master, bool)
 
         self.pred_arg = tuple(pred_arg) if isinstance(pred_arg, Iterable) else pred_arg
         self.pat_var = pat_var
         self.transform = transform
         self.forward = forward
+        self.master = master
 
         # Check type for any Variable instance
         if isinstance(self.pred_arg, Variable):
