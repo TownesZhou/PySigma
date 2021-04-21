@@ -16,10 +16,20 @@ from ..pattern_structures.summarization import SummarizationClass, Summarization
 
 
 class PDFN(FactorNode):
+    """
+        Particle Dispatch Factor Node
+    """
+    def __init__(self, name):
+        super(PDFN, self).__init__(name)
 
-    pass
+
 
 
 class PRFN(FactorNode):
+    """
+        Particle Reweight Factor Node
+    """
+    def __init__(self, name):
+        super(PRFN, self).__init__(name)
 
-    pass
+

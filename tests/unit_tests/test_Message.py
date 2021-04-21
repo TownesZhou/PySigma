@@ -2010,7 +2010,7 @@ class TestMessageEventMethods:
         transformed_dens = [D.TransformedDistribution(d, [trans]).log_prob(trans(p)) for d, p in zip(dist, ptcl)]
         for rd, td in zip(result.log_densities, transformed_dens):
             td = td - td.sum() / td.numel()     # Normalize log densities so that mean is 0
-            assert_equal_within_error(rd, td)
+            assert_equal_within_error(rd, td, 1e-5)
 
     def test_event_transform_event_dims_1(self):
         # Test transformation with 1 event dimension
@@ -2036,7 +2036,7 @@ class TestMessageEventMethods:
         transformed_dens = [D.TransformedDistribution(d, [trans]).log_prob(trans(p)) for d, p in zip(dist, ptcl)]
         for rd, td in zip(result.log_densities, transformed_dens):
             td = td - td.sum() / td.numel()  # Normalize log densities so that mean is 0
-            assert_equal_within_error(rd, td)
+            assert_equal_within_error(rd, td, 1e-5)
 
     def test_event_transform_log_normal(self):
         # Test transformation with 0 event dimension
