@@ -2,13 +2,11 @@
     Unit tests for EventTransform structure
 """
 import pytest
-from typing import Union, Optional, Tuple, Callable
 import torch
-from torch.distributions import Distribution as D
+from torch.distributions.transforms import ExpTransform
 import torch.distributions.constraints as C
-from torch import Size
 
-from pysigma.defs import MessageType, Message, Variable, VariableMetatype
+from pysigma.defs import Variable, VariableMetatype
 from pysigma.pattern_structures.event_transform import EventTransform
 
 
@@ -83,3 +81,23 @@ class TestEventTransform:
         trans = EventTransform(pred_arg, pat_var)
 
         assert not trans.finalized
+
+    def test_forward_trans_backward_trans_property_1(self):
+        pred_arg = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 5, (C.real,))
+        t = ExpTransform()
+
+        trans = EventTransform(pred_arg, pat_var, t, forward=True)
+
+        assert trans.forward_trans == t
+        assert trans.backward_trans == t.inv
+
+    def test_forward_trans_backward_trans_property_2(self):
+        pred_arg = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 5, (C.real,))
+        t = ExpTransform()
+
+        trans = EventTransform(pred_arg, pat_var, t, forward=False)
+
+        assert trans.forward_trans == t.inv
+        assert trans.backward_trans == t

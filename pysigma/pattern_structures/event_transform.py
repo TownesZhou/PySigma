@@ -112,7 +112,7 @@ class EventTransform:
                     "`pat_var` has size {}.".format(self.pred_arg.size, self.pat_var.size)
 
     @property
-    def finalized(self):
+    def finalized(self) -> bool:
         """
             If both `pred_arg` and `pat_var` are `Variable` instances. This means that any string representation of a
             Variable has been replaced with an actual `Variable` instance.
@@ -120,3 +120,23 @@ class EventTransform:
         return (isinstance(self.pred_arg, Variable) or
                 (isinstance(self.pred_arg, Iterable) and all(isinstance(pa, Variable) for pa in self.pred_arg))) and \
                isinstance(self.pat_var, Variable)
+
+    @property
+    def forward_trans(self) -> Transform:
+        """
+            Return the forward transformation.
+        """
+        if self.forward:
+            return self.transform
+        else:
+            return self.transform.inv
+
+    @property
+    def backward_trans(self) -> Transform:
+        """
+            Return the backward transformation.
+        """
+        if self.forward:
+            return self.transform.inv
+        else:
+            return self.transform
