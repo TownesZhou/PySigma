@@ -2258,11 +2258,20 @@ class Message:
 
         # Take cross product of the particle weights
         # Append one singleton dimension to self weight
-        self_weight = self.weight.view(self.weight.shape + torch.Size([1]))
+        self_weight_shape = self.b_shape + self.s_shape + torch.Size([1])
+        # If self is an identity message, create a one tensor
+        if self.isid:
+            self_weight = torch.ones(self_weight_shape, device=self.device)
+        else:
+            self_weight = self.weight.view(self_weight_shape)
         # Insert multiple singleton dimensions to other weight before its event dimension
         #   The resulting tensor should have two more dimensions than self_weight
         other_weight_shape = other.b_shape + torch.Size([1] * len(self.s_shape)) + other.s_shape
-        other_weight = other.weight.view(other_weight_shape)
+        # If other is an identity message, create a one tensor
+        if other.isid:
+            other_weight = torch.ones(other_weight_shape, device=other.device)
+        else:
+            other_weight = other.weight.view(other_weight_shape)
         # Take matrix multiplication`
         new_weight = torch.matmul(self_weight, other_weight)
 

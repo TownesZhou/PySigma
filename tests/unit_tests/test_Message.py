@@ -2234,6 +2234,60 @@ class TestMessageEventMethods:
         assert marg_msg_1 == msg1
         assert marg_msg_2 == msg2
 
+    def test_event_cross_product_with_identity_1(self):
+        # Test that self is an identity message
+        b_shape, p_shape = Size([3, 4, 5]), Size([])
+        s_shape_1, e_shape_1 = Size([10, 11, 12]), Size([6, 7, 8])
+        s_shape_2, e_shape_2 = Size([15]), Size([8])
+        msg1 = Message(MessageType.Particles,
+                       batch_shape=b_shape, sample_shape=s_shape_1, event_shape=e_shape_1,
+                       particles=[torch.randn([10, 6]), torch.randn([11, 7]), torch.randn([12, 8])],
+                       weight=1,
+                       log_densities=[torch.rand([10]), torch.randn([11]), torch.randn([12])])
+        msg2 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_2, e_shape_2)
+
+        return_msg = msg1.event_cross_product(msg2)
+
+        assert return_msg.type is MessageType.Particles
+        # Check content by checking the marginals of the returning message against the original messages
+        marg_msg_1 = return_msg.event_marginalize_over(3)
+        assert_proportional_within_error(marg_msg_1.weight, torch.tensor([1.]), dims=[-1, -2, -3])
+
+    def test_event_cross_product_with_identity_2(self):
+        # Test that other is an identity message
+        b_shape, p_shape = Size([3, 4, 5]), Size([])
+        s_shape_1, e_shape_1 = Size([10, 11, 12]), Size([6, 7, 8])
+        s_shape_2, e_shape_2 = Size([15]), Size([8])
+        msg1 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_1, e_shape_1)
+        msg2 = Message(MessageType.Particles,
+                       batch_shape=b_shape, sample_shape=s_shape_2, event_shape=e_shape_2,
+                       particles=[torch.randn([15, 8])], weight=1, log_densities=[torch.randn([15])])
+
+        return_msg = msg1.event_cross_product(msg2)
+
+        assert return_msg.type is MessageType.Particles
+        # Check content by checking the marginals of the returning message against the original messages
+        marg_msg_2 = return_msg.event_marginalize_over(0).event_marginalize_over(0).event_marginalize_over(0)
+        assert_proportional_within_error(marg_msg_2.weight, torch.tensor([1.]), dims=[-1])
+
+    def test_event_cross_product_with_identity_3(self):
+        # Test that both self and other is an identity message
+        b_shape, p_shape = Size([3, 4, 5]), Size([])
+        s_shape_1, e_shape_1 = Size([10, 11, 12]), Size([6, 7, 8])
+        s_shape_2, e_shape_2 = Size([15]), Size([8])
+        msg1 = Message(MessageType.Particles,
+                       batch_shape=b_shape, sample_shape=s_shape_1, event_shape=e_shape_1,
+                       particles=[torch.randn([10, 6]), torch.randn([11, 7]), torch.randn([12, 8])],
+                       weight=1,
+                       log_densities=[torch.rand([10]), torch.randn([11]), torch.randn([12])])
+        msg2 = Message(MessageType.Particles,
+                       batch_shape=b_shape, sample_shape=s_shape_2, event_shape=e_shape_2,
+                       particles=[torch.randn([15, 8])], weight=1, log_densities=[torch.randn([15])])
+
+        return_msg = msg1.event_cross_product(msg2)
+
+        assert_proportional_within_error(return_msg.weight, torch.tensor([1.]), dims=[-1, -2, -3, -4])
+
     def test_event_concatenate_shape_1_positive_dims(self):
         # Test 2: flatten 2 out of 4 RVs into 3 RVs
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6, 7]), Size([1, 2, 3, 4])
