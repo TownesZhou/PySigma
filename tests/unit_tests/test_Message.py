@@ -2090,7 +2090,45 @@ class TestMessageEventMethods:
 
         assert_equal_within_error(result.weight, expected_weight)
 
-    def test_event_marginalize_positive_dims(self):
+    def test_event_marginalize_single_var(self):
+        # Test that the original Particles subtype message is returned if the message has only a single event dimension
+        b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([10]), Size([3])
+        msg = random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
+
+        return_msg = msg.event_marginalize(0)
+
+        assert return_msg,type is MessageType.Particles
+        assert return_msg == Message.reduce_type(msg, MessageType.Particles)
+
+    def test_event_marginalize_multiple_1(self):
+        # Test marginalize a multivariable message
+        # 2 random variables
+        b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([10, 15]), Size([3, 4])
+        msg = random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
+
+        return_msg_0 = msg.event_marginalize(0)
+        return_msg_1 = msg.event_marginalize(1)
+
+        assert return_msg_0.type is MessageType.Particles
+        assert return_msg_1.type is MessageType.Particles
+        assert return_msg_0 == msg.event_marginalize_over(1)
+        assert return_msg_1 == msg.event_marginalize_over(0)
+
+    def test_event_marginalize_multiple_2(self):
+        # Test marginalize a multivariable message
+        # 4 random variables
+        b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([10, 15, 20, 25]), Size([3, 4, 5, 6])
+        msg = random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
+
+        return_msg_0 = msg.event_marginalize(0)
+        return_msg_2 = msg.event_marginalize(2)
+
+        assert return_msg_0.type is MessageType.Particles
+        assert return_msg_2.type is MessageType.Particles
+        assert return_msg_0 == msg.event_marginalize_over(-1).event_marginalize_over(-1).event_marginalize_over(-1)
+        assert return_msg_2 == msg.event_marginalize_over(0).event_marginalize_over(0).event_marginalize_over(-1)
+
+    def test_event_marginalize_over_positive_dims(self):
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6]), Size([1, 2, 3])
         msg = random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
@@ -2116,7 +2154,7 @@ class TestMessageEventMethods:
         expected_weight = marginalized_target_prob / torch.exp(joint_marg_log_dens).unsqueeze(0)
         expected_weight /= expected_weight.sum(dim=[-1, -2], keepdim=True)
 
-        result = msg.event_marginalize(event_dim)
+        result = msg.event_marginalize_over(event_dim)
 
         # Check shape
         assert result.weight.shape == Size([10, 4, 6])
@@ -2126,7 +2164,7 @@ class TestMessageEventMethods:
         # Check content
         assert_equal_within_error(result.weight, expected_weight)
 
-    def test_event_marginalize_negative_dims(self):
+    def test_event_marginalize_over_negative_dims(self):
         b_shape, p_shape, s_shape, e_shape = Size([10]), Size([1]), Size([4, 5, 6]), Size([1, 2, 3])
         msg = random_message(MessageType.Dual, b_shape, p_shape, s_shape, e_shape)
 
@@ -2152,7 +2190,7 @@ class TestMessageEventMethods:
         expected_weight = marginalized_target_prob / torch.exp(joint_marg_log_dens).unsqueeze(0)
         expected_weight /= expected_weight.sum(dim=[-1, -2], keepdim=True)
 
-        result = msg.event_marginalize(event_dim)
+        result = msg.event_marginalize_over(event_dim)
 
         # Check shape
         assert result.weight.shape == Size([10, 4, 6])
@@ -2174,8 +2212,8 @@ class TestMessageEventMethods:
 
         assert return_msg.type is MessageType.Particles
         # Check content by checking the marginals of the returning message against the original messages
-        marg_msg_1 = return_msg.event_marginalize(1)
-        marg_msg_2 = return_msg.event_marginalize(0)
+        marg_msg_1 = return_msg.event_marginalize_over(1)
+        marg_msg_2 = return_msg.event_marginalize_over(0)
         assert marg_msg_1 == msg1
         assert marg_msg_2 == msg2
 
@@ -2191,8 +2229,8 @@ class TestMessageEventMethods:
 
         assert return_msg.type is MessageType.Particles
         # Check content by checking the marginals of the returning message against the original messages
-        marg_msg_1 = return_msg.event_marginalize(3)
-        marg_msg_2 = return_msg.event_marginalize(0).event_marginalize(0).event_marginalize(0)
+        marg_msg_1 = return_msg.event_marginalize_over(3)
+        marg_msg_2 = return_msg.event_marginalize_over(0).event_marginalize_over(0).event_marginalize_over(0)
         assert marg_msg_1 == msg1
         assert marg_msg_2 == msg2
 

@@ -2026,8 +2026,89 @@ class Message:
         return new_msg
 
     def event_marginalize(self, event_dim: int) -> Message:
-        """Returns a message from `self` where the event dimension specified bv `event_dim` is marginalized,
-        corresponding to marginalizing the corresponding random variable.
+        """Returns a uni-dimensional message from `self` where all the event dimensions **except `event_dim`** are
+        marginalized out.
+
+        Only messages with particles support this operation. If `self`'s message type is ``MessageType.Dual``, a
+        ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
+
+        If `self` has only a single event dimension, then will return the particles subtype of this message directly.
+
+        Parameters
+        ----------
+        event_dim : int
+            Which event dimension / random variable should be retained. Can accept a value in the range
+            ``[-len(event_shape), len(event_shape) - 1]``.
+
+        Returns
+        -------
+        Message
+            A ``MessageType.Particles`` type message with a single event dimension, which was the `event_dim` event
+            dimension in the original message.
+
+        Raises
+        ------
+        AssertionError
+            If arguments do not meet the restrictions.
+
+        See Also
+        --------
+        event_marginalize_over
+        """
+        assert isinstance(event_dim, int) and -len(self.e_shape) <= event_dim <= len(self.e_shape) - 1
+        assert MessageType.Particles in self.type, \
+            "Only message with particles can be marginalized over. Marginalization over distribution parameter is not" \
+            " well defined."
+
+        # Return the Particles subtype message if self has only one event dimension
+        if self.num_rvs == 1:
+            return Message.reduce_type(self, MessageType.Particles)
+
+        # Convert event_dim to positive if it's negative
+        event_dim = len(self.e_shape) + event_dim if event_dim < 0 else event_dim
+
+        # New particles and shape (single dimensional)
+        new_ptcl = [self.particles[event_dim]]
+        new_dens = [self.log_densities[event_dim]]
+        new_s_shape = self.s_shape[event_dim: event_dim + 1]
+        new_e_shape = self.e_shape[event_dim: event_dim + 1]
+
+        # Recover target prob
+        # First take cross product of all marginal sampling density
+        expand_log_den = []
+        for j, d in enumerate(self.log_densities):
+            expanded_d = d
+            for i in range(j):
+                expanded_d = expanded_d.unsqueeze(0)
+            for i in range(j + 1, self.num_rvs):
+                expanded_d = expanded_d.unsqueeze(-1)
+            expand_log_den.append(expanded_d)
+
+        # Take joint sum and exponentialize, which is equivalent to cross product.
+        joint_density = torch.exp(sum(expand_log_den))
+        # Now expand dimensions even more to full batch dimensions. Resulting shape should be (b_shape + s_shape)
+        view_dim = [1] * len(self.b_shape) + list(self.s_shape)
+        joint_density = joint_density.view(view_dim)
+
+        # Recover target_prob, and sum over all event dimensions except event_dim
+        target_prob = joint_density * self.weight
+        sum_dims = [i + len(self.b_shape) for i in range(self.num_rvs) if i != event_dim]
+        summed_prob = torch.sum(target_prob, dim=sum_dims)
+
+        # Obtain new weight
+        dens_view_dim = [1] * len(self.b_shape) + [self.s_shape[event_dim]]
+        mar_density = torch.exp(new_dens[0]).view(dens_view_dim)
+        new_weight = summed_prob / mar_density
+
+        new_msg = Message(MessageType.Particles,
+                          batch_shape=self.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
+                          particles=new_ptcl, weight=new_weight, log_densities=new_dens,
+                          device=self.device, **self.attr)
+        return new_msg
+
+    def event_marginalize_over(self, event_dim: int) -> Message:
+        """Returns a message from `self` where the event dimension specified bv `event_dim` is marginalized out,
+        corresponding to marginalizing out the corresponding random variable.
 
         Only messages with particles support this operation. If `self`'s message type is ``MessageType.Dual``, a
         ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.
@@ -2117,7 +2198,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def event_cross_product(self, other: Message):
+    def event_cross_product(self, other: Message) -> Message:
         """
             Take a matrix-vector cross product of this message with the `other` message on the particle weights.
             Returns a new message with particle events from both messages, with a new particle weight as the result
@@ -2308,7 +2389,7 @@ class Message:
     def event_deconcatenate(self,
                             decat_event_dim: int,
                             target_event_nums: IterableType[int],
-                            target_event_sizes: IterableType[int]):
+                            target_event_sizes: IterableType[int]) -> Message:
         """
             Returns a new message that de-concatenates the particle events at event dimension `decat_event_dim` of the
             self message into multiple marginal particle events, whose event sizes are specified by
@@ -2435,7 +2516,7 @@ class Message:
                           device=self.device, **self.attr)
         return new_msg
 
-    def event_permute(self, event_dims_order: Iterable[int]):
+    def event_permute(self, event_dims_order: Iterable[int]) -> Message:
         """
             Return a new message with its event order permuted from this message according to the order given by
             `event_dims_order`.
