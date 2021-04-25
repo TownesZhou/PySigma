@@ -882,6 +882,45 @@ class Message:
             return Message(MessageType.Parameter, parameter=0)
         return Message(MessageType.Particles, weight=1)
 
+    @staticmethod
+    def cross_product(message_list: IterableType[Message]) -> Message:
+        """Returns the cross-product particles message of the given list of messages.
+
+        Each of the message in `message_list` must be either a Particles type or Dual type message, and it must have
+        only a single event dimension.
+
+        Parameters
+        ----------
+        message_list : Iterable of Message
+            The list of messages to be taken cross product with
+
+        Returns
+        -------
+        A multivariate Particles type message
+
+        Raises
+        ------
+        AssertionError
+            If the argument does not meet the requirements
+
+        See Also
+        --------
+        event_cross_product
+        """
+        # Check message_list
+        assert isinstance(message_list, Iterable) and all(isinstance(m, Message) for m in message_list)
+        message_list = list(message_list)
+        assert len(message_list) > 0
+        assert all(MessageType.Particles in m.type for m in message_list), \
+            "All messages in `message_list` must have Particles components."
+        assert all(m.num_rvs == 1 for m in message_list), \
+            "All messages in `message_list` must have only a single event dimension."
+
+        msg = message_list[0]
+        for next_msg in message_list[1:]:
+            msg = msg.event_cross_product(next_msg)
+        return msg
+
     """
         General utility member methods
     """

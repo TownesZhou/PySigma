@@ -1123,6 +1123,34 @@ class TestMessageStaticMethods:
                id_msg.e_shape == Size([])
         assert id_msg.attr == {}
 
+    def test_cross_product_single(self):
+        # Test with single message
+        b_shape, p_shape = Size([2, 3, 4]), Size([])
+        s_shape_0, e_shape_0 = Size([10]), Size([6])
+        msg_0 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_0, e_shape_0)
+
+        return_msg = Message.cross_product([msg_0])
+
+        assert return_msg.type is MessageType.Particles
+        assert return_msg == msg_0
+
+    def test_cross_product_multiple(self):
+        # Test with multiple messages
+        b_shape, p_shape = Size([2, 3, 4]), Size([])
+        s_shape_0, e_shape_0 = Size([10]), Size([6])
+        s_shape_1, e_shape_1 = Size([15]), Size([7])
+        s_shape_2, e_shape_2 = Size([20]), Size([8])
+        s_shape_3, e_shape_3 = Size([25]), Size([9])
+        msg_0 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_0, e_shape_0)
+        msg_1 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_1, e_shape_1)
+        msg_2 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_2, e_shape_2)
+        msg_3 = random_message(MessageType.Particles, b_shape, p_shape, s_shape_3, e_shape_3)
+
+        return_msg = Message.cross_product([msg_0, msg_1, msg_2, msg_3])
+
+        assert return_msg.type is MessageType.Particles
+        assert return_msg == msg_0.event_cross_product(msg_1).event_cross_product(msg_2).event_cross_product(msg_3)
+
 
 class TestMessageGeneralMethods:
     # Test message class general methods
