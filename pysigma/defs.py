@@ -14,9 +14,6 @@ from torch.nn.functional import l1_loss
 import numpy as np
 from .utils import NP_EPSILON, equal_within_error, KnowledgeServer
 
-# Typing aliases
-ValueConstraints = IterableType[Constraint]
-
 
 # Variable Metatypes and Variable for general inference
 class VariableMetatype(Enum):
@@ -48,12 +45,13 @@ class Variable:
         The set of value constraints that determine the value range (support) of this variable. Specify if and only if
         variable's metatype is ``VariableMetatype.Random``.
 
-    Warning
-    -------
-    Since ``torch.distributions.constraints.Constraint`` and its concrete classes do not overwrite the default equality
-    check method ``__eq__()``, two constraint object are equal if and only if they are the same object instance. This
-    means two `Variable` instances will be regarded different if their `value_constraints` fields contains different
-    constraint instances, even if these constraint instances semantically refer to the same constraint.
+    Notes
+    -----
+    Since ``torch.distributions.constraints.Constraint`` and its subclasses do not overwrite the default equality
+    check method ``__eq__()``, the constraints are checked by comparing whether they belongs to the same class and
+    whether attribute dictionaries, i.e., ``__dict__``, are exactly the same. Also note that since a tuple of
+    constraints is taken in during initialization, the ordering of the constraints matters for equality comparison
+    if there are multiple constraints.
 
     Attributes
     ----------
@@ -63,11 +61,12 @@ class Variable:
         The meta-type of this variable.
     size : int
         The size of the message dimension this variable corresponds to.
-    constraints : set of torch.distributions.constraints.Constraint
-        The set of value constraints that determine the value range (support) of this variable.
+    constraints : tuple of torch.distributions.constraints.Constraint
+        The tuple of value constraints that determine the value range (support) of this variable.
     """
 
-    def __init__(self, name: str, metatype: VariableMetatype, size: int, value_constraints: ValueConstraints = None):
+    def __init__(self, name: str, metatype: VariableMetatype, size: int,
+                 value_constraints: IterableType[Constraint] = None):
         assert isinstance(name, str)
         assert isinstance(metatype, VariableMetatype)
         assert isinstance(size, int)
@@ -83,7 +82,7 @@ class Variable:
         self._size = size
         # List of value constraints if the Variable is of Random metatype.
         #   Useful at Beta-join to select globally valid particle values
-        self._constraints = set(value_constraints) if value_constraints is not None else None
+        self._constraints = tuple(value_constraints) if value_constraints is not None else None
 
     @property
     def name(self) -> str:
@@ -98,17 +97,22 @@ class Variable:
         return self._size
 
     @property
-    def constraints(self) -> Set[Constraint]:
-        return self._constraints
+    def constraints(self) -> Tuple[Constraint]:
+        """
+            Returns the tuple of constraints. If this variable has no constraints, then returns an empty tuple
+        """
+        return self._constraints if self._constraints is not None else ()
 
     def __eq__(self, other):
         # override so '==' operator test variable equality
         assert isinstance(other, Variable)
+        # For value constraints, we compare by checking their type and their attribute dictionary.
         val = self.name == other.name and \
               self.metatype == other.metatype and \
               self.size == other.size and \
-              self.constraints == other.constraints
-
+              len(self.constraints) == len(other.constraints) and \
+              all(type(c1) == type(c2) and c1.__dict__ == c2.__dict__
+                  for c1, c2 in zip(self.constraints, other.constraints))
         return val
 
     def __ne__(self, other):
