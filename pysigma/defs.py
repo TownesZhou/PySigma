@@ -105,7 +105,9 @@ class Variable:
 
     def __eq__(self, other):
         # override so '==' operator test variable equality
-        assert isinstance(other, Variable)
+        # Return False directly if other is not a Variable
+        if not isinstance(other, Variable):
+            return False
         # For value constraints, we compare by checking their type and their attribute dictionary.
         val = self.name == other.name and \
               self.metatype == other.metatype and \

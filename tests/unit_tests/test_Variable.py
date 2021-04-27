@@ -83,6 +83,13 @@ class TestVariableEquality:
         test_var2 = Variable("test", VariableMetatype.Random, 10, (c1_2, c2_2))
         assert test_var1 == test_var2
 
+    def test_unequal_not_variable(self):
+        # Test that variable equality comparison returns False if another object is not a Variable instance
+        c1, c2 = integer_interval(0, 3), interval(0., 5.)
+        test_var1 = Variable("test", VariableMetatype.Random, 10, [c1, c2])
+        assert test_var1 != "something random"
+        assert "something random" != test_var1
+
     def test_unequal_by_name(self):
         # Test that two variables are unequal because of different names
         c1, c2 = integer_interval(0, 3), interval(0., 5.)
