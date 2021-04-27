@@ -101,3 +101,68 @@ class TestEventTransform:
 
         assert trans.forward_trans == t.inv
         assert trans.backward_trans == t
+
+    def test_repr_1(self):
+        # Test string representation
+        #   - single predicate argument
+        #   - no transformation
+        #   - not master
+        pred_arg = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 5, (C.real,))
+
+        trans = EventTransform(pred_arg, pat_var)
+
+        assert repr(trans) == "pred_arg_1 --> pat_var_1, identity"
+
+    def test_repr_2(self):
+        # Test string representation
+        #   - single predicate argument
+        #   - no transformation
+        #   - master
+        pred_arg = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 5, (C.real,))
+
+        trans = EventTransform(pred_arg, pat_var, master=True)
+
+        assert repr(trans) == "pred_arg_1 --> pat_var_1, identity, master"
+
+    def test_repr_3(self):
+        # Test string representation
+        #   - single predicate argument
+        #   - with forward transformation
+        #   - master
+        pred_arg = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 5, (C.real,))
+        t = ExpTransform()
+
+        trans = EventTransform(pred_arg, pat_var, t, master=True)
+
+        assert repr(trans) == "pred_arg_1 --> pat_var_1, forward ExpTransform(), master"
+
+    def test_repr_4(self):
+        # Test string representation
+        #   - single predicate argument
+        #   - with backward transformation
+        #   - master
+        pred_arg = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 5, (C.real,))
+        t = ExpTransform()
+
+        trans = EventTransform(pred_arg, pat_var, t, forward=False, master=True)
+
+        assert repr(trans) == "pred_arg_1 --> pat_var_1, backward ExpTransform(), master"
+
+    def test_repr_5(self):
+        # Test string representation
+        #   - single predicate argument
+        #   - with backward transformation
+        #   - master
+        pred_arg_1 = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))
+        pred_arg_2 = Variable('pred_arg_2', VariableMetatype.Random, 5, (C.real,))
+        pred_arg_3 = Variable('pred_arg_3', VariableMetatype.Random, 5, (C.real,))
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 5, (C.real,))
+        t = ExpTransform()
+
+        trans = EventTransform([pred_arg_1, pred_arg_2, pred_arg_3], pat_var, t, forward=False, master=True)
+
+        assert repr(trans) == "(pred_arg_1, pred_arg_2, pred_arg_3) --> pat_var_1, backward ExpTransform(), master"

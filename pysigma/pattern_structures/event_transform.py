@@ -5,7 +5,7 @@
     Defines the following:
 """
 from __future__ import annotations  # Postponed evaluation of annotations
-from typing import Union, Callable
+from typing import Union, Callable, Tuple
 from typing import Iterable as IterableType
 from collections.abc import Iterable
 import torch
@@ -84,8 +84,9 @@ class EventTransform:
         assert isinstance(forward, bool)
         assert isinstance(master, bool)
 
-        self.pred_arg = tuple(pred_arg) if isinstance(pred_arg, Iterable) else pred_arg
-        self.pat_var = pat_var
+        self.pred_arg: Union[str, Variable, Tuple[Variable]] = tuple(pred_arg) if isinstance(pred_arg, Iterable) \
+            else pred_arg
+        self.pat_var: Union[str, Variable] = pat_var
         self.transform = transform
         self.forward = forward
         self.master = master
@@ -122,6 +123,13 @@ class EventTransform:
                isinstance(self.pat_var, Variable)
 
     @property
+    def has_trans(self) -> bool:
+        """
+            Return true if `self.transform` is not None
+        """
+        return self.transform is not None
+
+    @property
     def forward_trans(self) -> Transform:
         """
             Return the forward transformation.
@@ -140,3 +148,15 @@ class EventTransform:
             return self.transform.inv
         else:
             return self.transform
+
+    def __repr__(self):
+        """
+            String representation. Example:
+
+                - ``pred_arg_1 --> pat_var_1, identity, master``
+                - ``(pred_arg_1, pred_arg_2, pred_arg_3) --> pat_var_1, forward real()``
+        """
+        return str(self.pred_arg) + ' --> ' + str(self.pat_var) + ', ' + \
+               ((('forward ' if self.forward else 'backward ') + str(self.transform))
+                if self.transform is not None else 'identity') + \
+               (', master' if self.master else '')
