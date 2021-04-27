@@ -101,7 +101,7 @@ class TestDistributionServer():
         return_dist = DS.param2dist(dist_class, natural_param)
         return_param = DS.dist2param(return_dist)
 
-        assert_equal_within_error(return_param, natural_param)
+        assert_equal_within_error(return_param, natural_param, 1e-5)
 
     def test_dist2param2dist_natural_param(self):
         b_shape, p_shape, e_shape = Size([1, 2, 3]), Size([1]), Size([])
@@ -113,7 +113,7 @@ class TestDistributionServer():
         return_dist = DS.param2dist(dist_class, return_param)
 
         assert isinstance(return_dist, D.Bernoulli)
-        assert_equal_within_error(return_dist.probs, dist.probs)
+        assert_equal_within_error(return_dist.probs, dist.probs, 1e-5)
 
 
 class TestKnowledgeServer:

@@ -9,5 +9,5 @@ import torch
 @pytest.fixture(scope="session", autouse=True)
 def set_torch_random_seed():
     # Set pytorch random seed
-    torch.manual_seed(6)
+    torch.manual_seed(7)
 
