@@ -78,6 +78,7 @@ class EventTransform:
         # Validate arguments
         assert isinstance(pred_arg, Iterable) or isinstance(pred_arg, (Variable, str))
         if isinstance(pred_arg, Iterable):
+            assert len(tuple(pred_arg)) > 1
             assert all(isinstance(pa, (Variable, str)) for pa in pred_arg)
         assert isinstance(pat_var, (Variable, str))
         assert transform is None or isinstance(transform, Transform)
