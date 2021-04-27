@@ -1619,7 +1619,7 @@ class KnowledgeServer:
                     if exp_ptcl.shape[j] != 1:
                         raise ValueError("The provided `cat_particles` cannot be properly de-concatenated. The {}th "
                                          "split particle tensor with shape {}, cannot be reduced to unique elements "
-                                         "along dimension {}.".format(i, split_exp_ptcl[i], j))
+                                         "along dimension {}.".format(i, split_exp_ptcl[i].shape, j))
             split_ptcl.append(exp_ptcl.view(exp_ptcl.shape[i], exp_ptcl.shape[-1]))
 
         return tuple(split_ptcl)
