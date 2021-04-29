@@ -12,7 +12,7 @@ from torch.distributions import Transform
 from torch.distributions.constraints import Constraint
 from torch.nn.functional import l1_loss
 import numpy as np
-from .utils import NP_EPSILON, equal_within_error, KnowledgeServer
+from .utils import NP_EPSILON, equal_within_error, equal_constraints, KnowledgeServer
 
 
 # Variable Metatypes and Variable for general inference
@@ -113,8 +113,9 @@ class Variable:
               self.metatype == other.metatype and \
               self.size == other.size and \
               len(self.constraints) == len(other.constraints) and \
-              all(type(c1) == type(c2) and c1.__dict__ == c2.__dict__
-                  for c1, c2 in zip(self.constraints, other.constraints))
+              all(equal_constraints(c1, c2) for c1, c2 in zip(self.constraints, other.constraints))
+              # all(type(c1) == type(c2) and c1.__dict__ == c2.__dict__
+              #     for c1, c2 in zip(self.constraints, other.constraints))
         return val
 
     def __ne__(self, other):

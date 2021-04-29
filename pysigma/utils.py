@@ -11,6 +11,7 @@ import torch.distributions
 from torch.distributions import Distribution
 from torch.distributions.constraints import Constraint, integer_interval, _Boolean
 from torch.distributions.kl import kl_divergence
+from torch.distributions.constraints import Constraint
 
 # Define typing aliases
 MessageShape = Tuple[torch.Size, torch.Size, torch.Size, torch.Size]
@@ -81,8 +82,14 @@ def compatible_shape(msg_shape1: MessageShape, msg_shape2: MessageShape) -> bool
 
 
 # Test the equality of two tensors within a given numerical precision
-def equal_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, precision=NP_EPSILON):
+def equal_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, precision=NP_EPSILON) -> torch.bool:
     return torch.max(torch.abs(tensor_1 - tensor_2)) < precision
+
+
+# Test the equality of two constraints
+def equal_constraints(c1: Constraint, c2: Constraint) -> bool:
+    # We check the equality by first checking their type, then their attribute dictionary
+    return type(c1) == type(c2) and c1.__dict__ == c2.__dict__
 
 
 # TODO: Global dictionary that designates which PyTorch's distribution class is finite discrete
@@ -1282,9 +1289,7 @@ class KnowledgeServer:
         will be interpreted as the **concatenated/joint events** of the corresponding predicate arguments.
 
         For example, if ``index_map[i] = [0, 3]``, then the particle tensor ``alt_particles[i]`` will be regarded as
-        the joint events of the 0-th and 3-rd predicate arguments. This means that an attempt will be made to
-        combinatorially de-concatenate the tensor ``alt_particles[i]``. If this process fails, an AssertionError will
-        be thrown.
+        the joint events of the 0-th and 3-rd predicate arguments.
 
         Note that the entry ``alt_particles[i]`` can be ``None``, however in this case ``index_map[i]`` must refer to
         one predicate argument only, i.e., ``index_map[i]`` must be an integer. **If there is any predicate argument
