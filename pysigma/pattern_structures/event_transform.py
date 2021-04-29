@@ -12,7 +12,7 @@ import torch
 from torch.distributions.transforms import Transform
 import torch.distributions.constraints as C
 from ..defs import Variable, VariableMetatype
-
+from ..utils import equal_constraints
 
 # region: Custom Error
 
@@ -77,7 +77,7 @@ class EventTransform:
                  forward: bool = True,
                  master: bool = False):
         # Validate arguments
-        assert isinstance(pred_arg, Iterable) or isinstance(pred_arg, (Variable, str))
+        assert isinstance(pred_arg, (str, Variable, Iterable))
         if not isinstance(pred_arg, str) and isinstance(pred_arg, Iterable):
             assert len(tuple(pred_arg)) > 1
             assert all(isinstance(pa, (Variable, str)) for pa in pred_arg)
@@ -86,7 +86,8 @@ class EventTransform:
         assert isinstance(forward, bool)
         assert isinstance(master, bool)
 
-        self.pred_arg: Union[str, Variable, Tuple[Variable]] = tuple(pred_arg) if isinstance(pred_arg, Iterable) \
+        self.pred_arg: Union[str, Variable, Tuple[Variable]] = tuple(pred_arg) \
+            if isinstance(pred_arg, Iterable) and not isinstance(pred_arg, str) \
             else pred_arg
         self.pat_var: Union[str, Variable] = pat_var
         self.transform = transform
@@ -98,7 +99,7 @@ class EventTransform:
             assert self.pred_arg.metatype is VariableMetatype.Random, \
                 "EventTransform structure only accepts random variables. Found `pred_arg` variable metatype: {}" \
                 .format(self.pred_arg.metatype)
-        elif isinstance(self.pred_arg, Iterable):
+        elif isinstance(self.pred_arg, tuple):
             for pa in self.pred_arg:
                 assert not isinstance(pa, Variable) or pa.metatype is VariableMetatype.Random, \
                     "EventTransform structure only accepts random variables. Found one of the variables in `pred_arg` "\
@@ -107,18 +108,29 @@ class EventTransform:
             assert self.pat_var.metatype is VariableMetatype.Random, \
                 "EventTransform structure only accepts random variables. Found `pat_var` variable metatype: {}" \
                 .format(self.pat_var.metatype)
-        # Check variable size if already finalized
         if self.finalized:
-            if isinstance(self.pred_arg, Variable):
-                assert self.pred_arg.size == self.pat_var.size, \
-                    "The variable size of `pred_arg` and `pat_var` must be the same. Found `pred_arg` has size {} but "\
-                    "`pat_var` has size {}.".format(self.pred_arg.size, self.pat_var.size)
-            else:
+            if isinstance(self.pred_arg, tuple):
+                # If multiple pred args, check that size sum equal to the pat var size
                 pred_arg_sum_size = sum([arg.size for arg in self.pred_arg])
                 assert pred_arg_sum_size == self.pat_var.size, \
                     "The variable size of `pred_arg` and `pat_var` must be the same. Found multiple predicate " \
-                    "arguments in `pred_arg` have a total size of {}, but `pat_var` has size {}."\
+                    "arguments in `pred_arg` have a total size of {}, but `pat_var` has size {}." \
                     .format(pred_arg_sum_size, self.pat_var.size)
+                # Check that if multiple predicate arguments, all predicate arguments have the same constraints
+                c1_cstr_list = self.pred_arg[0].constraints
+                for other_arg in self.pred_arg[1:]:
+                    other_cstr_list = other_arg.constraints
+                    assert len(c1_cstr_list) == len(other_cstr_list) and all(equal_constraints(c1, c2) for c1, c2 in
+                                                                             zip(c1_cstr_list, other_cstr_list)), \
+                        "If multiple predicate arguments declared in a pattern, all of them must have the same value " \
+                        "constraints. Found argument '{}' has constraints {}, but argument '{}' has constraints {}." \
+                        .format(self.pred_arg[0], c1_cstr_list, other_arg, other_cstr_list)
+            else:
+                # If single pred arg, check that its size equal to pat var size
+                assert self.pred_arg.size == self.pat_var.size, \
+                    "The variable size of `pred_arg` and `pat_var` must be the same. Found `pred_arg` has size {} but " \
+                    "`pat_var` has size {}.".format(self.pred_arg.size, self.pat_var.size)
+
 
         # Surrogate predicate argument
         self._surrogate_pred_arg: Optional[Variable] = None
@@ -130,7 +142,7 @@ class EventTransform:
             Variable has been replaced with an actual `Variable` instance.
         """
         return (isinstance(self.pred_arg, Variable) or
-                (isinstance(self.pred_arg, Iterable) and all(isinstance(pa, Variable) for pa in self.pred_arg))) and \
+                (isinstance(self.pred_arg, tuple) and all(isinstance(pa, Variable) for pa in self.pred_arg))) and \
                isinstance(self.pat_var, Variable)
 
     @property
@@ -170,8 +182,9 @@ class EventTransform:
             then the surrogate predicate argument is a single Variable with a size equal to the sum of all the specified
             predicate arguments' sizes.
 
-            In the latter case, the surrogate predicate argument will always have the real value constraint, i.e.,
-            ``torch.distributions.constraints.real``.
+            The surrogate predicate argument will have the same value constraints as does the predicate argument. Note
+            that if there are multiple predicate arguments, it is required that all of them have the same tuple of
+            constraints.
         """
         # If not yet generated, then check if finalized then generated
         if self._surrogate_pred_arg is None:
@@ -179,13 +192,12 @@ class EventTransform:
             assert self.finalized, "The surrogate predicate argument of a EventTransform can only be generated when " \
                                    "the EventTransform is finalized."
             # Generate
-            self._surrogate_pred_arg = self.pred_arg if isinstance(self.pred_arg, Variable) else \
-                Variable(
-                    '+'.join([arg.name for arg in self.pred_arg]),
-                    VariableMetatype.Random,
-                    sum(arg.size for arg in self.pred_arg),
-                    (C.real,)
-                )
+            self._surrogate_pred_arg = Variable(
+                '+'.join([arg.name for arg in self.pred_arg]),
+                VariableMetatype.Random,
+                sum(arg.size for arg in self.pred_arg),
+                self.pred_arg[0].constraints    # The original predicate argument's value constraint
+            ) if isinstance(self.pred_arg, tuple) else self.pred_arg
         return self._surrogate_pred_arg
 
     def surrogate_pattern(self) -> EventTransform:

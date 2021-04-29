@@ -50,16 +50,20 @@ class TestEventTransform:
 
         pattern = EventTransform(pred_arg, pat_var)
 
+        assert pattern.pred_arg == pred_arg
+        assert pattern.pat_var == pat_var
         assert not pattern.finalized
 
     def test_init_not_finalized_2(self):
         # Test init with not finalized arguments
         #   - Multiple predicate argument
-        pred_arg = ['a', 'b', 'c']
+        pred_arg = ('a', 'b', 'c')
         pat_var = 'x'
 
         pattern = EventTransform(pred_arg, pat_var)
 
+        assert pattern.pred_arg == pred_arg
+        assert pattern.pat_var == pat_var
         assert not pattern.finalized
 
     def test_init_wrong_var_type_single_pred_arg(self):
@@ -131,6 +135,42 @@ class TestEventTransform:
         assert str(excinfo.value) == "The variable size of `pred_arg` and `pat_var` must be the same. Found " \
                                      "multiple predicate arguments in `pred_arg` have a total size of 6, but " \
                                      "`pat_var` has size 7."
+
+    def test_init_diff_argument_constraints_1(self):
+        # Test AssertionError is raised if multiple predicate arguments are declared but they do not have the same
+        # value constraints
+        pred_arg = [
+            Variable('pred_arg_1', VariableMetatype.Random, 1, (C.real,)),
+            Variable('pred_arg_2', VariableMetatype.Random, 2, (C.real, C.interval(2, 3))),
+            Variable('pred_arg_3', VariableMetatype.Random, 3, (C.real, C.interval(2, 3))),
+        ]
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 6, (C.real,))
+
+        with pytest.raises(AssertionError) as excinfo:
+            pattern = EventTransform(pred_arg, pat_var)
+
+        assert str(excinfo.value) == "If multiple predicate arguments declared in a pattern, all of them must have " \
+                                     "the same value constraints. Found argument 'pred_arg_1' has constraints {}, but "\
+                                     "argument 'pred_arg_2' has constraints {}."\
+                                     .format((C.real,), (C.real, C.interval(2, 3)))
+
+    def test_init_diff_argument_constraints_2(self):
+        # Test AssertionError is raised if multiple predicate arguments are declared but they do not have the same
+        # value constraints
+        pred_arg = [
+            Variable('pred_arg_1', VariableMetatype.Random, 1, (C.real,)),
+            Variable('pred_arg_2', VariableMetatype.Random, 2, (C.real,)),
+            Variable('pred_arg_3', VariableMetatype.Random, 3, (C.interval(2, 3),)),
+        ]
+        pat_var = Variable('pat_var_1', VariableMetatype.Random, 6, (C.real,))
+
+        with pytest.raises(AssertionError) as excinfo:
+            pattern = EventTransform(pred_arg, pat_var)
+
+        assert str(excinfo.value) == "If multiple predicate arguments declared in a pattern, all of them must have " \
+                                     "the same value constraints. Found argument 'pred_arg_1' has constraints {}, but "\
+                                     "argument 'pred_arg_3' has constraints {}."\
+                                     .format((C.real,), (C.interval(2, 3),))
 
     def test_finalized_true_1(self):
         pred_arg = Variable('pred_arg_1', VariableMetatype.Random, 5, (C.real,))
@@ -230,7 +270,7 @@ class TestEventTransform:
         assert pattern.surrogate_pred_arg.name == 'test_pred_arg_1+test_pred_arg_2+test_pred_arg_3'
         assert pattern.surrogate_pred_arg.metatype == VariableMetatype.Random
         assert pattern.surrogate_pred_arg.size == 12
-        assert len(pattern.surrogate_pred_arg.constraints) == 1 and pattern.surrogate_pred_arg.constraints[0] is C.real
+        assert pattern.surrogate_pred_arg.constraints == pred_arg_1.constraints
 
     def test_surrogate_pattern_single_pred_arg(self):
         # Test surrogate pattern value
