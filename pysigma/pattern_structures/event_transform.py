@@ -5,11 +5,12 @@
     Defines the following:
 """
 from __future__ import annotations  # Postponed evaluation of annotations
-from typing import Union, Callable, Tuple
+from typing import Union, Callable, Tuple, Optional
 from typing import Iterable as IterableType
 from collections.abc import Iterable
 import torch
 from torch.distributions.transforms import Transform
+import torch.distributions.constraints as C
 from ..defs import Variable, VariableMetatype
 
 
@@ -77,7 +78,7 @@ class EventTransform:
                  master: bool = False):
         # Validate arguments
         assert isinstance(pred_arg, Iterable) or isinstance(pred_arg, (Variable, str))
-        if isinstance(pred_arg, Iterable):
+        if not isinstance(pred_arg, str) and isinstance(pred_arg, Iterable):
             assert len(tuple(pred_arg)) > 1
             assert all(isinstance(pa, (Variable, str)) for pa in pred_arg)
         assert isinstance(pat_var, (Variable, str))
@@ -105,13 +106,22 @@ class EventTransform:
         if isinstance(self.pat_var, Variable):
             assert self.pat_var.metatype is VariableMetatype.Random, \
                 "EventTransform structure only accepts random variables. Found `pat_var` variable metatype: {}" \
-                    .format(self.pat_var.metatype)
+                .format(self.pat_var.metatype)
         # Check variable size if already finalized
         if self.finalized:
             if isinstance(self.pred_arg, Variable):
                 assert self.pred_arg.size == self.pat_var.size, \
-                    "The variable size of `pred_arg` and `pat_var` must be the same. Found `pred_arg` has size {} and "\
+                    "The variable size of `pred_arg` and `pat_var` must be the same. Found `pred_arg` has size {} but "\
                     "`pat_var` has size {}.".format(self.pred_arg.size, self.pat_var.size)
+            else:
+                pred_arg_sum_size = sum([arg.size for arg in self.pred_arg])
+                assert pred_arg_sum_size == self.pat_var.size, \
+                    "The variable size of `pred_arg` and `pat_var` must be the same. Found multiple predicate " \
+                    "arguments in `pred_arg` have a total size of {}, but `pat_var` has size {}."\
+                    .format(pred_arg_sum_size, self.pat_var.size)
+
+        # Surrogate predicate argument
+        self._surrogate_pred_arg: Optional[Variable] = None
 
     @property
     def finalized(self) -> bool:
@@ -149,6 +159,46 @@ class EventTransform:
             return self.transform.inv
         else:
             return self.transform
+
+    @property
+    def surrogate_pred_arg(self) -> Variable:
+        """
+            Get the surrogate predicate argument.
+
+            If this event transform has a single predicate argument, then the surrogate predicate argument is simply
+            the originally specified predicate argument. Otherwise if a list of predicate arguments are specified,
+            then the surrogate predicate argument is a single Variable with a size equal to the sum of all the specified
+            predicate arguments' sizes.
+
+            In the latter case, the surrogate predicate argument will always have the real value constraint, i.e.,
+            ``torch.distributions.constraints.real``.
+        """
+        # If not yet generated, then check if finalized then generated
+        if self._surrogate_pred_arg is None:
+            # complain if not finalized
+            assert self.finalized, "The surrogate predicate argument of a EventTransform can only be generated when " \
+                                   "the EventTransform is finalized."
+            # Generate
+            self._surrogate_pred_arg = self.pred_arg if isinstance(self.pred_arg, Variable) else \
+                Variable(
+                    '+'.join([arg.name for arg in self.pred_arg]),
+                    VariableMetatype.Random,
+                    sum(arg.size for arg in self.pred_arg),
+                    (C.real,)
+                )
+        return self._surrogate_pred_arg
+
+    def surrogate_pattern(self) -> EventTransform:
+        """
+            Returns a new EventTransform pattern with all attributes being the same as this pattern except its
+            `pred_arg` which is this pattern's surrogate predicate argument.
+
+            Returns
+            -------
+            EventTransform
+                The surrogate EventTransform pattern.
+        """
+        return EventTransform(self.surrogate_pred_arg, self.pat_var, self.transform, self.forward, self.master)
 
     def __repr__(self):
         """
