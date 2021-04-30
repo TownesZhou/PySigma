@@ -2,20 +2,18 @@
     All nodes related to the Conditional Beta subgraph
 """
 from __future__ import annotations      # For postponed evaluation of typing annotations
-from typing import Optional, List, Tuple, Dict, DefaultDict, Union
+from typing import Optional, List, Tuple, Dict
 from typing import Iterable as IterableType
 import copy
-import sys
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
 import torch
 
+from ..utils import KnowledgeServer
 from ..pattern_structures.event_transform import EventTransform
 from ..defs import Variable, Message, MessageType
-from ..pattern_structures.variable_map import VariableMapCallable
 from .basic_nodes import LinkData, FactorNode, NodeConfigurationError
-from ..pattern_structures.summarization import SummarizationClass, SummarizationError
 
 
 class BetaFactorNode(FactorNode, ABC):
@@ -485,12 +483,292 @@ class PDFN(BetaFactorNode):
 class PRFN(BetaFactorNode):
     """
         Particle Reweight Factor Node
+
+        This node is one of the two Conditional Beta Factor Nodes that is responsible for importance-reweighting the
+        predicate's knowledge based on external particles borrowed from other predicate patterns, who binds with
+        this predicate pattern on some random pattern variables and declares itself as the MASTER branch for serving
+        particles.
+
+        PRFN only exists in the condition part of a Beta subgraph, and therefore it only accepts inward-directional
+        linkdata. Its computation can be summarized as follows:
+
+        Inward computation:
+
+            1. **Retrieval**:
+               Every outward-side linkdata shall be tagged in their special attribute dictionary if it is the HOME
+               branch or an ALIEN branch. The home linkdata connects from the Alpha terminal of this predicate
+               branch, whereas an ALIEN linkdata connects from a PDFN from other predicate branches. The HOME branch
+               provides the original multivariate message from the predicate with its event dimensions corresponding to
+               the predicate's random arguments, whereas an ALIEN linkdata provides a univariate marginal message with
+               its single event dimension corresponding to a pattern variable that this predicate binds on.
+
+            2. **Transformation**:
+               If an event transformation is declared on the pattern element for which an ALIEN message is retrieved
+               in the step above, then apply the *backward* version of the transformation on this ALIEN message. This
+               is done so that the transformed message would represent the predicate argument instead of the pattern
+               variable.
+
+            3. **Validation**
+               Check that all transformed alien particle values satisfy the value constraints of the corresponding
+               predicate arguments. Raise ValueError if the constraints is not met.
+
+            4. **Reweighting**:
+               Use the alien particles, together with original particles for other predicate arguments, to reweight
+               based on the distribution parameters included in the incoming message from the HOME branch linkdata.
+
+            5. **Reordering**:
+               Reorder the reweighted message's event dimensions so that they align with the predicate argument order
+               of the outgoing linkdata
+
+        Since importance reweighting requires distribution parameters to instantiate a distribution instance, the
+        incoming message from the Home branch must be of type ``MessageType.Dual``.
+
+        Parameters
+        ----------
+        event_transforms : Iterable of EventTransform
+            The non-master pattern elements of this predicate whose associated pattern variable are also bound by other
+            predicate patterns.
+        knowledge_server : KnowledgeServer
+            The knowledge server for performing importance reweighting.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, event_transforms: IterableType[EventTransform], knowledge_server: KnowledgeServer,
+                 **kwargs):
         super(PRFN, self).__init__(name, **kwargs)
+        assert isinstance(event_transforms, Iterable) and all(isinstance(et, EventTransform) for et in event_transforms)
+        assert all(et.finalized for et in event_transforms)     # All patterns must be finalized
+        assert isinstance(knowledge_server, KnowledgeServer)
+
+        self.event_transforms = tuple(event_transforms)
+        self.knowledge_server = knowledge_server
+
+        # Internal data structures
+        self.et_pat_vars = tuple(et.pat_var for et in self.event_transforms)
+        self.et_flattened_pred_args = []
+        for pattern in self.event_transforms:
+            if isinstance(pattern.pred_arg, tuple):
+                self.et_flattened_pred_args += list(pattern.pred_arg)
+            else:
+                self.et_flattened_pred_args.append(pattern.pred_arg)
+        self.et_surrogate_pred_args = [pattern.surrogate_pred_arg for pattern in self.event_transforms]
+
+        # Internal data structures that will be populated after add_link() is called
+        self.home_ld_pred_args: Tuple[Variable] = tuple()
+        self.out_ld_pred_args: Tuple[Variable] = tuple()
+        self.et2alien_ld: Dict[EventTransform, LinkData] = {}
+        self.alien_ld_pat_vars: List[Variable] = []
+        self.home_ld: LinkData = None
+        self.alien_lds: List[LinkData] = []
+        
+    def add_link(self, linkdata: LinkData):
+        """
+            PRFN has the following additional requirements regarding acceptable linkdata:
+
+                1. Only inward-directional linkdata
+                2. Only one outgoing linkdata
+                    a. The predicate arguments inferred from the outgoing linkdata must be a superset of the set of
+                       surrogate predicate arguments inferred from the event transforms.
+                3. Incoming linkdata must have special attribute 'alien' with value True/False
+                    a. Only one 'alien=False' linkdata, i.e. the Home linkdata
+                        i. Its predicate arguments must be a superset of the (flattened) predicate arguments inferred
+                           from the event transforms declared during init.
+                    b. Every 'alien=True' linkdata, i.e., the alien linkdata, must connect from a univariate variable
+                       node.
+                        i. The variable must be distinct for each alien linkdata.
+                        ii. The variable must be referenced by at least one of the event transforms declared during
+                            init.
+
+        """
+        super(PRFN, self).add_link(linkdata)
+
+        # Check requirement 1
+        assert linkdata.attr['direction'] == 'inward', \
+            "In {}: PRFN only accept inward-directional linkdata.".format(self.name)
+        # Check requirement 2
+        if not linkdata.to_fn:
+            assert len(self.labeled_ld_group['inward'][False]) == 1, \
+                "In {}: PRFN only accept one inward outgoing linkdata.".format(self.name)
+            self.out_ld_pred_args = linkdata.vn.ran_vars
+            # Check requirement 2.a
+            assert set(linkdata.vn.ran_vars).issuperset(set(self.et_surrogate_pred_args)), \
+                "In {}: The predicate arguments inferred from the outgoing linkdata must be a superset of the set of " \
+                "surrogate predicate arguments inferred from the event transforms. Expect a superset of arguments {}, "\
+                "but instead found arguments {} in linkdata '{}'." \
+                .format(self.name, self.et_surrogate_pred_args, linkdata.vn.ran_vars, linkdata)
+        # Check requirement 3
+        if linkdata.to_fn:
+            assert 'alien' in linkdata.attr.keys() and isinstance(linkdata.attr['alien'], bool), \
+                "In {}: Incoming linkdata to a PRFN must be tagged with `alien` special attribute, whose value " \
+                "must be boolean.".format(self.name)
+            if not linkdata.attr['alien']:
+                # Check requirement 3.a
+                assert self.home_ld is None, \
+                    "In {}: PRFN can only accept one HOME branch incoming linkdata. Linkdata '{}' is already " \
+                    "registered as the HOME incoming linkdata."\
+                    .format(self.name, self.home_ld)
+                self.home_ld = linkdata
+                # Check requirement 3.a.i
+                assert set(linkdata.vn.ran_vars).issuperset(set(self.et_flattened_pred_args)), \
+                    "In {}: The set of predicate arguments inferred from the HOME branch incoming linkdata must be " \
+                    "a superset of the set of predicate arguments inferred from the event transforms given during " \
+                    "initialization. Expect a superset of the subset {}, however found {}." \
+                    .format(self.name, set(self.et_flattened_pred_args), set(linkdata.vn.ran_vars))
+                self.home_ld_pred_args = linkdata.vn.ran_vars
+            else:
+                self.alien_lds.append(linkdata)
+                # Check requirement 3.b
+                assert len(linkdata.vn.ran_vars) == 1, \
+                    "In {}: Every ALIEN incoming linkdata to a PRFN must connect from a univariate variable node. " \
+                    "Found linkdata '{}' is connected from a node with random variables {}." \
+                    .format(self.name, linkdata, linkdata.vn.ran_vars)
+                # Check requirement 3.b.i
+                ld_ran_var = linkdata.vn.ran_vars[0]
+                assert ld_ran_var not in self.alien_ld_pat_vars, \
+                    "In {}: Every ALIEN incoming linkdata to a PRFN must connect from a distinct variable node. " \
+                    "Found linkdata '{}' is connected from a node with random variable '{}' that is already " \
+                    "registered." \
+                    .format(self.name, linkdata, ld_ran_var)
+                self.alien_ld_pat_vars.append(ld_ran_var)
+                # Check requirement 3.b.ii
+                matched_ets = [et for et in self.event_transforms if et.pat_var == ld_ran_var]
+                assert len(matched_ets) > 0, \
+                    "In {}: Every ALIEN incoming linkdata to a PRFN must connect from a variable node whose random " \
+                    "variable must be referenced as the pattern variable by at least one event transforms declared " \
+                    "during initialization. Found linkdata '{}' with unknown pattern variable '{}'." \
+                    .format(self.name, linkdata, ld_ran_var)
+                for matched_et in matched_ets:
+                    self.et2alien_ld[matched_et] = linkdata
+
+    def precompute_check(self):
+        """
+            PRFN has the following additional requirements regarding computable config:
+
+                1. One outgoing linkdata is registered. Check omitted since BetaFactorNode will check this for us.
+                2. One Home linkdata is registered
+                3. At least one Alien linkdata is registered
+                4. All pattern variables that are referenced by the event transforms must also be referenced by the
+                   Alien linkdata
+                5. The set of outgoing predicate arguments (the variables of the vn connected to by the outgoing
+                   linkdata) must be equal to:
+                   set(incoming predicate arguments) - set(event transform flattened predicate arguments) +
+                   set(event transform surrogate predicate arguments)
+        """
+        super(PRFN, self).precompute_check()
+
+        # Check requirement 2
+        assert self.home_ld is not None, \
+            "In {}: One HOME incoming linkdata must be registered to start computation.".format(self.name)
+        # Check requirement 3
+        assert len(self.alien_lds) > 0, \
+            "In {}: At least one ALIEN incoming linkdata must be registered to start computation.".format(self.name)
+        # Check requirement 4
+        assert set(self.et_pat_vars) == set(self.alien_ld_pat_vars), \
+            "In {}: All pattern variables that are referenced by the event transforms must also be referenced by the " \
+            "ALIEN incoming linkdata. Inferred pattern variables {} from the event transforms, while inferred {} from "\
+            "the ALIEN linkdata." \
+            .format(self.name, self.et_pat_vars, self.alien_ld_pat_vars)
+        # Check requirement 5
+        expected_out_pred_args = (set(self.home_ld_pred_args) - set(self.et_flattened_pred_args))\
+            .union(set(et.surrogate_pred_arg for et in self.event_transforms))
+        assert set(self.out_ld_pred_args) == expected_out_pred_args, \
+            "In {}: Unexpected set of outgoing predicate arguments found in the outgoing linkdata. Expect set of " \
+            "predicate arguments {}, instead found {}"\
+            .format(self.name, list(expected_out_pred_args), self.out_ld_pred_args)
 
     def inward_compute(self, in_lds: List[LinkData], out_lds: List[LinkData]):
-        pass
+        """
+            Inward computation:
+
+            1. Retrieval
+            2. Transformation
+            3. Validation
+            4. Reweighting
+            5. Reordering
+        """
+        # Step 1
+        home_msg = self.home_ld.read()
+        # Check that the home message contains both particles and parameter
+        if home_msg.type is not MessageType.Dual:
+            raise ValueError(
+                "In {}: The HOME message sent to a PRFN must be of type `MessageType.Dual`, i.e., containing both "
+                "particles and parameter. However, found the HOME message having type '{}'."
+                .format(self.name, home_msg.type)
+            )
+
+        # Step 2
+        # Iterate through patterns and retrieve the alien message for that pattern
+        # Apply BACKWARD transformation if declared
+        pattern2msg = {}
+        for pattern, alien_ld in self.et2alien_ld.items():
+            alien_msg = alien_ld.read()
+            if pattern.has_trans:
+                alien_msg = alien_msg.event_transform(pattern.backward_trans)
+            pattern2msg[pattern] = alien_msg
+
+        # Step 3: Validation
+        # Iterate all patterns and check that the candidate particles meet the constraints
+        # Use the surrogate predicate argument's constraints to check
+        for pattern, alien_msg in pattern2msg.items():
+            cstr_list = pattern.surrogate_pred_arg.constraints
+            ptcl = alien_msg.particles[0]
+            for cstr in cstr_list:
+                if not torch.all(cstr.check(ptcl)):
+                    raise ValueError(
+                        "In {}: The particle values of the incoming ALIEN message for pattern '{}' does not meet the "
+                        "value constraint '{}' declared for the pattern's predicate argument."
+                        .format(self.name, pattern, cstr)
+                    )
+
+        # Step 4: Reweighting
+        alt_ptcl, alt_dens, index_map = [], [], {}
+        running_vars = []
+        # Original particles from home message
+        home_ptcl, home_dens = home_msg.particles, home_msg.log_densities
+        # First, pick up the particles corresponding to the predicate arguments unreferenced by any pattern
+        for arg_id, pred_arg in enumerate(self.home_ld_pred_args):
+            if pred_arg not in self.et_flattened_pred_args:
+                alt_ptcl.append(home_ptcl[arg_id])
+                alt_dens.append(home_dens[arg_id])
+                index_map[len(alt_ptcl) - 1] = arg_id
+                running_vars.append(pred_arg)
+        # Then, iterate through patterns and push the alien particles
+        for pattern, alien_msg in pattern2msg.items():
+            alt_ptcl.append(alien_msg.particles[0])
+            alt_dens.append(alien_msg.log_densities[0])
+            running_vars.append(pattern.surrogate_pred_arg)
+            # If a list of predicate arguments, map to a list of indices
+            if isinstance(pattern.pred_arg, Iterable):
+                arg_ids = [self.home_ld_pred_args.index(arg) for arg in pattern.pred_arg]
+                index_map[len(alt_ptcl) - 1] = arg_ids
+            # Otherwise if single predicate argument, map to a single index
+            else:
+                arg_id = self.home_ld_pred_args.index(pattern.pred_arg)
+                index_map[len(alt_ptcl) - 1] = arg_id
+
+        # Obtain surrogate log prob
+        srg_log_prob = self.knowledge_server.surrogate_log_prob(home_msg.parameter, alt_ptcl, index_map)
+
+        # Now generate the reweighed message
+        # Generate a new Particles message with home particles substituted by alien particles
+        new_s_shape, new_e_shape = torch.Size([ptcl.shape[0] for ptcl in alt_ptcl]), \
+                                   torch.Size([ptcl.shape[1] for ptcl in alt_ptcl])
+        sub_msg = Message(MessageType.Particles,
+                          batch_shape=home_msg.b_shape, sample_shape=new_s_shape, event_shape=new_e_shape,
+                          particles=alt_ptcl, weight=1, log_densities=alt_dens)
+        # Time to reweight the message
+        reweight_msg = sub_msg.event_reweight(srg_log_prob)
+
+        # Step 5:
+        # First sanity check that we indeed have all the desired outgoing predicate arguments
+        assert set(running_vars) == set(self.out_ld_pred_args)
+        # Permute the event dimensions to align with outgoing predicate arguments
+        perm_order = [running_vars.index(arg) for arg in self.out_ld_pred_args]
+        out_msg = reweight_msg.event_permute(perm_order)
+
+        # Write message
+        out_lds[0].write(out_msg)
 
     def outward_compute(self, in_lds: List[LinkData], out_lds: List[LinkData]):
-        pass
+        """
+            PRFN does not have outward computation.
+        """
+        raise NotImplementedError

@@ -5,7 +5,6 @@ import pytest
 from unittest.mock import MagicMock
 
 import torch
-import torch.distributions as D
 import torch.distributions.constraints as C
 import torch.distributions.transforms as T
 from torch import Size
