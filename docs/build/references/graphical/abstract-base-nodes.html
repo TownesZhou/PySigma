@@ -326,14 +326,38 @@ within the current decision phase.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="pysigma.graphical.basic_nodes.Node.modify">
+<code class="sig-name descname">modify</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.modify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.modify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modification method to be called during modification phase</p>
+<p>Since not every nodes necessarily needs to have its contents modified during modification phase, this method
+is not marked as abstract, and the default behavior is simply to do nothing.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pysigma.graphical.basic_nodes.Node.compute">
 <em class="property">abstract </em><code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute method to be called to propagate messages during decision phases.</p>
-<p>Note that <code class="docutils literal notranslate"><span class="pre">super()</span></code> must be called within <cite>compute()</cite> method in any child class, because all abstract
-node-level statistics logging is taken care of herein.</p>
-<p>The default quiescence behavior for <cite>compute()</cite> is to return directly if <cite>self.quiescence</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>,
-without logging anything or performing any further computation. Note that such behavior may or may not be
-desired by child node class.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that in a subclass, when overriding this method, it must be decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;parent_class.compute_control</span></code> where <code class="docutils literal notranslate"><span class="pre">parent_class</span></code> is the parent class of said subclass so that
+the message propagation process can be controlled and relevant stats be set.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pysigma.graphical.basic_nodes.Node.compute_control">
+<em class="property">static </em><code class="sig-name descname">compute_control</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">compute_func</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#Node.compute_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.Node.compute_control" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator that controls the message processing of this node depending on the quiescence state and set
+corresponding stats when the processing is completed. This decorator <strong>must</strong> always be used with the
+<cite>compute()</cite> method in any Node subclass.</p>
+<dl class="simple">
+<dt>Basic controls:</dt><dd><ul class="simple">
+<li><p>Return directly and prevent computation if reached quiescence.</p></li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">visited</span></code> to true after the computation.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

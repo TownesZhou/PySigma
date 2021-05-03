@@ -9,3 +9,4 @@ dash==1.8.0
 pytest
 tqdm
 PrettyTable
+seaborn

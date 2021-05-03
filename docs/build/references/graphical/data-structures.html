@@ -874,7 +874,11 @@ identity.</p>
 <dd class="field-odd"><p>torch.Tensor or 0</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>self</cite> and/or <cite>other</cite> do not have parameters.</p>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If <cite>self</cite> and <cite>other</cite> are not on the same device.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>self</cite> and/or <cite>other</cite> are/is not Parameter type.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>self</cite> and <cite>other</cite> are not identities and have different batch shapes or parameter shapes.</p></li>
+</ul>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -904,7 +908,9 @@ sanity check. An assertion error will be raised if <cite>same_particles_as()</ci
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>AssertionError</strong> – If <cite>self</cite> and/or <cite>other</cite> do not have particles.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>self</cite> and <cite>other</cite> are not on the same device.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>self</cite> and/or <cite>other</cite> are/is not Particles type.</p></li>
+<li><p><strong>AssertionError</strong> – If <cite>self</cite> and <cite>other</cite> do not have the same batch shapes, sample shapes, or event shapes.</p></li>
 <li><p><strong>AssertionError</strong> – If <cite>self</cite> does not have the same particle values and log sampling densities as <cite>other</cite>.</p></li>
 </ul>
 </dd>
@@ -1065,8 +1071,8 @@ relative to the batch dimension only.</p>
 <dd><p>Returns a message whose entries along the dimension <cite>dim</cite> are slices from self message and are put into
 the positions along the axis specified by indices in <cite>index</cite>.</p>
 <p>In other words, along <cite>dim</cite> dimension, the <code class="docutils literal notranslate"><span class="pre">index[i]</span></code> th slice of the returned message is the <code class="docutils literal notranslate"><span class="pre">i</span></code> th slice
-of <cite>self</cite>. Consequently, the size of the <cite>dim</cite> dimension of the returned message equals the maximum value in the
-<cite>index</cite> array.</p>
+of <cite>self</cite>. Consequently, the size of the <cite>dim</cite> dimension of the returned message equals the maximum value plus 1
+in the <cite>index</cite> array.</p>
 <p>For slices in the new message not referenced by <cite>index</cite>, they will be filled with identity values. For parameter
 tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive uniform
 constant such that the sum across the sample dimensions is 1.</p>
@@ -1099,7 +1105,8 @@ relative to the batch dimension only.</p>
 <dt id="pysigma.defs.Message.batch_diagonal">
 <code class="sig-name descname">batch_diagonal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dim1</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">dim2</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_diagonal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_diagonal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a partial view of self with the its diagonal elements with respect to <cite>dim1</cite> and <cite>dim2</cite> appended as
-a dimension at the end of the shape.</p>
+a dimension at the end of the shape. Note that the number of dimensions of the returned message is 1 minus
+that of the original message, because <cite>dim1</cite> and <cite>dim2</cite> are reduced to the new diagonal dimension.</p>
 <p>dim values in the range <code class="docutils literal notranslate"><span class="pre">[-len(batch_shape),</span> <span class="pre">len(batch_shape)</span> <span class="pre">-</span> <span class="pre">1]</span></code> can be used. Note that <cite>dim1</cite> and <cite>dim2</cite>
 are relative to the batch dimensions only. The appended dimension will be placed as the last batch dimension,
 but before any sample or param dimensions.</p>
@@ -1125,7 +1132,7 @@ batch dimension.</p></li>
 <p class="admonition-title">See also</p>
 <p>This method is a mimic of
 <a class="reference external" href="https://pytorch.org/docs/stable/torch.html?highlight=diagonal#torch.diagonal">torch.diagonal()</a>
-, with <cite>offset</cite> defaults to 0</p>
+, with <cite>offset</cite> set to 0</p>
 </div>
 </dd></dl>
 
@@ -1133,7 +1140,7 @@ batch dimension.</p></li>
 <dt id="pysigma.defs.Message.batch_diag_embed">
 <code class="sig-name descname">batch_diag_embed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">diag_dim</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">target_dim1</span><span class="o">=</span><span class="default_value">- 2</span></em>, <em class="sig-param"><span class="n">target_dim2</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.batch_diag_embed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.batch_diag_embed" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a message whose diagonals of certain 2D planes (dimensions specified by <cite>target_dim1</cite> and
-<cite>target_dim2</cite>) are filled by slices of self along the dimension specified by <cite>diag_dim</cite>).</p>
+<cite>target_dim2</cite>) are filled by slices of self along the dimension <cite>diag_dim</cite> of the self message).</p>
 <p>The last dimension of self is chosen by default as the diagonal entries to be filled, and the last two
 dimensions of the new message are chosen by default as the 2D planes where the diagonal entries will be filled
 in.</p>
@@ -1346,6 +1353,7 @@ of the Jacobian of the transformation:</p>
 </li>
 <li><p>Weights are kept the same, but the tensor will be cloned.</p></li>
 </ul>
+<p>The transformation’s event dimensions should be equal to or less than 1, i.e., <code class="docutils literal notranslate"><span class="pre">trans.event_dim</span> <span class="pre">&lt;=</span> <span class="pre">1</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>trans</strong> (<em>torch.distributions.transforms.Transform</em>) – The transformation object</p>
@@ -1355,9 +1363,6 @@ of the Jacobian of the transformation:</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#pysigma.defs.Message" title="pysigma.defs.Message">Message</a></p>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AssertionError</strong> – If <cite>dist_info</cite> attribute is not present in <code class="docutils literal notranslate"><span class="pre">self.attr</span></code></p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -1370,7 +1375,7 @@ of the Jacobian of the transformation:</p>
 <dt id="pysigma.defs.Message.event_reweight">
 <code class="sig-name descname">event_reweight</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_log_prob</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/defs.html#Message.event_reweight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.defs.Message.event_reweight" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a new message with the same type of <cite>self</cite> with the same particle values and log sampling densities
-as <cite>self</cite>, but a different weight tensor, derived from importance weighting <cite>target_log_pdf</cite> against stored
+as <cite>self</cite>, but a different weight tensor, derived from importance weighting <cite>target_log_prob</cite> against stored
 log sampling density tensors in <code class="docutils literal notranslate"><span class="pre">self.log_densities</span></code>.</p>
 <p><cite>self</cite> ‘s type must be either <code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> or <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code> to support this method.</p>
 <dl class="field-list simple">
@@ -1412,7 +1417,7 @@ explicitly implemented in this method; we assume it is taken care of by Message 
 <dd><p>Returns a message from <cite>self</cite> where the event dimension specified bv <cite>event_dim</cite> is marginalized,
 corresponding to marginalizing the corresponding random variable.</p>
 <p>Only messages with particles support this operation. If <cite>self</cite>’s message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, a
-<code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message will be returned, where the parameter of <cite>self</cite> is discarded.</p>
+<code class="docutils literal notranslate"><span class="pre">MessageType.Particles</span></code> type message will be returned, where the parameter of <cite>self</cite> is discarded.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>event_dim</strong> (<em>int</em>) – Which event dimension / random variable to be marginalized over. Can accept a value in the range
@@ -1436,8 +1441,8 @@ corresponding to marginalizing the corresponding random variable.</p>
 <p>Regarding the implementation:</p>
 <p>Marginalization of the particles is implemented by simply discarding the target particle value tensor as well as
 its corresponding log sampling density tensor, and summing over the target prob tensor over the event dimension.
-The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the
-marginal sampling density tensor.</p>
+The target prob tensor is recovered by multiplying the weight tensor with the exponential of the cross product
+of all of the marginal log sampling density tensor.</p>
 <p>Note that the target prob tensor recovered in this way is <strong>NOT</strong> the
 actual probability w.r.t. the target distributions, but one that is proportional to that up to a normalization
 constant factor.</p>
@@ -1457,13 +1462,16 @@ concatenated events will be placed at <cite>target_event_dim</cite> dimension.</
 <p>Note that the event dimensions will be concatenated in the order given by <cite>cat_event_dims</cite>.</p>
 <p>Only messages with particles support this operation. If <cite>self</cite>’s message type is <code class="docutils literal notranslate"><span class="pre">MessageType.Both</span></code>, a
 <code class="docutils literal notranslate"><span class="pre">MessageType.Parameter</span></code> type message will be returned, where the parameter of <cite>self</cite> is discarded.</p>
+<p><code class="docutils literal notranslate"><span class="pre">.contiguous()</span></code> will be called on the tensors to make sure the resulting particle, log density, and weight
+tensors are contiguous in memory.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cat_event_dims</strong> (<em>iterable of int</em>) – The list of event dimensions to be concatenated. Must have length at least 2. Each should be in range
+<li><p><strong>cat_event_dims</strong> (<em>iterable of int</em>) – The list of event dimensions to be concatenated. Must have length at least 2 and at most the length of
+self’s event shape (number of random variables). Each should be in range
 <code class="docutils literal notranslate"><span class="pre">[-len(event_shape),</span> <span class="pre">len(event_shape)</span> <span class="pre">-</span> <span class="pre">1]</span></code>.</p></li>
 <li><p><strong>target_event_dim</strong> (<em>int</em>) – The target event dimension where the concatenated event will be placed. Should be in range
-<code class="docutils literal notranslate"><span class="pre">[-len(event_shape)</span> <span class="pre">+</span> <span class="pre">k,</span> <span class="pre">len(event_shape)</span> <span class="pre">-</span> <span class="pre">k</span> <span class="pre">-</span> <span class="pre">1]</span></code>, where <code class="docutils literal notranslate"><span class="pre">k</span></code> equals to <code class="docutils literal notranslate"><span class="pre">len(cat_event_dims)</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">[-len(event_shape)</span> <span class="pre">+</span> <span class="pre">k</span> <span class="pre">-</span> <span class="pre">1,</span> <span class="pre">len(event_shape)</span> <span class="pre">-</span> <span class="pre">k]</span></code>, where <code class="docutils literal notranslate"><span class="pre">k</span></code> equals to <code class="docutils literal notranslate"><span class="pre">len(cat_event_dims)</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1485,12 +1493,12 @@ concatenated events will be placed at <cite>target_event_dim</cite> dimension.</
 <h2>LinkData<a class="headerlink" href="#linkdata" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="pysigma.graphical.basic_nodes.LinkData">
-<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">LinkData</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vn</span></em>, <em class="sig-param"><span class="n">fn</span></em>, <em class="sig-param"><span class="n">to_fn</span></em>, <em class="sig-param"><span class="n">msg_shape</span></em>, <em class="sig-param"><span class="n">epsilon</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#LinkData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">LinkData</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vn</span></em>, <em class="sig-param"><span class="n">fn</span></em>, <em class="sig-param"><span class="n">to_fn</span></em>, <em class="sig-param"><span class="n">msg_shape</span></em>, <em class="sig-param"><span class="n">epsilon</span><span class="o">=</span><span class="default_value">1e-06</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#LinkData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.LinkData" title="Permalink to this definition">¶</a></dt>
 <dd><p>Identifies the data of a directed link between a factor node and a variable node. Stores intermediate messages in
 its message memory.</p>
 <p>Note that links are directional, and two of such links should be specified with opposite directions to represent
 a bidirectional link between a factor node and a variable node.</p>
-<p>During construction of the graph, its instance should be passed to NetworkX methods as the edge data to instantiate
+<p>During construction of the graph, its instance would be passed to NetworkX methods as the edge data to instantiate
 an edge.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1498,10 +1506,10 @@ an edge.</p>
 <li><p><strong>vn</strong> (<a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical.basic_nodes.VariableNode" title="pysigma.graphical.basic_nodes.VariableNode"><em>VariableNode</em></a>) – VariableNode instance that this link is incident to.</p></li>
 <li><p><strong>fn</strong> (<a class="reference internal" href="abstract-base-nodes.html#pysigma.graphical.basic_nodes.FactorNode" title="pysigma.graphical.basic_nodes.FactorNode"><em>FactorNode</em></a>) – FactorNode instance that this link is incident to.</p></li>
 <li><p><strong>to_fn</strong> (<em>bool</em>) – True if this link is pointing toward the factor node.</p></li>
-<li><p><strong>msg_shape</strong> (<em>tuple of torch.Size</em>) – The shape of the message to carry. Used for sanity check of message shapes. Should be in the format
-<code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code>. An empty shape <code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code> should be used as
-the default none shape.</p></li>
-<li><p><strong>epsilon</strong> (<em>float</em><em>, </em><em>optional</em>) – Epsilon upper bound for checking message difference.</p></li>
+<li><p><strong>msg_shape</strong> (<em>tuple of torch.Size</em>) – The shape of the message to carry. Used for sanity check of message shapes. Should be a 4-tuple of
+<code class="docutils literal notranslate"><span class="pre">torch.Size()</span></code> in the format <code class="docutils literal notranslate"><span class="pre">(batch_shape,</span> <span class="pre">param_shape,</span> <span class="pre">sample_shape,</span> <span class="pre">event_shape)</span></code>. An empty shape
+<code class="docutils literal notranslate"><span class="pre">torch.Size([])</span></code> represents the default none shape.</p></li>
+<li><p><strong>epsilon</strong> (<em>float</em><em>, </em><em>optional</em>) – Epsilon upper bound for checking message difference. Defaults to <code class="docutils literal notranslate"><span class="pre">defs.NP_EPSILON</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1616,7 +1624,8 @@ shape <code class="docutils literal notranslate"><span class="pre">torch.Size([]
 </dl>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>This method will clear the memory buffer <code class="docutils literal notranslate"><span class="pre">self.memory</span></code> and set <code class="docutils literal notranslate"><span class="pre">self.new</span></code> to False.</p>
+<p>This method will reset the memory buffer <code class="docutils literal notranslate"><span class="pre">self.memory</span></code> to initial identity value and set <code class="docutils literal notranslate"><span class="pre">self.new</span></code> to
+False.</p>
 </div>
 </dd></dl>
 
@@ -1665,7 +1674,7 @@ compare message difference.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If want to set a new message of a different message type than the current memory, make sure reset_shape()
+<p>If want to set a new message of a different message shape than the current memory, make sure reset_shape()
 is first called so that shape check works for the new message.</p>
 </div>
 </dd></dl>

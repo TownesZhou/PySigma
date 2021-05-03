@@ -1,19 +1,21 @@
 """
-    All kinds of nodes in the graphical architecture
-"""
-from abc import ABC, abstractmethod
-from collections.abc import Iterable
-import torch
-from ..defs import VariableMetatype, Variable, MessageType, Message
-from ..utils import compatible_shape
-
-"""
     Basic data structures and abstract node classes
         - LinkData
         - Node
         - FactorNode
         - VariableNode
 """
+from __future__ import annotations      # For postponed evaluation of typing annotations
+from typing import List, Tuple
+from typing import Iterable as IterableType
+from abc import ABC, abstractmethod
+from collections.abc import Iterable
+import torch
+from ..defs import VariableMetatype, Variable, MessageType, Message, NP_EPSILON
+from ..utils import compatible_shape
+
+# Define typing aliases
+MessageShape = Tuple[torch.Size, torch.Size, torch.Size, torch.Size]
 
 
 class LinkData:
@@ -23,7 +25,7 @@ class LinkData:
     Note that links are directional, and two of such links should be specified with opposite directions to represent
     a bidirectional link between a factor node and a variable node.
 
-    During construction of the graph, its instance should be passed to NetworkX methods as the edge data to instantiate
+    During construction of the graph, its instance would be passed to NetworkX methods as the edge data to instantiate
     an edge.
 
     Parameters
@@ -35,11 +37,11 @@ class LinkData:
     to_fn : bool
         True if this link is pointing toward the factor node.
     msg_shape : tuple of torch.Size
-        The shape of the message to carry. Used for sanity check of message shapes. Should be in the format
-        ``(batch_shape, param_shape, sample_shape, event_shape)``. An empty shape ``torch.Size([])`` should be used as
-        the default none shape.
+        The shape of the message to carry. Used for sanity check of message shapes. Should be a 4-tuple of
+        ``torch.Size()`` in the format ``(batch_shape, param_shape, sample_shape, event_shape)``. An empty shape
+        ``torch.Size([])`` represents the default none shape.
     epsilon : float, optional
-        Epsilon upper bound for checking message difference.
+        Epsilon upper bound for checking message difference. Defaults to ``defs.NP_EPSILON``.
 
     Attributes
     ----------
@@ -62,16 +64,13 @@ class LinkData:
     pretty_log : dict
         Pretty logging for front-end visualization.
     """
-    def __init__(self, vn, fn, to_fn, msg_shape, epsilon=10e-5, **kwargs):
-        """
-        :param vn:      VariableNode instance that this link is incident to
-        :param fn:      FactorNode instance that this link is incident to
-        :param to_fn:   True/False indicating whether this link is pointing toward a factor node
-        :param msg_shape    Fixed message shape that this linkdata will carry. Used for checking dimensions
-                            For Parameter message, should be (batch_shape + param_shape)
-                            For particles message, should be (sample_shape + batch_shape + event_shape)
-        :param epsilon:     epsilon upper bound for checking message difference using KL divergence
-        """
+    def __init__(self,
+                 vn: VariableNode,
+                 fn: FactorNode,
+                 to_fn: bool,
+                 msg_shape: MessageShape = (torch.Size([]),) * 4,
+                 epsilon: float = NP_EPSILON,
+                 **kwargs):
         assert isinstance(vn, VariableNode)
         assert isinstance(fn, FactorNode)
         assert isinstance(msg_shape, tuple) and len(msg_shape) == 4 and \
@@ -86,7 +85,7 @@ class LinkData:
         # Incident nodes and their variable list
         self.vn = vn                # Of type VariableNode
         self.fn = fn                # Of type FactorNode
-        self.msg_shape = msg_shape
+        self.msg_shape: MessageShape = msg_shape
         # Link direction. Whether pointing toward a factor node. Of type bool
         self.to_fn = to_fn
         # Threshold of KL-divergence metric to measure whether a candidate message is different from the existing one
@@ -104,7 +103,10 @@ class LinkData:
             return vn_name + " --> " + fn_name
         return fn_name + " --> " + vn_name
 
-    def reset_shape(self, msg_shape):
+    def __repr__(self):
+        return str(self)
+
+    def reset_shape(self, msg_shape: MessageShape):
         """Reset shape for the Message
 
         Parameters
@@ -115,15 +117,16 @@ class LinkData:
 
         Warnings
         --------
-        This method will clear the memory buffer ``self.memory`` and set ``self.new`` to False.
+        This method will reset the memory buffer ``self.memory`` to initial identity value and set ``self.new`` to
+        False.
         """
         assert isinstance(msg_shape, tuple) and len(msg_shape) == 4 and \
             all(isinstance(s, torch.Size) for s in msg_shape)
         self.msg_shape = msg_shape
-        self.memory = None
+        self.memory = Message.identity()
         self.new = False
 
-    def write(self, new_msg, check_diff=True, clone=False):
+    def write(self, new_msg: Message, check_diff: bool = True, clone: bool = False):
         """Writes to the link message memory with the new message specified via `new_msg`. Once a new message is
         written, ``self.new`` will be set to ``True``.
 
@@ -166,12 +169,12 @@ class LinkData:
 
         .. note::
 
-            When `self` and `other` have type ``MessageType.Both``, the parameters will be chosen over the particles to
+            When `self` and `other` have type ``MessageType.Dual``, the parameters will be chosen over the particles to
             compare message difference.
 
         .. note::
 
-           If want to set a new message of a different message type than the current memory, make sure reset_shape()
+           If want to set a new message of a different message shape than the current memory, make sure reset_shape()
            is first called so that shape check works for the new message.
         """
         assert isinstance(new_msg, Message)
@@ -181,19 +184,18 @@ class LinkData:
             "{}".format(str(self), self.msg_shape, new_msg.shape)
 
         # Will replace the memory immediately if any one of the following conditions is met:
-        #   - self.memory is None
         #   - check_diff is False
         #   - new message has different type
         #   - new message has Undefined type
         #   - messages have particles and new message has different particle values and/or sampling log densities
-        if self.memory is None or check_diff is False or new_msg.type != self.memory.type or \
+        if check_diff is False or new_msg.type != self.memory.type or \
                 new_msg.type == MessageType.Undefined or\
                 (MessageType.Particles in new_msg.type and not self.memory.same_particles_as(new_msg)):
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
             return
 
-        # Otherwise, check difference by KL-divergence
+        # Otherwise, check difference
         if MessageType.Parameter in self.memory.type:
             # For Parameter message, compare batch average L2 distance
             # Parameter tensor has shape (batch_shape + param_shape), with param_shape of length 1
@@ -210,7 +212,7 @@ class LinkData:
             self.memory = new_msg.clone() if clone is True else new_msg
             self.new = True
 
-    def read(self, clone=False):
+    def read(self, clone: bool = False) -> Message:
         """Returns the current content stored in memory. Set ``self.new`` to ``False`` to indicate this link message
         has been read in the current decision phase.
 
@@ -226,6 +228,13 @@ class LinkData:
         self.new = False
         msg = self.memory.clone() if clone is True else self.memory
         return msg
+
+
+class NodeConfigurationError(Exception):
+    """Custom Exception class for indicating that the node is ill-configured to execute the compute() method. Should be
+    used in the concrete Node subclass's implementation of precompute() method.
+    """
+    pass
 
 
 class Node(ABC):
@@ -259,7 +268,7 @@ class Node(ABC):
         Pretty log for beautiful front-end visualization.
     """
 
-    def __init__(self, name, device='cpu'):
+    def __init__(self, name: str, device: torch.device = torch.device('cpu')):
         self.name = name
         self.device = device
         # Flag indicating whether this node has been visited (compute() method called) during a decision cycle
@@ -267,8 +276,8 @@ class Node(ABC):
 
         # List of LinkData of those link connecting to this node, incoming and outgoing ones respectively, from
         #   which we retrieve messages
-        self.in_linkdata = []
-        self.out_linkdata = []
+        self.in_linkdata: List[LinkData] = []
+        self.out_linkdata: List[LinkData] = []
 
         # Global logging info
         self.log = {}
@@ -279,7 +288,7 @@ class Node(ABC):
         return self.name
 
     @property
-    def quiescence(self):
+    def quiescence(self) -> bool:
         """Indicates whether this node has reached quiescence state, and no further message update computations, i.e.,
         `compute()`, is necessary at the decision phase of the current cognitive cycle. This property thus plays an
         important role in deciding the node traversing schedule of the graphical architecture.
@@ -293,12 +302,31 @@ class Node(ABC):
         *any*, and for other nodes their quiescence states depend only on whether `compute()` has ever been called
         within the current decision phase.
         """
-        return any(in_ld.new for in_ld in self.in_linkdata)
+        return all(not in_ld.new for in_ld in self.in_linkdata)
 
     @abstractmethod
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Adding linkdata connecting to this node.
 
+        """
+        raise NotImplementedError
+
+    def modify(self):
+        """Modification method to be called during modification phase
+
+        Since not every nodes necessarily needs to have its contents modified during modification phase, this method
+        is not marked as abstract, and the default behavior is simply to do nothing.
+        """
+        pass
+
+    @abstractmethod
+    def precompute_check(self):
+        """The precompute check to be carried out each time before compute() is called during each cognitive cycle.
+        Usually, this is meant for checking node topology -- whether the correct number and/or types of linkdata have
+        been registered. It can also be used to check other necessary conditions for a node to be correctly executed.
+
+        If every conditions are met, this method should return silently. Otherwise, throw a NodeConfigurationError with
+        customized error message to inform the user what is going wrong.
         """
         raise NotImplementedError
 
@@ -306,18 +334,39 @@ class Node(ABC):
     def compute(self):
         """Compute method to be called to propagate messages during decision phases.
 
-        Note that ``super()`` must be called within `compute()` method in any child class, because all abstract
-        node-level statistics logging is taken care of herein.
-
-        The default quiescence behavior for `compute()` is to return directly if `self.quiescence` is ``True``,
-        without logging anything or performing any further computation. Note that such behavior may or may not be
-        desired by child node class.
+        Note
+        ----
+        Note that in a subclass, when overriding this method, it must be decorated with
+        ``@parent_class.compute_control`` where ``parent_class`` is the parent class of said subclass so that
+        the message propagation process can be controlled and relevant stats be set.
         """
-        # Return directly if quiesced
-        if self.quiescence:
-            return
-        # General logging regarding node computation statistics to be added here
-        self.visited = True
+        raise NotImplementedError
+
+    @staticmethod
+    def compute_control(compute_func):
+        """Decorator that controls the message processing of this node depending on the quiescence state and set
+        corresponding stats when the processing is completed. This decorator **must** always be used with the
+        `compute()` method in any Node subclass.
+
+        Basic controls:
+            - Return directly and prevent computation if reached quiescence.
+            - Set ``visited`` to true after the computation.
+        """
+        assert callable(compute_func)
+
+        def wrapper(self):
+            # Execute the precompute check. If should pass if every condition is met, otherwise a NodeConfigurationError
+            #   is thrown.
+            self.precompute_check()
+            # Return directly if quiesced. avoid any computation
+            if self.quiescence:
+                return
+            # Call the actual compute method
+            compute_func(self)
+            # Set stats aftermath
+            self.visited = True
+
+        return wrapper
 
     def reset_state(self):
         """Clears and resets the node's message propagation statistics to prepare logging for the imminent decision
@@ -334,7 +383,7 @@ class FactorNode(Node, ABC):
 
     Guarantees that all incident nodes are variable nodes.
     """
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Add a linkdata connecting to a variable node
 
         Parameters
@@ -395,7 +444,13 @@ class VariableNode(Node, ABC):
     e_shape : torch.Size
         Event dimension sizes. Inferred from `ran_vars`. Defaults to ``torch.Size([])``.
     """
-    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
+    def __init__(self,
+                 name: str,
+                 rel_var_list: IterableType[Variable],
+                 param_var: Variable = None,
+                 index_var_list: IterableType[Variable] = None,
+                 ran_var_list: IterableType[Variable] = None,
+                 **kwargs):
         super(VariableNode, self).__init__(name, **kwargs)
         assert isinstance(rel_var_list, Iterable) and \
             all(isinstance(v, Variable) and v.metatype is VariableMetatype.Relational for v in rel_var_list)
@@ -403,23 +458,23 @@ class VariableNode(Node, ABC):
             (isinstance(param_var, Variable) and param_var.metatype == VariableMetatype.Parameter)
         assert index_var_list is None or \
             (isinstance(index_var_list, Iterable) and
-             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Indexing) for v in index_var_list)
+             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Indexing for v in index_var_list))
         assert ran_var_list is None or \
             (isinstance(ran_var_list, Iterable) and
-             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Random) for v in ran_var_list)
+             all(isinstance(v, Variable) and v.metatype == VariableMetatype.Random for v in ran_var_list))
         assert (index_var_list is None) is (ran_var_list is None)
 
-        self.rel_vars = tuple(rel_var_list)
-        self.param_var = param_var
-        self.index_vars = tuple(index_var_list) if index_var_list is not None else None
-        self.ran_vars = tuple(ran_var_list) if ran_var_list is not None else None
+        self.rel_vars: Tuple[Variable, ...] = tuple(rel_var_list)
+        self.param_var: Variable = param_var
+        self.index_vars: Tuple[Variable, ...] = tuple(index_var_list) if index_var_list is not None else None
+        self.ran_vars: Tuple[Variable, ...] = tuple(ran_var_list) if ran_var_list is not None else None
 
         self.b_shape = torch.Size([v.size for v in self.rel_vars])
         self.p_shape = torch.Size([self.param_var.size]) if self.param_var is not None else torch.Size([])
         self.s_shape = torch.Size([v.size for v in self.index_vars]) if self.index_vars is not None else torch.Size([])
         self.e_shape = torch.Size([v.size for v in self.ran_vars]) if self.ran_vars is not None else torch.Size([])
 
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Register the LinkData connecting a factor node to this variable node.
 
         Checks that the preset message shape specified in `linkdata` agrees with the inferred message shape at this
@@ -437,9 +492,9 @@ class VariableNode(Node, ABC):
         """
         assert isinstance(linkdata, LinkData)
         assert linkdata.vn is self
-        assert linkdata.msg_shape == (self.b_shape, self.p_shape, self.s_shape, self.e_shape), \
-            "At {}: The linkdata to be registered with the current node does not impose the same message shape " \
-            "restriction as this node does. Current node's shape: (batch_shape, param_shape, sample_shape, " \
+        assert compatible_shape(linkdata.msg_shape, (self.b_shape, self.p_shape, self.s_shape, self.e_shape)), \
+            "At {}: The message shape of the linkdata to be registered is not compatible with the predefined message " \
+            "shape of the current variable node. Current node's shape: (batch_shape, param_shape, sample_shape, " \
             "event_shape) = {}. Found linkdata's shape: {}"\
             .format(self.name, (self.b_shape, self.p_shape, self.s_shape, self.e_shape), linkdata.msg_shape)
         if linkdata in self.in_linkdata + self.out_linkdata:
@@ -462,7 +517,8 @@ class DFN(FactorNode):
     """Default (Dummy) Factor Node.
 
     No special computation. Simply relays message to one or multiple incident variable nodes. Requires that incident
-    variable nodes share the same variables. Only admits one incoming link but can connect with multiple outgoing links.
+    variable nodes have compatible variable shapes. Only admits one incoming link but can connect with multiple outgoing
+    links.
 
     Since all incident variable nodes should share the same variables, these variables will also be registered in the
     attributes.
@@ -483,7 +539,7 @@ class DFN(FactorNode):
     ran_vars : tuple of Variable
         Tuple of random variables.
     """
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str, **kwargs):
         super(DFN, self).__init__(name, **kwargs)
         self.pretty_log["node type"] = "Default Factor Node"
 
@@ -493,7 +549,12 @@ class DFN(FactorNode):
         self.index_vars = None
         self.ran_vars = None
 
-    def add_link(self, linkdata):
+        self.b_shape = torch.Size([])
+        self.p_shape = torch.Size([])
+        self.s_shape = torch.Size([])
+        self.e_shape = torch.Size([])
+
+    def add_link(self, linkdata: LinkData):
         """Checks that all variable nodes on the other side of the linkdata share the same set of variables. Infer
         attribute values from the connected variable nodes' variables.
 
@@ -517,24 +578,44 @@ class DFN(FactorNode):
         assert isinstance(linkdata, LinkData)
         # Make sure no more than on incoming link
         assert not linkdata.to_fn or len(self.in_linkdata) == 0
-        # Also make sure incident variable nodes' var_list agree with each other
+        # Check that the variable shape of the newly connected variable node is compatible with the rest
+        if self.rel_vars is not None:
+            assert compatible_shape((self.b_shape, self.p_shape, self.s_shape, self.e_shape), linkdata.msg_shape), \
+                "In DFN {}: the message shape of the linkdata is not compatible with the variable shape of already " \
+                "existing variable nodes. Expecting message shape compatible with {}, but found {}"\
+                .format(self.name, (self.b_shape, self.p_shape, self.s_shape, self.e_shape), linkdata.msg_shape)
+
+        # Register variables and shapes
         if self.rel_vars is None:
+            self.rel_vars = linkdata.vn.rel_vars
+            self.b_shape = linkdata.vn.b_shape
+        if self.param_var is None:
             self.param_var = linkdata.vn.param_var
-            self.index_vars = linkdata.vn.rel_vars
+            self.p_shape = linkdata.vn.p_shape
+        if self.index_vars is None:
+            self.index_vars = linkdata.vn.index_vars
+            self.s_shape = linkdata.vn.s_shape
+        if self.ran_vars is None:
             self.ran_vars = linkdata.vn.ran_vars
-        else:
-            assert self.rel_vars == linkdata.vn.rel_vars
-            assert self.param_var == linkdata.vn.param_var
-            assert self.index_vars == linkdata.vn.index_vars
-            assert self.ran_vars == linkdata.vn.ran_vars
+            self.e_shape = linkdata.vn.e_shape
 
         super(DFN, self).add_link(linkdata)
 
+    def precompute_check(self):
+        """The computable condition for a Default Factor Node is that there are at least one incoming linkdata and one
+        outgoing linkdata.
+        """
+        if len(self.in_linkdata) == 0 or len(self.out_linkdata) == 0:
+            raise NodeConfigurationError("Wrong configuration for node {}: a DFN expects at least one incoming "
+                                         "linkdata and one outgoing linkdata to be computable. Found {} registered "
+                                         "incoming linkdata and {} registered outgoing linkdata"
+                                         .format(self.name, len(self.in_linkdata), len(self.out_linkdata)))
+
+    @FactorNode.compute_control
     def compute(self):
         """Relay untempered message to downstream variable nodes.
 
         """
-        super(DFN, self).compute()
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:
@@ -564,11 +645,17 @@ class DVN(VariableNode):
         Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of
         incoming messages. Must specify if `index_var_list` is specified.
     """
-    def __init__(self, name, rel_var_list, param_var=None, index_var_list=None, ran_var_list=None, **kwargs):
+    def __init__(self,
+                 name: str,
+                 rel_var_list: IterableType[Variable],
+                 param_var: Variable = None,
+                 index_var_list: IterableType[Variable] = None,
+                 ran_var_list: IterableType[Variable] = None,
+                 **kwargs):
         super(DVN, self).__init__(name, rel_var_list, param_var, index_var_list, ran_var_list, **kwargs)
         self.pretty_log["node type"] = "Default Variable Node"
 
-    def add_link(self, linkdata):
+    def add_link(self, linkdata: LinkData):
         """Guarantees that no more than on incoming link is registered.
 
         Parameters
@@ -587,11 +674,21 @@ class DVN(VariableNode):
 
         super(DVN, self).add_link(linkdata)
 
+    def precompute_check(self):
+        """The computable condition for a Default Factor Node is that there are at least one incoming linkdata and one
+        outgoing linkdata.
+        """
+        if len(self.in_linkdata) == 0 or len(self.out_linkdata) == 0:
+            raise NodeConfigurationError("Wrong configuration for node {}: a DVN expects at least one incoming "
+                                         "linkdata and one outgoing linkdata to be computable. Found {} registered "
+                                         "incoming linkdata and {} registered outgoing linkdata"
+                                         .format(self.name, len(self.in_linkdata), len(self.out_linkdata)))
+
+    @VariableNode.compute_control
     def compute(self):
         """Relay untempered message to downstream factor nodes.
 
         """
-        super(DVN, self).compute()
         in_ld = self.in_linkdata[0]
         msg = in_ld.read()
         for out_ld in self.out_linkdata:

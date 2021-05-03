@@ -228,7 +228,8 @@
 <em class="property">class </em><code class="sig-prename descclassname">pysigma.graphical.basic_nodes.</code><code class="sig-name descname">DFN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DFN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Default (Dummy) Factor Node.</p>
 <p>No special computation. Simply relays message to one or multiple incident variable nodes. Requires that incident
-variable nodes share the same variables. Only admits one incoming link but can connect with multiple outgoing links.</p>
+variable nodes have compatible variable shapes. Only admits one incoming link but can connect with multiple outgoing
+links.</p>
 <p>Since all incident variable nodes should share the same variables, these variables will also be registered in the
 attributes.</p>
 <dl class="field-list simple">
@@ -306,7 +307,13 @@ attribute values from the connected variable nodes’ variables.</p>
 <dl class="py method">
 <dt id="pysigma.graphical.basic_nodes.DFN.compute">
 <code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DFN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DFN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Relay untempered message to downstream variable nodes.</p>
+<dd><p>Compute method to be called to propagate messages during decision phases.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that in a subclass, when overriding this method, it must be decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;parent_class.compute_control</span></code> where <code class="docutils literal notranslate"><span class="pre">parent_class</span></code> is the parent class of said subclass so that
+the message propagation process can be controlled and relevant stats be set.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -352,7 +359,13 @@ incoming messages. Must specify if <cite>index_var_list</cite> is specified.</p>
 <dl class="py method">
 <dt id="pysigma.graphical.basic_nodes.DVN.compute">
 <code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/pysigma/graphical/basic_nodes.html#DVN.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pysigma.graphical.basic_nodes.DVN.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Relay untempered message to downstream factor nodes.</p>
+<dd><p>Compute method to be called to propagate messages during decision phases.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that in a subclass, when overriding this method, it must be decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;parent_class.compute_control</span></code> where <code class="docutils literal notranslate"><span class="pre">parent_class</span></code> is the parent class of said subclass so that
+the message propagation process can be controlled and relevant stats be set.</p>
+</div>
 </dd></dl>
 
 </dd></dl>

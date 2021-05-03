@@ -216,21 +216,21 @@
 <span class="sd">    Basic structures in the graphical architecture</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">auto</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">auto</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">Transform</span>
-<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="k">import</span> <span class="n">Constraint</span>
-<span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="k">import</span> <span class="n">l1_loss</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">torch.distributions.constraints</span> <span class="kn">import</span> <span class="n">Constraint</span>
+<span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="kn">import</span> <span class="n">l1_loss</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">KnowledgeServer</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">KnowledgeServer</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    All PySigma global variables / constants should be declared below.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="c1"># Global numerical precision</span>
-<span class="n">NP_EPSILON</span> <span class="o">=</span> <span class="mf">10e-7</span>
+<span class="n">NP_EPSILON</span> <span class="o">=</span> <span class="mf">1e-6</span>
 
 
 <span class="c1"># Variable Metatypes and Variable for general inference</span>
@@ -282,7 +282,7 @@
 <span class="sd">        The set of value constraints that determine the value range (support) of this variable.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">metatype</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">value_constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">metatype</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">value_constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metatype</span><span class="p">,</span> <span class="n">VariableMetatype</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
@@ -300,7 +300,7 @@
         <span class="c1">#   Useful at Beta-join to select globally valid particle values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">value_constraints</span><span class="p">)</span> <span class="k">if</span> <span class="n">value_constraints</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="c1"># override so &#39;==&#39; operator test variable equality</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span>
         <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> \
@@ -310,18 +310,21 @@
 
         <span class="k">return</span> <span class="n">val</span>
 
-    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="c1"># override so &#39;!=&#39; operator test variable inequality</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># override to provide the name as the string representation</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
-    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
-    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># override so that hash value of the string representation of the variable is used</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metatype</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">))</span></div>
 
@@ -511,7 +514,7 @@
 
 <span class="sd">    Accordingly, the &#39;+&#39; and &#39;*&#39; operator are overloaded according the to the specifications above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">,</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">,</span>
                  <span class="n">batch_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span>
                  <span class="n">param_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span> <span class="n">event_shape</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([]),</span>
                  <span class="n">parameter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">particles</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -558,24 +561,24 @@
 
         <span class="c1"># Check whether necessary arguments are provided</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
                 <span class="s2">&quot;For a Parameter message, the length of the parameter shape must be exactly 1. Found param_shape = </span><span class="si">{}</span><span class="s2">&quot;</span> \
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
                 <span class="s2">&quot;Must specify `parameter` for a Parameter message.&quot;</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> \
                 <span class="s2">&quot;For a Particles message, the length of the sample / event shape must be at least 1. Found &quot;</span> \
                 <span class="s2">&quot;sample_shape = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span>
             <span class="c1"># does not care whether particles is specified if it&#39;s a particles identity</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
                 <span class="s2">&quot;Must specify the particle values tensor via `particles` for a Particles message, unless the message &quot;</span> \
                 <span class="s2">&quot;represents the identity.&quot;</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
                 <span class="s2">&quot;Must specify the particle weight tensor via `weight` for a Particles message, unless the message &quot;</span> \
                 <span class="s2">&quot;represents the identity.&quot;</span>
             <span class="c1"># similarly does not care if it&#39;s identity</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
                 <span class="s2">&quot;Must specify the particles log density tensor via `log_densities` for a Particles message, unless &quot;</span> \
                 <span class="s2">&quot;the message represents the identity.&quot;</span>
 
@@ -603,7 +606,7 @@
                 <span class="s2">&quot;When specified, the particles weight should have shape (batch_shape + sample_shape). Expect </span><span class="si">{}</span><span class="s2">, but &quot;</span> \
                 <span class="s2">&quot;intead found </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
             <span class="c1"># Check that values are positive</span>
-            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;Found negative values in particle weights. Minimum value: </span><span class="si">{}</span><span class="s2">&quot;</span> \
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;Found negative values in particle weights. Minimum value: </span><span class="si">{}</span><span class="s2">&quot;</span> \
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">))</span>
             <span class="c1"># Normalize the values so that weights sum to 1 across sample dimension</span>
             <span class="n">sample_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)))</span>
@@ -618,9 +621,6 @@
                 <span class="s2">&quot;When specified, the j-th log density tensor specified in the iterable `log_densities` should have &quot;</span> \
                 <span class="s2">&quot;shape (sample_shape[j]). Expect shapes </span><span class="si">{}</span><span class="s2">, but instead found log density tensor shapes </span><span class="si">{}</span><span class="s2">.&quot;</span> \
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">)),</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">))</span>
-            <span class="c1"># Check that values are non-positive</span>
-            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">d</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">),</span> \
-                <span class="s2">&quot;Found positive values in one of the particle log-densities tensors.&quot;</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Member properties</span>
@@ -652,7 +652,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overload arithmetic operators</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="Message.__eq__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__eq__">[docs]</a>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__eq__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__eq__">[docs]</a>    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overrides equality testing operation ``==``</span>
 
 <span class="sd">        Two messages are equal if and only if all of its contents are equal, including contents in the auxiliary</span>
@@ -710,7 +710,7 @@
 
         <span class="k">return</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="Message.__ne__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__ne__">[docs]</a>    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__ne__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__ne__">[docs]</a>    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overrides inequality testing operation ``!=``</span>
 
 <span class="sd">        See Also</span>
@@ -719,7 +719,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span></div>
 
-<div class="viewcode-block" id="Message.__add__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__add__">[docs]</a>    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__add__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__add__">[docs]</a>    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overrides the addition operation ``+``.</span>
 
 <span class="sd">        Implements the semantics of addition operation as in vector spaces. The computational operations used to</span>
@@ -816,8 +816,8 @@
             <span class="c1"># Tensor addition</span>
             <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">parameter</span>
 
-            <span class="n">param_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="n">new_parameter</span><span class="p">,</span>
-                                <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">param_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span>
+                                <span class="n">parameter</span><span class="o">=</span><span class="n">new_parameter</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 
         <span class="c1"># Addition for Particles type</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">s_type</span><span class="p">:</span>
@@ -837,7 +837,7 @@
             <span class="c1"># Clone self tensor contents</span>
             <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
             <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
-            <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">s_type</span><span class="p">,</span>
+            <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
                                <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                                <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">new_weights</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">,</span>
                                <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
@@ -855,7 +855,7 @@
 
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.__iadd__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__iadd__">[docs]</a>    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__iadd__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__iadd__">[docs]</a>    <span class="k">def</span> <span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overrides self-addition operator ``+=``.</span>
 
 <span class="sd">        See Also</span>
@@ -864,7 +864,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Message.__mul__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__mul__">[docs]</a>    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__mul__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__mul__">[docs]</a>    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overrides multiplication operator ``*``.</span>
 
 <span class="sd">        Implements the semantics of scalar multiplication operation as in vector spaces. The computational operations</span>
@@ -924,11 +924,13 @@
                     <span class="n">b_s_other</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">b_s_other</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="c1"># Scalar multiplication for Parameter messages</span>
-        <span class="n">new_msg</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">param_msg</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
             <span class="n">new_parameter</span> <span class="o">=</span> <span class="n">b_p_other</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="n">new_parameter</span><span class="p">,</span>
-                              <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">param_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span>
+                                <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="n">new_parameter</span><span class="p">,</span>
+                                <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 
         <span class="c1"># Scalar multiplication for Particles messages</span>
         <span class="k">if</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
@@ -945,14 +947,22 @@
             <span class="c1"># Clone tensor contents</span>
             <span class="n">cloned_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
             <span class="n">cloned_log_densities</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">)</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                              <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
-                              <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">,</span>
-                              <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+            <span class="n">ptcl_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
+                               <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                               <span class="n">particles</span><span class="o">=</span><span class="n">cloned_particles</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">cloned_log_densities</span><span class="p">,</span>
+                               <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+
+        <span class="c1"># Compose if we are multiplying a Both type messages, otherwise return the proper one</span>
+        <span class="k">if</span> <span class="n">param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ptcl_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">param_msg</span><span class="p">,</span> <span class="n">ptcl_msg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">param_msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">param_msg</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">ptcl_msg</span>
 
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
-<div class="viewcode-block" id="Message.__imul__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__imul__">[docs]</a>    <span class="k">def</span> <span class="nf">__imul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Message.__imul__"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.__imul__">[docs]</a>    <span class="k">def</span> <span class="fm">__imul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Overrides self-multiplication operator ``*=``.</span>
 
 <span class="sd">        See Also</span>
@@ -961,7 +971,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__mul__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># if self.type == MessageType.Parameter:</span>
         <span class="c1">#     b_shape_str = str(list(self.b_shape))</span>
         <span class="c1">#     p_shape_str = str(list(self.p_shape))</span>
@@ -1151,7 +1161,11 @@
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        AssertionError</span>
-<span class="sd">            If `self` and/or `other` do not have parameters.</span>
+<span class="sd">            If `self` and `other` are not on the same device.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `self` and/or `other` are/is not Parameter type.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `self` and `other` are not identities and have different batch shapes or parameter shapes.</span>
 
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
@@ -1162,6 +1176,7 @@
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> \
             <span class="s2">&quot;Messages not residing on the same device. Found devices </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">and</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">p_shape</span><span class="p">)</span>
 
         <span class="c1"># Returns 0 if both are identity</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span><span class="p">:</span>
@@ -1194,7 +1209,11 @@
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        AssertionError</span>
-<span class="sd">            If `self` and/or `other` do not have particles.</span>
+<span class="sd">            If `self` and `other` are not on the same device.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `self` and/or `other` are/is not Particles type.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If `self` and `other` do not have the same batch shapes, sample shapes, or event shapes.</span>
 <span class="sd">        AssertionError</span>
 <span class="sd">            If `self` does not have the same particle values and log sampling densities as `other`.</span>
 
@@ -1207,6 +1226,8 @@
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> \
             <span class="s2">&quot;Messages not residing on the same device. Found devices </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">and</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">type</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> <span class="n">other</span><span class="o">.</span><span class="n">isid</span> <span class="ow">or</span> \
+               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">same_particles_as</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
         <span class="c1"># Returns 0 if both are identity</span>
@@ -1251,12 +1272,12 @@
         <span class="c1"># First clone content</span>
         <span class="n">cloned_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">msg_type</span> <span class="o">==</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Parameter</span><span class="p">:</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span>
-                              <span class="n">parameters</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">msg_type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">param_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span>
+                              <span class="n">parameter</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">parameter</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">msg_type</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span>
                               <span class="n">event_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span> <span class="n">particles</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span>
-                              <span class="n">weights</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">,</span>
+                              <span class="n">weight</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">,</span>
                               <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
@@ -1288,7 +1309,7 @@
             <span class="n">attr</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">parameters</span><span class="p">,</span> <span class="n">particles</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">log_densities</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
@@ -1382,7 +1403,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -1429,7 +1450,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -1484,7 +1505,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -1494,8 +1515,8 @@
 <span class="sd">        the positions along the axis specified by indices in `index`.</span>
 
 <span class="sd">        In other words, along `dim` dimension, the ``index[i]`` th slice of the returned message is the ``i`` th slice</span>
-<span class="sd">        of `self`. Consequently, the size of the `dim` dimension of the returned message equals the maximum value in the</span>
-<span class="sd">        `index` array.</span>
+<span class="sd">        of `self`. Consequently, the size of the `dim` dimension of the returned message equals the maximum value plus 1</span>
+<span class="sd">        in the `index` array.</span>
 
 <span class="sd">        For slices in the new message not referenced by `index`, they will be filled with identity values. For parameter</span>
 <span class="sd">        tensor, the identity value is 0, and for particle weight tensor, the identity value is a positive uniform</span>
@@ -1560,14 +1581,15 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">to_fill</span><span class="p">,</span> <span class="n">dim0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_diagonal"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diagonal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a partial view of self with the its diagonal elements with respect to `dim1` and `dim2` appended as</span>
-<span class="sd">        a dimension at the end of the shape.</span>
+<span class="sd">        a dimension at the end of the shape. Note that the number of dimensions of the returned message is 1 minus</span>
+<span class="sd">        that of the original message, because `dim1` and `dim2` are reduced to the new diagonal dimension.</span>
 
 <span class="sd">        dim values in the range ``[-len(batch_shape), len(batch_shape) - 1]`` can be used. Note that `dim1` and `dim2`</span>
 <span class="sd">        are relative to the batch dimensions only. The appended dimension will be placed as the last batch dimension,</span>
@@ -1594,7 +1616,7 @@
 <span class="sd">        --------</span>
 <span class="sd">        This method is a mimic of</span>
 <span class="sd">        `torch.diagonal() &lt;https://pytorch.org/docs/stable/torch.html?highlight=diagonal#torch.diagonal&gt;`_</span>
-<span class="sd">        , with `offset` defaults to 0</span>
+<span class="sd">        , with `offset` set to 0</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim1</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">dim1</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim2</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">dim2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
@@ -1621,20 +1643,21 @@
             <span class="c1"># weights has shape (b_shape + s_shape)</span>
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">dim2</span><span class="p">)</span>
             <span class="c1"># Permute the appended diagonal batch dimension to the end of the existing batch dimensions</span>
-            <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)))</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> \
-                <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)))</span>
+            <span class="n">new_b_dims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+            <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">new_b_dims</span><span class="p">))</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> \
+                <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">new_b_dims</span><span class="p">,</span> <span class="n">new_b_dims</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)))</span>
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
 
 <div class="viewcode-block" id="Message.batch_diag_embed"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.batch_diag_embed">[docs]</a>    <span class="k">def</span> <span class="nf">batch_diag_embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">diag_dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">target_dim1</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">target_dim2</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a message whose diagonals of certain 2D planes (dimensions specified by `target_dim1` and</span>
-<span class="sd">        `target_dim2`) are filled by slices of self along the dimension specified by `diag_dim`).</span>
+<span class="sd">        `target_dim2`) are filled by slices of self along the dimension `diag_dim` of the self message).</span>
 
 <span class="sd">        The last dimension of self is chosen by default as the diagonal entries to be filled, and the last two</span>
 <span class="sd">        dimensions of the new message are chosen by default as the 2D planes where the diagonal entries will be filled</span>
@@ -1677,9 +1700,10 @@
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_dim2</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">target_dim2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span>
 
         <span class="c1"># Translate dim value to positive if it&#39;s negative</span>
+        <span class="c1"># For target_dim1 and target_dim2, need to compensate for 1 more dimension in the returned message</span>
         <span class="n">diag_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">diag_dim</span> <span class="k">if</span> <span class="n">diag_dim</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">diag_dim</span>
-        <span class="n">target_dim1</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">target_dim1</span> <span class="k">if</span> <span class="n">target_dim1</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">target_dim1</span>
-        <span class="n">target_dim2</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">target_dim2</span> <span class="k">if</span> <span class="n">target_dim2</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">target_dim2</span>
+        <span class="n">target_dim1</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">target_dim1</span> <span class="k">if</span> <span class="n">target_dim1</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">target_dim1</span>
+        <span class="n">target_dim2</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">target_dim2</span> <span class="k">if</span> <span class="n">target_dim2</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">target_dim2</span>
         <span class="c1"># Get new batch shape. The size of target_dim1 and target_dim2 is determined by the size of diag_dim</span>
         <span class="n">diag_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">diag_dim</span><span class="p">]</span>
         <span class="n">other_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[:</span><span class="n">diag_dim</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">diag_dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:])</span>
@@ -1714,12 +1738,12 @@
             <span class="n">perm_order</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">diag_dim</span><span class="p">)</span>
             <span class="n">perm_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">diag_dim</span><span class="p">)</span>
             <span class="n">log_weight</span> <span class="o">=</span> <span class="n">log_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
-            <span class="n">log_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag_embed</span><span class="p">(</span><span class="n">log_weight</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">target_dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">target_dim1</span><span class="p">)</span>
-            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">target_dim1</span><span class="p">)</span>
+            <span class="n">log_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag_embed</span><span class="p">(</span><span class="n">log_weight</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="n">target_dim1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="n">target_dim2</span><span class="p">)</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_weight</span><span class="p">)</span>
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -1775,7 +1799,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -1840,7 +1864,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -1888,7 +1912,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_weight</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -1941,7 +1965,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_b_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -1983,7 +2007,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">new_weight</span><span class="p">,</span> <span class="n">new_batch_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_batch_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_batch_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -2023,6 +2047,9 @@
         <span class="n">new_batch_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">new_batch_shape</span><span class="p">))</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_batch_shape</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">)</span> <span class="k">else</span> \
             <span class="n">new_batch_shape</span>
 
+        <span class="c1"># Replace any -1 entry in new_batch_shape with size of the corresponding dimension of self</span>
+        <span class="n">new_batch_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="n">s</span> <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">new_batch_shape</span><span class="p">)])</span>
+
         <span class="n">new_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
         <span class="n">new_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
@@ -2038,7 +2065,7 @@
             <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">new_shape</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="n">new_batch_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
+                          <span class="n">new_batch_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">,</span>
                           <span class="n">new_parameter</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">,</span> <span class="n">new_weight</span><span class="p">,</span> <span class="n">new_log_densities</span><span class="p">,</span>
                           <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_msg</span></div>
@@ -2066,6 +2093,8 @@
 
 <span class="sd">        * Weights are kept the same, but the tensor will be cloned.</span>
 
+<span class="sd">        The transformation&#39;s event dimensions should be equal to or less than 1, i.e., ``trans.event_dim &lt;= 1``.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        trans : torch.distributions.transforms.Transform</span>
@@ -2076,25 +2105,27 @@
 <span class="sd">        Message</span>
 <span class="sd">            The transformed message.</span>
 
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">        AssertionError</span>
-<span class="sd">            If `dist_info` attribute is not present in ``self.attr``</span>
-
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
 <span class="sd">        `torch.distributions.Transform &lt;https://pytorch.org/docs/stable/distributions.html#torch.distributions.transforms.Transform&gt;`_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="n">Transform</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">trans</span><span class="o">.</span><span class="n">event_dim</span> <span class="o">&lt;=</span> <span class="mi">1</span>
         <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span>
 
         <span class="c1"># First clone and reduce</span>
         <span class="n">cloned_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduce_type</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">)</span>
-        <span class="n">new_particles</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span>
-        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_densities</span>
+        <span class="n">new_particles</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">trans</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
 
-        <span class="n">new_particles</span> <span class="o">=</span> <span class="n">trans</span><span class="p">(</span><span class="n">new_particles</span><span class="p">)</span>
-        <span class="n">new_log_densities</span> <span class="o">+=</span> <span class="n">trans</span><span class="o">.</span><span class="n">log_abs_det_jacobian</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">new_particles</span><span class="p">)</span>
+        <span class="n">new_log_densities</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">log_densities</span><span class="p">):</span>
+            <span class="n">new_d</span> <span class="o">=</span> <span class="n">d</span> <span class="o">-</span> <span class="n">trans</span><span class="o">.</span><span class="n">log_abs_det_jacobian</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">new_particles</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> \
+                <span class="k">if</span> <span class="n">trans</span><span class="o">.</span><span class="n">event_dim</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">d</span> <span class="o">-</span> <span class="n">trans</span><span class="o">.</span><span class="n">log_abs_det_jacobian</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">new_particles</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">new_log_densities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_d</span><span class="p">)</span>
+        <span class="c1"># new_log_densities = tuple(d - trans.log_abs_det_jacobian(cloned_msg.particles[i], new_particles[i]).sum(-1)</span>
+        <span class="c1">#                           if trans.event_dim == 0 else d - trans.log_abs_det_jacobian(cloned_msg.particles[i],</span>
+        <span class="c1">#                                                                                       new_particles[i])</span>
+        <span class="c1">#                           for i, d in enumerate(cloned_msg.log_densities))</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                           <span class="n">batch_shape</span><span class="o">=</span><span class="n">cloned_msg</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span>
@@ -2106,7 +2137,7 @@
 
 <div class="viewcode-block" id="Message.event_reweight"><a class="viewcode-back" href="../../references/graphical/data-structures.html#pysigma.defs.Message.event_reweight">[docs]</a>    <span class="k">def</span> <span class="nf">event_reweight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_log_prob</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a new message with the same type of `self` with the same particle values and log sampling densities</span>
-<span class="sd">        as `self`, but a different weight tensor, derived from importance weighting `target_log_pdf` against stored</span>
+<span class="sd">        as `self`, but a different weight tensor, derived from importance weighting `target_log_prob` against stored</span>
 <span class="sd">        log sampling density tensors in ``self.log_densities``.</span>
 
 <span class="sd">        `self` &#39;s type must be either ``MessageType.Particles`` or ``MessageType.Both`` to support this method.</span>
@@ -2176,7 +2207,7 @@
 <span class="sd">        corresponding to marginalizing the corresponding random variable.</span>
 
 <span class="sd">        Only messages with particles support this operation. If `self`&#39;s message type is ``MessageType.Both``, a</span>
-<span class="sd">        ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.</span>
+<span class="sd">        ``MessageType.Particles`` type message will be returned, where the parameter of `self` is discarded.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -2203,8 +2234,8 @@
 
 <span class="sd">        Marginalization of the particles is implemented by simply discarding the target particle value tensor as well as</span>
 <span class="sd">        its corresponding log sampling density tensor, and summing over the target prob tensor over the event dimension.</span>
-<span class="sd">        The target prob tensor is recovered by multiplying the weight tensor with the cross product of all of the</span>
-<span class="sd">        marginal sampling density tensor.</span>
+<span class="sd">        The target prob tensor is recovered by multiplying the weight tensor with the exponential of the cross product</span>
+<span class="sd">        of all of the marginal log sampling density tensor.</span>
 
 <span class="sd">        Note that the target prob tensor recovered in this way is **NOT** the</span>
 <span class="sd">        actual probability w.r.t. the target distributions, but one that is proportional to that up to a normalization</span>
@@ -2230,16 +2261,21 @@
         <span class="c1"># First take cross product of all marginal sampling density</span>
         <span class="n">expand_log_den</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_densities</span><span class="p">):</span>
-            <span class="n">view_dim</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">view_dim</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-            <span class="n">expand_log_den</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">view_dim</span><span class="p">))</span>
+            <span class="c1"># view_dim = [-1] * (len(self.e_shape) - 1)</span>
+            <span class="c1"># view_dim.insert(j, self.s_shape[j])</span>
+            <span class="c1"># expand_log_den.append(d.view(view_dim))</span>
+            <span class="n">expanded_d</span> <span class="o">=</span> <span class="n">d</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span><span class="p">):</span>
+                <span class="n">expanded_d</span> <span class="o">=</span> <span class="n">expanded_d</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span><span class="p">):</span>
+                <span class="n">expanded_d</span> <span class="o">=</span> <span class="n">expanded_d</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">expand_log_den</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expanded_d</span><span class="p">)</span>
 
         <span class="c1"># Take joint sum and exponentialize, which is equivalent to cross product.</span>
         <span class="n">joint_density</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">expand_log_den</span><span class="p">))</span>
         <span class="c1"># Now expand dimensions even more to full batch dimensions. Resulting shape should be (b_shape + s_shape)</span>
         <span class="n">view_dim</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">)</span>
         <span class="n">joint_density</span> <span class="o">=</span> <span class="n">joint_density</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">view_dim</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">joint_density</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span>
 
         <span class="c1"># Recover target_prob, and sum over event_dim.</span>
         <span class="n">target_prob</span> <span class="o">=</span> <span class="n">joint_density</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
@@ -2273,14 +2309,18 @@
 <span class="sd">        Only messages with particles support this operation. If `self`&#39;s message type is ``MessageType.Both``, a</span>
 <span class="sd">        ``MessageType.Parameter`` type message will be returned, where the parameter of `self` is discarded.</span>
 
+<span class="sd">        ``.contiguous()`` will be called on the tensors to make sure the resulting particle, log density, and weight</span>
+<span class="sd">        tensors are contiguous in memory.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        cat_event_dims : iterable of int</span>
-<span class="sd">            The list of event dimensions to be concatenated. Must have length at least 2. Each should be in range</span>
+<span class="sd">            The list of event dimensions to be concatenated. Must have length at least 2 and at most the length of</span>
+<span class="sd">            self&#39;s event shape (number of random variables). Each should be in range</span>
 <span class="sd">            ``[-len(event_shape), len(event_shape) - 1]``.</span>
 <span class="sd">        target_event_dim : int</span>
 <span class="sd">            The target event dimension where the concatenated event will be placed. Should be in range</span>
-<span class="sd">            ``[-len(event_shape) + k, len(event_shape) - k - 1]``, where ``k`` equals to ``len(cat_event_dims)``.</span>
+<span class="sd">            ``[-len(event_shape) + k - 1, len(event_shape) - k]``, where ``k`` equals to ``len(cat_event_dims)``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -2294,18 +2334,18 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
         <span class="n">cat_event_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span>
-        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span>
-                   <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-                   <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_event_dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">target_event_dim</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">assert</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">&lt;=</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_event_dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> \
+               <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">target_event_dim</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rvs</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> \
             <span class="s2">&quot;Only message with particles can concatenate event dimensions. Such operation on distribution parameter is &quot;</span> \
             <span class="s2">&quot;not well defined.&quot;</span>
 
         <span class="c1"># Convert dims to positive values if they are negative</span>
         <span class="n">cat_event_dims</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">d</span> <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">]</span>
-        <span class="n">target_event_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">target_event_dim</span> <span class="k">if</span> <span class="n">target_event_dim</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">target_event_dim</span>
+        <span class="n">target_event_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">target_event_dim</span> \
+            <span class="k">if</span> <span class="n">target_event_dim</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">target_event_dim</span>
 
         <span class="c1"># Collect elements to be concatenated, in the order given by cat_event_dims. Also the pre-flattened shape</span>
         <span class="n">cat_particles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">)</span>
@@ -2317,24 +2357,29 @@
         <span class="c1"># New shapes</span>
         <span class="n">new_s_shape</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">))</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">]</span>
         <span class="n">new_s_shape</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">target_event_dim</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">]))</span>
+        <span class="n">new_s_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">new_s_shape</span><span class="p">)</span>
         <span class="n">new_e_shape</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">))</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">]</span>
         <span class="n">new_e_shape</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">target_event_dim</span><span class="p">,</span> <span class="nb">sum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">e_shape</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">]))</span>
+        <span class="n">new_e_shape</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">new_e_shape</span><span class="p">)</span>
 
         <span class="c1"># Combinatorially concatenate particle values. Flatten result and insert to the rest to form new particle tuple</span>
         <span class="n">comb_particles</span> <span class="o">=</span> <span class="n">KnowledgeServer</span><span class="o">.</span><span class="n">combinatorial_cat</span><span class="p">(</span><span class="n">cat_particles</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">comb_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">cat_s_shape</span>
-        <span class="n">flat_particles</span> <span class="o">=</span> <span class="n">comb_particles</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">comb_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>        <span class="c1"># flatten</span>
+        <span class="n">flat_particles</span> <span class="o">=</span> <span class="n">comb_particles</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">comb_particles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>       <span class="c1"># flatten</span>
         <span class="n">new_particles</span> <span class="o">=</span> <span class="n">res_particles</span><span class="p">[:</span><span class="n">target_event_dim</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">flat_particles</span><span class="p">]</span> <span class="o">+</span> <span class="n">res_particles</span><span class="p">[</span><span class="n">target_event_dim</span><span class="p">:]</span>
 
         <span class="c1"># Take cross product of marginal sampling densities and flatten.</span>
         <span class="n">expand_log_den</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cat_densities</span><span class="p">):</span>
-            <span class="n">view_dim</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_s_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">view_dim</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">cat_s_shape</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-            <span class="n">expand_log_den</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">view_dim</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span><span class="p">):</span>
+                <span class="n">d</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_densities</span><span class="p">)):</span>
+                <span class="n">d</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">expand_log_den</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
         <span class="n">joint_log_den</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">expand_log_den</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">joint_log_den</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">cat_s_shape</span>
-        <span class="n">flat_log_den</span> <span class="o">=</span> <span class="n">joint_log_den</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>       <span class="c1"># flatten</span>
+        <span class="n">flat_log_den</span> <span class="o">=</span> <span class="n">joint_log_den</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>       <span class="c1"># flatten</span>
         <span class="n">new_densities</span> <span class="o">=</span> <span class="n">res_densities</span><span class="p">[:</span><span class="n">target_event_dim</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">flat_log_den</span><span class="p">]</span> <span class="o">+</span> <span class="n">res_densities</span><span class="p">[</span><span class="n">target_event_dim</span><span class="p">:]</span>
 
         <span class="c1"># Reshape weight tensor into correct flattened shape</span>
@@ -2344,14 +2389,21 @@
             <span class="c1"># of shape (b_shape + sample_shape)</span>
             <span class="n">b_cat_event_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cat_event_dims</span><span class="p">)</span>     <span class="c1"># Account for batch dims at front</span>
             <span class="n">b_target_event_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">target_event_dim</span>
-            <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">b_cat_event_dims</span><span class="p">:</span>
-                <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">())</span> <span class="k">if</span> <span class="n">d</span> <span class="o">!=</span> <span class="n">dim</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">dim</span><span class="p">]</span>
-                <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>
-            <span class="k">assert</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">):]</span> <span class="o">==</span> <span class="n">cat_s_shape</span>
-            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">]))</span>     <span class="c1"># flatten</span>
+
+            <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_shape</span><span class="p">))</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">b_cat_event_dims</span><span class="p">)</span> <span class="o">+</span> \
+                         <span class="n">b_cat_event_dims</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+
+            <span class="c1"># for dim in b_cat_event_dims:</span>
+            <span class="c1">#     perm_order = list(d for d in range(new_weight.dim()) if d != dim) + [dim]</span>
+            <span class="c1">#     new_weight = new_weight.permute(perm_order)</span>
+            <span class="c1"># assert new_weight.shape[-len(cat_event_dims):] == cat_s_shape</span>
+
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_event_dims</span><span class="p">)]</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>     <span class="c1"># flatten</span>
+
             <span class="n">perm_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">new_weight</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
             <span class="n">perm_order</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">b_target_event_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span>         <span class="c1"># Permute flattened dims to target_event_dim</span>
+            <span class="n">new_weight</span> <span class="o">=</span> <span class="n">new_weight</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">perm_order</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>         <span class="c1"># Permute flattened dims to target_event_dim</span>
 
         <span class="n">new_msg</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">MessageType</span><span class="o">.</span><span class="n">Particles</span><span class="p">,</span>
                           <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_shape</span><span class="p">,</span> <span class="n">sample_shape</span><span class="o">=</span><span class="n">new_s_shape</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="n">new_e_shape</span><span class="p">,</span>
