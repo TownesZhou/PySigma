@@ -5,7 +5,7 @@
 import networkx
 from .basic_nodes import LinkData, Node, FactorNode, VariableNode, DFN, DVN
 from .alpha_nodes import ESFN, RMFN
-from .gamma_node import GTVN, GFN
+from .gamma_node import GVN, GFN
 from .predicate_nodes import WMVN, LTMFN, PSFN, PBFN, WMFN
 
 
