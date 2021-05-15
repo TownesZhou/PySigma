@@ -415,14 +415,14 @@ class VariableNode(Node, ABC):
         Iterable of relational variables. Corresponds to the batch dimensions. Used to check ``b_shape`` attribute of
         incoming messages.
     param_var : Variable, optional
-        The parameter variable. Corresponds to the parameter dimension. Used to check ``p_shape`` attribute of incoming
-        messages.
+        The parameter variable. Corresponds to the parameter dimension. If not None, will be used to check ``p_shape``
+        attribute of incoming messages. Default to None.
     index_var_list : iterable of Variable, optional
-        Iterable of indexing variables. Corresponds to the sample dimensions. Used to check ``s_shape`` attribute of
-        incoming messages. Must specify if `ran_var_list` is specified.
+        Iterable of indexing variables. Corresponds to the sample dimensions. If not None, will be used to check
+        ``s_shape`` attribute of incoming messages. Default to None.
     ran_var_list : iterable of Variable, optional
-        Iterable of random variables. Corresponds to the event dimensions. Used to check ``e_shape`` attribute of
-        incoming messages. Must specify if `index_var_list` is specified.
+        Iterable of random variables. Corresponds to the event dimensions. If not None, will be used to check
+        ``e_shape`` attribute of incoming messages. Default to None.
 
     Attributes
     ----------
@@ -462,7 +462,6 @@ class VariableNode(Node, ABC):
         assert ran_var_list is None or \
             (isinstance(ran_var_list, Iterable) and
              all(isinstance(v, Variable) and v.metatype == VariableMetatype.Random for v in ran_var_list))
-        assert (index_var_list is None) is (ran_var_list is None)
 
         self.rel_vars: Tuple[Variable, ...] = tuple(rel_var_list)
         self.param_var: Variable = param_var
