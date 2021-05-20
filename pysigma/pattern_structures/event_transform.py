@@ -5,12 +5,10 @@
     Defines the following:
 """
 from __future__ import annotations  # Postponed evaluation of annotations
-from typing import Union, Callable, Tuple, Optional
+from typing import Union, Tuple, Optional
 from typing import Iterable as IterableType
 from collections.abc import Iterable
-import torch
 from torch.distributions.transforms import Transform
-import torch.distributions.constraints as C
 from ..defs import Variable, VariableMetatype
 from ..utils import equal_constraints
 

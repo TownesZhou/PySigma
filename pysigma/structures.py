@@ -18,54 +18,6 @@ from .defs import Variable, VariableMetatype, Message, MessageType
 from .pattern_structures.variable_map import VariableMap
 
 
-class FactorFunction:
-    """
-        Class type for factor node function
-
-        A FactorFunction instance can be thought of as a function object that takes in a group of batched tensors, each
-            corresponding to a batched value assignments to a random variable, and produces a single batched tensor that
-            represents the joint probability density, i.e.,
-                    val = Prob(X_1, X_2, ..., X_n)
-            where val, X_1, X_2, ..., X_n are all batched over the first dimension.
-
-        The first dimension of all tensors indexes the group of value assignments to the random variables. Therefore, it
-            should be ignored by the factor function procedure and simply treated as the "batched" dimension.
-
-        Defines different types of factor functions:
-            a. Tabular factor function
-                Returns a full-dimensional tensor at once representing the entire factor function table, each dimension
-                    corresponds to a random variable's support. Suitable when all random variables X_1, ..., X_n have
-                    finite discrete domains and the size is manageable.
-                For this type of factor function, no inputs regarding the R.V. values are necessary, because the
-                    returned factor table should cover all combinations of inputs.
-                This is the same as the legacy Lisp Sigma's factor node function
-
-            b. General form generative joint-probability density function
-                Given a batched group of RV value assignments as inputs, returns a batched tensor array representing the
-                    probability density. To enforce the probabilistic semantics, i.e.,
-                        val = Prob(X_1, X_2, ..., X_n)
-                    The entries in the returned tensor should be within the range [0, 1].
-                Compatible with all particle-based inference methods
-
-            c. Exponential form joint-probability density function
-                Explicitly defines an exponential distribution. Encodes an exponential distribution class as the
-                    factor node conditional distribution. Returns the PARAMETERS to the distribution.
-                Must declare this type if want architecture to recognize conjugate-exponential model structure and
-                    carries out closed-form message updates.
-
-            d. Deterministic factor function
-                Returns one or multiple batched VALUE tensors corresponding to one or multiple R.V.s given a batched
-                    value assignments to other variables. Enforce the semantics of
-                        Y_1, Y_2, ..., Y_m = Func(X_1, X_2, ..., X_n)
-                Conceptually identical to (b) type factor function with a delta distribution, but due to concerns of
-                    sample efficiency, this type should be used in practice if the factor function is deterministic.
-                Note that once defined, the directionality of the corresponding Conditional is also assumed and fixed.
-                In other words, X_1, ..., X_n should only appear in condition patterns, and Y_1, ..., Y_m only in action
-                patterns.
-    """
-    pass
-
-
 class Type:
     def __init__(self, type_name, symbolic=False, size=None, symbol_list=None, value_constraint=None):
         """
