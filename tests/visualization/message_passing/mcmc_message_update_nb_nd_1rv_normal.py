@@ -21,7 +21,7 @@ import torch.distributions as D
 import torch.distributions.constraints as C
 from pysigma.defs import Variable, VariableMetatype, Message, MessageType
 from pysigma.graphical.basic_nodes import LinkData
-from pysigma.graphical.predicate_nodes import WMFN, WMVN
+from pysigma.graphical.predicate_nodes import WMFN_MCMC, WMVN
 from tests.utils import generate_positive_definite
 
 # Visualization parameters
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     msg_shape = (b_shape, p_shape, s_shape, e_shape)
     index_var_list = [Variable("test_index_var", VariableMetatype.Indexing, s_size, None) for s_size in s_shape]
     ran_var_list = [Variable("test_random_var", VariableMetatype.Random, e_size, (C.real,)) for e_size in e_shape]
-    wmfn = WMFN("test_wmfn", index_var_list, ran_var_list)
+    wmfn = WMFN_MCMC("test_wmfn", index_var_list, ran_var_list)
 
     init_ptcl = torch.rand(Size([num_ptcl, 2])) * (x_lim[1] - x_lim[0]) + x_lim[0]
     init_ptcl_msg = Message(MessageType.Particles,
