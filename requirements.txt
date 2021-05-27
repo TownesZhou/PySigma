@@ -2,6 +2,7 @@
 
 numpy
 torch
+einops
 torchvision
 networkx
 plotly==4.5.0

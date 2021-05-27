@@ -248,7 +248,7 @@ class Node(ABC):
     ----------
     name : str
         Name of the node.
-    device : str
+    device : torch.device
         The device on which the node should be processing the messages. Defaults to 'cpu'
 
     Attributes

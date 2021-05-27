@@ -50,7 +50,7 @@ class TestSumOpCombination:
         return_msg = sum_op_combination(test_msg)
 
         expected_weight = torch.tensor(
-            [[[0.1, 0.22], [0.36, 0.52], [0.7, 0.9]]]
+            [[0.1, 0.22], [0.36, 0.52], [0.7, 0.9]]
         )
         assert isinstance(return_msg, Message) and return_msg.type is MessageType.Particles
         assert_proportional_within_error(return_msg.weight, expected_weight, dims=[-1])

@@ -2045,7 +2045,9 @@ class Message:
           explicitly implemented in this method; we assume it is taken care of by Message class constructor.
         """
         assert MessageType.Particles in self.type
-        assert isinstance(target_log_prob, torch.Tensor) and target_log_prob.shape == self.b_shape + self.s_shape
+        assert isinstance(target_log_prob, torch.Tensor) and target_log_prob.shape == self.b_shape + self.s_shape, \
+            "Expecting target_log_prob shape {}, instead found shape {}." \
+            .format(self.b_shape + self.s_shape, target_log_prob.shape)
 
         # Obtain joint sampling density. Should have shape (self.s_shape)
         if len(self.s_shape) == 1:

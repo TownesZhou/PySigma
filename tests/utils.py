@@ -15,17 +15,23 @@ EPS = 1e-6
 
 # Test the equality of two tensors within a given numerical precision
 def equal_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, precision=EPS):
+    assert tensor_1.numel() == 1 or tensor_2.numel() == 1 or tensor_1.shape == tensor_2.shape, \
+        "tensor_1 shape: {}, tensor_2 shape: {}".format(tensor_1.shape, tensor_2.shape)
     return torch.max(torch.abs(tensor_1 - tensor_2)) < precision
 
 
 # Self-assertion version of the above method. When assertion fails, reports the maximum absolute difference value.
 def assert_equal_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, precision=EPS):
+    assert tensor_1.numel() == 1 or tensor_2.numel() == 1 or tensor_1.shape == tensor_2.shape, \
+        "tensor_1 shape: {}, tensor_2 shape: {}".format(tensor_1.shape, tensor_2.shape)
     diff = torch.max(torch.abs(tensor_1 - tensor_2))
     assert diff < precision, "Maximum absolute difference: {}".format(diff.item())
 
 
 # Test that two tensors are off by a constant along the given dims within the given precision
 def constant_difference_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims: list, precision=EPS):
+    assert tensor_1.numel() == 1 or tensor_2.numel() == 1 or tensor_1.shape == tensor_2.shape, \
+        "tensor_1 shape: {}, tensor_2 shape: {}".format(tensor_1.shape, tensor_2.shape)
     diff = tensor_1 - tensor_2
     diff_max, diff_min = diff, diff
     for dim in dims:
@@ -37,6 +43,8 @@ def constant_difference_within_error(tensor_1: torch.Tensor, tensor_2: torch.Ten
 
 # Self-assertion version of the above method.
 def assert_constant_difference_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims: list, precision=EPS):
+    assert tensor_1.numel() == 1 or tensor_2.numel() == 1 or tensor_1.shape == tensor_2.shape, \
+        "tensor_1 shape: {}, tensor_2 shape: {}".format(tensor_1.shape, tensor_2.shape)
     diff = tensor_1 - tensor_2
     diff_max, diff_min = diff, diff
     for dim in dims:
@@ -49,6 +57,8 @@ def assert_constant_difference_within_error(tensor_1: torch.Tensor, tensor_2: to
 # Test that two tensors are proportional to each other along the given dims with the ratio variance smaller than
 #   the given precision
 def proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims: list, precision=EPS):
+    assert tensor_1.numel() == 1 or tensor_2.numel() == 1 or tensor_1.shape == tensor_2.shape, \
+        "tensor_1 shape: {}, tensor_2 shape: {}".format(tensor_1.shape, tensor_2.shape)
     ratio = tensor_1 / tensor_2
     ratio_max, ratio_min = ratio, ratio
     for dim in dims:
@@ -60,6 +70,8 @@ def proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, di
 
 # Self-assertion version of the above method.
 def assert_proportional_within_error(tensor_1: torch.Tensor, tensor_2: torch.Tensor, dims: list, precision=EPS):
+    assert tensor_1.numel() == 1 or tensor_2.numel() == 1 or tensor_1.shape == tensor_2.shape, \
+        "tensor_1 shape: {}, tensor_2 shape: {}".format(tensor_1.shape, tensor_2.shape)
     ratio = tensor_1 / tensor_2
     ratio_max, ratio_min = ratio, ratio
     for dim in dims:
