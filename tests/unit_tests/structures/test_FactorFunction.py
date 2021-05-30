@@ -4,6 +4,7 @@
 import pytest
 from typing import Callable
 import torch
+from torch import Size
 from torch.nn import Module
 from torch.distributions.transforms import ExpTransform, AffineTransform
 import torch.distributions.constraints as C
@@ -278,6 +279,30 @@ class TestFactorFunction_Property:
 
 class TestFactorFunction_Call:
 
+    def test_generative_wrong_input_shape(self):
+        # Test AssertionError is raised if the input provided by the nodes have wrong shapes
+        ran_vars = [
+            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
+            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
+            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
+        ]
+        # Test input tensors
+        b_size = 10
+        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 6)]
+
+        # Let the callback raise an error
+        @gen_module_callable
+        def prob_func(x1, x2, x3):
+            return (x1.sum(dim=1) + x2.sum(dim=1) + x3.sum(dim=1)).abs()
+
+        ff = FactorFunction(ran_vars, prob_func=prob_func)
+
+        with pytest.raises(AssertionError) as excinfo:
+            ff(inputs, func_type='generative')
+        assert str(excinfo.value) == "Expect input shape: {}, however found shape: {}" \
+                                     .format([Size([b_size, 3]), Size([b_size, 4]), Size([b_size, 5])],
+                                             [Size([b_size, 3]), Size([b_size, 4]), Size([b_size, 6])])
+
     def test_generative_callback_error(self):
         # Test RuntimeError is raised if the callback throws an internal error.
         # Variables
@@ -461,14 +486,12 @@ class TestFactorFunction_Call:
 
     def test_discriminative_invalid_target_var(self):
         # Test AssertionError is raised if target_var is not one of the directional variables
-        ran_vars = [
-            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
-            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
-            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
-        ]
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
         # Test input tensors
         b_size = 10
-        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
+        in_1, in_2, in_3 = torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)
 
         # Random return value
         @gen_module_callable
@@ -479,25 +502,54 @@ class TestFactorFunction_Call:
         def x2_func(x1, x3):
             return torch.randn([b_size, 4])
 
-        ff = FactorFunction(ran_vars, vector_func=[x1_func, x2_func, None])   # x3 is not a directional variable
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, None])   # x3 is not a directional variable
 
         with pytest.raises(AssertionError) as excinfo:
-            ff(inputs, target_var=ran_vars[2], func_type='discriminative')
+            ff([in_1, in_2], target_var=v3, func_type='discriminative')
         assert str(excinfo.value) == "The target_var 'test_ran_var_3' is not one of the directional variables {} for " \
                                      "which a discriminative function is specified." \
-                                     .format(tuple(ran_vars[:2]))
+                                     .format((v1, v2))
+
+    def test_discriminative_wrong_input_shape(self):
+        # Test AssertionError if input provided by the node have wrong shapes
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
+        # Test input tensors
+        b_size = 10
+        # Wrong input shape
+        in_1, in_2, in_3 = torch.randn(b_size, 10), torch.randn(b_size, 4), torch.randn(b_size, 5)
+
+        # Random return value
+        @gen_module_callable
+        def x1_func(x2, x3):
+            return torch.randn([b_size, 3])
+
+        @gen_module_callable
+        def x2_func(x1, x3):
+            return torch.randn([b_size, 4])
+
+        @gen_module_callable
+        def x3_func(x1, x2):
+            return torch.randn([b_size, 5])
+
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, x3_func])
+
+        with pytest.raises(AssertionError) as excinfo:
+            ff([in_1, in_2], target_var=v3, func_type='discriminative')
+        assert str(excinfo.value) == "Expect input shape: {}, however found shape: {}" \
+                                     .format([Size([b_size, 3]), Size([b_size, 4])],
+                                             [Size([b_size, 10]), Size([b_size, 4])])
 
     def test_discriminative_callback_error(self):
         # Test AssertionError is raised if the callback raises internal error
         # Variables
-        ran_vars = [
-            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
-            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
-            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
-        ]
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
         # Test input tensors
         b_size = 10
-        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
+        in_1, in_2, in_3 = torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)
 
         # Raise an error
         @gen_module_callable
@@ -512,24 +564,22 @@ class TestFactorFunction_Call:
         def x3_func(x1, x2):
             return torch.randn([b_size, 5])
 
-        ff = FactorFunction(ran_vars, vector_func=[x1_func, x2_func, x3_func])
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, x3_func])
 
         with pytest.raises(FactorFunctionRuntimeError) as excinfo:
-            ff(inputs, target_var=ran_vars[0], func_type='discriminative')
+            ff([in_2, in_3], target_var=v1, func_type='discriminative')
         assert str(excinfo.value) == "An exception occurred when calling the discriminative factor function {} " \
-                                     "corresponding to the random variable {}.".format(x1_func, ran_vars[0])
+                                     "corresponding to the random variable {}.".format(x1_func, v1)
 
     def test_discriminative_wrong_result_type(self):
         # Test AssertionError is raised if result from the callback is not a torch tensor
         # Variables
-        ran_vars = [
-            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
-            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
-            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
-        ]
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
         # Test input tensors
         b_size = 10
-        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
+        in_1, in_2, in_3 = torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)
 
         # Return something not a tensor
         @gen_module_callable
@@ -544,25 +594,23 @@ class TestFactorFunction_Call:
         def x3_func(x1, x2):
             return torch.randn([b_size, 5])
 
-        ff = FactorFunction(ran_vars, vector_func=[x1_func, x2_func, x3_func])
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, x3_func])
 
         with pytest.raises(FactorFunctionValueError) as excinfo:
-            ff(inputs, target_var=ran_vars[0], func_type='discriminative')
+            ff([in_2, in_3], target_var=v1, func_type='discriminative')
         assert str(excinfo.value) == "The returning value from a factor function callback must be a torch tensor. " \
                                      "Found value with type {} in the discriminative factor function {} corresponding "\
-                                     "to the random variable {}.".format(str, x1_func, ran_vars[0])
+                                     "to the random variable {}.".format(str, x1_func, v1)
 
     def test_discriminative_wrong_result_dimension(self):
         # Test AssertionError is raised if result has wrong dimension
         # Variables
-        ran_vars = [
-            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
-            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
-            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
-        ]
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
         # Test input tensors
         b_size = 10
-        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
+        in_1, in_2, in_3 = torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)
 
         # Return a tensor with wrong dimension
         @gen_module_callable
@@ -577,26 +625,24 @@ class TestFactorFunction_Call:
         def x3_func(x1, x2):
             return torch.randn([b_size, 5])
 
-        ff = FactorFunction(ran_vars, vector_func=[x1_func, x2_func, x3_func])
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, x3_func])
 
         with pytest.raises(FactorFunctionValueError) as excinfo:
-            ff(inputs, target_var=ran_vars[0], func_type='discriminative')
+            ff([in_2, in_3], target_var=v1, func_type='discriminative')
         assert str(excinfo.value) == "The returning tensor from a discriminative callback must represent batched " \
                                      "particles. Expect a 2-dimensional tensor. Instead, found a tensor with {} " \
                                      "dimensions in the discriminative factor function {} corresponding to the random "\
-                                     "variable {}.".format(1, x1_func, ran_vars[0])
+                                     "variable {}.".format(1, x1_func, v1)
 
     def test_discriminative_wrong_result_shape(self):
         # Test AssertionError is raised if result has wrong shape
         # Variables
-        ran_vars = [
-            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
-            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
-            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
-        ]
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
         # Test input tensors
         b_size = 10
-        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
+        in_1, in_2, in_3 = torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)
 
         # Return a tensor with wrong shape
         @gen_module_callable
@@ -611,26 +657,24 @@ class TestFactorFunction_Call:
         def x3_func(x1, x2):
             return torch.randn([b_size, 5])
 
-        ff = FactorFunction(ran_vars, vector_func=[x1_func, x2_func, x3_func])
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, x3_func])
 
         with pytest.raises(FactorFunctionValueError) as excinfo:
-            ff(inputs, target_var=ran_vars[0], func_type='discriminative')
+            ff([in_2, in_3], target_var=v1, func_type='discriminative')
         assert str(excinfo.value) == "The returning tensor from a discriminative callback must represent batched " \
                                      "particles. Expect a tensor with shape {}. Instead, found a tensor with shape {} "\
                                      "in the discriminative factor function {} corresponding to the random variable " \
                                      "{}."\
-                                     .format(torch.Size([b_size, 3]), torch.Size([b_size, 4]), x1_func, ran_vars[0])
+                                     .format(torch.Size([b_size, 3]), torch.Size([b_size, 4]), x1_func, v1)
 
     def test_discriminative_correct_result(self):
         # Variables
-        ran_vars = [
-            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
-            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
-            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
-        ]
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
         # Test input tensors
         b_size = 10
-        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
+        in_1, in_2, in_3 = torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)
         outputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
 
         @gen_module_callable
@@ -645,10 +689,10 @@ class TestFactorFunction_Call:
         def x3_func(x1, x2):
             return outputs[2]
 
-        ff = FactorFunction(ran_vars, vector_func=[x1_func, x2_func, x3_func])
-        x1_result = ff(inputs, target_var=ran_vars[0], func_type='discriminative')
-        x2_result = ff(inputs, target_var=ran_vars[1], func_type='discriminative')
-        x3_result = ff(inputs, target_var=ran_vars[2], func_type='discriminative')
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, x3_func])
+        x1_result = ff([in_2, in_3], target_var=v1, func_type='discriminative')
+        x2_result = ff([in_1, in_3], target_var=v2, func_type='discriminative')
+        x3_result = ff([in_1, in_2], target_var=v3, func_type='discriminative')
 
         assert [x1_result, x2_result, x3_result] == outputs
 
@@ -657,14 +701,12 @@ class TestFactorFunction_Call:
         # Devices
         cb_device, node_device = torch.device('cuda:{}'.format(torch.cuda.current_device())), torch.device('cpu')
         # Variables
-        ran_vars = [
-            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
-            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
-            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
-        ]
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
         # Test input tensors
         b_size = 10
-        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
+        in_1, in_2, in_3 = torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)
         outputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
 
         # Check that input are on the correct devices
@@ -683,24 +725,22 @@ class TestFactorFunction_Call:
             assert x1.device == x2.device == cb_device
             return outputs[2]
 
-        ff = FactorFunction(ran_vars, vector_func=[x1_func, x2_func, x3_func], device=cb_device)
-        x1_result = ff(inputs, target_var=ran_vars[0], func_type='discriminative')
-        x2_result = ff(inputs, target_var=ran_vars[1], func_type='discriminative')
-        x3_result = ff(inputs, target_var=ran_vars[2], func_type='discriminative')
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, x3_func], device=cb_device)
+        x1_result = ff([in_2, in_3], target_var=v1, func_type='discriminative')
+        x2_result = ff([in_1, in_3], target_var=v2, func_type='discriminative')
+        x3_result = ff([in_1, in_2], target_var=v3, func_type='discriminative')
 
     def test_discriminative_correct_node_device(self):
         # Test that result tensors are converted to the correct node device before returning
         # Devices
         cb_device, node_device = torch.device('cpu'), torch.device('cuda:{}'.format(torch.cuda.current_device()))
         # Variables
-        ran_vars = [
-            Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,)),
-            Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,)),
-            Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,)),
-        ]
+        v1 = Variable('test_ran_var_1', VariableMetatype.Random, 3, (C.real,))
+        v2 = Variable('test_ran_var_2', VariableMetatype.Random, 4, (C.real,))
+        v3 = Variable('test_ran_var_3', VariableMetatype.Random, 5, (C.real,))
         # Test input tensors
         b_size = 10
-        inputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
+        in_1, in_2, in_3 = torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)
         outputs = [torch.randn(b_size, 3), torch.randn(b_size, 4), torch.randn(b_size, 5)]
 
         # Check that input are on the correct devices
@@ -719,10 +759,10 @@ class TestFactorFunction_Call:
             assert x1.device == x2.device == cb_device
             return outputs[2]
 
-        ff = FactorFunction(ran_vars, vector_func=[x1_func, x2_func, x3_func], device=cb_device)
-        x1_result = ff(inputs, target_var=ran_vars[0], func_type='discriminative', node_device=node_device)
-        x2_result = ff(inputs, target_var=ran_vars[1], func_type='discriminative', node_device=node_device)
-        x3_result = ff(inputs, target_var=ran_vars[2], func_type='discriminative', node_device=node_device)
+        ff = FactorFunction([v1, v2, v3], vector_func=[x1_func, x2_func, x3_func], device=cb_device)
+        x1_result = ff([in_2, in_3], target_var=v1, func_type='discriminative', node_device=node_device)
+        x2_result = ff([in_1, in_3], target_var=v2, func_type='discriminative', node_device=node_device)
+        x3_result = ff([in_1, in_2], target_var=v3, func_type='discriminative', node_device=node_device)
         assert all(r.device == node_device for r in [x1_result, x2_result, x3_result])
 
 

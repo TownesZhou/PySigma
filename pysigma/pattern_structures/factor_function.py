@@ -220,7 +220,6 @@ class FactorFunction:
         assert self.finalized, "This factor function construct is not yet finalized."
         assert isinstance(inputs, Iterable) and all(isinstance(x, torch.Tensor) for x in inputs)
         inputs = tuple(inputs)
-        assert len(inputs) == len(self.ran_vars)
         b_size = inputs[0].shape[0]
         assert all(b_size == x.shape[0] for x in inputs[1:]), \
             "Input tensors do not have the same batch dimension (first dimension) size."
@@ -232,6 +231,11 @@ class FactorFunction:
         # Generative function
         if func_type == 'generative':
             assert self.generative
+            # Sanity check input tensor length and shapes
+            assert len(inputs) == len(self.ran_vars)
+            assert all(i.shape == torch.Size([b_size, ran_var.size]) for i, ran_var in zip(inputs, self.ran_vars)), \
+                "Expect input shape: {}, however found shape: {}" \
+                .format([torch.Size([b_size, ran_var.size]) for ran_var in self.ran_vars], [i.shape for i in inputs])
             # Call the wrapped function
             try:
                 prob_dens: torch.Tensor = self._prob_func(*inputs)
@@ -273,13 +277,17 @@ class FactorFunction:
                 "The target_var '{}' is not one of the directional variables {} for which a discriminative function " \
                 "is specified." \
                 .format(target_var, self.directional_vars)
+            # Sanity check input length and shape
+            assert len(inputs) == len(self.ran_vars) - 1
             target_var_idx = self.ran_vars.index(target_var)
+            condition_vars = self.ran_vars[:target_var_idx] + self.ran_vars[target_var_idx + 1:]
+            assert all(i.shape == torch.Size([b_size, ran_var.size]) for i, ran_var in zip(inputs, condition_vars)), \
+                "Expect input shape: {}, however found shape: {}" \
+                .format([torch.Size([b_size, ran_var.size]) for ran_var in condition_vars], [i.shape for i in inputs])
             vector_func = self._vector_func[target_var_idx]
-            # Remove the input tensor that corresponds to this random variable
-            discriminative_inputs = inputs[:target_var_idx] + inputs[target_var_idx + 1:]
             # Call wrapped function
             try:
-                result: torch.Tensor = vector_func(*discriminative_inputs)
+                result: torch.Tensor = vector_func(*inputs)
             except Exception as exc:
                 raise FactorFunctionRuntimeError(
                     "An exception occurred when calling the discriminative factor function {} corresponding to "
